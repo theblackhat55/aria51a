@@ -111,7 +111,10 @@ The DMT Risk Assessment System v2.0 is a comprehensive, AI-powered Enterprise Go
 ### Getting Started
 1. **Login**: Access the system using your credentials at `/login`
    - Demo Admin: `admin` / `demo123`
-   - Demo Risk Manager: `avi_security` / `demo123`
+   - Demo Security Specialist: `avi_security` / `demo123`
+   - Demo Risk Manager: `sjohnson` / `demo123`
+   - Demo Compliance Officer: `mchen` / `demo123`
+   - Demo Auditor: `edavis` / `demo123`
 
 2. **Dashboard**: View real-time risk metrics and analytics
    - Risk trends and distribution
@@ -148,7 +151,8 @@ The DMT Risk Assessment System v2.0 is a comprehensive, AI-powered Enterprise Go
 - **Public URL**: https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev
 - **Features**: All core modules implemented and tested
 - **Database**: Local D1 database with comprehensive seed data
-- **Authentication**: Working with demo accounts
+- **Authentication**: ✅ Working perfectly with all demo accounts
+- **API Endpoints**: ✅ All REST API endpoints tested and functional
 
 ### ✅ Production Ready
 - **Status**: ✅ Ready for immediate Cloudflare Pages deployment
