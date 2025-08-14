@@ -1011,7 +1011,7 @@ export function createAPI() {
 
       const users = await c.env.DB.prepare(`
         SELECT id, email, username, first_name, last_name, department, job_title, 
-               phone, role, is_active, last_login, created_at, updated_at
+               phone, role, is_active, last_login, auth_provider, created_at, updated_at
         FROM users
         ORDER BY first_name, last_name
         LIMIT ? OFFSET ?
@@ -1093,11 +1093,12 @@ export function createAPI() {
       const result = await c.env.DB.prepare(`
         INSERT INTO users (
           email, username, password_hash, first_name, last_name, 
-          department, job_title, phone, role, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+          department, job_title, phone, role, auth_provider, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
       `).bind(
         userData.email, userData.username, passwordHash, userData.first_name, userData.last_name,
-        userData.department, userData.job_title, userData.phone, userData.role, 1
+        userData.department, userData.job_title, userData.phone, userData.role, 
+        userData.auth_provider || 'local', 1
       ).run();
 
       return c.json<ApiResponse<{id: number}>>({ 
@@ -1142,13 +1143,14 @@ export function createAPI() {
           job_title = COALESCE(?, job_title),
           phone = COALESCE(?, phone),
           role = COALESCE(?, role),
+          auth_provider = COALESCE(?, auth_provider),
           is_active = COALESCE(?, is_active),
           updated_at = datetime('now')
         WHERE id = ?
       `).bind(
         userData.email, userData.first_name, userData.last_name,
         userData.department, userData.job_title, userData.phone,
-        userData.role, userData.is_active, id
+        userData.role, userData.auth_provider, userData.is_active, id
       ).run();
 
       if (result.changes === 0) {

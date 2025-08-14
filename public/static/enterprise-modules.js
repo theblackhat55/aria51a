@@ -359,6 +359,140 @@ function showSettingsTab(tab) {
   }
 }
 
+async function loadUsersForSettings() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      renderUsersTableForSettings(response.data.data);
+      updateUsersStatisticsForSettings(response.data.data);
+    } else {
+      throw new Error('Failed to load users');
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+    const tbody = document.getElementById('users-table-body');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-red-600">Error loading users</td></tr>';
+    }
+  }
+}
+
+function renderUsersTableForSettings(users) {
+  const tbody = document.getElementById('users-table-body');
+  if (!tbody) return;
+  
+  if (!users || users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No users found</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = users.map(user => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 h-10 w-10">
+            <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+              <span class="text-sm font-medium text-gray-700">
+                ${(user.first_name?.[0] || '').toUpperCase()}${(user.last_name?.[0] || '').toUpperCase()}
+              </span>
+            </div>
+          </div>
+          <div class="ml-4">
+            <div class="text-sm font-medium text-gray-900">${user.first_name || ''} ${user.last_name || ''}</div>
+            <div class="text-sm text-gray-500">${user.email}</div>
+          </div>
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleClass(user.role)}">
+          ${capitalizeFirst((user.role || '').replace('_', ' '))}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${user.department || 'N/A'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${user.auth_provider || 'local'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        ${user.last_login ? formatDate(user.last_login) : 'Never'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+          ${user.is_active ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <div class="flex space-x-2">
+          <button onclick="viewUser(${user.id})" class="text-blue-600 hover:text-blue-900" title="View Details">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button onclick="editUser(${user.id})" class="text-indigo-600 hover:text-indigo-900" title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="toggleUserStatus(${user.id})" class="text-yellow-600 hover:text-yellow-900" title="${user.is_active ? 'Deactivate' : 'Activate'}">
+            <i class="fas fa-${user.is_active ? 'user-slash' : 'user-check'}"></i>
+          </button>
+          <button onclick="resetUserPassword(${user.id})" class="text-orange-600 hover:text-orange-900" title="Reset Password">
+            <i class="fas fa-key"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function updateUsersStatisticsForSettings(users) {
+  const totalUsers = users.length;
+  const activeUsers = users.filter(u => u.is_active).length;
+  const adminUsers = users.filter(u => u.role === 'admin').length;
+  const samlUsers = users.filter(u => u.auth_provider === 'saml').length;
+  
+  const totalElement = document.getElementById('total-users');
+  const activeElement = document.getElementById('active-users');
+  const adminElement = document.getElementById('admin-users');
+  const samlElement = document.getElementById('saml-users');
+  
+  if (totalElement) totalElement.textContent = totalUsers;
+  if (activeElement) activeElement.textContent = activeUsers;
+  if (adminElement) adminElement.textContent = adminUsers;
+  if (samlElement) samlElement.textContent = samlUsers;
+}
+
+function getRoleClass(role) {
+  const roleClasses = {
+    'admin': 'bg-red-100 text-red-800',
+    'risk_analyst': 'bg-blue-100 text-blue-800',
+    'service_owner': 'bg-green-100 text-green-800',
+    'auditor': 'bg-purple-100 text-purple-800',
+    'integration_operator': 'bg-yellow-100 text-yellow-800',
+    'readonly': 'bg-gray-100 text-gray-800',
+    'risk_manager': 'bg-orange-100 text-orange-800',
+    'compliance_officer': 'bg-indigo-100 text-indigo-800',
+    'incident_manager': 'bg-pink-100 text-pink-800',
+    'user': 'bg-gray-100 text-gray-800',
+  };
+  return roleClasses[role] || 'bg-gray-100 text-gray-800';
+}
+
+function formatDate(dateString) {
+  if (!dateString) return 'N/A';
+  try {
+    return new Date(dateString).toLocaleDateString();
+  } catch (error) {
+    return 'N/A';
+  }
+}
+
+function capitalizeFirst(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 async function showUsersSettings() {
   const content = document.getElementById('settings-content');
   
@@ -466,8 +600,8 @@ async function showUsersSettings() {
     </div>
   `;
   
-  // Load users data (reuse existing showUsers functionality)
-  await loadUsers();
+  // Load users data specifically for settings context
+  await loadUsersForSettings();
 }
 
 async function showMicrosoftSettings() {
@@ -1105,3 +1239,6 @@ window.syncMicrosoftVulnerabilities = syncMicrosoftVulnerabilities;
 window.showAddAssetModal = showAddAssetModal;
 window.closeAddAssetModal = closeAddAssetModal;
 window.updateRiskScoreDisplay = updateRiskScoreDisplay;
+window.loadUsersForSettings = loadUsersForSettings;
+window.renderUsersTableForSettings = renderUsersTableForSettings;
+window.updateUsersStatisticsForSettings = updateUsersStatisticsForSettings;
