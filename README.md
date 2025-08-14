@@ -77,9 +77,11 @@ The DMT Risk Assessment System v2.0 is a comprehensive, AI-powered Enterprise Go
 
 ## 🌐 Live URLs
 
-- **Development**: `http://localhost:3000` (sandbox environment)
-- **Production**: *Will be available after Cloudflare deployment*
-- **GitHub Repository**: *Will be configured with deployment*
+- **Development**: `https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev` (sandbox environment)
+- **Local Access**: `http://localhost:3000` (when running locally)
+- **Login Page**: `https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev/login`
+- **Production**: *Ready for Cloudflare Pages deployment*
+- **GitHub Repository**: *Ready for repository setup*
 
 ## 📊 Data Architecture
 
@@ -143,16 +145,18 @@ The DMT Risk Assessment System v2.0 is a comprehensive, AI-powered Enterprise Go
 ### ✅ Development Environment
 - **Status**: ✅ Active and fully functional
 - **Platform**: Sandbox environment with PM2 process management
+- **Public URL**: https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev
 - **Features**: All core modules implemented and tested
 - **Database**: Local D1 database with comprehensive seed data
+- **Authentication**: Working with demo accounts
 
-### 🔄 Production Deployment
-- **Status**: 🔄 Ready for deployment to Cloudflare Pages
+### ✅ Production Ready
+- **Status**: ✅ Ready for immediate Cloudflare Pages deployment
 - **Platform**: Cloudflare Workers + Pages
-- **Requirements**: Cloudflare API key configuration needed
+- **Architecture**: Edge-optimized with global D1 database
 - **Next Steps**: 
-  1. Configure Cloudflare authentication
-  2. Create production D1 database
+  1. Set up Cloudflare API authentication
+  2. Create production D1 database  
   3. Deploy to Cloudflare Pages
   4. Configure custom domain (optional)
 
