@@ -3,7 +3,11 @@
 
 // Global module state
 let currentModule = 'dashboard';
-let moduleData = {};
+let moduleData = {
+  requirements: [],
+  findings: [],
+  services: []
+};
 
 // Risk Management Module
 async function showRisks() {
@@ -605,8 +609,24 @@ async function showCompliance() {
           <p class="text-gray-600 mt-1">Monitor regulatory compliance and manage assessments</p>
         </div>
         <div class="flex space-x-3">
+          <div class="relative inline-block text-left">
+            <button onclick="toggleFrameworkImportMenu()" class="btn-secondary">
+              <i class="fas fa-download mr-2"></i>Import Framework
+              <i class="fas fa-chevron-down ml-1"></i>
+            </button>
+            <div id="framework-import-menu" class="hidden absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+              <div class="py-1">
+                <button onclick="importFramework('iso27001')" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <i class="fas fa-shield-alt mr-2"></i>ISO 27001:2022
+                </button>
+                <button onclick="importFramework('uae_ia')" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <i class="fas fa-flag mr-2"></i>UAE IA Standard
+                </button>
+              </div>
+            </div>
+          </div>
           <button onclick="showImportComplianceModal()" class="btn-secondary">
-            <i class="fas fa-upload mr-2"></i>Import
+            <i class="fas fa-upload mr-2"></i>Import Data
           </button>
           <button onclick="exportCompliance()" class="btn-secondary">
             <i class="fas fa-download mr-2"></i>Export
@@ -686,6 +706,9 @@ async function showCompliance() {
             <button onclick="showComplianceTab('requirements')" id="requirements-tab" class="compliance-tab">
               <i class="fas fa-list mr-2"></i>Requirements
             </button>
+            <button onclick="showComplianceTab('soa')" id="soa-tab" class="compliance-tab">
+              <i class="fas fa-clipboard-list mr-2"></i>SOA
+            </button>
             <button onclick="showComplianceTab('findings')" id="findings-tab" class="compliance-tab">
               <i class="fas fa-search mr-2"></i>Findings
             </button>
@@ -745,9 +768,116 @@ async function showCompliance() {
         <!-- Requirements Tab Content -->
         <div id="requirements-content" class="compliance-tab-content hidden">
           <div class="p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Compliance Requirements</h3>
-            <div id="requirements-list" class="space-y-4">
-              <!-- Requirements will be loaded here -->
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-medium text-gray-900">Compliance Requirements</h3>
+              <div class="flex space-x-2">
+                <select id="requirements-framework-filter" class="form-select" onchange="filterRequirements()">
+                  <option value="">All Frameworks</option>
+                  <option value="ISO27001">ISO 27001</option>
+                  <option value="GDPR">GDPR</option>
+                  <option value="SOX">SOX</option>
+                  <option value="HIPAA">HIPAA</option>
+                  <option value="UAE_IA">UAE IA Standard</option>
+                </select>
+                <select id="requirements-status-filter" class="form-select" onchange="filterRequirements()">
+                  <option value="">All Status</option>
+                  <option value="compliant">Compliant</option>
+                  <option value="non_compliant">Non-Compliant</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="not_assessed">Not Assessed</option>
+                </select>
+                <button onclick="showAddRequirementModal()" class="btn-primary">
+                  <i class="fas fa-plus mr-2"></i>Add Requirement
+                </button>
+              </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="table-header">Requirement ID</th>
+                    <th class="table-header">Title</th>
+                    <th class="table-header">Framework</th>
+                    <th class="table-header">Category</th>
+                    <th class="table-header">Status</th>
+                    <th class="table-header">Owner</th>
+                    <th class="table-header">Due Date</th>
+                    <th class="table-header">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="requirements-table-body" class="bg-white divide-y divide-gray-200">
+                  <!-- Requirements rows will be inserted here -->
+                </tbody>
+              </table>
+            </div>
+            <div id="requirements-loading" class="p-8 text-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p class="mt-2 text-gray-600">Loading requirements...</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- SOA (Statement of Applicability) Tab Content -->
+        <div id="soa-content" class="compliance-tab-content hidden">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h3 class="text-lg font-medium text-gray-900">Statement of Applicability (SOA)</h3>
+                <p class="text-sm text-gray-600 mt-1">Track implementation progress of framework controls</p>
+              </div>
+              <div class="flex space-x-2">
+                <select id="soa-framework-filter" class="form-select" onchange="filterSOAControls()">
+                  <option value="">All Frameworks</option>
+                  <option value="ISO27001">ISO 27001</option>
+                  <option value="UAE_IA">UAE IA Standard</option>
+                  <option value="GDPR">GDPR</option>
+                  <option value="SOX">SOX</option>
+                  <option value="HIPAA">HIPAA</option>
+                </select>
+                <select id="soa-status-filter" class="form-select" onchange="filterSOAControls()">
+                  <option value="">All Status</option>
+                  <option value="not_implemented">Not Implemented</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="implemented">Implemented</option>
+                  <option value="not_applicable">Not Applicable</option>
+                </select>
+                <select id="soa-category-filter" class="form-select" onchange="filterSOAControls()">
+                  <option value="">All Categories</option>
+                  <option value="Organizational controls">Organizational</option>
+                  <option value="People controls">People</option>
+                  <option value="Physical and environmental controls">Physical</option>
+                  <option value="Technological controls">Technological</option>
+                </select>
+                <button onclick="exportSOA()" class="btn-secondary">
+                  <i class="fas fa-download mr-2"></i>Export SOA
+                </button>
+              </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="table-header">Control ID</th>
+                    <th class="table-header">Title</th>
+                    <th class="table-header">Framework</th>
+                    <th class="table-header">Category</th>
+                    <th class="table-header">Implementation Status</th>
+                    <th class="table-header">Applicability</th>
+                    <th class="table-header">Owner</th>
+                    <th class="table-header">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="soa-controls-list" class="bg-white divide-y divide-gray-200">
+                  <!-- SOA controls will be populated here -->
+                </tbody>
+              </table>
+            </div>
+
+            <div id="soa-loading" class="text-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p class="mt-2 text-gray-600">Loading SOA controls...</p>
             </div>
           </div>
         </div>
@@ -755,9 +885,51 @@ async function showCompliance() {
         <!-- Findings Tab Content -->
         <div id="findings-content" class="compliance-tab-content hidden">
           <div class="p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Assessment Findings</h3>
-            <div id="findings-list" class="space-y-4">
-              <!-- Findings will be loaded here -->
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-medium text-gray-900">Assessment Findings</h3>
+              <div class="flex space-x-2">
+                <select id="findings-severity-filter" class="form-select" onchange="filterFindings()">
+                  <option value="">All Severity</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+                <select id="findings-status-filter" class="form-select" onchange="filterFindings()">
+                  <option value="">All Status</option>
+                  <option value="open">Open</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="accepted">Accepted</option>
+                </select>
+                <button onclick="showAddFindingModal()" class="btn-primary">
+                  <i class="fas fa-plus mr-2"></i>Add Finding
+                </button>
+              </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="table-header">Finding ID</th>
+                    <th class="table-header">Title</th>
+                    <th class="table-header">Severity</th>
+                    <th class="table-header">Category</th>
+                    <th class="table-header">Status</th>
+                    <th class="table-header">Assigned To</th>
+                    <th class="table-header">Due Date</th>
+                    <th class="table-header">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="findings-table-body" class="bg-white divide-y divide-gray-200">
+                  <!-- Findings rows will be inserted here -->
+                </tbody>
+              </table>
+            </div>
+            <div id="findings-loading" class="p-8 text-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p class="mt-2 text-gray-600">Loading findings...</p>
             </div>
           </div>
         </div>
@@ -784,9 +956,102 @@ async function loadComplianceData() {
       updateComplianceStatistics();
       document.getElementById('assessments-loading').style.display = 'none';
     }
+
+    // Initialize sample data if tables are empty
+    await initializeSampleComplianceData();
   } catch (error) {
     console.error('Error loading compliance data:', error);
     document.getElementById('assessments-loading').innerHTML = '<p class="text-red-600">Error loading assessments</p>';
+  }
+}
+
+async function initializeSampleComplianceData() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    
+    // Check if we have any requirements
+    const reqResponse = await axios.get('/api/requirements', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (reqResponse.data.success && reqResponse.data.data.length === 0) {
+      // Add sample requirements
+      const sampleRequirements = [
+        {
+          requirement_id: 'ISO27001-A.5.1',
+          title: 'Information Security Policy',
+          description: 'A set of policies for information security shall be defined, approved by management, published and communicated to employees and relevant external parties.',
+          framework: 'ISO27001',
+          category: 'Organizational Security',
+          status: 'compliant'
+        },
+        {
+          requirement_id: 'ISO27001-A.8.1',
+          title: 'Asset Management Policy',
+          description: 'All assets shall be identified and an inventory of all important assets drawn up and maintained.',
+          framework: 'ISO27001',
+          category: 'Asset Management',
+          status: 'in_progress'
+        },
+        {
+          requirement_id: 'GDPR-Art.25',
+          title: 'Data Protection by Design and Default',
+          description: 'Data protection by design and by default shall be implemented.',
+          framework: 'GDPR',
+          category: 'Privacy Protection',
+          status: 'non_compliant'
+        }
+      ];
+
+      for (const req of sampleRequirements) {
+        await axios.post('/api/requirements', req, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+    }
+
+    // Check if we have any findings
+    const findingsResponse = await axios.get('/api/findings', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (findingsResponse.data.success && findingsResponse.data.data.length === 0) {
+      // Add sample findings
+      const sampleFindings = [
+        {
+          finding_id: 'FIND-2024-001',
+          title: 'Weak Password Policy Implementation',
+          description: 'Current password policy does not enforce sufficient complexity requirements.',
+          severity: 'high',
+          category: 'Access Control',
+          status: 'open'
+        },
+        {
+          finding_id: 'FIND-2024-002',
+          title: 'Missing Encryption for Data at Rest',
+          description: 'Sensitive customer data stored in databases is not encrypted.',
+          severity: 'critical',
+          category: 'Data Protection',
+          status: 'in_progress'
+        },
+        {
+          finding_id: 'FIND-2024-003',
+          title: 'Incomplete Asset Inventory',
+          description: 'Asset inventory is missing several critical server components.',
+          severity: 'medium',
+          category: 'Asset Management',
+          status: 'resolved'
+        }
+      ];
+
+      for (const finding of sampleFindings) {
+        await axios.post('/api/findings', finding, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+    }
+  } catch (error) {
+    console.log('Sample data initialization completed or skipped');
   }
 }
 
@@ -872,6 +1137,473 @@ function showComplianceTab(tabName) {
   // Show selected tab content and mark tab as active
   document.getElementById(`${tabName}-content`).classList.remove('hidden');
   document.getElementById(`${tabName}-tab`).classList.add('active');
+  
+  // Load data for the selected tab
+  if (tabName === 'requirements') {
+    loadRequirementsData();
+  } else if (tabName === 'soa') {
+    loadSOAControls();
+  } else if (tabName === 'findings') {
+    loadFindingsData();
+  }
+}
+
+// Requirements Management Functions
+async function loadRequirementsData() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/requirements', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      moduleData.requirements = response.data.data;
+      renderRequirementsTable(moduleData.requirements);
+      document.getElementById('requirements-loading').style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error loading requirements:', error);
+    document.getElementById('requirements-loading').innerHTML = '<p class="text-red-600">Error loading requirements</p>';
+  }
+}
+
+function renderRequirementsTable(requirements) {
+  const tbody = document.getElementById('requirements-table-body');
+  if (!tbody) return;
+  
+  tbody.innerHTML = requirements.map(req => `
+    <tr class="table-row">
+      <td class="table-cell">
+        <div class="text-sm font-medium text-gray-900">${req.requirement_id}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm font-medium text-gray-900">${req.title}</div>
+        <div class="text-sm text-gray-500">${truncateText(req.description || '', 50)}</div>
+      </td>
+      <td class="table-cell">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          ${req.framework}
+        </span>
+      </td>
+      <td class="table-cell">
+        <span class="text-sm text-gray-900">${req.category || '-'}</span>
+      </td>
+      <td class="table-cell">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getComplianceStatusClass(req.status)}">
+          ${capitalizeFirst(req.status.replace('_', ' '))}
+        </span>
+      </td>
+      <td class="table-cell">
+        <span class="text-sm text-gray-900">${req.owner_name || '-'}</span>
+      </td>
+      <td class="table-cell">
+        <span class="text-sm text-gray-900">${formatDate(req.due_date) || '-'}</span>
+      </td>
+      <td class="table-cell">
+        <div class="flex space-x-2">
+          <button onclick="viewRequirement(${req.id})" class="text-blue-600 hover:text-blue-900" title="View">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button onclick="editRequirement(${req.id})" class="text-green-600 hover:text-green-900" title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="deleteRequirement(${req.id})" class="text-red-600 hover:text-red-900" title="Delete">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function getComplianceStatusClass(status) {
+  switch(status) {
+    case 'compliant': return 'bg-green-100 text-green-800';
+    case 'non_compliant': return 'bg-red-100 text-red-800';
+    case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+    case 'not_assessed': return 'bg-gray-100 text-gray-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function filterRequirements() {
+  const frameworkFilter = document.getElementById('requirements-framework-filter').value;
+  const statusFilter = document.getElementById('requirements-status-filter').value;
+  
+  let filteredRequirements = moduleData.requirements;
+  
+  if (frameworkFilter) {
+    filteredRequirements = filteredRequirements.filter(req => req.framework === frameworkFilter);
+  }
+  
+  if (statusFilter) {
+    filteredRequirements = filteredRequirements.filter(req => req.status === statusFilter);
+  }
+  
+  renderRequirementsTable(filteredRequirements);
+}
+
+function showAddRequirementModal() {
+  showModal('Add Compliance Requirement', `
+    <form id="requirement-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Requirement ID</label>
+          <input type="text" id="requirement-id" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">Framework</label>
+          <select id="requirement-framework" class="form-select" required>
+            <option value="">Select Framework</option>
+            <option value="ISO27001">ISO 27001</option>
+            <option value="GDPR">GDPR</option>
+            <option value="SOX">SOX</option>
+            <option value="HIPAA">HIPAA</option>
+            <option value="UAE_IA">UAE IA Standard</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Title</label>
+        <input type="text" id="requirement-title" class="form-input" required>
+      </div>
+      <div>
+        <label class="form-label">Description</label>
+        <textarea id="requirement-description" class="form-input" rows="3"></textarea>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="form-label">Category</label>
+          <input type="text" id="requirement-category" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="requirement-status" class="form-select" required>
+            <option value="not_assessed">Not Assessed</option>
+            <option value="in_progress">In Progress</option>
+            <option value="compliant">Compliant</option>
+            <option value="non_compliant">Non-Compliant</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Due Date</label>
+          <input type="date" id="requirement-due-date" class="form-input">
+        </div>
+      </div>
+    </form>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Add Requirement', class: 'btn-primary', onclick: 'saveRequirement()' }
+  ]);
+}
+
+async function saveRequirement() {
+  const formData = {
+    requirement_id: document.getElementById('requirement-id').value,
+    title: document.getElementById('requirement-title').value,
+    description: document.getElementById('requirement-description').value,
+    framework: document.getElementById('requirement-framework').value,
+    category: document.getElementById('requirement-category').value,
+    status: document.getElementById('requirement-status').value,
+    due_date: document.getElementById('requirement-due-date').value
+  };
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/requirements', formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Requirement added successfully', 'success');
+      closeModal();
+      loadRequirementsData();
+    }
+  } catch (error) {
+    showToast('Failed to add requirement', 'error');
+  }
+}
+
+async function deleteRequirement(id) {
+  if (!confirm('Are you sure you want to delete this requirement?')) return;
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.delete(`/api/requirements/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Requirement deleted successfully', 'success');
+      loadRequirementsData();
+    }
+  } catch (error) {
+    showToast('Failed to delete requirement', 'error');
+  }
+}
+
+// Findings Management Functions
+async function loadFindingsData() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/findings', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      moduleData.findings = response.data.data;
+      renderFindingsTable(moduleData.findings);
+      document.getElementById('findings-loading').style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error loading findings:', error);
+    document.getElementById('findings-loading').innerHTML = '<p class="text-red-600">Error loading findings</p>';
+  }
+}
+
+function renderFindingsTable(findings) {
+  const tbody = document.getElementById('findings-table-body');
+  if (!tbody) return;
+  
+  tbody.innerHTML = findings.map(finding => `
+    <tr class="table-row">
+      <td class="table-cell">
+        <div class="text-sm font-medium text-gray-900">${finding.finding_id}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm font-medium text-gray-900">${finding.title}</div>
+        <div class="text-sm text-gray-500">${truncateText(finding.description || '', 50)}</div>
+      </td>
+      <td class="table-cell">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSeverityClass(finding.severity)}">
+          ${capitalizeFirst(finding.severity)}
+        </span>
+      </td>
+      <td class="table-cell">
+        <span class="text-sm text-gray-900">${finding.category || '-'}</span>
+      </td>
+      <td class="table-cell">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getFindingStatusClass(finding.status)}">
+          ${capitalizeFirst(finding.status.replace('_', ' '))}
+        </span>
+      </td>
+      <td class="table-cell">
+        <span class="text-sm text-gray-900">${finding.assigned_to_name || '-'}</span>
+      </td>
+      <td class="table-cell">
+        <span class="text-sm text-gray-900">${formatDate(finding.due_date) || '-'}</span>
+      </td>
+      <td class="table-cell">
+        <div class="flex space-x-2">
+          <button onclick="viewFinding(${finding.id})" class="text-blue-600 hover:text-blue-900" title="View">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button onclick="editFinding(${finding.id})" class="text-green-600 hover:text-green-900" title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="deleteFinding(${finding.id})" class="text-red-600 hover:text-red-900" title="Delete">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function getFindingStatusClass(status) {
+  switch(status) {
+    case 'open': return 'bg-red-100 text-red-800';
+    case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+    case 'resolved': return 'bg-green-100 text-green-800';
+    case 'accepted': return 'bg-blue-100 text-blue-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function filterFindings() {
+  const severityFilter = document.getElementById('findings-severity-filter').value;
+  const statusFilter = document.getElementById('findings-status-filter').value;
+  
+  let filteredFindings = moduleData.findings;
+  
+  if (severityFilter) {
+    filteredFindings = filteredFindings.filter(finding => finding.severity === severityFilter);
+  }
+  
+  if (statusFilter) {
+    filteredFindings = filteredFindings.filter(finding => finding.status === statusFilter);
+  }
+  
+  renderFindingsTable(filteredFindings);
+}
+
+function showAddFindingModal() {
+  showModal('Add Assessment Finding', `
+    <form id="finding-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Finding ID</label>
+          <input type="text" id="finding-id" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">Severity</label>
+          <select id="finding-severity" class="form-select" required>
+            <option value="">Select Severity</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Title</label>
+        <input type="text" id="finding-title" class="form-input" required>
+      </div>
+      <div>
+        <label class="form-label">Description</label>
+        <textarea id="finding-description" class="form-input" rows="3"></textarea>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="form-label">Category</label>
+          <input type="text" id="finding-category" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="finding-status" class="form-select" required>
+            <option value="open">Open</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="accepted">Accepted</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Due Date</label>
+          <input type="date" id="finding-due-date" class="form-input">
+        </div>
+      </div>
+    </form>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Add Finding', class: 'btn-primary', onclick: 'saveFinding()' }
+  ]);
+}
+
+async function saveFinding() {
+  const formData = {
+    finding_id: document.getElementById('finding-id').value,
+    title: document.getElementById('finding-title').value,
+    description: document.getElementById('finding-description').value,
+    severity: document.getElementById('finding-severity').value,
+    category: document.getElementById('finding-category').value,
+    status: document.getElementById('finding-status').value,
+    due_date: document.getElementById('finding-due-date').value
+  };
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/findings', formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Finding added successfully', 'success');
+      closeModal();
+      loadFindingsData();
+    }
+  } catch (error) {
+    showToast('Failed to add finding', 'error');
+  }
+}
+
+async function deleteFinding(id) {
+  if (!confirm('Are you sure you want to delete this finding?')) return;
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.delete(`/api/findings/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Finding deleted successfully', 'success');
+      loadFindingsData();
+    }
+  } catch (error) {
+    showToast('Failed to delete finding', 'error');
+  }
+}
+
+// Stub functions for view and edit (to be implemented)
+function viewRequirement(id) {
+  showToast('View requirement functionality coming soon', 'info');
+}
+
+function editRequirement(id) {
+  showToast('Edit requirement functionality coming soon', 'info');
+}
+
+function viewFinding(id) {
+  showToast('View finding functionality coming soon', 'info');
+}
+
+function editFinding(id) {
+  showToast('Edit finding functionality coming soon', 'info');
+}
+
+// Framework Import Functions
+function toggleFrameworkImportMenu() {
+  const menu = document.getElementById('framework-import-menu');
+  menu.classList.toggle('hidden');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const menu = document.getElementById('framework-import-menu');
+  const button = event.target.closest('button[onclick="toggleFrameworkImportMenu()"]');
+  
+  if (menu && !button && !menu.contains(event.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
+async function importFramework(framework) {
+  // Close the dropdown menu
+  document.getElementById('framework-import-menu').classList.add('hidden');
+  
+  const frameworkNames = {
+    'iso27001': 'ISO 27001:2022',
+    'uae_ia': 'UAE Information Assurance Standard'
+  };
+  
+  const frameworkName = frameworkNames[framework];
+  
+  if (!confirm(`Are you sure you want to import ${frameworkName}? This will create a new assessment and add all standard requirements.`)) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    showToast(`Importing ${frameworkName}...`, 'info');
+    
+    const response = await axios.post(`/api/import/framework/${framework}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast(`${frameworkName} imported successfully!`, 'success');
+      
+      // Reload compliance data to show new assessment and requirements
+      await loadComplianceData();
+      await loadRequirementsData(); // Refresh requirements tab if it's loaded
+    } else {
+      throw new Error(response.data.error || 'Import failed');
+    }
+  } catch (error) {
+    console.error('Framework import error:', error);
+    showToast(`Failed to import ${frameworkName}: ${error.message || 'Unknown error'}`, 'error');
+  }
 }
 
 // Incidents Management Module
@@ -1353,12 +2085,12 @@ async function loadReferenceData() {
 loadReferenceData();
 
 // Risk Management CRUD Functions
-function showAddRiskModal() {
+async function showAddRiskModal() {
   const modal = createModal('Add New Risk', getRiskFormHTML());
   document.body.appendChild(modal);
   
   // Populate dropdowns
-  populateRiskFormDropdowns();
+  await populateRiskFormDropdowns();
   
   // Handle form submission
   document.getElementById('risk-form').addEventListener('submit', async (e) => {
@@ -1367,7 +2099,7 @@ function showAddRiskModal() {
   });
 }
 
-function editRisk(id) {
+async function editRisk(id) {
   const risk = moduleData.risks?.find(r => r.id === id);
   if (!risk) {
     showToast('Risk not found', 'error');
@@ -1378,7 +2110,7 @@ function editRisk(id) {
   document.body.appendChild(modal);
   
   // Populate dropdowns and form data
-  populateRiskFormDropdowns();
+  await populateRiskFormDropdowns();
   populateRiskForm(risk);
   
   // Handle form submission
@@ -1492,8 +2224,556 @@ function viewControl(id) {
   document.body.appendChild(modal);
 }
 
-function testControl(id) {
-  showToast('Control testing functionality - Implementation in progress', 'info'); 
+async function testControl(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/controls/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data.success) {
+      showToast('Failed to load control details', 'error');
+      return;
+    }
+    
+    const control = response.data.data;
+    
+    showModal('Test Control', `
+      <form id="test-control-form" class="space-y-4">
+        <div>
+          <label class="form-label">Control Being Tested</label>
+          <div class="form-input bg-gray-50">${control.control_id} - ${control.name}</div>
+        </div>
+        
+        <div>
+          <label class="form-label">Test Method *</label>
+          <select id="test-method" class="form-select" required>
+            <option value="">Select Test Method</option>
+            <option value="inspection">Inspection</option>
+            <option value="observation">Observation</option>
+            <option value="inquiry">Inquiry</option>
+            <option value="reperformance">Reperformance</option>
+            <option value="recalculation">Recalculation</option>
+            <option value="analytical_procedures">Analytical Procedures</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="form-label">Test Procedures *</label>
+          <textarea id="test-procedures" class="form-input" rows="4" required
+                    placeholder="Describe the specific procedures performed to test this control"></textarea>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Test Result *</label>
+            <select id="test-result" class="form-select" required>
+              <option value="">Select Result</option>
+              <option value="effective">Effective - No exceptions</option>
+              <option value="deficient">Deficient - Exceptions noted</option>
+              <option value="ineffective">Ineffective - Control not operating</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Test Date *</label>
+            <input type="date" id="test-date" class="form-input" required value="${new Date().toISOString().split('T')[0]}">
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Exceptions and Findings</label>
+          <textarea id="test-exceptions" class="form-input" rows="3"
+                    placeholder="Document any exceptions, deficiencies, or areas for improvement"></textarea>
+        </div>
+        
+        <div>
+          <label class="form-label">Recommendations</label>
+          <textarea id="test-recommendations" class="form-input" rows="3"
+                    placeholder="Management recommendations to address any identified issues"></textarea>
+        </div>
+      </form>
+    `, [
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Save Test Results', class: 'btn-primary', onclick: `saveControlTest(${id})` }
+    ]);
+    
+  } catch (error) {
+    console.error('Error loading control for testing:', error);
+    showToast('Failed to load control details', 'error');
+  }
+}
+
+// Services Management Module
+async function showServices() {
+  updateActiveNavigation('services');
+  currentModule = 'services';
+  
+  const mainContent = document.getElementById('main-content');
+  
+  mainContent.innerHTML = `
+    <div class="space-y-6">
+      <!-- Page Header -->
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">Services Management</h2>
+          <p class="text-gray-600 mt-1">Manage IT services and their risk ratings based on linked assets</p>
+        </div>
+        <div class="flex space-x-3">
+          <button onclick="importServicesFromAssets()" class="btn-secondary">
+            <i class="fas fa-sync-alt mr-2"></i>Sync from Assets
+          </button>
+          <button onclick="exportServices()" class="btn-secondary">
+            <i class="fas fa-download mr-2"></i>Export
+          </button>
+          <button onclick="showAddServiceModal()" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i>Add Service
+          </button>
+        </div>
+      </div>
+      
+      <!-- Services Statistics -->
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-cogs text-blue-600"></i>
+              </div>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium text-gray-500">Total Services</p>
+              <p class="text-lg font-semibold text-gray-900" id="total-services-count">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-fire text-red-600"></i>
+              </div>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium text-gray-500">Critical Risk</p>
+              <p class="text-lg font-semibold text-gray-900" id="critical-services-count">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-orange-600"></i>
+              </div>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium text-gray-500">High Risk</p>
+              <p class="text-lg font-semibold text-gray-900" id="high-services-count">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600"></i>
+              </div>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium text-gray-500">Active Services</p>
+              <p class="text-lg font-semibold text-gray-900" id="active-services-count">-</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-server text-yellow-600"></i>
+              </div>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium text-gray-500">Linked Assets</p>
+              <p class="text-lg font-semibold text-gray-900" id="linked-assets-count">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Services Filter and Search -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <div class="flex-1">
+            <input type="text" id="services-search" placeholder="Search services..." class="form-input" onkeyup="filterServices()">
+          </div>
+          <div class="flex gap-2">
+            <select id="services-category-filter" class="form-select" onchange="filterServices()">
+              <option value="">All Categories</option>
+              <option value="Web Services">Web Services</option>
+              <option value="Database">Database</option>
+              <option value="Application">Application</option>
+              <option value="Infrastructure">Infrastructure</option>
+              <option value="Security">Security</option>
+            </select>
+            <select id="services-risk-filter" class="form-select" onchange="filterServices()">
+              <option value="">All Risk Levels</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+            <select id="services-status-filter" class="form-select" onchange="filterServices()">
+              <option value="">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+              <option value="Maintenance">Maintenance</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Services Table -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="table-header">Service Name</th>
+                <th class="table-header">Category</th>
+                <th class="table-header">Description</th>
+                <th class="table-header">Risk Rating</th>
+                <th class="table-header">Linked Assets</th>
+                <th class="table-header">Owner</th>
+                <th class="table-header">Status</th>
+                <th class="table-header">Last Updated</th>
+                <th class="table-header">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="services-table-body" class="bg-white divide-y divide-gray-200">
+              <!-- Services rows will be inserted here -->
+            </tbody>
+          </table>
+        </div>
+        <div id="services-loading" class="p-8 text-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p class="mt-2 text-gray-600">Loading services...</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Load services data
+  await loadServicesData();
+}
+
+async function loadServicesData() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/services', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      moduleData.services = response.data.data;
+      renderServicesTable(moduleData.services);
+      updateServicesStatistics(moduleData.services);
+      document.getElementById('services-loading').style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error loading services:', error);
+    document.getElementById('services-loading').innerHTML = '<p class="text-red-600">Error loading services</p>';
+  }
+}
+
+function renderServicesTable(services) {
+  const tbody = document.getElementById('services-table-body');
+  if (!tbody) return;
+  
+  tbody.innerHTML = services.map(service => `
+    <tr class="table-row">
+      <td class="table-cell">
+        <div class="text-sm font-medium text-gray-900">${service.name}</div>
+        <div class="text-sm text-gray-500">${service.service_id || ''}</div>
+      </td>
+      <td class="table-cell">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          ${service.category || 'Uncategorized'}
+        </span>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${truncateText(service.description || '', 50)}</div>
+      </td>
+      <td class="table-cell">
+        <div class="flex items-center space-x-2">
+          <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full ${getRiskColorClass(service.risk_rating)} mr-2"></div>
+            <span class="text-sm font-medium ${getRiskTextClass(service.risk_rating)}">
+              ${service.risk_rating || 'Not Assessed'}
+            </span>
+          </div>
+          <span class="text-xs text-gray-500">(${service.risk_score || 0})</span>
+        </div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm font-medium text-blue-600">
+          ${service.linked_assets || 0} assets
+        </div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${service.owner_name || 'Unassigned'}</div>
+      </td>
+      <td class="table-cell">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getServiceStatusClass(service.status)}">
+          ${capitalizeFirst(service.status || 'unknown')}
+        </span>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${formatDate(service.updated_at) || '-'}</div>
+      </td>
+      <td class="table-cell">
+        <div class="flex space-x-2">
+          <button onclick="viewService(${service.id})" class="text-blue-600 hover:text-blue-900" title="View Details">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button onclick="editService(${service.id})" class="text-green-600 hover:text-green-900" title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="calculateServiceRisk(${service.id})" class="text-purple-600 hover:text-purple-900" title="Recalculate Risk">
+            <i class="fas fa-calculator"></i>
+          </button>
+          <button onclick="deleteService(${service.id})" class="text-red-600 hover:text-red-900" title="Delete">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function getRiskColorClass(risk) {
+  switch(risk?.toLowerCase()) {
+    case 'critical': return 'bg-red-600';
+    case 'high': return 'bg-orange-500';
+    case 'medium': return 'bg-yellow-500';
+    case 'low': return 'bg-green-500';
+    default: return 'bg-gray-400';
+  }
+}
+
+function getRiskTextClass(risk) {
+  switch(risk?.toLowerCase()) {
+    case 'critical': return 'text-red-800';
+    case 'high': return 'text-orange-800';
+    case 'medium': return 'text-yellow-800';
+    case 'low': return 'text-green-800';
+    default: return 'text-gray-800';
+  }
+}
+
+function getServiceStatusClass(status) {
+  switch(status?.toLowerCase()) {
+    case 'active': return 'bg-green-100 text-green-800';
+    case 'inactive': return 'bg-red-100 text-red-800';
+    case 'maintenance': return 'bg-yellow-100 text-yellow-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function updateServicesStatistics(services) {
+  const total = services.length;
+  const critical = services.filter(s => s.risk_rating === 'Critical').length;
+  const high = services.filter(s => s.risk_rating === 'High').length;
+  const active = services.filter(s => s.status === 'Active').length;
+  const totalAssets = services.reduce((sum, s) => sum + (s.linked_assets || 0), 0);
+  
+  document.getElementById('total-services-count').textContent = total;
+  document.getElementById('critical-services-count').textContent = critical;
+  document.getElementById('high-services-count').textContent = high;
+  document.getElementById('active-services-count').textContent = active;
+  document.getElementById('linked-assets-count').textContent = totalAssets;
+}
+
+function filterServices() {
+  const searchTerm = document.getElementById('services-search').value.toLowerCase();
+  const categoryFilter = document.getElementById('services-category-filter').value;
+  const riskFilter = document.getElementById('services-risk-filter').value;
+  const statusFilter = document.getElementById('services-status-filter').value;
+  
+  let filteredServices = moduleData.services || [];
+  
+  if (searchTerm) {
+    filteredServices = filteredServices.filter(service => 
+      service.name.toLowerCase().includes(searchTerm) ||
+      (service.description && service.description.toLowerCase().includes(searchTerm))
+    );
+  }
+  
+  if (categoryFilter) {
+    filteredServices = filteredServices.filter(service => service.category === categoryFilter);
+  }
+  
+  if (riskFilter) {
+    filteredServices = filteredServices.filter(service => service.risk_rating === riskFilter);
+  }
+  
+  if (statusFilter) {
+    filteredServices = filteredServices.filter(service => service.status === statusFilter);
+  }
+  
+  renderServicesTable(filteredServices);
+}
+
+function showAddServiceModal() {
+  showModal('Add Service', `
+    <form id="service-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Service Name</label>
+          <input type="text" id="service-name" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">Service ID</label>
+          <input type="text" id="service-id" class="form-input" placeholder="e.g., SVC-001">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Category</label>
+          <select id="service-category" class="form-select" required>
+            <option value="">Select Category</option>
+            <option value="Web Services">Web Services</option>
+            <option value="Database">Database</option>
+            <option value="Application">Application</option>
+            <option value="Infrastructure">Infrastructure</option>
+            <option value="Security">Security</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="service-status" class="form-select" required>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Maintenance">Maintenance</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Description</label>
+        <textarea id="service-description" class="form-input" rows="3"></textarea>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Manual Risk Rating</label>
+          <select id="service-risk-rating" class="form-select">
+            <option value="">Auto-calculate from Assets</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Risk Score (0-100)</label>
+          <input type="number" id="service-risk-score" class="form-input" min="0" max="100" placeholder="Auto-calculated">
+        </div>
+      </div>
+    </form>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Add Service', class: 'btn-primary', onclick: 'saveService()' }
+  ]);
+}
+
+async function saveService() {
+  const formData = {
+    name: document.getElementById('service-name').value,
+    service_id: document.getElementById('service-id').value,
+    category: document.getElementById('service-category').value,
+    description: document.getElementById('service-description').value,
+    status: document.getElementById('service-status').value,
+    risk_rating: document.getElementById('service-risk-rating').value || null,
+    risk_score: document.getElementById('service-risk-score').value || null
+  };
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/services', formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Service added successfully', 'success');
+      closeModal();
+      loadServicesData();
+    }
+  } catch (error) {
+    showToast('Failed to add service', 'error');
+  }
+}
+
+async function deleteService(id) {
+  if (!confirm('Are you sure you want to delete this service?')) return;
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.delete(`/api/services/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Service deleted successfully', 'success');
+      loadServicesData();
+    }
+  } catch (error) {
+    showToast('Failed to delete service', 'error');
+  }
+}
+
+async function calculateServiceRisk(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post(`/api/services/${id}/calculate-risk`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Service risk recalculated successfully', 'success');
+      loadServicesData();
+    }
+  } catch (error) {
+    showToast('Failed to calculate service risk', 'error');
+  }
+}
+
+async function importServicesFromAssets() {
+  if (!confirm('This will create services based on your current assets. Continue?')) return;
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/services/import-from-assets', {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast(`${response.data.data.imported} services imported successfully`, 'success');
+      loadServicesData();
+    }
+  } catch (error) {
+    showToast('Failed to import services from assets', 'error');
+  }
+}
+
+// Stub functions for advanced operations
+function viewService(id) {
+  showToast('View service functionality coming soon', 'info');
+}
+
+function editService(id) {
+  showToast('Edit service functionality coming soon', 'info');
+}
+
+function exportServices() {
+  showToast('Export services functionality coming soon', 'info');
 }
 
 // User Management Module
@@ -1871,7 +3151,19 @@ async function toggleUserStatus(id) {
 }
 
 async function resetUserPassword(id) {
-  if (!confirm("Are you sure you want to reset this user's password? They will need to set a new password on their next login.")) {
+  const user = moduleData.users?.find(u => u.id === id);
+  if (!user) {
+    showToast('User not found', 'error');
+    return;
+  }
+
+  // Only allow password reset for local users
+  if (user.auth_provider !== 'local') {
+    showToast('Password reset is only available for local users', 'warning');
+    return;
+  }
+
+  if (!confirm("Are you sure you want to reset this user's password? A new complex password will be generated.")) {
     return;
   }
   
@@ -1881,14 +3173,181 @@ async function resetUserPassword(id) {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    if (response.data.success) {
-      showToast('Password reset successfully', 'success');
+    if (response.data.success && response.data.data.temporary_password) {
+      showPasswordResetModal(user, response.data.data.temporary_password);
     } else {
       showToast(response.data.error || 'Failed to reset password', 'error');
     }
   } catch (error) {
     console.error('Reset password error:', error);
     showToast('Failed to reset password', 'error');
+  }
+}
+
+function showPasswordResetModal(user, newPassword) {
+  const modal = createModal(`Password Reset - ${user.first_name} ${user.last_name}`, `
+    <div class="space-y-6">
+      <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-check-circle text-green-600"></i>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-green-800">Password Reset Successful</h3>
+            <p class="text-sm text-green-700 mt-1">A new complex password has been generated for the user.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">New Temporary Password</label>
+          <div class="relative">
+            <input type="text" id="generated-password" class="form-input pr-20" value="${newPassword}" readonly>
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3 space-x-1">
+              <button onclick="togglePasswordVisibility('generated-password', this)" class="text-gray-400 hover:text-gray-600" title="Toggle visibility">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button onclick="copyPasswordToClipboard('${newPassword}', this)" class="text-blue-600 hover:text-blue-800" title="Copy to clipboard">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+            </div>
+            <div class="ml-3">
+              <h4 class="text-sm font-medium text-yellow-800">Important Instructions</h4>
+              <ul class="text-sm text-yellow-700 mt-2 space-y-1">
+                <li>• Copy this password and provide it to the user securely</li>
+                <li>• The user must change this password on their next login</li>
+                <li>• Do not share this password through email or unsecured channels</li>
+                <li>• This password meets complex security requirements</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="space-y-2">
+          <h4 class="text-sm font-medium text-gray-700">Password Strength Analysis</h4>
+          <div id="password-strength-indicator" class="flex items-center space-x-2">
+            <div class="flex-1 bg-gray-200 rounded-full h-2">
+              <div class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 90%"></div>
+            </div>
+            <span class="text-sm font-medium text-green-600">Very Strong</span>
+          </div>
+          <div class="text-xs text-gray-500">
+            Password contains: Uppercase, Lowercase, Numbers, Special Characters (${newPassword.length} characters)
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button onclick="generateNewPassword(${user.id})" class="btn-secondary">
+          <i class="fas fa-sync-alt mr-2"></i>Generate New Password
+        </button>
+        <button onclick="closeModal(this)" class="btn-primary">
+          <i class="fas fa-check mr-2"></i>Done
+        </button>
+      </div>
+    </div>
+  `);
+  
+  document.body.appendChild(modal);
+  
+  // Focus on the password field for easy copying
+  setTimeout(() => {
+    const passwordField = document.getElementById('generated-password');
+    if (passwordField) {
+      passwordField.select();
+    }
+  }, 100);
+}
+
+async function generateNewPassword(userId) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/generate-password?length=16', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      const newPassword = response.data.data.password;
+      
+      // Update the user's password in the database
+      const updateResponse = await axios.post(`/api/users/${userId}/reset-password`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (updateResponse.data.success) {
+        // Update the displayed password
+        const passwordField = document.getElementById('generated-password');
+        if (passwordField) {
+          passwordField.value = updateResponse.data.data.temporary_password;
+          passwordField.select();
+        }
+        showToast('New password generated successfully', 'success');
+      }
+    }
+  } catch (error) {
+    console.error('Generate new password error:', error);
+    showToast('Failed to generate new password', 'error');
+  }
+}
+
+function togglePasswordVisibility(fieldId, button) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+  
+  const icon = button.querySelector('i');
+  if (field.type === 'password') {
+    field.type = 'text';
+    icon.className = 'fas fa-eye-slash';
+  } else {
+    field.type = 'password';
+    icon.className = 'fas fa-eye';
+  }
+}
+
+async function copyPasswordToClipboard(password, button) {
+  try {
+    await navigator.clipboard.writeText(password);
+    
+    // Visual feedback
+    const originalIcon = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+    showToast('Password copied to clipboard', 'success');
+    
+    setTimeout(() => {
+      button.innerHTML = originalIcon;
+    }, 2000);
+  } catch (error) {
+    console.error('Copy to clipboard failed:', error);
+    
+    // Fallback for older browsers
+    const tempInput = document.createElement('input');
+    tempInput.value = password;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    
+    try {
+      document.execCommand('copy');
+      showToast('Password copied to clipboard', 'success');
+      
+      const originalIcon = button.innerHTML;
+      button.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+      setTimeout(() => {
+        button.innerHTML = originalIcon;
+      }, 2000);
+    } catch (fallbackError) {
+      showToast('Failed to copy password. Please select and copy manually.', 'error');
+    }
+    
+    document.body.removeChild(tempInput);
   }
 }
 
@@ -2081,7 +3540,13 @@ async function handleUserSubmit(id = null) {
     if (response.data.success) {
       showToast(`User ${id ? 'updated' : 'created'} successfully`, 'success');
       closeModal(document.querySelector('#user-form'));
-      await loadUsers(); // Reload users table
+      
+      // Reload users table - check context to call appropriate function
+      if (currentModule === 'settings' && typeof window.loadUsersForSettings === 'function') {
+        await window.loadUsersForSettings(); // Called from Settings tab
+      } else {
+        await loadUsers(); // Called from Users module
+      }
     } else {
       showToast(response.data.error || `Failed to ${id ? 'update' : 'create'} user`, 'error');
     }
@@ -2168,24 +3633,1614 @@ function getRoleClass(role) {
   return classes[role] || 'bg-gray-100 text-gray-800';
 }
 
-function exportUsers() { 
-  showToast('Export Users - Implementation in progress', 'info'); 
+async function exportUsers() { 
+  try {
+    showToast('Exporting users...', 'info');
+    
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data.success) {
+      showToast('Failed to load users for export', 'error');
+      return;
+    }
+    
+    const users = response.data.data;
+    
+    // Create CSV export data
+    const exportData = users.map(user => ({
+      'User ID': user.id,
+      'Username': user.username,
+      'Email': user.email,
+      'First Name': user.first_name,
+      'Last Name': user.last_name,
+      'Department': user.department || '',
+      'Job Title': user.job_title || '',
+      'Role': user.role,
+      'Is Active': user.is_active ? 'Yes' : 'No',
+      'Auth Provider': user.auth_provider || 'local',
+      'Last Login': user.last_login || 'Never',
+      'Created': user.created_at
+    }));
+    
+    // Convert to CSV
+    if (exportData.length === 0) {
+      showToast('No users found to export', 'warning');
+      return;
+    }
+    
+    const headers = Object.keys(exportData[0]).join(',');
+    const csvData = [headers];
+    
+    exportData.forEach(row => {
+      const values = Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+      csvData.push(values);
+    });
+    
+    // Create and download file
+    const csvContent = csvData.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Users_Export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showToast('Users exported successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error exporting users:', error);
+    showToast('Failed to export users', 'error');
+  }
 }
 
-// Placeholder functions for assessment and incident management
-function showAddAssessmentModal() { showToast('Add Assessment modal - Implementation in progress', 'info'); }
-function showAddIncidentModal() { showToast('Report Incident modal - Implementation in progress', 'info'); }
+// Assessment management functions
+function showAddAssessmentModal() {
+  showModal('Add Compliance Assessment', `
+    <form id="assessment-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Assessment Name</label>
+          <input type="text" id="assessment-name" class="form-input" required 
+                 placeholder="e.g., Annual ISO 27001 Assessment">
+        </div>
+        <div>
+          <label class="form-label">Framework</label>
+          <select id="assessment-framework" class="form-select" required>
+            <option value="">Select Framework</option>
+            <option value="ISO27001">ISO 27001</option>
+            <option value="GDPR">GDPR</option>
+            <option value="SOX">SOX</option>
+            <option value="HIPAA">HIPAA</option>
+            <option value="UAE_IA">UAE IA Standard</option>
+            <option value="COBIT">COBIT</option>
+            <option value="NIST">NIST Framework</option>
+          </select>
+        </div>
+      </div>
+      
+      <div>
+        <label class="form-label">Description</label>
+        <textarea id="assessment-description" class="form-input" rows="3" 
+                  placeholder="Brief description of the assessment scope and objectives"></textarea>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Organization</label>
+          <select id="assessment-organization" class="form-select" required>
+            <option value="">Select Organization</option>
+            <!-- Will be populated dynamically -->
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Lead Assessor</label>
+          <select id="assessment-assessor" class="form-select" required>
+            <option value="">Select Lead Assessor</option>
+            <!-- Will be populated dynamically -->
+          </select>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Planned Start Date</label>
+          <input type="date" id="assessment-start-date" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">Planned End Date</label>
+          <input type="date" id="assessment-end-date" class="form-input" required>
+        </div>
+      </div>
+      
+      <div>
+        <label class="form-label">Assessment Scope</label>
+        <select id="assessment-scope" class="form-select" required>
+          <option value="">Select Scope</option>
+          <option value="organization_wide">Organization Wide</option>
+          <option value="department_specific">Department Specific</option>
+          <option value="process_specific">Process Specific</option>
+          <option value="system_specific">System Specific</option>
+        </select>
+      </div>
+      
+      <div>
+        <label class="form-label">Methodology</label>
+        <select id="assessment-methodology" class="form-select" required>
+          <option value="">Select Methodology</option>
+          <option value="self_assessment">Self Assessment</option>
+          <option value="internal_audit">Internal Audit</option>
+          <option value="external_audit">External Audit</option>
+          <option value="gap_analysis">Gap Analysis</option>
+          <option value="maturity_assessment">Maturity Assessment</option>
+        </select>
+      </div>
+    </form>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Create Assessment', class: 'btn-primary', onclick: 'saveAssessment()' }
+  ]);
+  
+  // Populate organizations and users dropdowns
+  populateAssessmentDropdowns();
+}
 
-function viewAssessment(id) { showToast(`View Assessment ${id} - Implementation in progress`, 'info'); }
-function editAssessment(id) { showToast(`Edit Assessment ${id} - Implementation in progress`, 'info'); }
-function deleteAssessment(id) { showToast(`Delete Assessment ${id} - Implementation in progress`, 'info'); }
-function generateComplianceReport() { showToast('Generate Compliance Report - Implementation in progress', 'info'); }
-function filterAssessments() { showToast('Filter Assessments - Implementation in progress', 'info'); }
+async function populateAssessmentDropdowns() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    
+    // Populate organizations
+    const orgResponse = await axios.get('/api/organizations', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const orgSelect = document.getElementById('assessment-organization');
+    if (orgSelect && orgResponse.data.success) {
+      orgResponse.data.data.forEach(org => {
+        const option = document.createElement('option');
+        option.value = org.id;
+        option.textContent = org.name;
+        orgSelect.appendChild(option);
+      });
+    }
+    
+    // Populate users (for lead assessor)
+    const userResponse = await axios.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const assessorSelect = document.getElementById('assessment-assessor');
+    if (assessorSelect && userResponse.data.success) {
+      userResponse.data.data.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.first_name} ${user.last_name} (${user.role})`;
+        assessorSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error populating assessment dropdowns:', error);
+  }
+}
 
-function viewIncident(id) { showToast(`View Incident ${id} - Implementation in progress`, 'info'); }
-function editIncident(id) { showToast(`Edit Incident ${id} - Implementation in progress`, 'info'); }
-function assignIncident(id) { showToast(`Assign Incident ${id} - Implementation in progress`, 'info'); }
-function escalateIncident(id) { showToast(`Escalate Incident ${id} - Implementation in progress`, 'info'); }
+async function saveAssessment() {
+  const formData = {
+    name: document.getElementById('assessment-name').value,
+    framework: document.getElementById('assessment-framework').value,
+    description: document.getElementById('assessment-description').value,
+    organization_id: parseInt(document.getElementById('assessment-organization').value),
+    lead_assessor_id: parseInt(document.getElementById('assessment-assessor').value),
+    planned_start_date: document.getElementById('assessment-start-date').value,
+    planned_end_date: document.getElementById('assessment-end-date').value,
+    scope: document.getElementById('assessment-scope').value,
+    methodology: document.getElementById('assessment-methodology').value
+  };
+  
+  // Validate required fields
+  if (!formData.name || !formData.framework || !formData.organization_id || 
+      !formData.lead_assessor_id || !formData.planned_start_date || 
+      !formData.planned_end_date || !formData.scope || !formData.methodology) {
+    showToast('Please fill in all required fields', 'error');
+    return;
+  }
+  
+  // Validate date range
+  if (new Date(formData.planned_end_date) <= new Date(formData.planned_start_date)) {
+    showToast('End date must be after start date', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/assessments', formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Assessment created successfully', 'success');
+      closeModal();
+      loadComplianceData(); // Refresh the compliance data
+      if (typeof loadAssessments === 'function') {
+        loadAssessments(); // Refresh assessments if function exists
+      }
+    }
+  } catch (error) {
+    console.error('Error creating assessment:', error);
+    if (error.response?.status === 403) {
+      showToast('You do not have permission to create assessments', 'error');
+    } else {
+      showToast('Failed to create assessment', 'error');
+    }
+  }
+}
+function showAddIncidentModal() {
+  showModal('Report New Incident', `
+    <form id="incident-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Incident Title *</label>
+          <input type="text" id="incident-title" class="form-input" required 
+                 placeholder="Brief description of the incident">
+        </div>
+        <div>
+          <label class="form-label">Incident Type *</label>
+          <select id="incident-type" class="form-select" required>
+            <option value="">Select Type</option>
+            <option value="security">Security Incident</option>
+            <option value="operational">Operational Issue</option>
+            <option value="data_breach">Data Breach</option>
+            <option value="system_outage">System Outage</option>
+            <option value="compliance">Compliance Violation</option>
+            <option value="privacy">Privacy Incident</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      
+      <div>
+        <label class="form-label">Incident Description *</label>
+        <textarea id="incident-description" class="form-input" rows="4" required
+                  placeholder="Detailed description of what happened, when it was discovered, and current status"></textarea>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="form-label">Severity Level *</label>
+          <select id="incident-severity" class="form-select" required>
+            <option value="">Select Severity</option>
+            <option value="critical">Critical - Business Critical</option>
+            <option value="high">High - Significant Impact</option>
+            <option value="medium">Medium - Moderate Impact</option>
+            <option value="low">Low - Minor Impact</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Detection Method</label>
+          <select id="incident-detection" class="form-select">
+            <option value="">Select Method</option>
+            <option value="automated_monitoring">Automated Monitoring</option>
+            <option value="user_report">User Report</option>
+            <option value="security_scan">Security Scan</option>
+            <option value="audit_finding">Audit Finding</option>
+            <option value="third_party_notification">Third Party Notification</option>
+            <option value="manual_discovery">Manual Discovery</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Assign To</label>
+          <select id="incident-assignee" class="form-select">
+            <option value="">Select Assignee</option>
+            <!-- Will be populated dynamically -->
+          </select>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">When Occurred</label>
+          <input type="datetime-local" id="incident-occurred" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">When Detected</label>
+          <input type="datetime-local" id="incident-detected" class="form-input">
+        </div>
+      </div>
+      
+      <div>
+        <label class="form-label">Initial Response Actions</label>
+        <textarea id="incident-response" class="form-input" rows="3" 
+                  placeholder="Immediate actions taken or planned to address this incident"></textarea>
+      </div>
+      
+      <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-yellow-800">
+              Important Notice
+            </h3>
+            <div class="mt-2 text-sm text-yellow-700">
+              <p>For critical security incidents, please also notify the security team immediately via phone or secure channel.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Report Incident', class: 'btn-primary', onclick: 'saveIncident()' }
+  ]);
+  
+  // Set default values
+  const now = new Date();
+  document.getElementById('incident-detected').value = now.toISOString().slice(0, 16);
+  
+  // Populate assignee dropdown
+  populateIncidentAssignees();
+}
+
+async function populateIncidentAssignees() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const assigneeSelect = document.getElementById('incident-assignee');
+    if (assigneeSelect && response.data.success) {
+      response.data.data.forEach(user => {
+        // Only show users who can handle incidents
+        if (['admin', 'incident_manager', 'risk_manager', 'security_officer'].includes(user.role)) {
+          const option = document.createElement('option');
+          option.value = user.id;
+          option.textContent = `${user.first_name} ${user.last_name} (${user.role})`;
+          assigneeSelect.appendChild(option);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error populating incident assignees:', error);
+  }
+}
+
+async function saveIncident() {
+  const formData = {
+    title: document.getElementById('incident-title').value,
+    description: document.getElementById('incident-description').value,
+    incident_type: document.getElementById('incident-type').value,
+    severity: document.getElementById('incident-severity').value,
+    detection_method: document.getElementById('incident-detection').value,
+    assigned_to: parseInt(document.getElementById('incident-assignee').value) || null,
+    reported_at: document.getElementById('incident-occurred').value || new Date().toISOString(),
+    initial_response: document.getElementById('incident-response').value
+  };
+  
+  // Validate required fields
+  if (!formData.title || !formData.description || !formData.incident_type || !formData.severity) {
+    showToast('Please fill in all required fields', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/incidents', formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Incident reported successfully', 'success');
+      closeModal();
+      if (typeof loadIncidentsData === 'function') {
+        loadIncidentsData(); // Refresh incidents if function exists
+      }
+    }
+  } catch (error) {
+    console.error('Error reporting incident:', error);
+    if (error.response?.status === 403) {
+      showToast('You do not have permission to report incidents', 'error');
+    } else {
+      showToast('Failed to report incident', 'error');
+    }
+  }
+}
+
+async function viewAssessment(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/assessments/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data.success) {
+      showToast('Failed to load assessment details', 'error');
+      return;
+    }
+    
+    const assessment = response.data.data;
+    
+    showModal('Assessment Details', `
+      <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Assessment ID</label>
+            <div class="form-input bg-gray-50">${assessment.assessment_id || 'N/A'}</div>
+          </div>
+          <div>
+            <label class="form-label">Status</label>
+            <div class="form-input bg-gray-50">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                ${assessment.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                  assessment.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
+                  assessment.status === 'planning' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-gray-100 text-gray-800'}">
+                ${assessment.status || 'Unknown'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Assessment Name</label>
+          <div class="form-input bg-gray-50">${assessment.name || 'N/A'}</div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Framework</label>
+            <div class="form-input bg-gray-50">${assessment.framework || 'N/A'}</div>
+          </div>
+          <div>
+            <label class="form-label">Lead Assessor</label>
+            <div class="form-input bg-gray-50">${assessment.lead_assessor_name || 'Unassigned'}</div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Description</label>
+          <div class="form-input bg-gray-50 min-h-20">${assessment.description || 'No description provided'}</div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Planned Start Date</label>
+            <div class="form-input bg-gray-50">${assessment.planned_start_date || 'N/A'}</div>
+          </div>
+          <div>
+            <label class="form-label">Planned End Date</label>
+            <div class="form-input bg-gray-50">${assessment.planned_end_date || 'N/A'}</div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Scope</label>
+            <div class="form-input bg-gray-50">${assessment.scope || 'N/A'}</div>
+          </div>
+          <div>
+            <label class="form-label">Methodology</label>
+            <div class="form-input bg-gray-50">${assessment.methodology || 'N/A'}</div>
+          </div>
+        </div>
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-info-circle text-blue-400"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-blue-800">Assessment Information</h3>
+              <div class="mt-2 text-sm text-blue-700">
+                <p>Created: ${new Date(assessment.created_at).toLocaleDateString()}</p>
+                <p>Last Updated: ${new Date(assessment.updated_at).toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `, [
+      { text: 'Close', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Edit Assessment', class: 'btn-primary', onclick: `closeModal(); editAssessment(${id})` }
+    ], 'max-w-4xl');
+    
+  } catch (error) {
+    console.error('Error viewing assessment:', error);
+    showToast('Failed to load assessment details', 'error');
+  }
+}
+
+async function editAssessment(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/assessments/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data.success) {
+      showToast('Failed to load assessment details', 'error');
+      return;
+    }
+    
+    const assessment = response.data.data;
+    
+    showModal('Edit Assessment', `
+      <form id="edit-assessment-form" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Assessment ID</label>
+            <input type="text" value="${assessment.assessment_id}" class="form-input bg-gray-100" readonly>
+          </div>
+          <div>
+            <label class="form-label">Status *</label>
+            <select id="edit-assessment-status" class="form-select" required>
+              <option value="planning" ${assessment.status === 'planning' ? 'selected' : ''}>Planning</option>
+              <option value="in_progress" ${assessment.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+              <option value="under_review" ${assessment.status === 'under_review' ? 'selected' : ''}>Under Review</option>
+              <option value="completed" ${assessment.status === 'completed' ? 'selected' : ''}>Completed</option>
+              <option value="on_hold" ${assessment.status === 'on_hold' ? 'selected' : ''}>On Hold</option>
+            </select>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Assessment Name *</label>
+          <input type="text" id="edit-assessment-name" class="form-input" required value="${assessment.name || ''}">
+        </div>
+        
+        <div>
+          <label class="form-label">Description</label>
+          <textarea id="edit-assessment-description" class="form-input" rows="3">${assessment.description || ''}</textarea>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Framework *</label>
+            <select id="edit-assessment-framework" class="form-select" required>
+              <option value="ISO27001" ${assessment.framework === 'ISO27001' ? 'selected' : ''}>ISO 27001</option>
+              <option value="GDPR" ${assessment.framework === 'GDPR' ? 'selected' : ''}>GDPR</option>
+              <option value="SOX" ${assessment.framework === 'SOX' ? 'selected' : ''}>SOX</option>
+              <option value="HIPAA" ${assessment.framework === 'HIPAA' ? 'selected' : ''}>HIPAA</option>
+              <option value="UAE_IA" ${assessment.framework === 'UAE_IA' ? 'selected' : ''}>UAE IA Standard</option>
+              <option value="COBIT" ${assessment.framework === 'COBIT' ? 'selected' : ''}>COBIT</option>
+              <option value="NIST" ${assessment.framework === 'NIST' ? 'selected' : ''}>NIST Framework</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Lead Assessor *</label>
+            <select id="edit-assessment-assessor" class="form-select" required>
+              <option value="">Select Lead Assessor</option>
+              <!-- Will be populated dynamically -->
+            </select>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Planned Start Date</label>
+            <input type="date" id="edit-assessment-start-date" class="form-input" 
+                   value="${assessment.planned_start_date || ''}">
+          </div>
+          <div>
+            <label class="form-label">Planned End Date</label>
+            <input type="date" id="edit-assessment-end-date" class="form-input" 
+                   value="${assessment.planned_end_date || ''}">
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Scope</label>
+            <select id="edit-assessment-scope" class="form-select">
+              <option value="organization_wide" ${assessment.scope === 'organization_wide' ? 'selected' : ''}>Organization Wide</option>
+              <option value="department_specific" ${assessment.scope === 'department_specific' ? 'selected' : ''}>Department Specific</option>
+              <option value="process_specific" ${assessment.scope === 'process_specific' ? 'selected' : ''}>Process Specific</option>
+              <option value="system_specific" ${assessment.scope === 'system_specific' ? 'selected' : ''}>System Specific</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Methodology</label>
+            <select id="edit-assessment-methodology" class="form-select">
+              <option value="self_assessment" ${assessment.methodology === 'self_assessment' ? 'selected' : ''}>Self Assessment</option>
+              <option value="internal_audit" ${assessment.methodology === 'internal_audit' ? 'selected' : ''}>Internal Audit</option>
+              <option value="external_audit" ${assessment.methodology === 'external_audit' ? 'selected' : ''}>External Audit</option>
+              <option value="gap_analysis" ${assessment.methodology === 'gap_analysis' ? 'selected' : ''}>Gap Analysis</option>
+              <option value="maturity_assessment" ${assessment.methodology === 'maturity_assessment' ? 'selected' : ''}>Maturity Assessment</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    `, [
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Update Assessment', class: 'btn-primary', onclick: `updateAssessment(${id})` }
+    ]);
+    
+    // Populate assessor dropdown
+    await populateEditAssessmentDropdowns(assessment.lead_assessor_id, assessment.organization_id);
+    
+  } catch (error) {
+    console.error('Error loading assessment for edit:', error);
+    showToast('Failed to load assessment details', 'error');
+  }
+}
+
+async function populateEditAssessmentDropdowns(currentAssessorId, currentOrgId) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    
+    // Populate users (for lead assessor)
+    const userResponse = await axios.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const assessorSelect = document.getElementById('edit-assessment-assessor');
+    if (assessorSelect && userResponse.data.success) {
+      userResponse.data.data.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.first_name} ${user.last_name} (${user.role})`;
+        if (user.id === currentAssessorId) {
+          option.selected = true;
+        }
+        assessorSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('Error populating edit assessment dropdowns:', error);
+  }
+}
+
+async function updateAssessment(id) {
+  const formData = {
+    name: document.getElementById('edit-assessment-name').value,
+    description: document.getElementById('edit-assessment-description').value,
+    framework: document.getElementById('edit-assessment-framework').value,
+    status: document.getElementById('edit-assessment-status').value,
+    lead_assessor_id: parseInt(document.getElementById('edit-assessment-assessor').value),
+    planned_start_date: document.getElementById('edit-assessment-start-date').value,
+    planned_end_date: document.getElementById('edit-assessment-end-date').value,
+    scope: document.getElementById('edit-assessment-scope').value,
+    methodology: document.getElementById('edit-assessment-methodology').value
+  };
+  
+  // Validate required fields
+  if (!formData.name || !formData.framework || !formData.status || !formData.lead_assessor_id) {
+    showToast('Please fill in all required fields', 'error');
+    return;
+  }
+  
+  // Validate date range
+  if (formData.planned_start_date && formData.planned_end_date && 
+      new Date(formData.planned_end_date) <= new Date(formData.planned_start_date)) {
+    showToast('End date must be after start date', 'error');
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.put(`/api/assessments/${id}`, formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Assessment updated successfully', 'success');
+      closeModal();
+      loadComplianceData(); // Refresh the compliance data
+      if (typeof loadAssessments === 'function') {
+        loadAssessments(); // Refresh assessments if function exists
+      }
+    }
+  } catch (error) {
+    console.error('Error updating assessment:', error);
+    if (error.response?.status === 403) {
+      showToast('You do not have permission to update assessments', 'error');
+    } else {
+      showToast('Failed to update assessment', 'error');
+    }
+  }
+}
+
+// SOA (Statement of Applicability) Management Functions
+async function loadSOAControls() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/controls', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      displaySOAControls(response.data.data);
+    } else {
+      showToast('Failed to load SOA controls', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading SOA controls:', error);
+    showToast('Error loading SOA controls', 'error');
+  }
+}
+
+function displaySOAControls(controls) {
+  const tbody = document.getElementById('soa-controls-list');
+  const loading = document.getElementById('soa-loading');
+  
+  loading.style.display = 'none';
+  
+  if (!controls || controls.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+          <div class="flex flex-col items-center">
+            <i class="fas fa-clipboard-list text-4xl mb-4 text-gray-300"></i>
+            <p class="text-lg font-medium mb-2">No Controls Found</p>
+            <p class="text-sm">Import a framework to see controls for SOA tracking</p>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+  
+  tbody.innerHTML = controls.map(control => `
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        ${control.control_id || 'N/A'}
+      </td>
+      <td class="px-6 py-4 text-sm text-gray-900 max-w-xs">
+        <div class="font-medium">${control.name || control.title || 'N/A'}</div>
+        <div class="text-gray-500 text-xs mt-1 truncate" title="${control.description || ''}">
+          ${control.description ? control.description.substring(0, 100) + '...' : 'No description'}
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+          ${control.framework === 'ISO27001' ? 'bg-blue-100 text-blue-800' : 
+            control.framework === 'UAE_IA' ? 'bg-green-100 text-green-800' : 
+            control.framework === 'GDPR' ? 'bg-purple-100 text-purple-800' : 
+            'bg-gray-100 text-gray-800'}">
+          ${control.framework || 'N/A'}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${control.control_category || control.category || 'N/A'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <select onchange="updateSOAStatus(${control.id}, this.value)" class="form-select text-xs py-1 px-2
+          ${getStatusColor(control.implementation_status)}">
+          <option value="not_implemented" ${control.implementation_status === 'not_implemented' ? 'selected' : ''}>Not Implemented</option>
+          <option value="in_progress" ${control.implementation_status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+          <option value="implemented" ${control.implementation_status === 'implemented' ? 'selected' : ''}>Implemented</option>
+          <option value="not_applicable" ${control.implementation_status === 'not_applicable' ? 'selected' : ''}>Not Applicable</option>
+        </select>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <select onchange="updateSOAApplicability(${control.id}, this.value)" class="form-select text-xs py-1 px-2">
+          <option value="applicable" ${control.applicability !== 'not_applicable' ? 'selected' : ''}>Applicable</option>
+          <option value="not_applicable" ${control.applicability === 'not_applicable' ? 'selected' : ''}>Not Applicable</option>
+        </select>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        ${control.owner_name || 'Unassigned'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button onclick="viewSOAControl(${control.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button onclick="editSOAControl(${control.id})" class="text-green-600 hover:text-green-900">
+          <i class="fas fa-edit"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function getStatusColor(status) {
+  switch (status) {
+    case 'implemented': return 'text-green-800 bg-green-50 border-green-200';
+    case 'in_progress': return 'text-yellow-800 bg-yellow-50 border-yellow-200';
+    case 'not_applicable': return 'text-gray-800 bg-gray-50 border-gray-200';
+    default: return 'text-red-800 bg-red-50 border-red-200';
+  }
+}
+
+async function updateSOAStatus(controlId, status) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.put(`/api/controls/${controlId}`, {
+      implementation_status: status
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Control status updated successfully', 'success');
+    } else {
+      showToast('Failed to update control status', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating control status:', error);
+    showToast('Failed to update control status', 'error');
+  }
+}
+
+async function updateSOAApplicability(controlId, applicability) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.put(`/api/controls/${controlId}`, {
+      applicability: applicability
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Control applicability updated successfully', 'success');
+    } else {
+      showToast('Failed to update control applicability', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating control applicability:', error);
+    showToast('Failed to update control applicability', 'error');
+  }
+}
+
+function filterSOAControls() {
+  const frameworkFilter = document.getElementById('soa-framework-filter').value;
+  const statusFilter = document.getElementById('soa-status-filter').value;
+  const categoryFilter = document.getElementById('soa-category-filter').value;
+  
+  const rows = document.querySelectorAll('#soa-controls-list tr');
+  
+  rows.forEach(row => {
+    const framework = row.querySelector('td:nth-child(3) span')?.textContent?.trim();
+    const status = row.querySelector('td:nth-child(5) select')?.value;
+    const category = row.querySelector('td:nth-child(4)')?.textContent?.trim();
+    
+    let show = true;
+    
+    if (frameworkFilter && framework !== frameworkFilter) show = false;
+    if (statusFilter && status !== statusFilter) show = false;
+    if (categoryFilter && !category?.includes(categoryFilter)) show = false;
+    
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+function viewSOAControl(id) {
+  // Implementation similar to viewAssessment but for controls
+  showToast('View SOA Control details - Feature coming soon', 'info');
+}
+
+function editSOAControl(id) {
+  // Implementation similar to editAssessment but for controls
+  showToast('Edit SOA Control - Feature coming soon', 'info');
+}
+
+async function exportSOA() {
+  try {
+    showToast('Exporting Statement of Applicability...', 'info');
+    
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/controls', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data.success) {
+      showToast('Failed to load controls for export', 'error');
+      return;
+    }
+    
+    const controls = response.data.data;
+    
+    // Create SOA export data
+    const soaData = controls.map(control => ({
+      'Control ID': control.control_id || '',
+      'Control Title': control.name || control.title || '',
+      'Framework': control.framework || '',
+      'Category': control.control_category || control.category || '',
+      'Implementation Status': control.implementation_status || 'not_implemented',
+      'Applicability': control.applicability || 'applicable',
+      'Owner': control.owner_name || 'Unassigned',
+      'Type': control.control_type || '',
+      'Description': control.description || '',
+      'Justification': control.justification || '',
+      'Last Updated': control.updated_at || ''
+    }));
+    
+    // Convert to CSV
+    if (soaData.length === 0) {
+      showToast('No controls found to export', 'warning');
+      return;
+    }
+    
+    const headers = Object.keys(soaData[0]).join(',');
+    const csvData = [headers];
+    
+    soaData.forEach(row => {
+      const values = Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+      csvData.push(values);
+    });
+    
+    // Create and download file
+    const csvContent = csvData.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Statement_of_Applicability_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showToast('Statement of Applicability exported successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error exporting SOA:', error);
+    showToast('Failed to export Statement of Applicability', 'error');
+  }
+}
+
+async function deleteAssessment(id) {
+  if (!confirm('Are you sure you want to delete this assessment? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.delete(`/api/assessments/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Assessment deleted successfully', 'success');
+      loadComplianceData(); // Refresh the compliance data
+      if (typeof loadAssessments === 'function') {
+        loadAssessments(); // Refresh assessments if function exists
+      }
+    }
+  } catch (error) {
+    console.error('Error deleting assessment:', error);
+    if (error.response?.status === 403) {
+      showToast('You do not have permission to delete assessments', 'error');
+    } else {
+      showToast('Failed to delete assessment', 'error');
+    }
+  }
+}
+async function generateComplianceReport() {
+  try {
+    showToast('Generating compliance report...', 'info');
+    
+    const token = localStorage.getItem('dmt_token');
+    
+    // Fetch compliance data
+    const [assessmentsResponse, findingsResponse, requirementsResponse] = await Promise.all([
+      axios.get('/api/assessments', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/findings', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/requirements', { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+    
+    const assessments = assessmentsResponse.data.success ? assessmentsResponse.data.data : [];
+    const findings = findingsResponse.data.success ? findingsResponse.data.data : [];
+    const requirements = requirementsResponse.data.success ? requirementsResponse.data.data : [];
+    
+    // Generate HTML report
+    const reportDate = new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
+    const reportHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Compliance Report - ${reportDate}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+          .header { text-align: center; border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; }
+          .section { margin-bottom: 30px; }
+          .section h2 { color: #4f46e5; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+          th { background-color: #f3f4f6; font-weight: bold; }
+          .status-compliant { color: #10b981; font-weight: bold; }
+          .status-non-compliant { color: #ef4444; font-weight: bold; }
+          .status-in-progress { color: #f59e0b; font-weight: bold; }
+          .status-not-assessed { color: #6b7280; font-weight: bold; }
+          .severity-critical { color: #dc2626; font-weight: bold; }
+          .severity-high { color: #ea580c; font-weight: bold; }
+          .severity-medium { color: #d97706; font-weight: bold; }
+          .severity-low { color: #65a30d; font-weight: bold; }
+          .summary-stats { display: flex; justify-content: space-around; margin: 20px 0; }
+          .stat-card { text-align: center; padding: 15px; border: 1px solid #d1d5db; border-radius: 8px; }
+          .stat-number { font-size: 24px; font-weight: bold; color: #4f46e5; }
+          .footer { text-align: center; margin-top: 50px; font-size: 12px; color: #6b7280; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>GRC Compliance Report</h1>
+          <p>Generated on ${reportDate}</p>
+          <p>DMT Corporation Risk Management Platform</p>
+        </div>
+        
+        <div class="section">
+          <h2>Executive Summary</h2>
+          <div class="summary-stats">
+            <div class="stat-card">
+              <div class="stat-number">${assessments.length}</div>
+              <div>Total Assessments</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${findings.length}</div>
+              <div>Total Findings</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${requirements.length}</div>
+              <div>Total Requirements</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${findings.filter(f => f.status === 'open').length}</div>
+              <div>Open Findings</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <h2>Compliance Assessments Status</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Assessment ID</th>
+                <th>Name</th>
+                <th>Framework</th>
+                <th>Status</th>
+                <th>Lead Assessor</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${assessments.map(assessment => `
+                <tr>
+                  <td>${assessment.assessment_id || 'N/A'}</td>
+                  <td>${assessment.name || 'N/A'}</td>
+                  <td>${assessment.framework || 'N/A'}</td>
+                  <td class="status-${(assessment.status || 'not_assessed').replace('_', '-')}">${assessment.status || 'Not Assessed'}</td>
+                  <td>${assessment.lead_assessor_name || 'Unassigned'}</td>
+                  <td>${assessment.planned_start_date || 'N/A'}</td>
+                  <td>${assessment.planned_end_date || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="section">
+          <h2>Active Findings</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Finding ID</th>
+                <th>Title</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th>Category</th>
+                <th>Due Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${findings.filter(f => f.status !== 'resolved').map(finding => `
+                <tr>
+                  <td>${finding.finding_id || 'N/A'}</td>
+                  <td>${finding.title || 'N/A'}</td>
+                  <td class="severity-${finding.severity || 'low'}">${(finding.severity || 'Low').toUpperCase()}</td>
+                  <td class="status-${(finding.status || 'open').replace('_', '-')}">${finding.status || 'Open'}</td>
+                  <td>${finding.category || 'N/A'}</td>
+                  <td>${finding.due_date || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="section">
+          <h2>Compliance Requirements Status</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Requirement ID</th>
+                <th>Title</th>
+                <th>Framework</th>
+                <th>Status</th>
+                <th>Category</th>
+                <th>Due Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${requirements.map(req => `
+                <tr>
+                  <td>${req.requirement_id || 'N/A'}</td>
+                  <td>${req.title || 'N/A'}</td>
+                  <td>${req.framework || 'N/A'}</td>
+                  <td class="status-${(req.status || 'not_assessed').replace('_', '-')}">${req.status || 'Not Assessed'}</td>
+                  <td>${req.category || 'N/A'}</td>
+                  <td>${req.due_date || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="footer">
+          <p>This report was generated automatically by the DMT Risk Management Platform.</p>
+          <p>For questions or concerns, please contact the compliance team.</p>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    // Create and download the report
+    const blob = new Blob([reportHtml], { type: 'text/html' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Compliance_Report_${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showToast('Compliance report generated and downloaded successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error generating compliance report:', error);
+    showToast('Failed to generate compliance report', 'error');
+  }
+}
+function filterAssessments() {
+  const frameworkFilter = document.getElementById('assessment-framework-filter').value;
+  const statusFilter = document.getElementById('assessment-status-filter').value;
+  
+  const rows = document.querySelectorAll('#assessments-list tr');
+  
+  rows.forEach(row => {
+    const framework = row.querySelector('td:nth-child(3)')?.textContent?.trim();
+    const status = row.querySelector('td:nth-child(4)')?.textContent?.trim().toLowerCase();
+    
+    let show = true;
+    
+    if (frameworkFilter && framework !== frameworkFilter) show = false;
+    if (statusFilter && !status.includes(statusFilter.toLowerCase())) show = false;
+    
+    row.style.display = show ? '' : 'none';
+  });
+  
+  showToast('Assessment filters applied', 'success');
+}
+
+async function viewIncident(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/incidents/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data.success) {
+      showToast('Failed to load incident details', 'error');
+      return;
+    }
+    
+    const incident = response.data.data;
+    
+    showModal('Incident Details', `
+      <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Incident ID</label>
+            <div class="form-input bg-gray-50">${incident.incident_id || 'N/A'}</div>
+          </div>
+          <div>
+            <label class="form-label">Status</label>
+            <div class="form-input bg-gray-50">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                ${incident.status === 'resolved' ? 'bg-green-100 text-green-800' : 
+                  incident.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
+                  incident.status === 'new' ? 'bg-red-100 text-red-800' : 
+                  'bg-gray-100 text-gray-800'}">
+                ${incident.status || 'Unknown'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Title</label>
+          <div class="form-input bg-gray-50">${incident.title || 'N/A'}</div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="form-label">Type</label>
+            <div class="form-input bg-gray-50">${incident.incident_type || 'N/A'}</div>
+          </div>
+          <div>
+            <label class="form-label">Severity</label>
+            <div class="form-input bg-gray-50">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                ${incident.severity === 'critical' ? 'bg-red-100 text-red-800' : 
+                  incident.severity === 'high' ? 'bg-orange-100 text-orange-800' : 
+                  incident.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-green-100 text-green-800'}">
+                ${incident.severity || 'Unknown'}
+              </span>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Priority</label>
+            <div class="form-input bg-gray-50">${incident.priority || 'N/A'}</div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Description</label>
+          <div class="form-input bg-gray-50 min-h-20">${incident.description || 'No description provided'}</div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Assigned To</label>
+            <div class="form-input bg-gray-50">${incident.assigned_first_name && incident.assigned_last_name ? 
+              `${incident.assigned_first_name} ${incident.assigned_last_name}` : 'Unassigned'}</div>
+          </div>
+          <div>
+            <label class="form-label">Reported By</label>
+            <div class="form-input bg-gray-50">${incident.reporter_first_name && incident.reporter_last_name ? 
+              `${incident.reporter_first_name} ${incident.reporter_last_name}` : 'Unknown'}</div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Detection Method</label>
+            <div class="form-input bg-gray-50">${incident.detection_method || 'N/A'}</div>
+          </div>
+          <div>
+            <label class="form-label">Reported At</label>
+            <div class="form-input bg-gray-50">${incident.reported_at ? new Date(incident.reported_at).toLocaleString() : 'N/A'}</div>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Initial Response</label>
+          <div class="form-input bg-gray-50 min-h-16">${incident.initial_response || 'No initial response documented'}</div>
+        </div>
+        
+        ${incident.resolution_notes ? `
+        <div>
+          <label class="form-label">Resolution Notes</label>
+          <div class="form-input bg-gray-50 min-h-16">${incident.resolution_notes}</div>
+        </div>
+        ` : ''}
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-info-circle text-blue-400"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-blue-800">Incident Timeline</h3>
+              <div class="mt-2 text-sm text-blue-700">
+                <p>Created: ${new Date(incident.created_at).toLocaleString()}</p>
+                <p>Last Updated: ${new Date(incident.updated_at).toLocaleString()}</p>
+                ${incident.resolved_at ? `<p>Resolved: ${new Date(incident.resolved_at).toLocaleString()}</p>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `, [
+      { text: 'Close', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Edit Incident', class: 'btn-primary', onclick: `closeModal(); editIncident(${id})` }
+    ], 'max-w-4xl');
+    
+  } catch (error) {
+    console.error('Error viewing incident:', error);
+    showToast('Failed to load incident details', 'error');
+  }
+}
+async function editIncident(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    
+    // Fetch incident details
+    const response = await axios.get(`/api/incidents/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data.success) {
+      showToast('Failed to load incident details', 'error');
+      return;
+    }
+    
+    const incident = response.data.data;
+    
+    showModal('Edit Incident', `
+      <form id="edit-incident-form" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Incident ID</label>
+            <input type="text" value="${incident.incident_id}" class="form-input bg-gray-100" readonly>
+          </div>
+          <div>
+            <label class="form-label">Status *</label>
+            <select id="edit-incident-status" class="form-select" required>
+              <option value="new" ${incident.status === 'new' ? 'selected' : ''}>New</option>
+              <option value="assigned" ${incident.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+              <option value="in_progress" ${incident.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+              <option value="investigating" ${incident.status === 'investigating' ? 'selected' : ''}>Investigating</option>
+              <option value="resolved" ${incident.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+              <option value="closed" ${incident.status === 'closed' ? 'selected' : ''}>Closed</option>
+            </select>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Incident Title *</label>
+          <input type="text" id="edit-incident-title" class="form-input" required value="${incident.title || ''}">
+        </div>
+        
+        <div>
+          <label class="form-label">Description *</label>
+          <textarea id="edit-incident-description" class="form-input" rows="4" required>${incident.description || ''}</textarea>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="form-label">Incident Type *</label>
+            <select id="edit-incident-type" class="form-select" required>
+              <option value="security" ${incident.incident_type === 'security' ? 'selected' : ''}>Security Incident</option>
+              <option value="operational" ${incident.incident_type === 'operational' ? 'selected' : ''}>Operational Issue</option>
+              <option value="data_breach" ${incident.incident_type === 'data_breach' ? 'selected' : ''}>Data Breach</option>
+              <option value="system_outage" ${incident.incident_type === 'system_outage' ? 'selected' : ''}>System Outage</option>
+              <option value="compliance" ${incident.incident_type === 'compliance' ? 'selected' : ''}>Compliance Violation</option>
+              <option value="privacy" ${incident.incident_type === 'privacy' ? 'selected' : ''}>Privacy Incident</option>
+              <option value="other" ${incident.incident_type === 'other' ? 'selected' : ''}>Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Severity Level *</label>
+            <select id="edit-incident-severity" class="form-select" required>
+              <option value="critical" ${incident.severity === 'critical' ? 'selected' : ''}>Critical</option>
+              <option value="high" ${incident.severity === 'high' ? 'selected' : ''}>High</option>
+              <option value="medium" ${incident.severity === 'medium' ? 'selected' : ''}>Medium</option>
+              <option value="low" ${incident.severity === 'low' ? 'selected' : ''}>Low</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Assign To</label>
+            <select id="edit-incident-assignee" class="form-select">
+              <option value="">Select Assignee</option>
+              <!-- Will be populated dynamically -->
+            </select>
+          </div>
+        </div>
+        
+        <div>
+          <label class="form-label">Resolution Notes</label>
+          <textarea id="edit-incident-resolution" class="form-input" rows="3" 
+                    placeholder="Resolution steps, root cause analysis, lessons learned">${incident.resolution_notes || ''}</textarea>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Resolution Date</label>
+            <input type="datetime-local" id="edit-incident-resolved-date" class="form-input" 
+                   value="${incident.resolved_at ? new Date(incident.resolved_at).toISOString().slice(0, 16) : ''}">
+          </div>
+          <div>
+            <label class="form-label">Priority</label>
+            <select id="edit-incident-priority" class="form-select">
+              <option value="p1" ${incident.priority === 'p1' ? 'selected' : ''}>P1 - Critical</option>
+              <option value="p2" ${incident.priority === 'p2' ? 'selected' : ''}>P2 - High</option>
+              <option value="p3" ${incident.priority === 'p3' ? 'selected' : ''}>P3 - Medium</option>
+              <option value="p4" ${incident.priority === 'p4' ? 'selected' : ''}>P4 - Low</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    `, [
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Update Incident', class: 'btn-primary', onclick: `updateIncident(${id})` }
+    ]);
+    
+    // Populate assignee dropdown for edit
+    await populateEditIncidentAssignees(incident.assigned_to);
+    
+  } catch (error) {
+    console.error('Error loading incident for edit:', error);
+    showToast('Failed to load incident details', 'error');
+  }
+}
+
+async function populateEditIncidentAssignees(currentAssigneeId) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const assigneeSelect = document.getElementById('edit-incident-assignee');
+    if (assigneeSelect && response.data.success) {
+      response.data.data.forEach(user => {
+        if (['admin', 'incident_manager', 'risk_manager', 'security_officer'].includes(user.role)) {
+          const option = document.createElement('option');
+          option.value = user.id;
+          option.textContent = `${user.first_name} ${user.last_name} (${user.role})`;
+          if (user.id === currentAssigneeId) {
+            option.selected = true;
+          }
+          assigneeSelect.appendChild(option);
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error populating edit incident assignees:', error);
+  }
+}
+
+async function updateIncident(id) {
+  const formData = {
+    title: document.getElementById('edit-incident-title').value,
+    description: document.getElementById('edit-incident-description').value,
+    incident_type: document.getElementById('edit-incident-type').value,
+    severity: document.getElementById('edit-incident-severity').value,
+    status: document.getElementById('edit-incident-status').value,
+    assigned_to: parseInt(document.getElementById('edit-incident-assignee').value) || null,
+    priority: document.getElementById('edit-incident-priority').value,
+    resolution_notes: document.getElementById('edit-incident-resolution').value,
+    resolved_at: document.getElementById('edit-incident-resolved-date').value || null
+  };
+  
+  // Validate required fields
+  if (!formData.title || !formData.description || !formData.incident_type || !formData.severity || !formData.status) {
+    showToast('Please fill in all required fields', 'error');
+    return;
+  }
+  
+  // Auto-set resolved_at if status is resolved but no date is set
+  if (formData.status === 'resolved' && !formData.resolved_at) {
+    formData.resolved_at = new Date().toISOString();
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.put(`/api/incidents/${id}`, formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Incident updated successfully', 'success');
+      closeModal();
+      if (typeof loadIncidentsData === 'function') {
+        loadIncidentsData(); // Refresh incidents if function exists
+      }
+    }
+  } catch (error) {
+    console.error('Error updating incident:', error);
+    if (error.response?.status === 403) {
+      showToast('You do not have permission to update incidents', 'error');
+    } else {
+      showToast('Failed to update incident', 'error');
+    }
+  }
+}
+async function assignIncident(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    
+    // Get users for assignment
+    const usersResponse = await axios.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!usersResponse.data.success) {
+      showToast('Failed to load users', 'error');
+      return;
+    }
+    
+    const users = usersResponse.data.data.filter(user => 
+      ['admin', 'incident_manager', 'risk_manager', 'security_officer'].includes(user.role)
+    );
+    
+    showModal('Assign Incident', `
+      <form id="assign-incident-form" class="space-y-4">
+        <div>
+          <label class="form-label">Assign To *</label>
+          <select id="assign-user" class="form-select" required>
+            <option value="">Select User</option>
+            ${users.map(user => `
+              <option value="${user.id}">${user.first_name} ${user.last_name} (${user.role})</option>
+            `).join('')}
+          </select>
+        </div>
+        
+        <div>
+          <label class="form-label">Assignment Notes</label>
+          <textarea id="assign-notes" class="form-input" rows="3" 
+                    placeholder="Add notes about this assignment"></textarea>
+        </div>
+      </form>
+    `, [
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Assign Incident', class: 'btn-primary', onclick: `saveIncidentAssignment(${id})` }
+    ]);
+    
+  } catch (error) {
+    console.error('Error loading assign incident modal:', error);
+    showToast('Failed to load assignment options', 'error');
+  }
+}
+
+async function escalateIncident(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    
+    showModal('Escalate Incident', `
+      <form id="escalate-incident-form" class="space-y-4">
+        <div>
+          <label class="form-label">Escalation Level *</label>
+          <select id="escalation-level" class="form-select" required>
+            <option value="">Select Level</option>
+            <option value="management">Management</option>
+            <option value="executive">Executive</option>
+            <option value="board">Board Level</option>
+            <option value="external">External Authorities</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="form-label">New Priority *</label>
+          <select id="escalation-priority" class="form-select" required>
+            <option value="p1">P1 - Critical</option>
+            <option value="p2">P2 - High</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="form-label">New Severity *</label>
+          <select id="escalation-severity" class="form-select" required>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="form-label">Escalation Reason *</label>
+          <textarea id="escalation-reason" class="form-input" rows="4" required
+                    placeholder="Explain why this incident needs to be escalated"></textarea>
+        </div>
+        
+        <div>
+          <label class="form-label">Notification Recipients</label>
+          <textarea id="escalation-recipients" class="form-input" rows="2" 
+                    placeholder="Email addresses to notify (comma-separated)"></textarea>
+        </div>
+      </form>
+    `, [
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Escalate Incident', class: 'btn-primary', onclick: `saveIncidentEscalation(${id})` }
+    ]);
+    
+  } catch (error) {
+    console.error('Error loading escalate incident modal:', error);
+    showToast('Failed to load escalation options', 'error');
+  }
+}
 
 // Import functions
 function showImportRisksModal() {
@@ -2412,12 +5467,255 @@ async function processImport(module) {
 }
 
 // Add missing export function for compliance
-function exportCompliance() { showToast('Export Compliance - Implementation in progress', 'info'); }
+async function exportCompliance() {
+  try {
+    showToast('Exporting compliance data...', 'info');
+    
+    const token = localStorage.getItem('dmt_token');
+    
+    // Fetch all compliance data
+    const [assessmentsResponse, findingsResponse, requirementsResponse, controlsResponse] = await Promise.all([
+      axios.get('/api/assessments', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/findings', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/requirements', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/controls', { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+    
+    const assessments = assessmentsResponse.data.success ? assessmentsResponse.data.data : [];
+    const findings = findingsResponse.data.success ? findingsResponse.data.data : [];
+    const requirements = requirementsResponse.data.success ? requirementsResponse.data.data : [];
+    const controls = controlsResponse.data.success ? controlsResponse.data.data : [];
+    
+    // Create Excel-like CSV format with multiple sheets
+    const exportData = {
+      assessments: assessments.map(a => ({
+        'Assessment ID': a.assessment_id || '',
+        'Name': a.name || '',
+        'Framework': a.framework || '',
+        'Status': a.status || '',
+        'Lead Assessor': a.lead_assessor_name || '',
+        'Organization': a.organization_name || '',
+        'Planned Start': a.planned_start_date || '',
+        'Planned End': a.planned_end_date || '',
+        'Scope': a.scope || '',
+        'Methodology': a.methodology || '',
+        'Created': a.created_at || ''
+      })),
+      requirements: requirements.map(r => ({
+        'Requirement ID': r.requirement_id || '',
+        'Title': r.title || '',
+        'Framework': r.framework || '',
+        'Category': r.category || '',
+        'Status': r.status || '',
+        'Owner': r.owner_name || '',
+        'Due Date': r.due_date || '',
+        'Description': r.description || '',
+        'Created': r.created_at || ''
+      })),
+      findings: findings.map(f => ({
+        'Finding ID': f.finding_id || '',
+        'Title': f.title || '',
+        'Severity': f.severity || '',
+        'Status': f.status || '',
+        'Category': f.category || '',
+        'Assigned To': f.assigned_to_name || '',
+        'Due Date': f.due_date || '',
+        'Description': f.description || '',
+        'Created': f.created_at || ''
+      })),
+      controls: controls.map(c => ({
+        'Control ID': c.control_id || '',
+        'Name': c.name || '',
+        'Type': c.control_type || '',
+        'Category': c.control_category || '',
+        'Framework': c.framework || '',
+        'Implementation Status': c.implementation_status || '',
+        'Effectiveness': c.design_effectiveness || '',
+        'Owner': c.owner_name || '',
+        'Description': c.description || '',
+        'Created': c.created_at || ''
+      }))
+    };
+    
+    // Convert to CSV format for each sheet
+    const csvData = [];
+    
+    // Add assessments
+    csvData.push('=== COMPLIANCE ASSESSMENTS ===');
+    if (exportData.assessments.length > 0) {
+      const headers = Object.keys(exportData.assessments[0]).join(',');
+      csvData.push(headers);
+      exportData.assessments.forEach(row => {
+        const values = Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+        csvData.push(values);
+      });
+    }
+    
+    csvData.push(''); // Empty line
+    csvData.push('=== COMPLIANCE REQUIREMENTS ===');
+    if (exportData.requirements.length > 0) {
+      const headers = Object.keys(exportData.requirements[0]).join(',');
+      csvData.push(headers);
+      exportData.requirements.forEach(row => {
+        const values = Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+        csvData.push(values);
+      });
+    }
+    
+    csvData.push(''); // Empty line
+    csvData.push('=== ASSESSMENT FINDINGS ===');
+    if (exportData.findings.length > 0) {
+      const headers = Object.keys(exportData.findings[0]).join(',');
+      csvData.push(headers);
+      exportData.findings.forEach(row => {
+        const values = Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+        csvData.push(values);
+      });
+    }
+    
+    csvData.push(''); // Empty line
+    csvData.push('=== SECURITY CONTROLS ===');
+    if (exportData.controls.length > 0) {
+      const headers = Object.keys(exportData.controls[0]).join(',');
+      csvData.push(headers);
+      exportData.controls.forEach(row => {
+        const values = Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(',');
+        csvData.push(values);
+      });
+    }
+    
+    // Create and download the file
+    const csvContent = csvData.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Compliance_Export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showToast('Compliance data exported successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error exporting compliance data:', error);
+    showToast('Failed to export compliance data', 'error');
+  }
+}
 
 // Export functions
-function exportRisks() { showToast('Export Risks - Implementation in progress', 'info'); }
-function exportControls() { showToast('Export Controls - Implementation in progress', 'info'); }
-function exportIncidents() { showToast('Export Incidents - Implementation in progress', 'info'); }
+async function exportRisks() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/risks', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data || !response.data.length) {
+      showToast('No risks found to export', 'warning');
+      return;
+    }
+    
+    const csvContent = convertToCSV(response.data, [
+      { key: 'id', label: 'ID' },
+      { key: 'title', label: 'Title' },
+      { key: 'description', label: 'Description' },
+      { key: 'likelihood', label: 'Likelihood' },
+      { key: 'impact', label: 'Impact' },
+      { key: 'risk_score', label: 'Risk Score' },
+      { key: 'category', label: 'Category' },
+      { key: 'owner', label: 'Owner' },
+      { key: 'status', label: 'Status' },
+      { key: 'mitigation_plan', label: 'Mitigation Plan' },
+      { key: 'created_at', label: 'Created Date' },
+      { key: 'updated_at', label: 'Updated Date' }
+    ]);
+    
+    downloadCSV(csvContent, `risks_export_${new Date().toISOString().split('T')[0]}.csv`);
+    showToast('Risks exported successfully', 'success');
+  } catch (error) {
+    console.error('Error exporting risks:', error);
+    showToast('Failed to export risks', 'error');
+  }
+}
+async function exportControls() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/controls', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data || !response.data.length) {
+      showToast('No controls found to export', 'warning');
+      return;
+    }
+    
+    const csvContent = convertToCSV(response.data, [
+      { key: 'id', label: 'ID' },
+      { key: 'control_id', label: 'Control ID' },
+      { key: 'title', label: 'Title' },
+      { key: 'description', label: 'Description' },
+      { key: 'category', label: 'Category' },
+      { key: 'domain', label: 'Domain' },
+      { key: 'framework', label: 'Framework' },
+      { key: 'implementation_status', label: 'Implementation Status' },
+      { key: 'testing_status', label: 'Testing Status' },
+      { key: 'effectiveness', label: 'Effectiveness' },
+      { key: 'owner', label: 'Owner' },
+      { key: 'test_frequency', label: 'Test Frequency' },
+      { key: 'last_test_date', label: 'Last Test Date' },
+      { key: 'next_test_date', label: 'Next Test Date' },
+      { key: 'created_at', label: 'Created Date' },
+      { key: 'updated_at', label: 'Updated Date' }
+    ]);
+    
+    downloadCSV(csvContent, `controls_export_${new Date().toISOString().split('T')[0]}.csv`);
+    showToast('Controls exported successfully', 'success');
+  } catch (error) {
+    console.error('Error exporting controls:', error);
+    showToast('Failed to export controls', 'error');
+  }
+}
+async function exportIncidents() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/incidents', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data || !response.data.length) {
+      showToast('No incidents found to export', 'warning');
+      return;
+    }
+    
+    const csvContent = convertToCSV(response.data, [
+      { key: 'id', label: 'ID' },
+      { key: 'title', label: 'Title' },
+      { key: 'description', label: 'Description' },
+      { key: 'severity', label: 'Severity' },
+      { key: 'priority', label: 'Priority' },
+      { key: 'status', label: 'Status' },
+      { key: 'category', label: 'Category' },
+      { key: 'reported_by', label: 'Reported By' },
+      { key: 'assigned_to', label: 'Assigned To' },
+      { key: 'incident_date', label: 'Incident Date' },
+      { key: 'detection_date', label: 'Detection Date' },
+      { key: 'resolution_date', label: 'Resolution Date' },
+      { key: 'impact', label: 'Impact' },
+      { key: 'root_cause', label: 'Root Cause' },
+      { key: 'lessons_learned', label: 'Lessons Learned' },
+      { key: 'created_at', label: 'Created Date' },
+      { key: 'updated_at', label: 'Updated Date' }
+    ]);
+    
+    downloadCSV(csvContent, `incidents_export_${new Date().toISOString().split('T')[0]}.csv`);
+    showToast('Incidents exported successfully', 'success');
+  } catch (error) {
+    console.error('Error exporting incidents:', error);
+    showToast('Failed to export incidents', 'error');
+  }
+}
 
 // Modal and Form Helper Functions
 function createModal(title, content) {
@@ -2491,6 +5789,27 @@ function getRiskFormHTML(risk = null) {
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
+          <label class="block text-sm font-medium text-gray-700">Related Services</label>
+          <select id="risk-services" class="form-select" multiple size="4">
+            <option value="">Loading services...</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple services</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Service Impact Factor</label>
+          <select id="risk-service-impact" class="form-select">
+            <option value="none">No Service Impact</option>
+            <option value="low">Low Impact on Services</option>
+            <option value="medium">Medium Impact on Services</option>
+            <option value="high">High Impact on Services</option>
+            <option value="critical">Critical Impact on Services</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">How this risk affects selected services</p>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
           <label class="block text-sm font-medium text-gray-700">Probability (1-5) *</label>
           <select id="risk-probability" class="form-select" required>
             <option value="">Select Probability</option>
@@ -2559,7 +5878,7 @@ function getRiskFormHTML(risk = null) {
   `;
 }
 
-function populateRiskFormDropdowns() {
+async function populateRiskFormDropdowns() {
   // Populate categories
   const categorySelect = document.getElementById('risk-category');
   categorySelect.innerHTML = '<option value="">Select Category</option>';
@@ -2580,6 +5899,38 @@ function populateRiskFormDropdowns() {
   referenceData.users.forEach(user => {
     ownerSelect.innerHTML += `<option value="${user.id}">${user.first_name} ${user.last_name}</option>`;
   });
+  
+  // Populate services
+  await loadServicesForRiskForm();
+}
+
+async function loadServicesForRiskForm() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/services', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const servicesSelect = document.getElementById('risk-services');
+    if (response.data.success && servicesSelect) {
+      servicesSelect.innerHTML = '';
+      
+      if (response.data.data.length === 0) {
+        servicesSelect.innerHTML = '<option value="">No services available</option>';
+      } else {
+        response.data.data.forEach(service => {
+          const riskInfo = service.risk_rating ? ` (${service.risk_rating} Risk)` : '';
+          servicesSelect.innerHTML += `<option value="${service.id}">${service.name}${riskInfo}</option>`;
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error loading services for risk form:', error);
+    const servicesSelect = document.getElementById('risk-services');
+    if (servicesSelect) {
+      servicesSelect.innerHTML = '<option value="">Error loading services</option>';
+    }
+  }
 }
 
 function populateRiskForm(risk) {
@@ -2596,10 +5947,27 @@ function populateRiskForm(risk) {
   document.getElementById('risk-mitigation').value = risk.mitigation_plan || '';
   document.getElementById('risk-identified-date').value = risk.identified_date ? risk.identified_date.split('T')[0] : '';
   document.getElementById('risk-review-date').value = risk.next_review_date ? risk.next_review_date.split('T')[0] : '';
+  
+  // Populate services selection
+  if (risk.related_services) {
+    const servicesSelect = document.getElementById('risk-services');
+    const serviceIds = risk.related_services.split(',');
+    Array.from(servicesSelect.options).forEach(option => {
+      if (serviceIds.includes(option.value)) {
+        option.selected = true;
+      }
+    });
+  }
+  
+  document.getElementById('risk-service-impact').value = risk.service_impact_factor || 'none';
 }
 
 async function handleRiskSubmit(id = null) {
   try {
+    // Get selected services
+    const servicesSelect = document.getElementById('risk-services');
+    const selectedServices = Array.from(servicesSelect.selectedOptions).map(option => option.value).filter(v => v);
+    
     const formData = {
       title: document.getElementById('risk-title').value,
       description: document.getElementById('risk-description').value,
@@ -2613,7 +5981,9 @@ async function handleRiskSubmit(id = null) {
       treatment_strategy: document.getElementById('risk-treatment').value,
       mitigation_plan: document.getElementById('risk-mitigation').value,
       identified_date: document.getElementById('risk-identified-date').value,
-      next_review_date: document.getElementById('risk-review-date').value
+      next_review_date: document.getElementById('risk-review-date').value,
+      related_services: selectedServices.join(','),
+      service_impact_factor: document.getElementById('risk-service-impact').value
     };
     
     const token = localStorage.getItem('dmt_token');
@@ -2967,6 +6337,12 @@ window.exportIncidents = exportIncidents;
 // User management functions
 window.showAddUserModal = showAddUserModal;
 window.editUser = editUser;
-window.deleteUser = deleteUser;
 window.resetUserPassword = resetUserPassword;
 window.togglePasswordField = togglePasswordField;
+window.showPasswordResetModal = showPasswordResetModal;
+window.generateNewPassword = generateNewPassword;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.copyPasswordToClipboard = copyPasswordToClipboard;
+
+// Make moduleData globally accessible
+window.moduleData = moduleData;

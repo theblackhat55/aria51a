@@ -111,6 +111,170 @@ export function createEnterpriseAPI() {
     }
   });
 
+  api.get('/api/assets/:id', authMiddleware, async (c) => {
+    try {
+      const id = c.req.param('id');
+      const asset = await c.env.DB.prepare(`
+        SELECT a.*, s.name as service_name, o.name as organization_name, 
+               u.first_name, u.last_name
+        FROM assets a
+        LEFT JOIN services s ON a.service_id = s.id
+        LEFT JOIN organizations o ON a.organization_id = o.id
+        LEFT JOIN users u ON a.owner_id = u.id
+        WHERE a.id = ?
+      `).bind(id).first();
+
+      if (!asset) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'Asset not found'
+        }, 404);
+      }
+
+      return c.json<ApiResponse<any>>({
+        success: true,
+        data: asset
+      });
+    } catch (error) {
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Failed to fetch asset'
+      }, 500);
+    }
+  });
+
+  api.put('/api/assets/:id', authMiddleware, async (c) => {
+    try {
+      const id = c.req.param('id');
+      const assetData = await c.req.json();
+      
+      const result = await c.env.DB.prepare(`
+        UPDATE assets SET
+          name = COALESCE(?, name),
+          asset_type = COALESCE(?, asset_type),
+          operating_system = COALESCE(?, operating_system),
+          ip_address = COALESCE(?, ip_address),
+          mac_address = COALESCE(?, mac_address),
+          risk_score = COALESCE(?, risk_score),
+          exposure_level = COALESCE(?, exposure_level),
+          service_id = COALESCE(?, service_id),
+          organization_id = COALESCE(?, organization_id),
+          owner_id = COALESCE(?, owner_id),
+          device_tags = COALESCE(?, device_tags),
+          updated_at = datetime('now')
+        WHERE id = ?
+      `).bind(
+        assetData.name,
+        assetData.asset_type,
+        assetData.operating_system,
+        assetData.ip_address,
+        assetData.mac_address,
+        assetData.risk_score,
+        assetData.exposure_level,
+        assetData.service_id,
+        assetData.organization_id,
+        assetData.owner_id,
+        JSON.stringify(assetData.device_tags || []),
+        id
+      ).run();
+
+      if (result.changes === 0) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'Asset not found'
+        }, 404);
+      }
+
+      return c.json<ApiResponse<any>>({
+        success: true,
+        data: { updated: true },
+        message: 'Asset updated successfully'
+      });
+    } catch (error) {
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Failed to update asset'
+      }, 500);
+    }
+  });
+
+  api.post('/api/assets/import', authMiddleware, async (c) => {
+    try {
+      const { assets, skipDuplicates = true } = await c.req.json();
+      
+      if (!assets || !Array.isArray(assets) || assets.length === 0) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'Assets array is required'
+        }, 400);
+      }
+
+      let imported = 0;
+      let skipped = 0;
+      const errors = [];
+
+      for (const asset of assets) {
+        try {
+          // Check for duplicates if skipDuplicates is enabled
+          if (skipDuplicates && asset.asset_id) {
+            const existing = await c.env.DB.prepare(`
+              SELECT id FROM assets WHERE asset_id = ?
+            `).bind(asset.asset_id).first();
+
+            if (existing) {
+              skipped++;
+              continue;
+            }
+          }
+
+          // Create the asset
+          const result = await c.env.DB.prepare(`
+            INSERT INTO assets (
+              asset_id, name, asset_type, category, description, 
+              owner, location, criticality, value, service, risk_level,
+              created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+          `).bind(
+            asset.asset_id,
+            asset.name,
+            asset.type || 'Hardware',
+            asset.category || '',
+            asset.description || '',
+            asset.owner || '',
+            asset.location || '',
+            asset.criticality || 'Medium',
+            asset.value ? parseFloat(asset.value) : null,
+            asset.service || '',
+            asset.risk_level || 'Medium'
+          ).run();
+
+          if (result.success) {
+            imported++;
+          }
+        } catch (assetError) {
+          console.error('Error importing individual asset:', assetError);
+          errors.push(`Failed to import asset: ${asset.name || asset.asset_id}`);
+        }
+      }
+
+      return c.json<ApiResponse<any>>({
+        success: true,
+        data: { 
+          imported, 
+          skipped, 
+          errors: errors.length > 0 ? errors : undefined 
+        },
+        message: `Import completed: ${imported} imported, ${skipped} skipped`
+      });
+    } catch (error) {
+      console.error('Error importing assets:', error);
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Failed to import assets'
+      }, 500);
+    }
+  });
+
   // Services Management API
   api.get('/api/services', authMiddleware, async (c) => {
     try {

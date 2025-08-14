@@ -313,6 +313,12 @@ async function showSettings() {
           <button onclick="showSettingsTab('users')" id="settings-tab-users" class="settings-tab active">
             <i class="fas fa-users mr-2"></i>User Management
           </button>
+          <button onclick="showSettingsTab('organizations')" id="settings-tab-organizations" class="settings-tab">
+            <i class="fas fa-building mr-2"></i>Organizations
+          </button>
+          <button onclick="showSettingsTab('risk-owners')" id="settings-tab-risk-owners" class="settings-tab">
+            <i class="fas fa-user-shield mr-2"></i>Risk Owners
+          </button>
           <button onclick="showSettingsTab('microsoft')" id="settings-tab-microsoft" class="settings-tab">
             <i class="fab fa-microsoft mr-2"></i>Microsoft Integration
           </button>
@@ -347,6 +353,12 @@ function showSettingsTab(tab) {
     case 'users':
       showUsersSettings();
       break;
+    case 'organizations':
+      showOrganizationsSettings();
+      break;
+    case 'risk-owners':
+      showRiskOwnersSettings();
+      break;
     case 'microsoft':
       showMicrosoftSettings();
       break;
@@ -367,6 +379,10 @@ async function loadUsersForSettings() {
     });
 
     if (response.data.success) {
+      // Store users in moduleData so editUser function can find them
+      if (typeof moduleData !== 'undefined') {
+        moduleData.users = response.data.data;
+      }
       renderUsersTableForSettings(response.data.data);
       updateUsersStatisticsForSettings(response.data.data);
     } else {
@@ -716,6 +732,241 @@ async function showMicrosoftSettings() {
   
   // Load current Microsoft configuration
   await loadMicrosoftConfig();
+}
+
+async function showOrganizationsSettings() {
+  const content = document.getElementById('settings-content');
+  
+  content.innerHTML = `
+    <div class="space-y-6">
+      <!-- Organizations Header -->
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-lg font-medium text-gray-900">Organizations Management</h3>
+          <p class="text-gray-600 mt-1">Manage organizational units and departments for asset assignment</p>
+        </div>
+        <button onclick="showAddOrganizationModal()" class="btn-primary">
+          <i class="fas fa-plus mr-2"></i>Add Organization
+        </button>
+      </div>
+      
+      <!-- Organizations Statistics -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-building text-blue-600"></i>
+                </div>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Total Organizations</dt>
+                  <dd class="text-lg font-medium text-gray-900" id="total-organizations">0</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-check-circle text-green-600"></i>
+                </div>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Active Organizations</dt>
+                  <dd class="text-lg font-medium text-gray-900" id="active-organizations">0</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-server text-yellow-600"></i>
+                </div>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Assets Assigned</dt>
+                  <dd class="text-lg font-medium text-gray-900" id="assigned-assets">0</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Organizations Table -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div class="px-4 py-5 sm:px-6">
+          <h4 class="text-lg font-medium text-gray-900">Organizations List</h4>
+        </div>
+        <div class="border-t border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="table-header">Organization Name</th>
+                  <th class="table-header">Code</th>
+                  <th class="table-header">Department</th>
+                  <th class="table-header">Location</th>
+                  <th class="table-header">Contact</th>
+                  <th class="table-header">Assets</th>
+                  <th class="table-header">Status</th>
+                  <th class="table-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="organizations-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- Organizations will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+          <div id="organizations-loading" class="p-8 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-gray-600">Loading organizations...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Load organizations data
+  await loadOrganizationsData();
+}
+
+async function showRiskOwnersSettings() {
+  const content = document.getElementById('settings-content');
+  
+  content.innerHTML = `
+    <div class="space-y-6">
+      <!-- Risk Owners Header -->
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-lg font-medium text-gray-900">Risk Owners Management</h3>
+          <p class="text-gray-600 mt-1">Manage personnel responsible for risk oversight and management</p>
+        </div>
+        <button onclick="showAddRiskOwnerModal()" class="btn-primary">
+          <i class="fas fa-plus mr-2"></i>Add Risk Owner
+        </button>
+      </div>
+      
+      <!-- Risk Owners Statistics -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-user-shield text-blue-600"></i>
+                </div>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Total Owners</dt>
+                  <dd class="text-lg font-medium text-gray-900" id="total-risk-owners">0</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-check-circle text-green-600"></i>
+                </div>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Active Owners</dt>
+                  <dd class="text-lg font-medium text-gray-900" id="active-risk-owners">0</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                </div>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Risks Assigned</dt>
+                  <dd class="text-lg font-medium text-gray-900" id="assigned-risks">0</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-fire text-red-600"></i>
+                </div>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">High Risk Items</dt>
+                  <dd class="text-lg font-medium text-gray-900" id="high-risk-items">0</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Risk Owners Table -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div class="px-4 py-5 sm:px-6">
+          <h4 class="text-lg font-medium text-gray-900">Risk Owners List</h4>
+        </div>
+        <div class="border-t border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="table-header">Name</th>
+                  <th class="table-header">Role</th>
+                  <th class="table-header">Department</th>
+                  <th class="table-header">Contact</th>
+                  <th class="table-header">Risks Assigned</th>
+                  <th class="table-header">High Priority</th>
+                  <th class="table-header">Status</th>
+                  <th class="table-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="risk-owners-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- Risk owners will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+          <div id="risk-owners-loading" class="p-8 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-gray-600">Loading risk owners...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Load risk owners data
+  await loadRiskOwnersData();
 }
 
 async function showSAMLSettings() {
@@ -1175,28 +1426,785 @@ function generateAssetId() {
   return `AST-${timestamp.slice(-6)}-${random}`;
 }
 
-function viewAsset(id) {
-  showToast(`View Asset ${id} - Implementation in progress`, 'info');
+async function viewAsset(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/assets/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      const asset = response.data.data;
+      showViewAssetModal(asset);
+    } else {
+      showToast('Failed to load asset details', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading asset:', error);
+    showToast('Failed to load asset details', 'error');
+  }
 }
 
-function editAsset(id) {
-  showToast(`Edit Asset ${id} - Implementation in progress`, 'info');
+function showViewAssetModal(asset) {
+  const modalHTML = `
+    <div id="view-asset-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <!-- Modal Header -->
+          <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">Asset Details: ${asset.name}</h3>
+            <button onclick="closeViewAssetModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Modal Body -->
+          <div class="mt-6 space-y-6 max-h-96 overflow-y-auto">
+            <!-- Basic Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Asset ID</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.asset_id || 'N/A'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Asset Name</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.name || 'N/A'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Type</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.type || 'N/A'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Category</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.category || 'N/A'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Owner</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.owner || 'N/A'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Criticality</label>
+                <p class="mt-1">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    ${asset.criticality === 'High' ? 'bg-red-100 text-red-800' : 
+                      asset.criticality === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                    ${asset.criticality || 'N/A'}
+                  </span>
+                </p>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700">Description</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.description || 'N/A'}</p>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700">Location</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.location || 'N/A'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Value</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.value ? '$' + asset.value : 'N/A'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Service</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.service || 'N/A'}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Risk Level</label>
+                <p class="mt-1">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    ${asset.risk_level === 'High' ? 'bg-red-100 text-red-800' : 
+                      asset.risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                    ${asset.risk_level || 'N/A'}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Created</label>
+                <p class="mt-1 text-sm text-gray-900">${asset.created_at ? new Date(asset.created_at).toLocaleDateString() : 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Modal Footer -->
+          <div class="flex justify-end space-x-2 pt-4 border-t mt-6">
+            <button onclick="editAsset(${asset.id})" class="btn-primary">
+              <i class="fas fa-edit mr-2"></i>Edit Asset
+            </button>
+            <button onclick="closeViewAssetModal()" class="btn-secondary">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-function deleteAsset(id) {
-  showToast(`Delete Asset ${id} - Implementation in progress`, 'info');
+function closeViewAssetModal() {
+  const modal = document.getElementById('view-asset-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+async function editAsset(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/assets/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      const asset = response.data.data;
+      showEditAssetModal(asset);
+    } else {
+      showToast('Failed to load asset data', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading asset:', error);
+    showToast('Failed to load asset data', 'error');
+  }
+}
+
+function showEditAssetModal(asset) {
+  const modalHTML = `
+    <div id="edit-asset-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <!-- Modal Header -->
+          <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">Edit Asset: ${asset.name}</h3>
+            <button onclick="closeEditAssetModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Modal Body -->
+          <form id="edit-asset-form" class="mt-6 space-y-6">
+            <input type="hidden" id="edit-asset-id" value="${asset.id}">
+            
+            <!-- Basic Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Asset Name *</label>
+                <input type="text" id="edit-asset-name" name="name" required class="form-input" value="${asset.name || ''}">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Asset ID</label>
+                <input type="text" id="edit-asset-id-field" name="asset_id" class="form-input" value="${asset.asset_id || ''}" readonly>
+              </div>
+            </div>
+
+            <!-- Asset Type and OS -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Asset Type *</label>
+                <select id="edit-asset-type" name="asset_type" required class="form-select">
+                  <option value="">Select asset type</option>
+                  <option value="server" ${asset.asset_type === 'server' ? 'selected' : ''}>Server</option>
+                  <option value="workstation" ${asset.asset_type === 'workstation' ? 'selected' : ''}>Workstation</option>
+                  <option value="mobile" ${asset.asset_type === 'mobile' ? 'selected' : ''}>Mobile Device</option>
+                  <option value="network_device" ${asset.asset_type === 'network_device' ? 'selected' : ''}>Network Device</option>
+                  <option value="iot" ${asset.asset_type === 'iot' ? 'selected' : ''}>IoT Device</option>
+                  <option value="cloud_resource" ${asset.asset_type === 'cloud_resource' ? 'selected' : ''}>Cloud Resource</option>
+                  <option value="database" ${asset.asset_type === 'database' ? 'selected' : ''}>Database</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Operating System</label>
+                <select id="edit-operating-system" name="operating_system" class="form-select">
+                  <option value="">Select OS</option>
+                  <option value="Windows Server 2022" ${asset.operating_system === 'Windows Server 2022' ? 'selected' : ''}>Windows Server 2022</option>
+                  <option value="Windows Server 2019" ${asset.operating_system === 'Windows Server 2019' ? 'selected' : ''}>Windows Server 2019</option>
+                  <option value="Windows 11" ${asset.operating_system === 'Windows 11' ? 'selected' : ''}>Windows 11</option>
+                  <option value="Windows 10" ${asset.operating_system === 'Windows 10' ? 'selected' : ''}>Windows 10</option>
+                  <option value="Ubuntu 22.04" ${asset.operating_system === 'Ubuntu 22.04' ? 'selected' : ''}>Ubuntu 22.04</option>
+                  <option value="Ubuntu 20.04" ${asset.operating_system === 'Ubuntu 20.04' ? 'selected' : ''}>Ubuntu 20.04</option>
+                  <option value="CentOS 8" ${asset.operating_system === 'CentOS 8' ? 'selected' : ''}>CentOS 8</option>
+                  <option value="RHEL 9" ${asset.operating_system === 'RHEL 9' ? 'selected' : ''}>Red Hat Enterprise Linux 9</option>
+                  <option value="macOS" ${asset.operating_system === 'macOS' ? 'selected' : ''}>macOS</option>
+                  <option value="iOS" ${asset.operating_system === 'iOS' ? 'selected' : ''}>iOS</option>
+                  <option value="Android" ${asset.operating_system === 'Android' ? 'selected' : ''}>Android</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Network Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">IP Address</label>
+                <input type="text" id="edit-ip-address" name="ip_address" class="form-input" value="${asset.ip_address || ''}" pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">MAC Address</label>
+                <input type="text" id="edit-mac-address" name="mac_address" class="form-input" value="${asset.mac_address || ''}" pattern="^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$">
+              </div>
+            </div>
+
+            <!-- Risk Assessment -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Risk Score</label>
+                <input type="range" id="edit-risk-score" name="risk_score" min="0" max="10" step="0.1" value="${asset.risk_score || 5}" class="w-full" oninput="updateEditRiskScoreDisplay(this.value)">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Low (0)</span>
+                  <span id="edit-risk-score-display" class="font-medium">${asset.risk_score || 5}</span>
+                  <span>Critical (10)</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Exposure Level</label>
+                <select id="edit-exposure-level" name="exposure_level" class="form-select">
+                  <option value="low" ${asset.exposure_level === 'low' ? 'selected' : ''}>Low - Internal network only</option>
+                  <option value="medium" ${asset.exposure_level === 'medium' ? 'selected' : ''}>Medium - Limited external access</option>
+                  <option value="high" ${asset.exposure_level === 'high' ? 'selected' : ''}>High - Internet accessible</option>
+                  <option value="critical" ${asset.exposure_level === 'critical' ? 'selected' : ''}>Critical - Public facing</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Organization Assignment -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Organization *</label>
+                <select id="edit-organization-id" name="organization_id" required class="form-select">
+                  <option value="">Select organization</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Service</label>
+                <select id="edit-service-id" name="service_id" class="form-select">
+                  <option value="">Select service (optional)</option>
+                  <!-- Options will be populated dynamically -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Asset Owner -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Asset Owner</label>
+              <select id="edit-owner-id" name="owner_id" class="form-select">
+                <option value="">Select owner</option>
+                <!-- Options will be populated dynamically -->
+              </select>
+            </div>
+
+            <!-- Device Tags -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Device Tags</label>
+              <input type="text" id="edit-device-tags" name="device_tags" class="form-input" value="${asset.device_tags ? JSON.parse(asset.device_tags).join(', ') : ''}">
+              <div class="text-xs text-gray-500 mt-1">Comma-separated tags for categorization</div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end space-x-3 pt-6 border-t">
+              <button type="button" onclick="closeEditAssetModal()" class="btn-secondary">
+                <i class="fas fa-times mr-2"></i>Cancel
+              </button>
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-save mr-2"></i>Update Asset
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Insert modal into DOM
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  // Load dropdown data and setup form handlers
+  loadEditAssetModalDropdowns(asset);
+  setupEditAssetFormHandlers();
+}
+
+function closeEditAssetModal() {
+  const modal = document.getElementById('edit-asset-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function updateEditRiskScoreDisplay(value) {
+  const display = document.getElementById('edit-risk-score-display');
+  if (display) {
+    display.textContent = parseFloat(value).toFixed(1);
+  }
+}
+
+async function loadEditAssetModalDropdowns(asset) {
+  const token = localStorage.getItem('dmt_token');
+  
+  try {
+    // Load organizations
+    const orgsResponse = await axios.get('/api/organizations', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const orgSelect = document.getElementById('edit-organization-id');
+    if (orgsResponse.data.success && orgSelect) {
+      orgSelect.innerHTML = '<option value="">Select organization</option>' + 
+        orgsResponse.data.data.map(org => 
+          `<option value="${org.id}" ${org.id === asset.organization_id ? 'selected' : ''}>${org.name}</option>`
+        ).join('');
+    }
+
+    // Load services
+    const servicesResponse = await axios.get('/api/services', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const serviceSelect = document.getElementById('edit-service-id');
+    if (servicesResponse.data.success && serviceSelect) {
+      serviceSelect.innerHTML = '<option value="">Select service (optional)</option>' + 
+        servicesResponse.data.data.map(service => 
+          `<option value="${service.id}" ${service.id === asset.service_id ? 'selected' : ''}>${service.name}</option>`
+        ).join('');
+    }
+
+    // Load users
+    const usersResponse = await axios.get('/api/users', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const ownerSelect = document.getElementById('edit-owner-id');
+    if (usersResponse.data.success && ownerSelect) {
+      ownerSelect.innerHTML = '<option value="">Select owner</option>' + 
+        usersResponse.data.data.map(user => 
+          `<option value="${user.id}" ${user.id === asset.owner_id ? 'selected' : ''}>${user.first_name} ${user.last_name} (${user.email})</option>`
+        ).join('');
+    }
+
+  } catch (error) {
+    console.error('Error loading edit asset dropdown data:', error);
+    showToast('Failed to load form data', 'error');
+  }
+}
+
+function setupEditAssetFormHandlers() {
+  const form = document.getElementById('edit-asset-form');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const assetId = document.getElementById('edit-asset-id').value;
+    const formData = new FormData(form);
+    const assetData = {
+      name: formData.get('name'),
+      asset_type: formData.get('asset_type'),
+      operating_system: formData.get('operating_system') || null,
+      ip_address: formData.get('ip_address') || null,
+      mac_address: formData.get('mac_address') || null,
+      risk_score: parseFloat(formData.get('risk_score')) || 0,
+      exposure_level: formData.get('exposure_level'),
+      organization_id: parseInt(formData.get('organization_id')),
+      service_id: formData.get('service_id') ? parseInt(formData.get('service_id')) : null,
+      owner_id: formData.get('owner_id') ? parseInt(formData.get('owner_id')) : null,
+      device_tags: formData.get('device_tags') ? formData.get('device_tags').split(',').map(tag => tag.trim()) : []
+    };
+
+    // Validation
+    if (!assetData.name || !assetData.asset_type || !assetData.organization_id) {
+      showToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('dmt_token');
+      const response = await axios.put(`/api/assets/${assetId}`, assetData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        showToast(`Asset "${assetData.name}" updated successfully`, 'success');
+        closeEditAssetModal();
+        
+        // Refresh assets table if we're on the assets page
+        if (currentModule === 'assets') {
+          await loadAssets();
+        }
+      } else {
+        showToast('Failed to update asset: ' + (response.data.error || 'Unknown error'), 'error');
+      }
+    } catch (error) {
+      console.error('Error updating asset:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to update asset';
+      showToast(errorMessage, 'error');
+    }
+  });
+}
+
+async function deleteAsset(id) {
+  if (!confirm('Are you sure you want to delete this asset? This action cannot be undone.')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.delete(`/api/assets/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Asset deleted successfully', 'success');
+      loadAssets(); // Refresh the assets list
+    } else {
+      showToast(response.data.message || 'Failed to delete asset', 'error');
+    }
+  } catch (error) {
+    console.error('Error deleting asset:', error);
+    if (error.response?.status === 403) {
+      showToast('You do not have permission to delete assets', 'error');
+    } else {
+      showToast('Failed to delete asset', 'error');
+    }
+  }
 }
 
 function showImportAssetsModal() {
-  showToast('Import Assets modal - Implementation in progress', 'info');
+  const modalHTML = `
+    <div id="import-assets-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <!-- Modal Header -->
+          <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">Import Assets</h3>
+            <button onclick="closeImportAssetsModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- Modal Body -->
+          <div class="mt-6">
+            <div class="mb-6">
+              <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-400"></i>
+                  </div>
+                  <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">CSV Import Instructions</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                      <p>Upload a CSV file with the following columns:</p>
+                      <ul class="list-disc ml-5 mt-1">
+                        <li>asset_id (optional - will be auto-generated if not provided)</li>
+                        <li>name (required)</li>
+                        <li>type (required: Hardware, Software, Data, Network, Facility, Personnel)</li>
+                        <li>category (optional)</li>
+                        <li>description (optional)</li>
+                        <li>owner (optional)</li>
+                        <li>location (optional)</li>
+                        <li>criticality (Low, Medium, High)</li>
+                        <li>value (optional - numeric value)</li>
+                        <li>service (optional)</li>
+                        <li>risk_level (Low, Medium, High)</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Select CSV File
+                </label>
+                <input 
+                  type="file" 
+                  id="import-assets-file" 
+                  accept=".csv"
+                  class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100"
+                />
+              </div>
+              
+              <div class="mb-4">
+                <label class="flex items-center">
+                  <input type="checkbox" id="import-skip-duplicates" class="form-checkbox" checked>
+                  <span class="ml-2 text-sm text-gray-700">Skip duplicate assets (based on asset_id)</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Modal Footer -->
+          <div class="flex justify-between pt-4 border-t">
+            <button onclick="downloadAssetTemplate()" class="btn-secondary">
+              <i class="fas fa-download mr-2"></i>Download Template
+            </button>
+            <div class="flex space-x-2">
+              <button onclick="importAssets()" class="btn-primary">
+                <i class="fas fa-upload mr-2"></i>Import Assets
+              </button>
+              <button onclick="closeImportAssetsModal()" class="btn-secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-function exportAssets() {
-  showToast('Export Assets - Implementation in progress', 'info');
+function closeImportAssetsModal() {
+  const modal = document.getElementById('import-assets-modal');
+  if (modal) {
+    modal.remove();
+  }
 }
 
-function filterAssets() {
-  showToast('Filter Assets - Implementation in progress', 'info');
+function downloadAssetTemplate() {
+  const csvContent = `asset_id,name,type,category,description,owner,location,criticality,value,service,risk_level
+AST-001,Server-01,Hardware,IT Infrastructure,Main application server,IT Team,Data Center,High,50000,Web Services,Medium
+AST-002,Customer Database,Data,Database,Customer information database,Data Team,Cloud,High,100000,Customer Service,High
+AST-003,Office Building,Facility,Physical,Main office building,Facilities,Downtown,Medium,500000,Operations,Low`;
+  
+  downloadCSV(csvContent, 'assets_import_template.csv');
+  showToast('Asset import template downloaded', 'success');
+}
+
+async function importAssets() {
+  const fileInput = document.getElementById('import-assets-file');
+  const skipDuplicates = document.getElementById('import-skip-duplicates').checked;
+  
+  if (!fileInput.files || !fileInput.files[0]) {
+    showToast('Please select a CSV file to import', 'error');
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  
+  try {
+    const csvText = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+    
+    const lines = csvText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      showToast('CSV file must contain at least a header and one data row', 'error');
+      return;
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const assets = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim());
+      if (values.length !== headers.length) {
+        continue; // Skip malformed rows
+      }
+      
+      const asset = {};
+      headers.forEach((header, index) => {
+        if (values[index]) {
+          asset[header] = values[index];
+        }
+      });
+      
+      // Validate required fields
+      if (!asset.name || !asset.type) {
+        continue; // Skip invalid rows
+      }
+      
+      // Generate asset_id if not provided
+      if (!asset.asset_id) {
+        asset.asset_id = generateAssetId();
+      }
+      
+      assets.push(asset);
+    }
+    
+    if (assets.length === 0) {
+      showToast('No valid assets found in CSV file', 'error');
+      return;
+    }
+    
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/assets/import', {
+      assets: assets,
+      skipDuplicates: skipDuplicates
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast(`Successfully imported ${response.data.imported} assets`, 'success');
+      closeImportAssetsModal();
+      loadAssets(); // Refresh the assets list
+    } else {
+      showToast(response.data.message || 'Failed to import assets', 'error');
+    }
+  } catch (error) {
+    console.error('Error importing assets:', error);
+    showToast('Failed to import assets', 'error');
+  }
+}
+
+async function exportAssets() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/assets', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data || !response.data.length) {
+      showToast('No assets found to export', 'warning');
+      return;
+    }
+    
+    const csvContent = convertToCSV(response.data, [
+      { key: 'id', label: 'ID' },
+      { key: 'asset_id', label: 'Asset ID' },
+      { key: 'name', label: 'Name' },
+      { key: 'type', label: 'Type' },
+      { key: 'category', label: 'Category' },
+      { key: 'description', label: 'Description' },
+      { key: 'owner', label: 'Owner' },
+      { key: 'location', label: 'Location' },
+      { key: 'criticality', label: 'Criticality' },
+      { key: 'value', label: 'Value' },
+      { key: 'service', label: 'Service' },
+      { key: 'risk_level', label: 'Risk Level' },
+      { key: 'created_at', label: 'Created Date' },
+      { key: 'updated_at', label: 'Updated Date' }
+    ]);
+    
+    downloadCSV(csvContent, `assets_export_${new Date().toISOString().split('T')[0]}.csv`);
+    showToast('Assets exported successfully', 'success');
+  } catch (error) {
+    console.error('Error exporting assets:', error);
+    showToast('Failed to export assets', 'error');
+  }
+}
+
+async function filterAssets() {
+  const searchTerm = document.getElementById('asset-search').value.toLowerCase();
+  const typeFilter = document.getElementById('asset-type-filter').value;
+  const riskFilter = document.getElementById('asset-risk-filter').value;
+  const serviceFilter = document.getElementById('asset-service-filter').value;
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/assets', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (!response.data) {
+      return;
+    }
+    
+    let filteredAssets = response.data.filter(asset => {
+      // Search term filter
+      const matchesSearch = !searchTerm || 
+        asset.name.toLowerCase().includes(searchTerm) ||
+        asset.asset_id.toLowerCase().includes(searchTerm) ||
+        (asset.description && asset.description.toLowerCase().includes(searchTerm)) ||
+        (asset.owner && asset.owner.toLowerCase().includes(searchTerm));
+      
+      // Type filter
+      const matchesType = !typeFilter || asset.type === typeFilter;
+      
+      // Risk level filter
+      const matchesRisk = !riskFilter || asset.risk_level === riskFilter;
+      
+      // Service filter
+      const matchesService = !serviceFilter || asset.service === serviceFilter;
+      
+      return matchesSearch && matchesType && matchesRisk && matchesService;
+    });
+    
+    // Update the display
+    displayAssets(filteredAssets);
+    
+    // Update filter count
+    const totalAssets = response.data.length;
+    const filteredCount = filteredAssets.length;
+    
+    if (filteredCount < totalAssets) {
+      showToast(`Showing ${filteredCount} of ${totalAssets} assets`, 'info');
+    }
+  } catch (error) {
+    console.error('Error filtering assets:', error);
+    showToast('Failed to filter assets', 'error');
+  }
+}
+
+function displayAssets(assets) {
+  const assetsList = document.getElementById('assets-list');
+  if (!assetsList) return;
+  
+  if (!assets || assets.length === 0) {
+    assetsList.innerHTML = `
+      <div class="text-center py-8">
+        <i class="fas fa-server text-gray-400 text-4xl mb-4"></i>
+        <p class="text-gray-500">No assets found</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const assetsHTML = assets.map(asset => `
+    <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div class="flex justify-between items-start mb-2">
+        <div>
+          <h3 class="text-lg font-medium text-gray-900">${asset.name}</h3>
+          <p class="text-sm text-gray-600">${asset.asset_id}</p>
+        </div>
+        <div class="flex space-x-2">
+          <button onclick="viewAsset(${asset.id})" class="text-blue-600 hover:text-blue-900" title="View Details">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button onclick="editAsset(${asset.id})" class="text-green-600 hover:text-green-900" title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="deleteAsset(${asset.id})" class="text-red-600 hover:text-red-900" title="Delete">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+        <div>
+          <span class="font-medium text-gray-700">Type:</span>
+          <span class="text-gray-900">${asset.type}</span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-700">Owner:</span>
+          <span class="text-gray-900">${asset.owner || 'N/A'}</span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-700">Criticality:</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+            ${asset.criticality === 'High' ? 'bg-red-100 text-red-800' : 
+              asset.criticality === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+            ${asset.criticality}
+          </span>
+        </div>
+        <div>
+          <span class="font-medium text-gray-700">Risk:</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+            ${asset.risk_level === 'High' ? 'bg-red-100 text-red-800' : 
+              asset.risk_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+            ${asset.risk_level}
+          </span>
+        </div>
+      </div>
+      
+      ${asset.description ? `<p class="mt-2 text-sm text-gray-600">${asset.description}</p>` : ''}
+    </div>
+  `).join('');
+  
+  assetsList.innerHTML = assetsHTML;
 }
 
 // Settings utility functions
@@ -1229,6 +2237,337 @@ function showSystemSettings() {
   `;
 }
 
+// Organizations Management Functions
+async function loadOrganizationsData() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/organizations', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      renderOrganizationsTable(response.data.data);
+      updateOrganizationsStatistics(response.data.data);
+      document.getElementById('organizations-loading').style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error loading organizations:', error);
+    document.getElementById('organizations-loading').innerHTML = '<p class="text-red-600">Error loading organizations</p>';
+  }
+}
+
+function renderOrganizationsTable(organizations) {
+  const tbody = document.getElementById('organizations-table-body');
+  if (!tbody) return;
+  
+  tbody.innerHTML = organizations.map(org => `
+    <tr class="table-row">
+      <td class="table-cell">
+        <div class="text-sm font-medium text-gray-900">${org.name}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${org.code || '-'}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${org.department || '-'}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${org.location || '-'}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${org.contact_email || '-'}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm font-medium text-blue-600">${org.asset_count || 0}</div>
+      </td>
+      <td class="table-cell">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${org.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+          ${org.is_active ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td class="table-cell">
+        <div class="flex space-x-2">
+          <button onclick="editOrganization(${org.id})" class="text-blue-600 hover:text-blue-900" title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="deleteOrganization(${org.id})" class="text-red-600 hover:text-red-900" title="Delete">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function updateOrganizationsStatistics(organizations) {
+  const total = organizations.length;
+  const active = organizations.filter(org => org.is_active).length;
+  const totalAssets = organizations.reduce((sum, org) => sum + (org.asset_count || 0), 0);
+  
+  document.getElementById('total-organizations').textContent = total;
+  document.getElementById('active-organizations').textContent = active;
+  document.getElementById('assigned-assets').textContent = totalAssets;
+}
+
+function showAddOrganizationModal() {
+  showModal('Add Organization', `
+    <form id="organization-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Organization Name</label>
+          <input type="text" id="org-name" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">Organization Code</label>
+          <input type="text" id="org-code" class="form-input">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Department</label>
+          <input type="text" id="org-department" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Location</label>
+          <input type="text" id="org-location" class="form-input">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Contact Email</label>
+        <input type="email" id="org-contact-email" class="form-input">
+      </div>
+      <div>
+        <label class="form-label">Description</label>
+        <textarea id="org-description" class="form-input" rows="3"></textarea>
+      </div>
+    </form>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Add Organization', class: 'btn-primary', onclick: 'saveOrganization()' }
+  ]);
+}
+
+async function saveOrganization() {
+  const formData = {
+    name: document.getElementById('org-name').value,
+    code: document.getElementById('org-code').value,
+    department: document.getElementById('org-department').value,
+    location: document.getElementById('org-location').value,
+    contact_email: document.getElementById('org-contact-email').value,
+    description: document.getElementById('org-description').value
+  };
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/organizations', formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Organization added successfully', 'success');
+      closeModal();
+      loadOrganizationsData();
+    }
+  } catch (error) {
+    showToast('Failed to add organization', 'error');
+  }
+}
+
+async function deleteOrganization(id) {
+  if (!confirm('Are you sure you want to delete this organization?')) return;
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.delete(`/api/organizations/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Organization deleted successfully', 'success');
+      loadOrganizationsData();
+    }
+  } catch (error) {
+    showToast('Failed to delete organization', 'error');
+  }
+}
+
+// Risk Owners Management Functions
+async function loadRiskOwnersData() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/risk-owners', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      renderRiskOwnersTable(response.data.data);
+      updateRiskOwnersStatistics(response.data.data);
+      document.getElementById('risk-owners-loading').style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error loading risk owners:', error);
+    document.getElementById('risk-owners-loading').innerHTML = '<p class="text-red-600">Error loading risk owners</p>';
+  }
+}
+
+function renderRiskOwnersTable(owners) {
+  const tbody = document.getElementById('risk-owners-table-body');
+  if (!tbody) return;
+  
+  tbody.innerHTML = owners.map(owner => `
+    <tr class="table-row">
+      <td class="table-cell">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
+            <span class="text-xs font-medium text-gray-700">
+              ${(owner.first_name?.[0] || '').toUpperCase()}${(owner.last_name?.[0] || '').toUpperCase()}
+            </span>
+          </div>
+          <div class="ml-3">
+            <div class="text-sm font-medium text-gray-900">${owner.first_name || ''} ${owner.last_name || ''}</div>
+            <div class="text-sm text-gray-500">${owner.email}</div>
+          </div>
+        </div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${owner.job_title || '-'}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${owner.department || '-'}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm text-gray-900">${owner.phone || '-'}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm font-medium text-blue-600">${owner.risks_assigned || 0}</div>
+      </td>
+      <td class="table-cell">
+        <div class="text-sm font-medium text-red-600">${owner.high_priority_risks || 0}</div>
+      </td>
+      <td class="table-cell">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${owner.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+          ${owner.is_active ? 'Active' : 'Inactive'}
+        </span>
+      </td>
+      <td class="table-cell">
+        <div class="flex space-x-2">
+          <button onclick="editRiskOwner(${owner.id})" class="text-blue-600 hover:text-blue-900" title="Edit">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button onclick="deleteRiskOwner(${owner.id})" class="text-red-600 hover:text-red-900" title="Delete">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function updateRiskOwnersStatistics(owners) {
+  const total = owners.length;
+  const active = owners.filter(owner => owner.is_active).length;
+  const totalRisks = owners.reduce((sum, owner) => sum + (owner.risks_assigned || 0), 0);
+  const highRiskItems = owners.reduce((sum, owner) => sum + (owner.high_priority_risks || 0), 0);
+  
+  document.getElementById('total-risk-owners').textContent = total;
+  document.getElementById('active-risk-owners').textContent = active;
+  document.getElementById('assigned-risks').textContent = totalRisks;
+  document.getElementById('high-risk-items').textContent = highRiskItems;
+}
+
+function showAddRiskOwnerModal() {
+  showModal('Add Risk Owner', `
+    <form id="risk-owner-form" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">First Name</label>
+          <input type="text" id="owner-first-name" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">Last Name</label>
+          <input type="text" id="owner-last-name" class="form-input" required>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Email</label>
+          <input type="email" id="owner-email" class="form-input" required>
+        </div>
+        <div>
+          <label class="form-label">Phone</label>
+          <input type="tel" id="owner-phone" class="form-input">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Job Title</label>
+          <input type="text" id="owner-job-title" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Department</label>
+          <input type="text" id="owner-department" class="form-input">
+        </div>
+      </div>
+    </form>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Add Risk Owner', class: 'btn-primary', onclick: 'saveRiskOwner()' }
+  ]);
+}
+
+async function saveRiskOwner() {
+  const formData = {
+    first_name: document.getElementById('owner-first-name').value,
+    last_name: document.getElementById('owner-last-name').value,
+    email: document.getElementById('owner-email').value,
+    phone: document.getElementById('owner-phone').value,
+    job_title: document.getElementById('owner-job-title').value,
+    department: document.getElementById('owner-department').value
+  };
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/risk-owners', formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Risk owner added successfully', 'success');
+      closeModal();
+      loadRiskOwnersData();
+    }
+  } catch (error) {
+    showToast('Failed to add risk owner', 'error');
+  }
+}
+
+async function deleteRiskOwner(id) {
+  if (!confirm('Are you sure you want to delete this risk owner?')) return;
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.delete(`/api/risk-owners/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Risk owner deleted successfully', 'success');
+      loadRiskOwnersData();
+    }
+  } catch (error) {
+    showToast('Failed to delete risk owner', 'error');
+  }
+}
+
+// Stub functions for edit operations
+function editOrganization(id) {
+  showToast('Edit organization functionality coming soon', 'info');
+}
+
+function editRiskOwner(id) {
+  showToast('Edit risk owner functionality coming soon', 'info');
+}
+
 // Make functions globally accessible
 window.showAssets = showAssets;
 window.showSettings = showSettings;
@@ -1242,3 +2581,19 @@ window.updateRiskScoreDisplay = updateRiskScoreDisplay;
 window.loadUsersForSettings = loadUsersForSettings;
 window.renderUsersTableForSettings = renderUsersTableForSettings;
 window.updateUsersStatisticsForSettings = updateUsersStatisticsForSettings;
+window.editAsset = editAsset;
+window.showEditAssetModal = showEditAssetModal;
+window.closeEditAssetModal = closeEditAssetModal;
+window.updateEditRiskScoreDisplay = updateEditRiskScoreDisplay;
+window.showOrganizationsSettings = showOrganizationsSettings;
+window.showRiskOwnersSettings = showRiskOwnersSettings;
+window.loadOrganizationsData = loadOrganizationsData;
+window.loadRiskOwnersData = loadRiskOwnersData;
+window.showAddOrganizationModal = showAddOrganizationModal;
+window.showAddRiskOwnerModal = showAddRiskOwnerModal;
+window.saveOrganization = saveOrganization;
+window.saveRiskOwner = saveRiskOwner;
+window.deleteOrganization = deleteOrganization;
+window.deleteRiskOwner = deleteRiskOwner;
+window.editOrganization = editOrganization;
+window.editRiskOwner = editRiskOwner;

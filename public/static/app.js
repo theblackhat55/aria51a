@@ -137,6 +137,7 @@ function initializeNavigation() {
     { id: 'nav-compliance', page: 'compliance' },
     { id: 'nav-incidents', page: 'incidents' },
     { id: 'nav-assets', page: 'assets' },
+    { id: 'nav-services', page: 'services' },
     { id: 'nav-settings', page: 'settings' }
   ];
   
@@ -266,6 +267,13 @@ function navigateTo(page) {
           showAssets();
         } else {
           showPlaceholder('Asset Management', 'Assets module loading...', 'server');
+        }
+        break;
+      case 'services':
+        if (typeof showServices === 'function') {
+          showServices();
+        } else {
+          showPlaceholder('Services Management', 'Services module loading...', 'cogs');
         }
         break;
       case 'settings':
