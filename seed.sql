@@ -9,13 +9,13 @@ INSERT OR IGNORE INTO organizations (id, name, description, org_type, contact_em
 (4, 'Human Resources', 'HR operations and employee management', 'department', 'hr@dmt-corp.com', 'medium'),
 (5, 'Operations', 'Core business operations', 'department', 'ops@dmt-corp.com', 'medium');
 
--- Insert sample users
+-- Insert sample users (password: demo123)
 INSERT OR IGNORE INTO users (id, email, username, password_hash, first_name, last_name, department, job_title, role) VALUES
-(1, 'admin@dmt-corp.com', 'admin', '$2b$10$rZ8QGBrN8K9x5YGX0D9eWOXYwP4P8C1L2M9V7M4Y6W3K2J9L5Q8N7', 'System', 'Administrator', 'IT', 'System Administrator', 'admin'),
-(2, 'avi@dmt-corp.com', 'avi_security', '$2b$10$rZ8QGBrN8K9x5YGX0D9eWOXYwP4P8C1L2M9V7M4Y6W3K2J9L5Q8N7', 'Avi', 'Security', 'IT', 'Security Specialist', 'risk_manager'),
-(3, 'sarah.johnson@dmt-corp.com', 'sjohnson', '$2b$10$rZ8QGBrN8K9x5YGX0D9eWOXYwP4P8C1L2M9V7M4Y6W3K2J9L5Q8N7', 'Sarah', 'Johnson', 'Finance', 'Risk Manager', 'risk_manager'),
-(4, 'mike.chen@dmt-corp.com', 'mchen', '$2b$10$rZ8QGBrN8K9x5YGX0D9eWOXYwP4P8C1L2M9V7M4Y6W3K2J9L5Q8N7', 'Mike', 'Chen', 'Operations', 'Compliance Officer', 'compliance_officer'),
-(5, 'emma.davis@dmt-corp.com', 'edavis', '$2b$10$rZ8QGBrN8K9x5YGX0D9eWOXYwP4P8C1L2M9V7M4Y6W3K2J9L5Q8N7', 'Emma', 'Davis', 'HR', 'Internal Auditor', 'auditor');
+(1, 'admin@dmt-corp.com', 'admin', 'ZGVtbzEyM3NhbHQ=', 'System', 'Administrator', 'IT', 'System Administrator', 'admin'),
+(2, 'avi@dmt-corp.com', 'avi_security', 'ZGVtbzEyM3NhbHQ=', 'Avi', 'Security', 'IT', 'Security Specialist', 'risk_manager'),
+(3, 'sarah.johnson@dmt-corp.com', 'sjohnson', 'ZGVtbzEyM3NhbHQ=', 'Sarah', 'Johnson', 'Finance', 'Risk Manager', 'risk_manager'),
+(4, 'mike.chen@dmt-corp.com', 'mchen', 'ZGVtbzEyM3NhbHQ=', 'Mike', 'Chen', 'Operations', 'Compliance Officer', 'compliance_officer'),
+(5, 'emma.davis@dmt-corp.com', 'edavis', 'ZGVtbzEyM3NhbHQ=', 'Emma', 'Davis', 'HR', 'Internal Auditor', 'auditor');
 
 -- Insert risk categories
 INSERT OR IGNORE INTO risk_categories (id, name, description, category_type, risk_appetite) VALUES
