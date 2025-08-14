@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dmt-risk-assessment",
+  "compatibility_date": "2025-08-14",
+  "pages_build_output_dir": "./dist",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dmt-production",
+      "database_id": "placeholder-will-be-updated-after-db-creation"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  }
+}
