@@ -1960,6 +1960,18 @@ export function createAPI() {
     try {
       const data = await c.req.json();
       
+      // Convert undefined values to null for D1 compatibility
+      const safeData = {
+        name: data.name ?? null,
+        code: data.code ?? null,
+        department: data.department ?? null,
+        location: data.location ?? null,
+        contact_email: data.contact_email ?? null,
+        description: data.description ?? null,
+        org_type: data.org_type ?? 'department', // Default to 'department' if not provided
+        is_active: data.is_active ?? 1
+      };
+      
       // Create organizations table if it doesn't exist
       await c.env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS organizations (
@@ -1970,6 +1982,7 @@ export function createAPI() {
           location TEXT,
           contact_email TEXT,
           description TEXT,
+          org_type TEXT NOT NULL DEFAULT 'department',
           is_active INTEGER DEFAULT 1,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -1977,15 +1990,17 @@ export function createAPI() {
       `).run();
 
       const result = await c.env.DB.prepare(`
-        INSERT INTO organizations (name, code, department, location, contact_email, description)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO organizations (name, code, department, location, contact_email, description, org_type, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
-        data.name,
-        data.code,
-        data.department,
-        data.location,
-        data.contact_email,
-        data.description
+        safeData.name,
+        safeData.code,
+        safeData.department,
+        safeData.location,
+        safeData.contact_email,
+        safeData.description,
+        safeData.org_type,
+        safeData.is_active
       ).run();
 
       return c.json<ApiResponse<{id: number}>>({ 
@@ -2007,6 +2022,17 @@ export function createAPI() {
       const id = c.req.param('id');
       const data = await c.req.json();
       
+      // Convert undefined values to null for D1 compatibility
+      const safeData = {
+        name: data.name ?? null,
+        code: data.code ?? null,
+        department: data.department ?? null,
+        location: data.location ?? null,
+        contact_email: data.contact_email ?? null,
+        description: data.description ?? null,
+        is_active: data.is_active ?? null
+      };
+      
       const result = await c.env.DB.prepare(`
         UPDATE organizations SET
           name = COALESCE(?, name),
@@ -2019,13 +2045,13 @@ export function createAPI() {
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(
-        data.name,
-        data.code,
-        data.department,
-        data.location,
-        data.contact_email,
-        data.description,
-        data.is_active,
+        safeData.name,
+        safeData.code,
+        safeData.department,
+        safeData.location,
+        safeData.contact_email,
+        safeData.description,
+        safeData.is_active,
         id
       ).run();
 
