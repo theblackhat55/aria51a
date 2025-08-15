@@ -139,6 +139,7 @@ function initializeNavigation() {
     { id: 'nav-incidents', page: 'incidents' },
     { id: 'nav-assets', page: 'assets' },
     { id: 'nav-services', page: 'services' },
+    { id: 'nav-documents', page: 'documents' },
     { id: 'nav-settings', page: 'settings' }
   ];
   
@@ -284,6 +285,13 @@ function navigateTo(page) {
           showPlaceholder('Services Management', 'Services module loading...', 'cogs');
         }
         break;
+      case 'documents':
+        if (typeof documentManager !== 'undefined' && documentManager.showDocuments) {
+          documentManager.showDocuments();
+        } else {
+          showPlaceholder('Document Management', 'Documents module loading...', 'file-alt');
+        }
+        break;
       case 'settings':
         if (typeof showSettings === 'function') {
           showSettings();
@@ -416,6 +424,51 @@ function showDashboard() {
         </div>
       </div>
       
+      <!-- Advanced Risk Heat Maps Section -->
+      <div class="dashboard-card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Advanced Risk Heat Maps</h3>
+          <div class="flex space-x-2">
+            <select id="heatmapView" onchange="updateHeatMap()" class="form-select text-sm">
+              <option value="probability_impact">Probability vs Impact</option>
+              <option value="organizational">Organizational Risk Matrix</option>
+              <option value="temporal">Temporal Risk Evolution</option>
+              <option value="category">Risk by Category</option>
+            </select>
+            <button onclick="toggleHeatMapFullscreen()" class="btn-icon">
+              <i class="fas fa-expand"></i>
+            </button>
+          </div>
+        </div>
+        <div id="riskHeatMapContainer" class="relative">
+          <canvas id="riskHeatMap" class="w-full h-96"></canvas>
+          <div id="heatMapTooltip" class="absolute hidden bg-black bg-opacity-75 text-white text-xs rounded px-2 py-1 pointer-events-none z-10"></div>
+        </div>
+        <div class="mt-4 flex justify-between items-center text-sm text-gray-600">
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+              <div class="w-4 h-4 bg-green-400 rounded"></div>
+              <span>Low Risk</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-4 h-4 bg-yellow-400 rounded"></div>
+              <span>Medium Risk</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-4 h-4 bg-orange-500 rounded"></div>
+              <span>High Risk</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-4 h-4 bg-red-600 rounded"></div>
+              <span>Critical Risk</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span>Total Risk Items: <strong id="heatMapRiskCount">${dashboardData.total_risks}</strong></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Charts and Analytics -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Risk Trend Chart -->
@@ -478,7 +531,7 @@ function showDashboard() {
     </div>
   `;
   
-  // Initialize charts
+  // Initialize charts and heat maps
   initializeCharts();
 }
 
@@ -536,6 +589,365 @@ function initializeCharts() {
       }
     });
   }
+  
+  // Initialize Risk Heat Map
+  initializeRiskHeatMap();
+}
+
+// Advanced Risk Heat Map Implementation
+let currentHeatMapChart = null;
+
+function initializeRiskHeatMap() {
+  const canvas = document.getElementById('riskHeatMap');
+  if (!canvas) return;
+  
+  // Initialize with default view
+  updateHeatMap();
+}
+
+function updateHeatMap() {
+  const view = document.getElementById('heatmapView')?.value || 'probability_impact';
+  const canvas = document.getElementById('riskHeatMap');
+  if (!canvas) return;
+  
+  // Destroy existing chart
+  if (currentHeatMapChart) {
+    currentHeatMapChart.destroy();
+  }
+  
+  const ctx = canvas.getContext('2d');
+  
+  switch(view) {
+    case 'probability_impact':
+      renderProbabilityImpactHeatMap(ctx);
+      break;
+    case 'organizational':
+      renderOrganizationalHeatMap(ctx);
+      break;
+    case 'temporal':
+      renderTemporalHeatMap(ctx);
+      break;
+    case 'category':
+      renderCategoryHeatMap(ctx);
+      break;
+    default:
+      renderProbabilityImpactHeatMap(ctx);
+  }
+}
+
+function renderProbabilityImpactHeatMap(ctx) {
+  // Generate sample heat map data based on dashboard data
+  const heatMapData = generateProbabilityImpactData();
+  
+  currentHeatMapChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Risk Items',
+        data: heatMapData.risks,
+        backgroundColor: function(context) {
+          const risk = context.parsed;
+          const score = risk.x * risk.y; // Probability × Impact
+          return getRiskHeatColor(score);
+        },
+        borderColor: '#ffffff',
+        borderWidth: 1,
+        pointRadius: function(context) {
+          return Math.max(6, Math.min(15, context.parsed.risks || 1) * 2);
+        }
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: 'linear',
+          position: 'bottom',
+          min: 1,
+          max: 5,
+          title: {
+            display: true,
+            text: 'Probability'
+          },
+          ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              const labels = ['', 'Very Low', 'Low', 'Medium', 'High', 'Very High'];
+              return labels[value] || value;
+            }
+          }
+        },
+        y: {
+          min: 1,
+          max: 5,
+          title: {
+            display: true,
+            text: 'Impact'
+          },
+          ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              const labels = ['', 'Minimal', 'Minor', 'Moderate', 'Major', 'Severe'];
+              return labels[value] || value;
+            }
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const risk = context.raw;
+              return [
+                \`Risk Score: \${(context.parsed.x * context.parsed.y).toFixed(1)}\`,
+                \`Probability: \${context.parsed.x}/5\`,
+                \`Impact: \${context.parsed.y}/5\`,
+                \`Risk Count: \${risk.risks || 1}\`
+              ];
+            }
+          }
+        }
+      },
+      interaction: {
+        intersect: false
+      }
+    }
+  });
+}
+
+function renderOrganizationalHeatMap(ctx) {
+  // Sample organizational data
+  const orgData = dashboardData.organizations || [
+    { name: 'IT', risks: 12, avgScore: 15.2 },
+    { name: 'Finance', risks: 8, avgScore: 12.1 },
+    { name: 'HR', risks: 5, avgScore: 8.5 },
+    { name: 'Operations', risks: 15, avgScore: 18.3 }
+  ];
+  
+  currentHeatMapChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: orgData.map(org => org.name),
+      datasets: [{
+        label: 'Risk Count',
+        data: orgData.map(org => org.risks),
+        backgroundColor: orgData.map(org => getRiskHeatColor(org.avgScore)),
+        borderColor: '#ffffff',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Risks'
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const org = orgData[context.dataIndex];
+              return [
+                \`Risk Count: \${org.risks}\`,
+                \`Average Score: \${org.avgScore}\`,
+                \`Risk Level: \${getRiskLevel(org.avgScore)}\`
+              ];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderTemporalHeatMap(ctx) {
+  // Temporal evolution data
+  const temporalData = generateTemporalData();
+  
+  currentHeatMapChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: temporalData.labels,
+      datasets: [{
+        label: 'Critical Risks',
+        data: temporalData.critical,
+        borderColor: '#DC2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+        fill: true
+      }, {
+        label: 'High Risks',
+        data: temporalData.high,
+        borderColor: '#EA580C',
+        backgroundColor: 'rgba(234, 88, 12, 0.1)',
+        fill: true
+      }, {
+        label: 'Medium Risks',
+        data: temporalData.medium,
+        borderColor: '#D97706',
+        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Time Period'
+          }
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Risk Count'
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    }
+  });
+}
+
+function renderCategoryHeatMap(ctx) {
+  // Category-based heat map
+  const categories = [
+    'Operational', 'Financial', 'Compliance', 'Technology', 
+    'Strategic', 'Reputation', 'Legal', 'Environmental'
+  ];
+  
+  const categoryData = categories.map(cat => ({
+    category: cat,
+    risks: Math.floor(Math.random() * 20) + 1,
+    avgScore: Math.random() * 20 + 5
+  }));
+  
+  currentHeatMapChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: categories,
+      datasets: [{
+        label: 'Risk Distribution',
+        data: categoryData.map(cat => cat.risks),
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderWidth: 2,
+        pointBackgroundColor: categoryData.map(cat => getRiskHeatColor(cat.avgScore)),
+        pointBorderColor: '#ffffff',
+        pointRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        r: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Risk Count'
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const cat = categoryData[context.dataIndex];
+              return [
+                \`Category: \${cat.category}\`,
+                \`Risk Count: \${cat.risks}\`,
+                \`Average Score: \${cat.avgScore.toFixed(1)}\`
+              ];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Helper functions for heat map
+function generateProbabilityImpactData() {
+  const risks = [];
+  for (let p = 1; p <= 5; p++) {
+    for (let i = 1; i <= 5; i++) {
+      const riskCount = Math.floor(Math.random() * 5) + 1;
+      if (riskCount > 0) {
+        risks.push({
+          x: p + (Math.random() - 0.5) * 0.3,
+          y: i + (Math.random() - 0.5) * 0.3,
+          risks: riskCount
+        });
+      }
+    }
+  }
+  return { risks };
+}
+
+function generateTemporalData() {
+  const labels = [];
+  const critical = [];
+  const high = [];
+  const medium = [];
+  
+  for (let i = 0; i < 12; i++) {
+    const date = new Date();
+    date.setMonth(date.getMonth() - (11 - i));
+    labels.push(date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+    
+    critical.push(Math.floor(Math.random() * 5) + 1);
+    high.push(Math.floor(Math.random() * 10) + 3);
+    medium.push(Math.floor(Math.random() * 15) + 5);
+  }
+  
+  return { labels, critical, high, medium };
+}
+
+function getRiskHeatColor(score) {
+  if (score >= 20) return '#DC2626'; // Red - Critical
+  if (score >= 15) return '#EA580C'; // Orange - High
+  if (score >= 10) return '#D97706'; // Yellow - Medium
+  if (score >= 5) return '#65A30D';  // Light Green - Low
+  return '#16A34A'; // Green - Very Low
+}
+
+function toggleHeatMapFullscreen() {
+  const container = document.getElementById('riskHeatMapContainer');
+  if (!container) return;
+  
+  if (container.classList.contains('fixed')) {
+    // Exit fullscreen
+    container.classList.remove('fixed', 'inset-0', 'z-50', 'bg-white', 'p-8');
+    container.querySelector('canvas').style.height = '24rem';
+    document.querySelector('#heatmapView').parentElement.querySelector('.fa-compress')?.classList.replace('fa-compress', 'fa-expand');
+  } else {
+    // Enter fullscreen
+    container.classList.add('fixed', 'inset-0', 'z-50', 'bg-white', 'p-8');
+    container.querySelector('canvas').style.height = 'calc(100vh - 12rem)';
+    document.querySelector('#heatmapView').parentElement.querySelector('.fa-expand')?.classList.replace('fa-expand', 'fa-compress');
+  }
+  
+  // Redraw chart after size change
+  setTimeout(() => {
+    if (currentHeatMapChart) {
+      currentHeatMapChart.resize();
+    }
+  }, 100);
 }
 
 // ARIA AI Assistant
@@ -571,17 +983,21 @@ function initializeARIAAssistant() {
 async function sendARIAMessage() {
   const ariaInput = document.getElementById('aria-input');
   const ariaChat = document.getElementById('aria-chat');
+  const ariaProvider = document.getElementById('aria-provider');
   const query = ariaInput.value.trim();
   
   if (!query) return;
   
-  // Add user message
+  const selectedProvider = ariaProvider?.value || 'openai';
+  
+  // Add user message with provider info
   ariaChat.innerHTML += `
     <div class="mb-4">
       <div class="text-right">
-        <div class="inline-block bg-blue-100 text-blue-800 rounded-lg px-3 py-2 text-sm">
+        <div class="inline-block bg-blue-100 text-blue-800 rounded-lg px-3 py-2 text-sm max-w-xs">
           ${query}
         </div>
+        <div class="text-xs text-gray-500 mt-1">Provider: ${getProviderDisplayName(selectedProvider)}</div>
       </div>
     </div>
   `;
@@ -589,12 +1005,13 @@ async function sendARIAMessage() {
   ariaInput.value = '';
   ariaChat.scrollTop = ariaChat.scrollHeight;
   
-  // Add loading message
+  // Add enhanced loading message
+  const loadingId = 'aria-loading-' + Date.now();
   ariaChat.innerHTML += `
-    <div class="mb-4" id="aria-loading">
+    <div class="mb-4" id="${loadingId}">
       <div class="text-left">
         <div class="inline-block bg-gray-100 text-gray-800 rounded-lg px-3 py-2 text-sm">
-          <i class="fas fa-spinner fa-spin mr-2"></i>ARIA is thinking...
+          <i class="fas fa-brain fa-pulse mr-2 text-purple-600"></i>ARIA is analyzing with ${getProviderDisplayName(selectedProvider)}...
         </div>
       </div>
     </div>
@@ -602,30 +1019,58 @@ async function sendARIAMessage() {
   
   try {
     const token = localStorage.getItem('dmt_token');
+    const startTime = Date.now();
+    
     const response = await axios.post('/api/aria/query', 
-      { query: query },
+      { query: query, provider: selectedProvider },
       { headers: { Authorization: `Bearer ${token}` } }
     );
     
+    const responseTime = Date.now() - startTime;
+    
     // Remove loading message
-    document.getElementById('aria-loading').remove();
+    const loadingElement = document.getElementById(loadingId);
+    if (loadingElement) loadingElement.remove();
     
     if (response.data.success) {
+      const data = response.data.data;
       ariaChat.innerHTML += `
         <div class="mb-4">
           <div class="text-left">
-            <div class="inline-block bg-gray-100 text-gray-800 rounded-lg px-3 py-2 text-sm">
-              <i class="fas fa-robot mr-2 text-blue-600"></i>${response.data.data.response}
+            <div class="inline-block bg-gray-100 text-gray-800 rounded-lg px-3 py-2 text-sm max-w-lg">
+              <i class="fas fa-robot mr-2 text-blue-600"></i>${data.response}
+            </div>
+            <div class="text-xs text-gray-500 mt-1 flex justify-between">
+              <span>${data.provider} • ${data.tokens_used || 0} tokens</span>
+              <span>${responseTime}ms</span>
             </div>
           </div>
         </div>
       `;
+      
+      // Show quick action buttons for specific queries
+      if (query.toLowerCase().includes('insight') || query.toLowerCase().includes('predict')) {
+        ariaChat.innerHTML += `
+          <div class="mb-4">
+            <div class="text-left">
+              <div class="flex space-x-2 text-xs">
+                <button onclick="showAIInsights()" class="bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">
+                  View AI Insights
+                </button>
+                <button onclick="showRiskPredictions()" class="bg-purple-100 text-purple-800 px-2 py-1 rounded hover:bg-purple-200">
+                  Risk Predictions
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
     } else {
       ariaChat.innerHTML += `
         <div class="mb-4">
           <div class="text-left">
             <div class="inline-block bg-red-100 text-red-800 rounded-lg px-3 py-2 text-sm">
-              Sorry, I encountered an error. Please try again.
+              <i class="fas fa-exclamation-triangle mr-2"></i>Sorry, I encountered an error. Please try again.
             </div>
           </div>
         </div>
@@ -633,12 +1078,14 @@ async function sendARIAMessage() {
     }
   } catch (error) {
     console.error('ARIA error:', error);
-    document.getElementById('aria-loading').remove();
+    const loadingElement = document.getElementById(loadingId);
+    if (loadingElement) loadingElement.remove();
+    
     ariaChat.innerHTML += `
       <div class="mb-4">
         <div class="text-left">
           <div class="inline-block bg-red-100 text-red-800 rounded-lg px-3 py-2 text-sm">
-            Sorry, I'm temporarily unavailable. Please try again later.
+            <i class="fas fa-wifi mr-2"></i>Sorry, I'm temporarily unavailable. Please try again later.
           </div>
         </div>
       </div>
@@ -646,6 +1093,178 @@ async function sendARIAMessage() {
   }
   
   ariaChat.scrollTop = ariaChat.scrollHeight;
+}
+
+function quickARIAQuery(query) {
+  const ariaInput = document.getElementById('aria-input');
+  if (ariaInput) {
+    ariaInput.value = query;
+    sendARIAMessage();
+  }
+}
+
+function getProviderDisplayName(provider) {
+  const names = {
+    'openai': 'GPT-4',
+    'gemini': 'Gemini Pro',
+    'anthropic': 'Claude 3',
+    'local': 'Local LLM'
+  };
+  return names[provider] || provider;
+}
+
+async function showAIInsights() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/ai/insights?type=all&limit=5', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      const insights = response.data.data;
+      showModal('AI Risk Insights', renderAIInsights(insights), [
+        { text: 'Close', class: 'btn-primary', onclick: 'closeModal()' }
+      ]);
+    } else {
+      showToast('Failed to load AI insights', 'error');
+    }
+  } catch (error) {
+    console.error('AI insights error:', error);
+    showToast('Failed to load AI insights', 'error');
+  }
+}
+
+function renderAIInsights(insights) {
+  if (!insights || insights.length === 0) {
+    return `
+      <div class="text-center py-8">
+        <i class="fas fa-brain text-4xl text-gray-300 mb-4"></i>
+        <p class="text-gray-600">No AI insights available at this time.</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="space-y-4">
+      ${insights.map(insight => `
+        <div class="border rounded-lg p-4 ${getSeverityClass(insight.severity)}">
+          <div class="flex items-start justify-between mb-2">
+            <h4 class="font-semibold text-gray-900">${insight.title}</h4>
+            <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+              ${(insight.confidence * 100).toFixed(0)}% confidence
+            </span>
+          </div>
+          <p class="text-gray-700 mb-3">${insight.description}</p>
+          ${insight.recommendations ? `
+            <div class="mt-3">
+              <h5 class="text-sm font-medium text-gray-900 mb-2">Recommendations:</h5>
+              <ul class="text-sm text-gray-600 space-y-1">
+                ${insight.recommendations.map(rec => `<li>• ${rec}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function getSeverityClass(severity) {
+  const classes = {
+    'critical': 'border-red-200 bg-red-50',
+    'high': 'border-orange-200 bg-orange-50',
+    'medium': 'border-yellow-200 bg-yellow-50',
+    'low': 'border-green-200 bg-green-50'
+  };
+  return classes[severity] || classes.low;
+}
+
+async function showRiskPredictions() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/ai/predict', {
+      entity_type: 'system',
+      entity_id: 1,
+      prediction_type: 'trend'
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      const prediction = response.data.data;
+      showModal('Risk Trend Predictions', renderRiskPredictions(prediction), [
+        { text: 'Close', class: 'btn-primary', onclick: 'closeModal()' }
+      ]);
+    } else {
+      showToast('Failed to load risk predictions', 'error');
+    }
+  } catch (error) {
+    console.error('Risk predictions error:', error);
+    showToast('Failed to load risk predictions', 'error');
+  }
+}
+
+function renderRiskPredictions(prediction) {
+  return `
+    <div class="space-y-6">
+      <!-- Trend Analysis -->
+      <div class="bg-gray-50 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-900 mb-3">Trend Analysis</h4>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span class="text-gray-600">Direction:</span>
+            <span class="ml-2 font-medium ${prediction.trend_analysis.direction === 'increasing' ? 'text-red-600' : 'text-green-600'}">
+              ${prediction.trend_analysis.direction}
+            </span>
+          </div>
+          <div>
+            <span class="text-gray-600">Confidence:</span>
+            <span class="ml-2 font-medium">${(prediction.trend_analysis.confidence * 100).toFixed(0)}%</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Magnitude:</span>
+            <span class="ml-2 font-medium">${(prediction.trend_analysis.magnitude * 100).toFixed(0)}% change</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Timeframe:</span>
+            <span class="ml-2 font-medium">${prediction.trend_analysis.timeframe}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Scenarios -->
+      <div>
+        <h4 class="font-semibold text-gray-900 mb-3">Risk Scenarios</h4>
+        <div class="space-y-2">
+          ${prediction.scenarios.map(scenario => `
+            <div class="flex justify-between items-center p-3 border rounded-lg">
+              <div>
+                <span class="font-medium">${scenario.name}</span>
+                <p class="text-sm text-gray-600">${scenario.description}</p>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium">${(scenario.probability * 100).toFixed(0)}%</div>
+                <div class="text-xs text-gray-500">${scenario.impact} Impact</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div>
+        <h4 class="font-semibold text-gray-900 mb-3">AI Recommendations</h4>
+        <ul class="space-y-2">
+          ${prediction.recommendations.map(rec => `
+            <li class="flex items-start space-x-2">
+              <i class="fas fa-lightbulb text-yellow-500 mt-1"></i>
+              <span class="text-sm">${rec}</span>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
 }
 
 // Navigation functions - implementations are now in modules.js

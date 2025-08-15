@@ -277,9 +277,26 @@ export function createAPI() {
         riskData.service_impact_factor || 'none', user.id
       ).run();
 
+      const riskId_db = result.meta.last_row_id as number;
+
+      // Trigger workflow notifications
+      await triggerWorkflow('risk_created', {
+        event_type: 'risk_created',
+        entity_type: 'risk',
+        entity_id: riskId_db,
+        risk_id: riskId,
+        risk_title: riskData.title,
+        risk_score: riskScore,
+        probability: riskData.probability,
+        impact: riskData.impact,
+        organization: riskData.organization_id,
+        owner_id: riskData.owner_id,
+        created_by: user.id
+      }, c.env.DB);
+
       return c.json<ApiResponse<{id: number, risk_id: string}>>({ 
         success: true, 
-        data: { id: result.meta.last_row_id as number, risk_id: riskId },
+        data: { id: riskId_db, risk_id: riskId },
         message: 'Risk created successfully' 
       }, 201);
     } catch (error) {
@@ -2464,6 +2481,1303 @@ export function createAPI() {
       }, 500);
     }
   });
+
+  // === NOTIFICATIONS API ENDPOINTS ===
+
+  // Get user notifications
+  api.get('/api/notifications', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const { limit = 20, offset = 0, unread_only = false } = c.req.query();
+      
+      let query = `
+        SELECT n.*, u.first_name, u.last_name 
+        FROM notifications n
+        LEFT JOIN users u ON n.user_id = u.id
+        WHERE n.user_id = ?
+      `;
+      
+      const params: any[] = [user.id];
+      
+      if (unread_only === 'true') {
+        query += ' AND n.is_read = 0';
+      }
+      
+      query += ' ORDER BY n.created_at DESC LIMIT ? OFFSET ?';
+      params.push(parseInt(limit as string), parseInt(offset as string));
+      
+      const result = await c.env.DB.prepare(query).bind(...params).all();
+      
+      return c.json<ApiResponse<any[]>>({ 
+        success: true, 
+        data: result.results || [] 
+      });
+    } catch (error) {
+      console.error('Get notifications error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch notifications' 
+      }, 500);
+    }
+  });
+
+  // Mark notification as read
+  api.put('/api/notifications/:id/read', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const id = c.req.param('id');
+      
+      const result = await c.env.DB.prepare(`
+        UPDATE notifications 
+        SET is_read = 1, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ? AND user_id = ?
+      `).bind(id, user.id).run();
+
+      if (result.changes === 0) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Notification not found' 
+        }, 404);
+      }
+
+      return c.json<ApiResponse<{updated: boolean}>>({ 
+        success: true, 
+        data: { updated: true } 
+      });
+    } catch (error) {
+      console.error('Mark notification read error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to mark notification as read' 
+      }, 500);
+    }
+  });
+
+  // Mark all notifications as read
+  api.put('/api/notifications/read-all', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      
+      const result = await c.env.DB.prepare(`
+        UPDATE notifications 
+        SET is_read = 1, updated_at = CURRENT_TIMESTAMP 
+        WHERE user_id = ? AND is_read = 0
+      `).bind(user.id).run();
+
+      return c.json<ApiResponse<{updated: number}>>({ 
+        success: true, 
+        data: { updated: result.changes || 0 } 
+      });
+    } catch (error) {
+      console.error('Mark all notifications read error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to mark all notifications as read' 
+      }, 500);
+    }
+  });
+
+  // Get notification count
+  api.get('/api/notifications/count', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN is_read = 0 THEN 1 END) as unread
+        FROM notifications 
+        WHERE user_id = ? AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+      `).bind(user.id).first();
+
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: result || { total: 0, unread: 0 } 
+      });
+    } catch (error) {
+      console.error('Get notification count error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to get notification count' 
+      }, 500);
+    }
+  });
+
+  // Create notification (for system use)
+  api.post('/api/notifications', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      
+      // Only allow admins to create notifications manually
+      if (user.role !== 'admin') {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Insufficient permissions' 
+        }, 403);
+      }
+      
+      const data = await c.req.json();
+      
+      const result = await c.env.DB.prepare(`
+        INSERT INTO notifications (
+          user_id, title, message, type, category, 
+          related_entity_type, related_entity_id, action_url, metadata
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        data.user_id,
+        data.title,
+        data.message,
+        data.type || 'info',
+        data.category,
+        data.related_entity_type,
+        data.related_entity_id,
+        data.action_url,
+        data.metadata ? JSON.stringify(data.metadata) : null
+      ).run();
+
+      return c.json<ApiResponse<{id: number}>>({ 
+        success: true, 
+        data: { id: result.meta.last_row_id as number },
+        message: 'Notification created successfully' 
+      });
+    } catch (error) {
+      console.error('Create notification error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to create notification' 
+      }, 500);
+    }
+  });
+
+  // === WORKFLOW AUTOMATION ENDPOINTS ===
+
+  // Get workflow rules
+  api.get('/api/workflow-rules', authMiddleware, async (c) => {
+    try {
+      const result = await c.env.DB.prepare(`
+        SELECT wr.*, u.first_name, u.last_name 
+        FROM workflow_rules wr
+        LEFT JOIN users u ON wr.created_by = u.id
+        ORDER BY wr.priority DESC, wr.created_at DESC
+      `).all();
+
+      return c.json<ApiResponse<any[]>>({ 
+        success: true, 
+        data: result.results || [] 
+      });
+    } catch (error) {
+      console.error('Get workflow rules error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch workflow rules' 
+      }, 500);
+    }
+  });
+
+  // Create workflow rule
+  api.post('/api/workflow-rules', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      
+      // Only allow admins and risk managers to create workflow rules
+      if (!['admin', 'risk_manager'].includes(user.role)) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Insufficient permissions' 
+        }, 403);
+      }
+      
+      const data = await c.req.json();
+      
+      const result = await c.env.DB.prepare(`
+        INSERT INTO workflow_rules (
+          name, description, event_type, conditions, actions, 
+          is_active, priority, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        data.name,
+        data.description,
+        data.event_type,
+        JSON.stringify(data.conditions),
+        JSON.stringify(data.actions),
+        data.is_active ?? 1,
+        data.priority ?? 1,
+        user.id
+      ).run();
+
+      return c.json<ApiResponse<{id: number}>>({ 
+        success: true, 
+        data: { id: result.meta.last_row_id as number },
+        message: 'Workflow rule created successfully' 
+      });
+    } catch (error) {
+      console.error('Create workflow rule error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to create workflow rule' 
+      }, 500);
+    }
+  });
+
+  // Trigger workflow (internal function)
+  async function triggerWorkflow(eventType: string, eventData: any, db: any) {
+    try {
+      // Get active workflow rules for this event type
+      const rules = await db.prepare(`
+        SELECT * FROM workflow_rules 
+        WHERE event_type = ? AND is_active = 1 
+        ORDER BY priority DESC
+      `).bind(eventType).all();
+
+      for (const rule of rules.results || []) {
+        try {
+          const conditions = JSON.parse(rule.conditions);
+          const actions = JSON.parse(rule.actions);
+          
+          // Check if conditions are met
+          if (evaluateConditions(conditions, eventData)) {
+            // Log workflow execution
+            const executionResult = await db.prepare(`
+              INSERT INTO workflow_executions (
+                rule_id, trigger_event, trigger_data, execution_status
+              ) VALUES (?, ?, ?, ?)
+            `).bind(
+              rule.id,
+              eventType,
+              JSON.stringify(eventData),
+              'running'
+            ).run();
+            
+            const executionId = executionResult.meta.last_row_id;
+            
+            // Execute actions
+            const actionsPerformed = [];
+            for (const action of actions) {
+              try {
+                await executeWorkflowAction(action, eventData, db);
+                actionsPerformed.push({
+                  action: action.type,
+                  status: 'completed',
+                  timestamp: new Date().toISOString()
+                });
+              } catch (actionError) {
+                console.error('Workflow action error:', actionError);
+                actionsPerformed.push({
+                  action: action.type,
+                  status: 'failed',
+                  error: actionError.message,
+                  timestamp: new Date().toISOString()
+                });
+              }
+            }
+            
+            // Update execution log
+            await db.prepare(`
+              UPDATE workflow_executions 
+              SET execution_status = ?, actions_performed = ?, completed_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `).bind(
+              'completed',
+              JSON.stringify(actionsPerformed),
+              executionId
+            ).run();
+            
+          }
+        } catch (ruleError) {
+          console.error('Workflow rule execution error:', ruleError);
+          
+          // Log failed execution
+          await db.prepare(`
+            INSERT INTO workflow_executions (
+              rule_id, trigger_event, trigger_data, execution_status, error_message
+            ) VALUES (?, ?, ?, ?, ?)
+          `).bind(
+            rule.id,
+            eventType,
+            JSON.stringify(eventData),
+            'failed',
+            ruleError.message
+          ).run();
+        }
+      }
+    } catch (error) {
+      console.error('Trigger workflow error:', error);
+    }
+  }
+
+  // Helper function to evaluate workflow conditions
+  function evaluateConditions(conditions: any, data: any): boolean {
+    for (const [field, condition] of Object.entries(conditions)) {
+      const value = getNestedValue(data, field);
+      
+      if (typeof condition === 'object') {
+        for (const [operator, expectedValue] of Object.entries(condition)) {
+          switch (operator) {
+            case '>=':
+              if (!(value >= expectedValue)) return false;
+              break;
+            case '<=':
+              if (!(value <= expectedValue)) return false;
+              break;
+            case '>':
+              if (!(value > expectedValue)) return false;
+              break;
+            case '<':
+              if (!(value < expectedValue)) return false;
+              break;
+            case '==':
+              if (!(value == expectedValue)) return false;
+              break;
+            case '!=':
+              if (!(value != expectedValue)) return false;
+              break;
+            case 'in':
+              if (!Array.isArray(expectedValue) || !expectedValue.includes(value)) return false;
+              break;
+            case 'contains':
+              if (!value || !value.toString().includes(expectedValue)) return false;
+              break;
+            default:
+              console.warn(`Unknown operator: ${operator}`);
+          }
+        }
+      } else {
+        if (value !== condition) return false;
+      }
+    }
+    return true;
+  }
+
+  // Helper function to execute workflow actions
+  async function executeWorkflowAction(action: any, eventData: any, db: any) {
+    switch (action.type) {
+      case 'notify_users':
+        await executeNotifyUsersAction(action, eventData, db);
+        break;
+      case 'create_task':
+        await executeCreateTaskAction(action, eventData, db);
+        break;
+      case 'send_email':
+        await executeSendEmailAction(action, eventData, db);
+        break;
+      case 'update_status':
+        await executeUpdateStatusAction(action, eventData, db);
+        break;
+      default:
+        console.warn(`Unknown action type: ${action.type}`);
+    }
+  }
+
+  // Execute notify users action
+  async function executeNotifyUsersAction(action: any, eventData: any, db: any) {
+    const targets = action.targets || [];
+    const templateName = action.template;
+    
+    // Get notification template
+    const template = await db.prepare(`
+      SELECT * FROM notification_templates WHERE name = ?
+    `).bind(templateName).first();
+    
+    if (!template) {
+      throw new Error(`Notification template '${templateName}' not found`);
+    }
+    
+    // Get target users
+    const userIds = await resolveNotificationTargets(targets, eventData, db);
+    
+    // Create notifications for each user
+    for (const userId of userIds) {
+      const title = interpolateTemplate(template.title_template, eventData);
+      const message = interpolateTemplate(template.body_template, eventData);
+      
+      await db.prepare(`
+        INSERT INTO notifications (
+          user_id, title, message, type, category,
+          related_entity_type, related_entity_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        userId,
+        title,
+        message,
+        'info',
+        getEventCategory(eventData.event_type),
+        eventData.entity_type,
+        eventData.entity_id
+      ).run();
+    }
+  }
+
+  // Helper functions for workflow system
+  function getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+  }
+
+  function interpolateTemplate(template: string, data: any): string {
+    return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      return getNestedValue(data, key) || match;
+    });
+  }
+
+  async function resolveNotificationTargets(targets: string[], eventData: any, db: any): Promise<number[]> {
+    const userIds: number[] = [];
+    
+    for (const target of targets) {
+      if (target.startsWith('role:')) {
+        const role = target.substring(5);
+        const users = await db.prepare(`SELECT id FROM users WHERE role = ?`).bind(role).all();
+        userIds.push(...(users.results || []).map((u: any) => u.id));
+      } else if (target.startsWith('department:')) {
+        const department = target.substring(11);
+        const users = await db.prepare(`SELECT id FROM users WHERE department = ?`).bind(department).all();
+        userIds.push(...(users.results || []).map((u: any) => u.id));
+      } else if (target === 'risk_owner' && eventData.owner_id) {
+        userIds.push(eventData.owner_id);
+      }
+    }
+    
+    return [...new Set(userIds)]; // Remove duplicates
+  }
+
+  function getEventCategory(eventType: string): string {
+    if (eventType.includes('risk')) return 'risk';
+    if (eventType.includes('incident')) return 'incident';
+    if (eventType.includes('compliance')) return 'compliance';
+    if (eventType.includes('control')) return 'control';
+    return 'system';
+  }
+
+  async function executeCreateTaskAction(action: any, eventData: any, db: any) {
+    // Placeholder for task creation
+    console.log('Create task action:', action, eventData);
+  }
+
+  async function executeSendEmailAction(action: any, eventData: any, db: any) {
+    // Placeholder for email sending
+    console.log('Send email action:', action, eventData);
+  }
+
+  async function executeUpdateStatusAction(action: any, eventData: any, db: any) {
+    // Placeholder for status updates
+    console.log('Update status action:', action, eventData);
+  }
+
+  // === DOCUMENT MANAGEMENT API ENDPOINTS ===
+
+  // Get documents list
+  api.get('/api/documents', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const { 
+        limit = 50, 
+        offset = 0, 
+        type, 
+        status = 'active',
+        related_entity_type,
+        related_entity_id,
+        search
+      } = c.req.query();
+      
+      let query = `
+        SELECT d.*, u.first_name, u.last_name, u.email as uploader_email
+        FROM documents d
+        LEFT JOIN users u ON d.uploaded_by = u.id
+        WHERE d.status = ?
+      `;
+      
+      const params: any[] = [status];
+      
+      // Add visibility filter based on user role
+      if (user.role !== 'admin') {
+        query += ` AND (d.visibility = 'public' OR d.uploaded_by = ? OR d.access_permissions LIKE ?)`;
+        params.push(user.id, `%"${user.role}"%`);
+      }
+      
+      if (type) {
+        query += ' AND d.document_type = ?';
+        params.push(type);
+      }
+      
+      if (related_entity_type && related_entity_id) {
+        query += ' AND d.related_entity_type = ? AND d.related_entity_id = ?';
+        params.push(related_entity_type, related_entity_id);
+      }
+      
+      if (search) {
+        query += ' AND (d.title LIKE ? OR d.description LIKE ? OR d.original_file_name LIKE ?)';
+        const searchTerm = `%${search}%`;
+        params.push(searchTerm, searchTerm, searchTerm);
+      }
+      
+      query += ' ORDER BY d.upload_date DESC LIMIT ? OFFSET ?';
+      params.push(parseInt(limit as string), parseInt(offset as string));
+      
+      const result = await c.env.DB.prepare(query).bind(...params).all();
+      
+      return c.json<ApiResponse<any[]>>({ 
+        success: true, 
+        data: result.results || [] 
+      });
+    } catch (error) {
+      console.error('Get documents error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch documents' 
+      }, 500);
+    }
+  });
+
+  // Upload document (placeholder - actual file upload would require R2 or external storage)
+  api.post('/api/documents', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const data = await c.req.json();
+      
+      // In a real implementation, you would:
+      // 1. Handle multipart file upload
+      // 2. Store file in R2 or similar storage
+      // 3. Generate file hash for deduplication
+      // 4. Create thumbnail for images/PDFs
+      
+      // For now, we'll simulate document metadata creation
+      const documentData = {
+        file_name: data.file_name || 'document.pdf',
+        original_file_name: data.original_file_name || data.file_name,
+        file_path: `/uploads/${Date.now()}-${data.file_name}`,
+        file_size: data.file_size || 0,
+        mime_type: data.mime_type || 'application/pdf',
+        file_hash: `hash_${Date.now()}`, // Would be actual SHA-256 hash
+        uploaded_by: user.id,
+        title: data.title,
+        description: data.description,
+        document_type: data.document_type || 'other',
+        tags: data.tags ? JSON.stringify(data.tags) : null,
+        version: data.version || '1.0',
+        visibility: data.visibility || 'private',
+        access_permissions: data.access_permissions ? JSON.stringify(data.access_permissions) : null,
+        related_entity_type: data.related_entity_type,
+        related_entity_id: data.related_entity_id
+      };
+      
+      const result = await c.env.DB.prepare(`
+        INSERT INTO documents (
+          file_name, original_file_name, file_path, file_size, mime_type, file_hash,
+          uploaded_by, title, description, document_type, tags, version, visibility,
+          access_permissions, related_entity_type, related_entity_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        documentData.file_name, documentData.original_file_name, documentData.file_path,
+        documentData.file_size, documentData.mime_type, documentData.file_hash,
+        documentData.uploaded_by, documentData.title, documentData.description,
+        documentData.document_type, documentData.tags, documentData.version,
+        documentData.visibility, documentData.access_permissions,
+        documentData.related_entity_type, documentData.related_entity_id
+      ).run();
+
+      return c.json<ApiResponse<{id: number}>>({ 
+        success: true, 
+        data: { id: result.meta.last_row_id as number },
+        message: 'Document uploaded successfully' 
+      }, 201);
+    } catch (error) {
+      console.error('Upload document error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to upload document' 
+      }, 500);
+    }
+  });
+
+  // Get document details
+  api.get('/api/documents/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const id = c.req.param('id');
+      
+      const document = await c.env.DB.prepare(`
+        SELECT d.*, u.first_name, u.last_name, u.email as uploader_email
+        FROM documents d
+        LEFT JOIN users u ON d.uploaded_by = u.id
+        WHERE d.id = ? AND d.status = 'active'
+      `).bind(id).first();
+
+      if (!document) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Document not found' 
+        }, 404);
+      }
+
+      // Check access permissions
+      const hasAccess = 
+        user.role === 'admin' ||
+        document.uploaded_by === user.id ||
+        document.visibility === 'public' ||
+        (document.access_permissions && document.access_permissions.includes(user.role));
+
+      if (!hasAccess) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Access denied' 
+        }, 403);
+      }
+
+      // Log access
+      await c.env.DB.prepare(`
+        INSERT INTO document_access_log (document_id, user_id, action, ip_address)
+        VALUES (?, ?, 'view', ?)
+      `).bind(id, user.id, c.req.header('cf-connecting-ip') || 'unknown').run();
+
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: document 
+      });
+    } catch (error) {
+      console.error('Get document error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch document' 
+      }, 500);
+    }
+  });
+
+  // Update document
+  api.put('/api/documents/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const id = c.req.param('id');
+      const data = await c.req.json();
+      
+      // Check if user can edit this document
+      const document = await c.env.DB.prepare(`
+        SELECT * FROM documents WHERE id = ? AND status = 'active'
+      `).bind(id).first();
+
+      if (!document) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Document not found' 
+        }, 404);
+      }
+
+      const canEdit = 
+        user.role === 'admin' ||
+        document.uploaded_by === user.id;
+
+      if (!canEdit) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Access denied' 
+        }, 403);
+      }
+
+      const result = await c.env.DB.prepare(`
+        UPDATE documents SET
+          title = COALESCE(?, title),
+          description = COALESCE(?, description),
+          document_type = COALESCE(?, document_type),
+          tags = COALESCE(?, tags),
+          visibility = COALESCE(?, visibility),
+          access_permissions = COALESCE(?, access_permissions),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        data.title,
+        data.description,
+        data.document_type,
+        data.tags ? JSON.stringify(data.tags) : null,
+        data.visibility,
+        data.access_permissions ? JSON.stringify(data.access_permissions) : null,
+        id
+      ).run();
+
+      if (result.changes === 0) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Document not found' 
+        }, 404);
+      }
+
+      return c.json<ApiResponse<{updated: boolean}>>({ 
+        success: true, 
+        data: { updated: true },
+        message: 'Document updated successfully' 
+      });
+    } catch (error) {
+      console.error('Update document error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to update document' 
+      }, 500);
+    }
+  });
+
+  // Delete document (soft delete)
+  api.delete('/api/documents/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const id = c.req.param('id');
+      
+      // Check if user can delete this document
+      const document = await c.env.DB.prepare(`
+        SELECT * FROM documents WHERE id = ? AND status = 'active'
+      `).bind(id).first();
+
+      if (!document) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Document not found' 
+        }, 404);
+      }
+
+      const canDelete = 
+        user.role === 'admin' ||
+        document.uploaded_by === user.id;
+
+      if (!canDelete) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Access denied' 
+        }, 403);
+      }
+
+      const result = await c.env.DB.prepare(`
+        UPDATE documents SET 
+          status = 'deleted',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(id).run();
+
+      if (result.changes === 0) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Document not found' 
+        }, 404);
+      }
+
+      // Log deletion
+      await c.env.DB.prepare(`
+        INSERT INTO document_access_log (document_id, user_id, action, ip_address)
+        VALUES (?, ?, 'delete', ?)
+      `).bind(id, user.id, c.req.header('cf-connecting-ip') || 'unknown').run();
+
+      return c.json<ApiResponse<{deleted: boolean}>>({ 
+        success: true, 
+        data: { deleted: true },
+        message: 'Document deleted successfully' 
+      });
+    } catch (error) {
+      console.error('Delete document error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to delete document' 
+      }, 500);
+    }
+  });
+
+  // Get document access logs
+  api.get('/api/documents/:id/access-log', authMiddleware, requireRole(['admin']), async (c) => {
+    try {
+      const id = c.req.param('id');
+      const { limit = 50, offset = 0 } = c.req.query();
+      
+      const result = await c.env.DB.prepare(`
+        SELECT dal.*, u.first_name, u.last_name, u.email
+        FROM document_access_log dal
+        LEFT JOIN users u ON dal.user_id = u.id
+        WHERE dal.document_id = ?
+        ORDER BY dal.accessed_at DESC
+        LIMIT ? OFFSET ?
+      `).bind(id, parseInt(limit as string), parseInt(offset as string)).all();
+
+      return c.json<ApiResponse<any[]>>({ 
+        success: true, 
+        data: result.results || [] 
+      });
+    } catch (error) {
+      console.error('Get document access log error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch access log' 
+      }, 500);
+    }
+  });
+
+  // === AI-POWERED RISK INSIGHTS & LLM INTEGRATION ===
+
+  // Enhanced ARIA Assistant with Multiple LLM Providers
+  api.post('/api/aria/query', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const { query, provider, model } = await c.req.json();
+      
+      if (!query) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Query is required' 
+        }, 400);
+      }
+
+      // Get user context for better responses
+      const userContext = await getUserContext(user.id, c.env.DB);
+      
+      // Generate response using selected LLM provider
+      const aiResponse = await generateAIResponse(query, userContext, provider || 'openai', model);
+      
+      // Store conversation history
+      await storeConversation(user.id, query, aiResponse, provider || 'openai', c.env.DB);
+
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: {
+          response: aiResponse.content,
+          provider: aiResponse.provider,
+          model: aiResponse.model,
+          tokens_used: aiResponse.tokensUsed,
+          response_time: aiResponse.responseTime
+        }
+      });
+    } catch (error) {
+      console.error('ARIA query error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to process query' 
+      }, 500);
+    }
+  });
+
+  // Get AI Risk Insights
+  api.get('/api/ai/insights', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const { type = 'all', limit = 10 } = c.req.query();
+      
+      // Generate AI insights based on current risk data
+      const insights = await generateRiskInsights(user, type as string, parseInt(limit as string), c.env.DB);
+      
+      return c.json<ApiResponse<any[]>>({ 
+        success: true, 
+        data: insights 
+      });
+    } catch (error) {
+      console.error('AI insights error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to generate insights' 
+      }, 500);
+    }
+  });
+
+  // Analyze Risk with AI
+  api.post('/api/ai/analyze-risk', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const { risk_id, analysis_type = 'comprehensive' } = await c.req.json();
+      
+      if (!risk_id) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Risk ID is required' 
+        }, 400);
+      }
+
+      // Get risk data
+      const risk = await c.env.DB.prepare(`
+        SELECT r.*, rc.name as category_name, o.name as organization_name, u.first_name, u.last_name
+        FROM risks r
+        LEFT JOIN risk_categories rc ON r.category_id = rc.id
+        LEFT JOIN organizations o ON r.organization_id = o.id
+        LEFT JOIN users u ON r.owner_id = u.id
+        WHERE r.id = ?
+      `).bind(risk_id).first();
+
+      if (!risk) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Risk not found' 
+        }, 404);
+      }
+
+      // Generate AI analysis
+      const analysis = await analyzeRiskWithAI(risk, analysis_type, c.env.DB);
+      
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: analysis 
+      });
+    } catch (error) {
+      console.error('AI risk analysis error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to analyze risk' 
+      }, 500);
+    }
+  });
+
+  // Get Available LLM Providers
+  api.get('/api/ai/providers', authMiddleware, requireRole(['admin']), async (c) => {
+    try {
+      // Return simulated provider data (in real implementation, this would come from database)
+      const providers = [
+        {
+          id: 1,
+          name: 'OpenAI GPT-4',
+          provider: 'openai',
+          model: 'gpt-4',
+          status: 'active',
+          capabilities: ['analysis', 'risk_assessment', 'recommendations'],
+          description: 'Advanced language model with strong reasoning capabilities'
+        },
+        {
+          id: 2,
+          name: 'Google Gemini Pro',
+          provider: 'gemini',
+          model: 'gemini-pro',
+          status: 'active',
+          capabilities: ['analysis', 'risk_assessment', 'multimodal'],
+          description: 'Google\'s advanced AI model with multimodal capabilities'
+        },
+        {
+          id: 3,
+          name: 'Anthropic Claude 3',
+          provider: 'anthropic',
+          model: 'claude-3-opus',
+          status: 'active',
+          capabilities: ['analysis', 'risk_assessment', 'reasoning', 'safety'],
+          description: 'Constitutional AI with strong safety and reasoning focus'
+        },
+        {
+          id: 4,
+          name: 'Local LLM',
+          provider: 'local',
+          model: 'llama-2-7b',
+          status: 'offline',
+          capabilities: ['analysis', 'basic_reasoning'],
+          description: 'Self-hosted local model for private processing'
+        }
+      ];
+
+      return c.json<ApiResponse<any[]>>({ 
+        success: true, 
+        data: providers 
+      });
+    } catch (error) {
+      console.error('Get providers error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch providers' 
+      }, 500);
+    }
+  });
+
+  // Generate Risk Prediction
+  api.post('/api/ai/predict', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;  
+      const { entity_type, entity_id, prediction_type = 'trend' } = await c.req.json();
+      
+      const prediction = await generateRiskPrediction(entity_type, entity_id, prediction_type, c.env.DB);
+      
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: prediction 
+      });
+    } catch (error) {
+      console.error('AI prediction error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to generate prediction' 
+      }, 500);
+    }
+  });
+
+  // Helper functions for AI functionality
+  async function getUserContext(userId: number, db: any) {
+    try {
+      // Get user's recent risks, organizations, and activities
+      const userRisks = await db.prepare(`
+        SELECT COUNT(*) as risk_count, AVG(risk_score) as avg_risk_score
+        FROM risks WHERE owner_id = ? AND status = 'active'
+      `).bind(userId).first();
+
+      const userOrgs = await db.prepare(`
+        SELECT o.name FROM organizations o
+        JOIN risks r ON r.organization_id = o.id
+        WHERE r.owner_id = ? GROUP BY o.id LIMIT 5
+      `).bind(userId).all();
+
+      return {
+        user_id: userId,
+        risk_count: userRisks?.risk_count || 0,
+        avg_risk_score: userRisks?.avg_risk_score || 0,
+        organizations: userOrgs?.results?.map((org: any) => org.name) || [],
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Get user context error:', error);
+      return { user_id: userId, timestamp: new Date().toISOString() };
+    }
+  }
+
+  async function generateAIResponse(query: string, context: any, provider: string, model?: string) {
+    // Simulate AI response generation (in real implementation, this would call actual LLM APIs)
+    const responses = {
+      risk_analysis: `Based on your current risk portfolio of ${context.risk_count} active risks with an average score of ${context.avg_risk_score?.toFixed(1) || 'N/A'}, I can see several areas for improvement. Your main focus should be on high-impact, medium-probability risks in the ${context.organizations?.[0] || 'primary'} organization.`,
+      
+      risk_recommendations: `I recommend implementing the following risk mitigation strategies: 1) Establish quarterly risk reviews, 2) Implement automated monitoring for high-risk items, 3) Create cross-functional risk response teams, and 4) Develop incident response playbooks for critical risks.`,
+      
+      compliance_guidance: `For compliance requirements, focus on: 1) Regular control testing, 2) Documentation of evidence, 3) Continuous monitoring of regulatory changes, and 4) Training programs for staff. Consider implementing automated compliance tracking for better efficiency.`,
+      
+      default: `I understand you're asking about "${query}". As your Risk Management AI Assistant, I can help you with risk analysis, compliance guidance, control recommendations, and strategic risk insights. Based on your current portfolio, I notice you have ${context.risk_count} active risks. Would you like me to analyze any specific area?`
+    };
+
+    // Simple keyword matching for demonstration
+    let response = responses.default;
+    if (query.toLowerCase().includes('risk') && query.toLowerCase().includes('analyz')) {
+      response = responses.risk_analysis;
+    } else if (query.toLowerCase().includes('recommend') || query.toLowerCase().includes('suggest')) {
+      response = responses.risk_recommendations;
+    } else if (query.toLowerCase().includes('compliance') || query.toLowerCase().includes('regulatory')) {
+      response = responses.compliance_guidance;
+    }
+
+    // Add provider-specific response characteristics
+    switch (provider) {
+      case 'anthropic':
+        response = `[Claude 3] ${response}\n\nNote: This analysis prioritizes safety and thorough reasoning in risk assessment.`;
+        break;
+      case 'gemini':
+        response = `[Gemini Pro] ${response}\n\nAdditional context: I can also analyze documents and images related to your risk management processes.`;
+        break;
+      case 'local':
+        response = `[Local LLM] ${response}\n\nPrivacy note: This analysis was processed locally on your infrastructure.`;
+        break;
+      default: // OpenAI
+        response = `[GPT-4] ${response}\n\nI can provide more detailed analysis or specific recommendations if you'd like to explore any area further.`;
+    }
+
+    return {
+      content: response,
+      provider: provider,
+      model: model || 'default',
+      tokensUsed: Math.floor(response.length / 4), // Rough estimate
+      responseTime: Math.floor(Math.random() * 2000) + 500 // Simulated response time
+    };
+  }
+
+  async function storeConversation(userId: number, query: string, response: any, provider: string, db: any) {
+    try {
+      const sessionId = `session_${userId}_${Date.now()}`;
+      
+      // Store user message
+      await db.prepare(`
+        INSERT INTO ai_conversations (user_id, session_id, message_type, content, model_used)
+        VALUES (?, ?, 'user', ?, ?)
+      `).bind(userId, sessionId, query, provider).run();
+      
+      // Store assistant response
+      await db.prepare(`
+        INSERT INTO ai_conversations (user_id, session_id, message_type, content, model_used, response_time_ms, token_count)
+        VALUES (?, ?, 'assistant', ?, ?, ?, ?)
+      `).bind(userId, sessionId, response.content, response.model, response.responseTime, response.tokensUsed).run();
+      
+    } catch (error) {
+      console.error('Store conversation error:', error);
+      // Don't throw error to avoid disrupting the main response
+    }
+  }
+
+  async function generateRiskInsights(user: any, type: string, limit: number, db: any) {
+    try {
+      // Get current risk data for analysis
+      const risks = await db.prepare(`
+        SELECT r.*, rc.name as category_name, o.name as organization_name
+        FROM risks r
+        LEFT JOIN risk_categories rc ON r.category_id = rc.id
+        LEFT JOIN organizations o ON r.organization_id = o.id
+        WHERE r.status = 'active'
+        ORDER BY r.risk_score DESC
+        LIMIT ?
+      `).bind(limit * 2).all();
+
+      const riskData = risks.results || [];
+      const insights = [];
+
+      // Generate trend analysis
+      if (type === 'all' || type === 'trend') {
+        const highRisks = riskData.filter((r: any) => r.risk_score >= 15);
+        if (highRisks.length > 0) {
+          insights.push({
+            type: 'trend_analysis',
+            title: 'High Risk Concentration Alert',
+            description: `You have ${highRisks.length} high-risk items that require immediate attention. These represent ${Math.round((highRisks.length / riskData.length) * 100)}% of your risk portfolio.`,
+            severity: 'high',
+            confidence: 0.85,
+            recommendations: [
+              'Review high-risk items weekly',
+              'Implement additional controls',
+              'Consider risk transfer options'
+            ]
+          });
+        }
+      }
+
+      // Generate category analysis
+      if (type === 'all' || type === 'category') {
+        const categoryCount: any = {};
+        riskData.forEach((r: any) => {
+          const cat = r.category_name || 'Uncategorized';
+          categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+        });
+
+        const topCategory = Object.keys(categoryCount).reduce((a, b) => 
+          categoryCount[a] > categoryCount[b] ? a : b, Object.keys(categoryCount)[0]);
+
+        if (topCategory && categoryCount[topCategory] > 2) {
+          insights.push({
+            type: 'category_analysis',
+            title: `${topCategory} Risk Concentration`,
+            description: `${topCategory} risks represent the largest category in your portfolio with ${categoryCount[topCategory]} items. Consider category-specific mitigation strategies.`,
+            severity: 'medium',
+            confidence: 0.75,
+            recommendations: [
+              `Develop ${topCategory}-specific controls`,
+              `Create category risk appetite statements`,
+              `Implement category-level monitoring`
+            ]
+          });
+        }
+      }
+
+      // Generate predictive insights
+      if (type === 'all' || type === 'prediction') {
+        const avgScore = riskData.reduce((sum: number, r: any) => sum + (r.risk_score || 0), 0) / riskData.length;
+        
+        insights.push({
+          type: 'risk_prediction',
+          title: 'Risk Trend Prediction',
+          description: `Based on current patterns, your average risk score of ${avgScore.toFixed(1)} suggests a ${avgScore > 12 ? 'high' : avgScore > 8 ? 'moderate' : 'low'} risk environment. Proactive measures are recommended.`,
+          severity: avgScore > 12 ? 'high' : 'medium',
+          confidence: 0.70,
+          recommendations: [
+            'Implement predictive risk indicators',
+            'Enhance early warning systems',
+            'Regular risk appetite reviews'
+          ]
+        });
+      }
+
+      return insights.slice(0, limit);
+    } catch (error) {
+      console.error('Generate insights error:', error);
+      return [{
+        type: 'system',
+        title: 'AI Insights Unavailable',
+        description: 'Unable to generate risk insights at this time. Please try again later.',
+        severity: 'low',
+        confidence: 0
+      }];
+    }
+  }
+
+  async function analyzeRiskWithAI(risk: any, analysisType: string, db: any) {
+    // Simulate comprehensive AI risk analysis
+    const analysis = {
+      risk_id: risk.id,
+      analysis_type: analysisType,
+      overall_assessment: `This ${risk.category_name || 'uncategorized'} risk with a score of ${risk.risk_score} requires ${risk.risk_score >= 15 ? 'immediate' : risk.risk_score >= 10 ? 'urgent' : 'standard'} attention.`,
+      
+      key_factors: [
+        `Probability: ${risk.probability}/5 - ${risk.probability >= 4 ? 'Very High' : risk.probability >= 3 ? 'High' : 'Moderate'}`,
+        `Impact: ${risk.impact}/5 - ${risk.impact >= 4 ? 'Severe' : risk.impact >= 3 ? 'Major' : 'Moderate'}`,
+        `Current Status: ${risk.status} - ${risk.treatment_strategy || 'No treatment strategy defined'}`
+      ],
+      
+      recommendations: [
+        risk.risk_score >= 15 ? 'Escalate to senior management immediately' : 'Monitor through regular risk reviews',
+        !risk.mitigation_plan ? 'Develop comprehensive mitigation plan' : 'Review and update existing mitigation plan',
+        'Implement automated monitoring for early detection',
+        'Consider risk transfer options if cost-effective'
+      ],
+      
+      predicted_trends: {
+        direction: risk.risk_score >= 15 ? 'increasing' : 'stable',
+        confidence: 0.75,
+        timeframe: '30-90 days',
+        factors: ['Current control effectiveness', 'Industry trends', 'Regulatory changes']
+      },
+      
+      controls_assessment: {
+        current_controls: risk.mitigation_plan ? 'Present but effectiveness unknown' : 'Limited or absent',
+        recommended_controls: [
+          'Preventive controls to reduce probability',
+          'Detection controls for early warning',
+          'Response procedures for incident management'
+        ],
+        control_gaps: risk.mitigation_plan ? ['Regular effectiveness testing needed'] : ['No formal controls identified']
+      },
+      
+      compliance_impact: {
+        regulatory_concerns: risk.category_name?.includes('Compliance') ? 'High regulatory impact' : 'Standard regulatory considerations',
+        reporting_requirements: 'Monthly risk reporting recommended',
+        audit_implications: 'Include in next audit cycle'
+      }
+    };
+
+    return analysis;
+  }
+
+  async function generateRiskPrediction(entityType: string, entityId: number, predictionType: string, db: any) {
+    // Simulate risk prediction based on historical data and trends
+    const prediction = {
+      entity_type: entityType,
+      entity_id: entityId,
+      prediction_type: predictionType,
+      
+      trend_analysis: {
+        direction: Math.random() > 0.5 ? 'increasing' : 'decreasing',
+        magnitude: Math.random() * 0.5 + 0.25, // 25-75% change
+        confidence: Math.random() * 0.3 + 0.6, // 60-90% confidence
+        timeframe: '3-6 months'
+      },
+      
+      risk_factors: [
+        'Market volatility increases',
+        'Regulatory changes pending',
+        'Technology evolution impacts',
+        'Supply chain dependencies'
+      ],
+      
+      recommendations: [
+        'Monitor leading indicators closely',
+        'Prepare contingency plans',
+        'Review risk appetite statements',
+        'Enhance early warning systems'
+      ],
+      
+      scenarios: [
+        {
+          name: 'Best Case',
+          probability: 0.25,
+          impact: 'Low',
+          description: 'Risk levels decrease due to effective controls'
+        },
+        {
+          name: 'Most Likely',
+          probability: 0.50,
+          impact: 'Medium',
+          description: 'Risk levels remain stable with minor fluctuations'
+        },
+        {
+          name: 'Worst Case',
+          probability: 0.25,
+          impact: 'High',
+          description: 'Risk levels increase significantly requiring immediate action'
+        }
+      ]
+    };
+
+    return prediction;
+  }
 
   return api;
 }

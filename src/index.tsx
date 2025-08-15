@@ -96,6 +96,9 @@ app.get('/', (c) => {
               <a href="#" class="nav-item" id="nav-services">
                 <i class="fas fa-cogs mr-2"></i>Services
               </a>
+              <a href="#" class="nav-item" id="nav-documents">
+                <i class="fas fa-file-alt mr-2"></i>Documents
+              </a>
               <a href="#" class="nav-item" id="nav-settings">
                 <i class="fas fa-cog mr-2"></i>Settings
               </a>
@@ -135,11 +138,39 @@ app.get('/', (c) => {
         <div id="aria-chat" class="p-6 h-64 overflow-y-auto">
           <!-- Chat messages will appear here -->
         </div>
-        <div class="px-6 py-4 border-t border-gray-200">
-          <div class="flex">
-            <input type="text" id="aria-input" placeholder="Ask ARIA about risks, compliance, or security..." class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-            <button id="send-aria" class="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="px-6 py-4 border-t border-gray-200 space-y-3">
+          <!-- LLM Provider Selection -->
+          <div class="flex items-center justify-between text-sm">
+            <label for="aria-provider" class="text-gray-700 font-medium">AI Provider:</label>
+            <select id="aria-provider" class="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500">
+              <option value="openai">GPT-4 (OpenAI)</option>
+              <option value="gemini">Gemini Pro (Google)</option>
+              <option value="anthropic">Claude 3 (Anthropic)</option>
+              <option value="local">Local LLM</option>
+            </select>
+          </div>
+          
+          <!-- Chat Input -->
+          <div class="flex space-x-2">
+            <input type="text" id="aria-input" placeholder="Ask ARIA about risks, compliance, or security..." class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <button id="send-aria" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+          
+          <!-- Quick Action Buttons -->
+          <div class="flex flex-wrap gap-2">
+            <button onclick="quickARIAQuery('Analyze my top risks')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
+              Analyze Risks
+            </button>
+            <button onclick="quickARIAQuery('Show me compliance insights')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
+              Compliance
+            </button>
+            <button onclick="quickARIAQuery('What are my risk predictions?')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
+              Predictions
+            </button>
+            <button onclick="quickARIAQuery('Give me security recommendations')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
+              Security
             </button>
           </div>
         </div>
@@ -160,6 +191,9 @@ app.get('/', (c) => {
   <!-- JavaScript -->
   <script src="/static/modules.js?v=4"></script>
   <script src="/static/enterprise-modules.js?v=1"></script>
+  <script src="/static/notifications.js?v=1"></script>
+  <script src="/static/document-management.js?v=1"></script>
+  <script src="/static/mobile-interface.js?v=1"></script>
   <script src="/static/app.js?v=4"></script>
 </body>
 </html>`);

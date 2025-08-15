@@ -1,5 +1,259 @@
 /* DMT Risk Assessment System v2.0 - Custom Styles */
 
+/* Mobile-First Responsive Design */
+@media (max-width: 768px) {
+  /* Mobile Navigation */
+  .nav-mobile {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    padding: 8px 0;
+    z-index: 50;
+    display: flex;
+    justify-content: space-around;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-mobile-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 10px;
+    min-width: 60px;
+    touch-action: manipulation;
+  }
+
+  .nav-mobile-item.active {
+    color: #3b82f6;
+  }
+
+  .nav-mobile-item i {
+    font-size: 18px;
+    margin-bottom: 2px;
+  }
+
+  /* Mobile Header */
+  .mobile-header {
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .mobile-header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  /* Mobile Content */
+  .mobile-content {
+    padding: 16px;
+    padding-bottom: 80px; /* Space for bottom navigation */
+  }
+
+  /* Touch-friendly buttons */
+  .btn-mobile {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 16px;
+    touch-action: manipulation;
+  }
+
+  /* Cards on mobile */
+  .card-mobile {
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Form inputs on mobile */
+  .form-input-mobile {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    border-radius: 8px;
+  }
+
+  /* Hide desktop navigation on mobile */
+  .desktop-nav {
+    display: none !important;
+  }
+
+  /* Mobile grid adjustments */
+  .mobile-grid-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Touch-friendly spacing */
+  .mobile-spacing {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Modal adjustments for mobile */
+  .modal-mobile {
+    margin: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+
+  /* Dashboard metrics on mobile */
+  .metric-card-mobile {
+    padding: 16px;
+    text-align: center;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 12px;
+  }
+
+  /* Notification bell on mobile */
+  .notification-bell-mobile {
+    position: relative;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+  }
+
+  /* Heat map container mobile */
+  .heatmap-mobile {
+    overflow-x: auto;
+    margin: -16px;
+    padding: 16px;
+  }
+
+  /* Document grid mobile */
+  .document-grid-mobile {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Table responsive on mobile */
+  .table-mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-mobile table {
+    min-width: 600px;
+  }
+
+  /* Swipe indicators */
+  .swipe-indicator {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 12px;
+  }
+
+  /* Pull to refresh indicator */
+  .pull-refresh {
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #6b7280;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .pull-refresh.show {
+    opacity: 1;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .tablet-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Tablet navigation */
+  .nav-tablet {
+    padding: 16px 24px;
+  }
+
+  .nav-tablet .nav-item {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .btn, .nav-item, .dropdown-item {
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+
+  /* Remove hover effects on touch devices */
+  .btn:hover, .nav-item:hover {
+    background-color: inherit;
+  }
+
+  /* Touch-friendly dropdowns */
+  .dropdown-menu {
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .dropdown-item {
+    padding: 16px 20px;
+    font-size: 16px;
+  }
+
+  /* Touch scroll indicators */
+  .scrollable {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Sharper icons and borders */
+  .icon {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Dark mode preferences */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode styles would go here if implemented */
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Loading animations */
 .animate-pulse-slow {
   animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
