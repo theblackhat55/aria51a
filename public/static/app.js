@@ -700,10 +700,10 @@ function renderProbabilityImpactHeatMap(ctx) {
             label: function(context) {
               const risk = context.raw;
               return [
-                \`Risk Score: \${(context.parsed.x * context.parsed.y).toFixed(1)}\`,
-                \`Probability: \${context.parsed.x}/5\`,
-                \`Impact: \${context.parsed.y}/5\`,
-                \`Risk Count: \${risk.risks || 1}\`
+                `Risk Score: ${(context.parsed.x * context.parsed.y).toFixed(1)}`,
+                `Probability: ${context.parsed.x}/5`,
+                `Impact: ${context.parsed.y}/5`,
+                `Risk Count: ${risk.risks || 1}`
               ];
             }
           }
@@ -755,9 +755,9 @@ function renderOrganizationalHeatMap(ctx) {
             label: function(context) {
               const org = orgData[context.dataIndex];
               return [
-                \`Risk Count: \${org.risks}\`,
-                \`Average Score: \${org.avgScore}\`,
-                \`Risk Level: \${getRiskLevel(org.avgScore)}\`
+                `Risk Count: ${org.risks}`,
+                `Average Score: ${org.avgScore}`,
+                `Risk Level: ${getRiskLevel(org.avgScore)}`
               ];
             }
           }
@@ -869,9 +869,9 @@ function renderCategoryHeatMap(ctx) {
             label: function(context) {
               const cat = categoryData[context.dataIndex];
               return [
-                \`Category: \${cat.category}\`,
-                \`Risk Count: \${cat.risks}\`,
-                \`Average Score: \${cat.avgScore.toFixed(1)}\`
+                `Category: ${cat.category}`,
+                `Risk Count: ${cat.risks}`,
+                `Average Score: ${cat.avgScore.toFixed(1)}`
               ];
             }
           }
@@ -1169,15 +1169,7 @@ function renderAIInsights(insights) {
   `;
 }
 
-function getSeverityClass(severity) {
-  const classes = {
-    'critical': 'border-red-200 bg-red-50',
-    'high': 'border-orange-200 bg-orange-50',
-    'medium': 'border-yellow-200 bg-yellow-50',
-    'low': 'border-green-200 bg-green-50'
-  };
-  return classes[severity] || classes.low;
-}
+
 
 async function showRiskPredictions() {
   try {

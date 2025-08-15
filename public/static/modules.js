@@ -1292,7 +1292,7 @@ function showAddRequirementModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
     { text: 'Add Requirement', class: 'btn-primary', onclick: 'saveRequirement()' }
   ]);
 }
@@ -1316,7 +1316,7 @@ async function saveRequirement() {
     
     if (response.data.success) {
       showToast('Requirement added successfully', 'success');
-      closeModal();
+      closeUniversalModal();
       loadRequirementsData();
     }
   } catch (error) {
@@ -1485,7 +1485,7 @@ function showAddFindingModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
     { text: 'Add Finding', class: 'btn-primary', onclick: 'saveFinding()' }
   ]);
 }
@@ -1509,7 +1509,7 @@ async function saveFinding() {
     
     if (response.data.success) {
       showToast('Finding added successfully', 'success');
-      closeModal();
+      closeUniversalModal();
       loadFindingsData();
     }
   } catch (error) {
@@ -2293,7 +2293,7 @@ async function testControl(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
       { text: 'Save Test Results', class: 'btn-primary', onclick: `saveControlTest(${id})` }
     ]);
     
@@ -2679,7 +2679,7 @@ function showAddServiceModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
     { text: 'Add Service', class: 'btn-primary', onclick: 'saveService()' }
   ]);
 }
@@ -2703,7 +2703,7 @@ async function saveService() {
     
     if (response.data.success) {
       showToast('Service added successfully', 'success');
-      closeModal();
+      closeUniversalModal();
       loadServicesData();
     }
   } catch (error) {
@@ -3823,7 +3823,7 @@ function showAddAssessmentModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
     { text: 'Create Assessment', class: 'btn-primary', onclick: 'saveAssessment()' }
   ]);
   
@@ -3902,7 +3902,7 @@ async function saveAssessment() {
     
     if (response.data.success) {
       showToast('Assessment created successfully', 'success');
-      closeModal();
+      closeUniversalModal();
       loadComplianceData(); // Refresh the compliance data
       if (typeof loadAssessments === 'function') {
         loadAssessments(); // Refresh assessments if function exists
@@ -4014,7 +4014,7 @@ function showAddIncidentModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
     { text: 'Report Incident', class: 'btn-primary', onclick: 'saveIncident()' }
   ]);
   
@@ -4076,7 +4076,7 @@ async function saveIncident() {
     
     if (response.data.success) {
       showToast('Incident reported successfully', 'success');
-      closeModal();
+      closeUniversalModal();
       if (typeof loadIncidentsData === 'function') {
         loadIncidentsData(); // Refresh incidents if function exists
       }
@@ -4185,8 +4185,8 @@ async function viewAssessment(id) {
         </div>
       </div>
     `, [
-      { text: 'Close', class: 'btn-secondary', onclick: 'closeModal()' },
-      { text: 'Edit Assessment', class: 'btn-primary', onclick: `closeModal(); editAssessment(${id})` }
+      { text: 'Close', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+      { text: 'Edit Assessment', class: 'btn-primary', onclick: `closeUniversalModal(); editAssessment(${id})` }
     ], 'max-w-4xl');
     
   } catch (error) {
@@ -4296,7 +4296,7 @@ async function editAssessment(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
       { text: 'Update Assessment', class: 'btn-primary', onclick: `updateAssessment(${id})` }
     ]);
     
@@ -4368,7 +4368,7 @@ async function updateAssessment(id) {
     
     if (response.data.success) {
       showToast('Assessment updated successfully', 'success');
-      closeModal();
+      closeUniversalModal();
       loadComplianceData(); // Refresh the compliance data
       if (typeof loadAssessments === 'function') {
         loadAssessments(); // Refresh assessments if function exists
@@ -4985,8 +4985,8 @@ async function viewIncident(id) {
         </div>
       </div>
     `, [
-      { text: 'Close', class: 'btn-secondary', onclick: 'closeModal()' },
-      { text: 'Edit Incident', class: 'btn-primary', onclick: `closeModal(); editIncident(${id})` }
+      { text: 'Close', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+      { text: 'Edit Incident', class: 'btn-primary', onclick: `closeUniversalModal(); editIncident(${id})` }
     ], 'max-w-4xl');
     
   } catch (error) {
@@ -5095,7 +5095,7 @@ async function editIncident(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
       { text: 'Update Incident', class: 'btn-primary', onclick: `updateIncident(${id})` }
     ]);
     
@@ -5166,7 +5166,7 @@ async function updateIncident(id) {
     
     if (response.data.success) {
       showToast('Incident updated successfully', 'success');
-      closeModal();
+      closeUniversalModal();
       if (typeof loadIncidentsData === 'function') {
         loadIncidentsData(); // Refresh incidents if function exists
       }
@@ -5217,7 +5217,7 @@ async function assignIncident(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
       { text: 'Assign Incident', class: 'btn-primary', onclick: `saveIncidentAssignment(${id})` }
     ]);
     
@@ -5273,7 +5273,7 @@ async function escalateIncident(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
       { text: 'Escalate Incident', class: 'btn-primary', onclick: `saveIncidentEscalation(${id})` }
     ]);
     
@@ -6444,7 +6444,7 @@ function renderFrameworksPage(frameworks) {
             <p class="text-gray-600">Manage and assess compliance with industry standards and regulations</p>
           </div>
           <div class="flex space-x-3">
-            <button onclick="importFramework()" class="btn-primary">
+            <button onclick="showImportFrameworkModal()" class="btn-primary">
               <i class="fas fa-download mr-2"></i>Import Framework
             </button>
             <button onclick="createFrameworkAssessment()" class="btn-secondary">
@@ -6723,7 +6723,7 @@ function filterFrameworkControlsLocal(controls, searchTerm, sectionFilter) {
     filteredControls.map(control => renderFrameworkControl(control)).join('');
 }
 
-async function importFramework() {
+async function showImportFrameworkModal() {
   const mainContent = document.getElementById('main-content');
   
   // Show import modal
@@ -6833,7 +6833,7 @@ function showModal(title, content, buttons = []) {
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
-          <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+          <button onclick="closeUniversalModal()" class="text-gray-400 hover:text-gray-600">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -6854,7 +6854,7 @@ function showModal(title, content, buttons = []) {
   document.body.insertAdjacentHTML('beforeend', modalHTML);
 }
 
-function closeModal() {
+function closeUniversalModal() {
   const modal = document.getElementById('universal-modal');
   if (modal) {
     modal.remove();
