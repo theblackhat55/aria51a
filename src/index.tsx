@@ -84,6 +84,9 @@ app.get('/', (c) => {
               <a href="#" class="nav-item" id="nav-compliance">
                 <i class="fas fa-clipboard-check mr-2"></i>Compliance
               </a>
+              <a href="#" class="nav-item" id="nav-frameworks">
+                <i class="fas fa-list-check mr-2"></i>Frameworks
+              </a>
               <a href="#" class="nav-item" id="nav-incidents">
                 <i class="fas fa-bell mr-2"></i>Incidents
               </a>

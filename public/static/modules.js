@@ -3355,99 +3355,140 @@ async function copyPasswordToClipboard(password, button) {
 function getUserFormHTML(user = null) {
   return `
     <form id="user-form" class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">First Name *</label>
-          <input type="text" id="user-first-name" class="form-input" required>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Last Name *</label>
-          <input type="text" id="user-last-name" class="form-input" required>
-        </div>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Username *</label>
-          <input type="text" id="user-username" class="form-input" required ${user ? 'readonly' : ''}>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Email Address *</label>
-          <input type="email" id="user-email" class="form-input" required>
+      <!-- Personal Information Section -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <i class="fas fa-user form-section-icon"></i>
+          Personal Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="form-label">First Name *</label>
+            <input type="text" id="user-first-name" class="form-input" placeholder="Enter first name" required>
+          </div>
+          <div>
+            <label class="form-label">Last Name *</label>
+            <input type="text" id="user-last-name" class="form-input" placeholder="Enter last name" required>
+          </div>
         </div>
       </div>
-      
-      ${!user ? `
-      <div id="password-field" style="display: none;">
-        <label class="block text-sm font-medium text-gray-700">Password *</label>
-        <input type="password" id="user-password" class="form-input">
-        <p class="text-xs text-gray-500 mt-1">Minimum 8 characters (only required for local accounts)</p>
-      </div>
-      ` : ''}
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Role *</label>
-          <select id="user-role" class="form-select" required>
-            <option value="">Select Role</option>
-            <option value="admin">Admin</option>
-            <option value="risk_analyst">Risk Analyst</option>
-            <option value="service_owner">Service Owner</option>
-            <option value="auditor">Auditor</option>
-            <option value="integration_operator">Integration Operator</option>
-            <option value="readonly">ReadOnly</option>
-            <option value="risk_manager">Risk Manager</option>
-            <option value="compliance_officer">Compliance Officer</option>
-            <option value="incident_manager">Incident Manager</option>
-            <option value="user">User</option>
-          </select>
+
+      <!-- Account Information Section -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <i class="fas fa-id-card form-section-icon"></i>
+          Account Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="form-label">Username *</label>
+            <input type="text" id="user-username" class="form-input" placeholder="Enter username" required ${user ? 'readonly' : ''}>
+          </div>
+          <div>
+            <label class="form-label">Email Address *</label>
+            <input type="email" id="user-email" class="form-input" placeholder="Enter email address" required>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Authentication Provider *</label>
-          <select id="user-auth-provider" class="form-select" required onchange="togglePasswordField()">
-            <option value="">Select Auth Provider</option>
-            <option value="local">Local Account</option>
-            <option value="saml">SAML (Microsoft Entra ID)</option>
-          </select>
+        
+        ${!user ? `
+        <div id="password-field" style="display: none;" class="mt-4">
+          <label class="form-label">Password *</label>
+          <input type="password" id="user-password" class="form-input" placeholder="Enter secure password">
+          <p class="text-xs text-gray-500 mt-2 flex items-center">
+            <i class="fas fa-info-circle mr-1"></i>
+            Minimum 8 characters (only required for local accounts)
+          </p>
+        </div>
+        ` : ''}
+      </div>
+
+      <!-- Role & Access Section -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <i class="fas fa-shield-alt form-section-icon"></i>
+          Role & Access Control
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="form-label">Role *</label>
+            <select id="user-role" class="form-select" required>
+              <option value="">Select Role</option>
+              <option value="admin">Admin</option>
+              <option value="risk_analyst">Risk Analyst</option>
+              <option value="service_owner">Service Owner</option>
+              <option value="auditor">Auditor</option>
+              <option value="integration_operator">Integration Operator</option>
+              <option value="readonly">ReadOnly</option>
+              <option value="risk_manager">Risk Manager</option>
+              <option value="compliance_officer">Compliance Officer</option>
+              <option value="incident_manager">Incident Manager</option>
+              <option value="user">User</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Authentication Provider *</label>
+            <select id="user-auth-provider" class="form-select" required onchange="togglePasswordField()">
+              <option value="">Select Auth Provider</option>
+              <option value="local">Local Account</option>
+              <option value="saml">SAML (Microsoft Entra ID)</option>
+            </select>
+          </div>
         </div>
       </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Department</label>
-          <select id="user-department" class="form-select">
-            <option value="">Select Department</option>
-            <option value="IT">IT</option>
-            <option value="Finance">Finance</option>
-            <option value="HR">HR</option>
-            <option value="Operations">Operations</option>
-            <option value="Legal">Legal</option>
-            <option value="Security">Security</option>
-          </select>
+
+      <!-- Organization Details Section -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <i class="fas fa-building form-section-icon"></i>
+          Organization Details
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="form-label">Department</label>
+            <select id="user-department" class="form-select">
+              <option value="">Select Department</option>
+              <option value="IT">IT</option>
+              <option value="Finance">Finance</option>
+              <option value="HR">HR</option>
+              <option value="Operations">Operations</option>
+              <option value="Legal">Legal</option>
+              <option value="Security">Security</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Job Title</label>
+            <input type="text" id="user-job-title" class="form-input" placeholder="Enter job title">
+          </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700">Job Title</label>
-          <input type="text" id="user-job-title" class="form-input">
+        
+        <div class="mt-4">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" id="user-phone" class="form-input" placeholder="Enter phone number">
         </div>
       </div>
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-        <input type="tel" id="user-phone" class="form-input">
-      </div>
-      
+
       ${user ? `
-      <div>
-        <label class="flex items-center">
-          <input type="checkbox" id="user-active" class="rounded">
-          <span class="ml-2 text-sm text-gray-700">Active User</span>
-        </label>
+      <!-- User Status Section -->
+      <div class="form-section">
+        <h3 class="form-section-title">
+          <i class="fas fa-toggle-on form-section-icon"></i>
+          User Status
+        </h3>
+        <div class="flex items-center space-x-3">
+          <input type="checkbox" id="user-active" class="form-checkbox">
+          <label for="user-active" class="form-label mb-0 cursor-pointer">Active User</label>
+          <span class="text-sm text-gray-500">User can access the system</span>
+        </div>
       </div>
       ` : ''}
       
-      <div class="flex justify-end space-x-3 mt-6">
-        <button type="button" onclick="closeModal(this)" class="btn-secondary">Cancel</button>
-        <button type="submit" class="btn-primary">${user ? 'Update' : 'Create'} User</button>
+      <div class="flex justify-end space-x-4 pt-4">
+        <button type="button" onclick="closeModal(this)" class="btn-secondary">
+          <i class="fas fa-times mr-2"></i>Cancel
+        </button>
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-${user ? 'save' : 'plus'} mr-2"></i>${user ? 'Update' : 'Create'} User
+        </button>
       </div>
     </form>
   `;
@@ -5720,20 +5761,22 @@ async function exportIncidents() {
 // Modal and Form Helper Functions
 function createModal(title, content) {
   const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 z-50 overflow-y-auto';
+  modal.className = 'modal-overlay';
   modal.innerHTML = `
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
       <div class="fixed inset-0 transition-opacity" aria-hidden="true" onclick="closeModal(this)">
-        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        <div class="absolute inset-0"></div>
       </div>
       <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-      <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full mx-4">
-        <div class="bg-white">
-          <div class="modal-header">
-            <h3 class="modal-title">${title}</h3>
-            <button onclick="closeModal(this)" class="text-gray-400 hover:text-gray-600 focus:outline-none">
-              <i class="fas fa-times text-xl"></i>
-            </button>
+      <div class="modal-content inline-block align-bottom text-left overflow-hidden transform transition-all sm:my-8 sm:align-middle sm:w-full mx-4">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <i class="fas fa-user-plus"></i>
+            ${title}
+          </h3>
+          <button onclick="closeModal(this)" class="focus:outline-none">
+            <i class="fas fa-times text-lg"></i>
+          </button>
           </div>
           <div class="modal-body">
             ${content}
@@ -6343,6 +6386,450 @@ window.showPasswordResetModal = showPasswordResetModal;
 window.generateNewPassword = generateNewPassword;
 window.togglePasswordVisibility = togglePasswordVisibility;
 window.copyPasswordToClipboard = copyPasswordToClipboard;
+
+// Frameworks Management
+async function showFrameworks() {
+  console.log('Loading frameworks page...');
+  const mainContent = document.getElementById('main-content');
+  
+  // Show loading state
+  mainContent.innerHTML = `
+    <div class="flex items-center justify-center py-12">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+    </div>
+  `;
+
+  try {
+    // Load frameworks and their controls
+    const token = localStorage.getItem('dmt_token');
+    const frameworksResponse = await axios.get('/api/frameworks', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (frameworksResponse.data.success) {
+      const frameworks = frameworksResponse.data.data;
+      renderFrameworksPage(frameworks);
+    } else {
+      throw new Error('Failed to load frameworks');
+    }
+  } catch (error) {
+    console.error('Error loading frameworks:', error);
+    mainContent.innerHTML = `
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div class="flex items-center">
+          <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+          <div>
+            <h3 class="text-lg font-semibold text-red-800">Error Loading Frameworks</h3>
+            <p class="text-red-600">Unable to load compliance frameworks. Please try again.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function renderFrameworksPage(frameworks) {
+  const mainContent = document.getElementById('main-content');
+  
+  mainContent.innerHTML = `
+    <div class="space-y-6">
+      <!-- Page Header -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+              <i class="fas fa-list-check text-blue-600 mr-3"></i>
+              Compliance Frameworks
+            </h1>
+            <p class="text-gray-600">Manage and assess compliance with industry standards and regulations</p>
+          </div>
+          <div class="flex space-x-3">
+            <button onclick="importFramework()" class="btn-primary">
+              <i class="fas fa-download mr-2"></i>Import Framework
+            </button>
+            <button onclick="createFrameworkAssessment()" class="btn-secondary">
+              <i class="fas fa-plus mr-2"></i>New Assessment
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frameworks Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        ${frameworks.map(framework => renderFrameworkCard(framework)).join('')}
+      </div>
+
+      <!-- Recent Framework Activities -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+          <i class="fas fa-clock text-blue-600 mr-2"></i>
+          Recent Framework Activities
+        </h2>
+        <div class="space-y-3" id="framework-activities">
+          <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <i class="fas fa-check text-green-600 text-sm"></i>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">ISO 27001 controls imported</p>
+                <p class="text-sm text-gray-500">93 controls successfully loaded</p>
+              </div>
+            </div>
+            <span class="text-sm text-gray-500">Today</span>
+          </div>
+          <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <i class="fas fa-upload text-blue-600 text-sm"></i>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">UAE ISR controls imported</p>
+                <p class="text-sm text-gray-500">81 controls successfully loaded</p>
+              </div>
+            </div>
+            <span class="text-sm text-gray-500">Today</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFrameworkCard(framework) {
+  const progressPercentage = framework.control_count > 0 ? 
+    Math.round((framework.control_count * 0.65)) : 0; // Demo progress
+
+  return `
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="p-6">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+              <i class="fas fa-certificate text-blue-600 text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold text-gray-900">${framework.name}</h3>
+              <p class="text-sm text-gray-500">${framework.code} ${framework.version || ''}</p>
+            </div>
+          </div>
+          <div class="flex space-x-2">
+            <button onclick="viewFrameworkControls(${framework.id})" class="text-blue-600 hover:text-blue-700">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button onclick="exportFramework(${framework.id})" class="text-gray-600 hover:text-gray-700">
+              <i class="fas fa-download"></i>
+            </button>
+          </div>
+        </div>
+        
+        <p class="text-gray-600 mb-4">${framework.description || 'No description available'}</p>
+        
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-blue-600">${framework.control_count}</div>
+            <div class="text-sm text-gray-600">Total Controls</div>
+          </div>
+          <div class="text-center p-3 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-green-600">${progressPercentage}%</div>
+            <div class="text-sm text-gray-600">Implementation</div>
+          </div>
+        </div>
+        
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600">Implementation Progress</span>
+            <span class="font-medium">${progressPercentage}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-blue-600 h-2 rounded-full" style="width: ${progressPercentage}%"></div>
+          </div>
+        </div>
+        
+        <div class="mt-4 flex space-x-3">
+          <button onclick="viewFrameworkControls(${framework.id})" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 text-sm font-medium">
+            <i class="fas fa-list mr-2"></i>View Controls
+          </button>
+          <button onclick="startFrameworkAssessment(${framework.id})" class="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 text-sm font-medium">
+            <i class="fas fa-play mr-2"></i>Start Assessment
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function viewFrameworkControls(frameworkId) {
+  console.log('Loading framework controls for framework:', frameworkId);
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const controlsResponse = await axios.get(`/api/frameworks/${frameworkId}/controls`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    const sectionsResponse = await axios.get(`/api/frameworks/${frameworkId}/sections`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (controlsResponse.data.success && sectionsResponse.data.success) {
+      const controls = controlsResponse.data.data;
+      const sections = sectionsResponse.data.sections || sectionsResponse.data.data;
+      const framework = controls[0]; // Get framework info from first control
+      
+      renderFrameworkControlsPage(frameworkId, framework, controls, sections);
+    } else {
+      throw new Error('Failed to load framework controls');
+    }
+  } catch (error) {
+    console.error('Error loading framework controls:', error);
+    showErrorMessage('Error loading framework controls. Please try again.');
+  }
+}
+
+function renderFrameworkControlsPage(frameworkId, framework, controls, sections) {
+  const mainContent = document.getElementById('main-content');
+  
+  mainContent.innerHTML = `
+    <div class="space-y-6">
+      <!-- Page Header -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="flex items-center mb-2">
+              <button onclick="showFrameworks()" class="text-blue-600 hover:text-blue-700 mr-3">
+                <i class="fas fa-arrow-left"></i>
+              </button>
+              <h1 class="text-3xl font-bold text-gray-900">
+                ${framework?.framework_name || 'Framework Controls'}
+              </h1>
+            </div>
+            <p class="text-gray-600">${controls.length} controls available for implementation and assessment</p>
+          </div>
+          <div class="flex space-x-3">
+            <button onclick="exportFrameworkControls(${frameworkId})" class="btn-secondary">
+              <i class="fas fa-download mr-2"></i>Export Controls
+            </button>
+            <button onclick="startFrameworkAssessment(${frameworkId})" class="btn-primary">
+              <i class="fas fa-play mr-2"></i>Start Assessment
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters and Search -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex flex-wrap gap-4 align-items-center">
+          <div class="flex-1 min-w-64">
+            <input type="text" id="controls-search" placeholder="Search controls..." 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+          <div class="min-w-48">
+            <select id="section-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <option value="">All Sections</option>
+              ${sections.map(section => `
+                <option value="${section.section_name}">${section.section_name} (${section.control_count})</option>
+              `).join('')}
+            </select>
+          </div>
+          <button onclick="filterFrameworkControls(${frameworkId})" class="btn-secondary">
+            <i class="fas fa-filter mr-2"></i>Apply Filters
+          </button>
+        </div>
+      </div>
+
+      <!-- Controls List -->
+      <div class="bg-white rounded-xl shadow-sm">
+        <div class="p-6 border-b border-gray-200">
+          <h2 class="text-xl font-semibold text-gray-900">Framework Controls</h2>
+        </div>
+        <div class="divide-y divide-gray-200" id="framework-controls-list">
+          ${controls.map(control => renderFrameworkControl(control)).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Add event listeners for search and filters
+  document.getElementById('controls-search').addEventListener('input', (e) => {
+    filterFrameworkControlsLocal(controls, e.target.value, document.getElementById('section-filter').value);
+  });
+  
+  document.getElementById('section-filter').addEventListener('change', (e) => {
+    filterFrameworkControlsLocal(controls, document.getElementById('controls-search').value, e.target.value);
+  });
+}
+
+function renderFrameworkControl(control) {
+  const priorityColors = {
+    'critical': 'bg-red-100 text-red-800',
+    'high': 'bg-orange-100 text-orange-800',
+    'medium': 'bg-yellow-100 text-yellow-800',
+    'low': 'bg-green-100 text-green-800'
+  };
+
+  return `
+    <div class="p-6 hover:bg-gray-50">
+      <div class="flex justify-between items-start">
+        <div class="flex-1">
+          <div class="flex items-center mb-2">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-3">
+              ${control.control_ref}
+            </span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColors[control.priority] || priorityColors.medium}">
+              ${control.priority?.toUpperCase() || 'MEDIUM'}
+            </span>
+            ${control.section_name ? `
+              <span class="ml-2 text-xs text-gray-500">${control.section_name}</span>
+            ` : ''}
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">${control.control_title}</h3>
+          ${control.control_description ? `
+            <p class="text-gray-600 mb-3">${control.control_description}</p>
+          ` : ''}
+          ${control.implementation_guidance ? `
+            <div class="mt-3">
+              <h4 class="text-sm font-medium text-gray-700 mb-1">Implementation Guidance:</h4>
+              <p class="text-sm text-gray-600">${control.implementation_guidance}</p>
+            </div>
+          ` : ''}
+        </div>
+        <div class="flex space-x-2 ml-4">
+          <button onclick="assessControl(${control.id})" class="text-blue-600 hover:text-blue-700" title="Assess Control">
+            <i class="fas fa-clipboard-check"></i>
+          </button>
+          <button onclick="viewControlDetails(${control.id})" class="text-gray-600 hover:text-gray-700" title="View Details">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function filterFrameworkControlsLocal(controls, searchTerm, sectionFilter) {
+  const filteredControls = controls.filter(control => {
+    const matchesSearch = !searchTerm || 
+      control.control_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      control.control_ref.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (control.control_description && control.control_description.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesSection = !sectionFilter || control.section_name === sectionFilter;
+    
+    return matchesSearch && matchesSection;
+  });
+
+  document.getElementById('framework-controls-list').innerHTML = 
+    filteredControls.map(control => renderFrameworkControl(control)).join('');
+}
+
+async function importFramework() {
+  const mainContent = document.getElementById('main-content');
+  
+  // Show import modal
+  const modalHtml = `
+    <div id="import-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">Import Compliance Framework</h3>
+        </div>
+        <div class="p-6">
+          <p class="text-gray-600 mb-4">Select a compliance framework to import:</p>
+          <div class="space-y-3">
+            <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer" onclick="doImportFramework('iso27001')">
+              <div class="flex items-center">
+                <i class="fas fa-certificate text-blue-600 mr-3"></i>
+                <div>
+                  <h4 class="font-medium text-gray-900">ISO/IEC 27001:2022</h4>
+                  <p class="text-sm text-gray-500">Information Security Management Systems - 93 controls</p>
+                </div>
+              </div>
+            </div>
+            <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer" onclick="doImportFramework('uae_ia')">
+              <div class="flex items-center">
+                <i class="fas fa-flag text-green-600 mr-3"></i>
+                <div>
+                  <h4 class="font-medium text-gray-900">UAE Information Assurance Standard</h4>
+                  <p class="text-sm text-gray-500">UAE ISR Framework - 81 controls</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <button onclick="closeImportModal()" class="btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function doImportFramework(frameworkType) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post(`/api/import/framework/${frameworkType}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      closeImportModal();
+      showSuccessMessage(response.data.message);
+      // Refresh the frameworks page
+      showFrameworks();
+    } else {
+      throw new Error(response.data.error || 'Import failed');
+    }
+  } catch (error) {
+    console.error('Framework import error:', error);
+    showErrorMessage('Failed to import framework: ' + (error.response?.data?.error || error.message));
+  }
+}
+
+function closeImportModal() {
+  const modal = document.getElementById('import-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+async function startFrameworkAssessment(frameworkId) {
+  // Placeholder for starting framework assessment
+  showInfoMessage('Framework assessment functionality will be available in a future update.');
+}
+
+function assessControl(controlId) {
+  // Placeholder for control assessment
+  showInfoMessage('Control assessment functionality will be available in a future update.');
+}
+
+function viewControlDetails(controlId) {
+  // Placeholder for control details
+  showInfoMessage('Control details view will be available in a future update.');
+}
+
+function exportFramework(frameworkId) {
+  // Placeholder for framework export
+  showInfoMessage('Framework export functionality will be available in a future update.');
+}
+
+function exportFrameworkControls(frameworkId) {
+  // Placeholder for controls export
+  showInfoMessage('Controls export functionality will be available in a future update.');
+}
+
+// Make frameworks functions globally accessible
+window.showFrameworks = showFrameworks;
+window.viewFrameworkControls = viewFrameworkControls;
+window.importFramework = importFramework;
+window.doImportFramework = doImportFramework;
+window.closeImportModal = closeImportModal;
+window.startFrameworkAssessment = startFrameworkAssessment;
+window.assessControl = assessControl;
+window.viewControlDetails = viewControlDetails;
+window.exportFramework = exportFramework;
+window.exportFrameworkControls = exportFrameworkControls;
 
 // Make moduleData globally accessible
 window.moduleData = moduleData;

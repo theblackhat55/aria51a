@@ -135,6 +135,7 @@ function initializeNavigation() {
     { id: 'nav-risks', page: 'risks' },
     { id: 'nav-controls', page: 'controls' },
     { id: 'nav-compliance', page: 'compliance' },
+    { id: 'nav-frameworks', page: 'frameworks' },
     { id: 'nav-incidents', page: 'incidents' },
     { id: 'nav-assets', page: 'assets' },
     { id: 'nav-services', page: 'services' },
@@ -253,6 +254,13 @@ function navigateTo(page) {
           showCompliance();
         } else {
           showPlaceholder('Compliance Management', 'Compliance module loading...', 'clipboard-check');
+        }
+        break;
+      case 'frameworks':
+        if (typeof showFrameworks === 'function') {
+          showFrameworks();
+        } else {
+          showPlaceholder('Compliance Frameworks', 'Frameworks module loading...', 'list-check');
         }
         break;
       case 'incidents':
