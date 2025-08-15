@@ -2002,6 +2002,54 @@ export function createAPI() {
     }
   });
 
+  api.put('/api/organizations/:id', authMiddleware, async (c) => {
+    try {
+      const id = c.req.param('id');
+      const data = await c.req.json();
+      
+      const result = await c.env.DB.prepare(`
+        UPDATE organizations SET
+          name = COALESCE(?, name),
+          code = COALESCE(?, code),
+          department = COALESCE(?, department),
+          location = COALESCE(?, location),
+          contact_email = COALESCE(?, contact_email),
+          description = COALESCE(?, description),
+          is_active = COALESCE(?, is_active),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        data.name,
+        data.code,
+        data.department,
+        data.location,
+        data.contact_email,
+        data.description,
+        data.is_active,
+        id
+      ).run();
+
+      if (result.changes === 0) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Organization not found' 
+        }, 404);
+      }
+
+      return c.json<ApiResponse<{updated: boolean}>>({ 
+        success: true, 
+        data: { updated: true },
+        message: 'Organization updated successfully' 
+      });
+    } catch (error) {
+      console.error('Update organization error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to update organization' 
+      }, 500);
+    }
+  });
+
   api.delete('/api/organizations/:id', authMiddleware, async (c) => {
     try {
       const id = c.req.param('id');

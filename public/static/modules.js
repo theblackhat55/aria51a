@@ -6819,6 +6819,91 @@ function exportFrameworkControls(frameworkId) {
   showInfoMessage('Controls export functionality will be available in a future update.');
 }
 
+// Universal Modal Functions
+function showModal(title, content, buttons = []) {
+  // Remove existing modal if any
+  const existingModal = document.getElementById('universal-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Create modal HTML
+  const modalHTML = `
+    <div id="universal-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
+          <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="p-6">
+          ${content}
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          ${buttons.map(button => `
+            <button onclick="${button.onclick}" class="${button.class}">
+              ${button.text}
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeModal() {
+  const modal = document.getElementById('universal-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+  const toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) {
+    // Create toast container if it doesn't exist
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'fixed top-4 right-4 z-50 space-y-2';
+    document.body.appendChild(container);
+  }
+  
+  const toastTypes = {
+    success: 'bg-green-500 text-white',
+    error: 'bg-red-500 text-white',
+    warning: 'bg-yellow-500 text-white',
+    info: 'bg-blue-500 text-white'
+  };
+  
+  const toast = document.createElement('div');
+  toast.className = `${toastTypes[type]} px-4 py-3 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full opacity-0`;
+  toast.innerHTML = `
+    <div class="flex items-center justify-between">
+      <span>${message}</span>
+      <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+  
+  document.getElementById('toast-container').appendChild(toast);
+  
+  // Animate in
+  setTimeout(() => {
+    toast.classList.remove('translate-x-full', 'opacity-0');
+  }, 100);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    toast.classList.add('translate-x-full', 'opacity-0');
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
+
 // Make frameworks functions globally accessible
 window.showFrameworks = showFrameworks;
 window.viewFrameworkControls = viewFrameworkControls;
@@ -6830,6 +6915,11 @@ window.assessControl = assessControl;
 window.viewControlDetails = viewControlDetails;
 window.exportFramework = exportFramework;
 window.exportFrameworkControls = exportFrameworkControls;
+
+// Make modal functions globally accessible
+window.showModal = showModal;
+window.closeModal = closeModal;
+window.showToast = showToast;
 
 // Make moduleData globally accessible
 window.moduleData = moduleData;

@@ -2559,9 +2559,96 @@ async function deleteRiskOwner(id) {
   }
 }
 
-// Stub functions for edit operations
-function editOrganization(id) {
-  showToast('Edit organization functionality coming soon', 'info');
+// Edit Organization Function
+async function editOrganization(id) {
+  try {
+    // First, get the organization data
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/organizations`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      const organization = response.data.data.find(org => org.id == id);
+      if (!organization) {
+        showToast('Organization not found', 'error');
+        return;
+      }
+      
+      showModal('Edit Organization', `
+        <form id="edit-organization-form" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Organization Name</label>
+              <input type="text" id="edit-org-name" class="form-input" value="${organization.name || ''}" required>
+            </div>
+            <div>
+              <label class="form-label">Organization Code</label>
+              <input type="text" id="edit-org-code" class="form-input" value="${organization.code || ''}">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Department</label>
+              <input type="text" id="edit-org-department" class="form-input" value="${organization.department || ''}">
+            </div>
+            <div>
+              <label class="form-label">Location</label>
+              <input type="text" id="edit-org-location" class="form-input" value="${organization.location || ''}">
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Contact Email</label>
+            <input type="email" id="edit-org-contact-email" class="form-input" value="${organization.contact_email || ''}">
+          </div>
+          <div>
+            <label class="form-label">Description</label>
+            <textarea id="edit-org-description" class="form-input" rows="3">${organization.description || ''}</textarea>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="edit-org-active" class="form-checkbox" ${organization.is_active ? 'checked' : ''}>
+            <label for="edit-org-active" class="ml-2 text-sm text-gray-700">Active Organization</label>
+          </div>
+        </form>
+      `, [
+        { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
+        { text: 'Update Organization', class: 'btn-primary', onclick: `updateOrganization(${id})` }
+      ]);
+    }
+  } catch (error) {
+    console.error('Error loading organization:', error);
+    showToast('Failed to load organization data', 'error');
+  }
+}
+
+async function updateOrganization(id) {
+  const formData = {
+    name: document.getElementById('edit-org-name').value,
+    code: document.getElementById('edit-org-code').value,
+    department: document.getElementById('edit-org-department').value,
+    location: document.getElementById('edit-org-location').value,
+    contact_email: document.getElementById('edit-org-contact-email').value,
+    description: document.getElementById('edit-org-description').value,
+    is_active: document.getElementById('edit-org-active').checked ? 1 : 0
+  };
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.put(`/api/organizations/${id}`, formData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Organization updated successfully', 'success');
+      closeModal();
+      loadOrganizationsData();
+    } else {
+      throw new Error(response.data.error || 'Update failed');
+    }
+  } catch (error) {
+    console.error('Error updating organization:', error);
+    showToast('Failed to update organization: ' + (error.response?.data?.error || error.message), 'error');
+  }
 }
 
 function editRiskOwner(id) {
@@ -2596,4 +2683,5 @@ window.saveRiskOwner = saveRiskOwner;
 window.deleteOrganization = deleteOrganization;
 window.deleteRiskOwner = deleteRiskOwner;
 window.editOrganization = editOrganization;
+window.updateOrganization = updateOrganization;
 window.editRiskOwner = editRiskOwner;
