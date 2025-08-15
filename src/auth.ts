@@ -142,22 +142,41 @@ export class AuthService {
 
 // Authentication middleware
 export async function authMiddleware(c: Context<{ Bindings: CloudflareBindings }>, next: () => Promise<void>) {
-  const authHeader = c.req.header('Authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ success: false, error: 'No authorization token provided' }, 401);
-  }
-
-  const token = authHeader.substring(7);
-
   try {
-    // Try JWT verification first
+    const authHeader = c.req.header('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, error: 'No authorization token provided' }, 401);
+    }
+
+    const token = authHeader.substring(7);
+
+    // Validate token format
+    if (!token || token.trim() === '') {
+      return c.json({ success: false, error: 'Invalid token format' }, 401);
+    }
+
     let payload;
     try {
+      // Try JWT verification first
       payload = await verify(token, JWT_SECRET);
     } catch (jwtError) {
-      // Fallback: try simple token decoding
-      payload = JSON.parse(atob(token));
+      try {
+        // Fallback: try simple token decoding with validation
+        const decoded = atob(token);
+        if (!decoded || decoded.trim() === '') {
+          throw new Error('Empty decoded token');
+        }
+        payload = JSON.parse(decoded);
+      } catch (fallbackError) {
+        console.error('Auth middleware error: Token decoding failed:', fallbackError);
+        return c.json({ success: false, error: 'Invalid token format' }, 401);
+      }
+    }
+    
+    // Validate payload structure
+    if (!payload || typeof payload !== 'object' || !payload.id) {
+      return c.json({ success: false, error: 'Invalid token payload' }, 401);
     }
     
     // Check if token is expired
@@ -170,7 +189,7 @@ export async function authMiddleware(c: Context<{ Bindings: CloudflareBindings }
     await next();
   } catch (error) {
     console.error('Auth middleware error:', error);
-    return c.json({ success: false, error: 'Invalid token' }, 401);
+    return c.json({ success: false, error: 'Authentication failed' }, 401);
   }
 }
 
