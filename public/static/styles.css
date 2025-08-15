@@ -1,5 +1,67 @@
 /* DMT Risk Assessment System v2.0 - Custom Styles */
 
+/* Framework Tabs */
+.framework-tab {
+  padding: 8px 16px;
+  border-bottom: 2px solid transparent;
+  color: #6b7280;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.framework-tab:hover {
+  color: #374151;
+  border-bottom-color: #d1d5db;
+}
+
+.framework-tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* Modern Navigation Styles */
+.nav-container {
+  position: relative;
+}
+
+.nav-menu {
+  z-index: 1000;
+}
+
+.nav-menu-item {
+  display: flex;
+  align-items: center;
+  space-x: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #374151;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-menu-item:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.nav-menu-item.active {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.nav-menu-item i {
+  width: 20px;
+  text-align: center;
+  margin-right: 12px;
+}
+
+/* Notification styles */
+#notifications-dropdown {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 /* Mobile-First Responsive Design */
 @media (max-width: 768px) {
   /* Mobile Navigation */

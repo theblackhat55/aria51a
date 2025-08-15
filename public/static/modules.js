@@ -1292,7 +1292,7 @@ function showAddRequirementModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
     { text: 'Add Requirement', class: 'btn-primary', onclick: 'saveRequirement()' }
   ]);
 }
@@ -1316,7 +1316,7 @@ async function saveRequirement() {
     
     if (response.data.success) {
       showToast('Requirement added successfully', 'success');
-      closeUniversalModal();
+      closeModal(this);
       loadRequirementsData();
     }
   } catch (error) {
@@ -1485,7 +1485,7 @@ function showAddFindingModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
     { text: 'Add Finding', class: 'btn-primary', onclick: 'saveFinding()' }
   ]);
 }
@@ -1509,7 +1509,7 @@ async function saveFinding() {
     
     if (response.data.success) {
       showToast('Finding added successfully', 'success');
-      closeUniversalModal();
+      closeModal(this);
       loadFindingsData();
     }
   } catch (error) {
@@ -2293,7 +2293,7 @@ async function testControl(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
       { text: 'Save Test Results', class: 'btn-primary', onclick: `saveControlTest(${id})` }
     ]);
     
@@ -2679,7 +2679,7 @@ function showAddServiceModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
     { text: 'Add Service', class: 'btn-primary', onclick: 'saveService()' }
   ]);
 }
@@ -2772,8 +2772,58 @@ function editService(id) {
   showToast('Edit service functionality coming soon', 'info');
 }
 
-function exportServices() {
-  showToast('Export services functionality coming soon', 'info');
+async function exportServices() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    if (!token) {
+      showToast('Please log in to export services', 'error');
+      return;
+    }
+
+    const response = await axios.get('/api/services', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      const services = response.data.data;
+      
+      // Convert to CSV format
+      const headers = ['ID', 'Name', 'Description', 'Owner', 'Type', 'Status', 'Risk Score', 'Created Date'];
+      const csvContent = [
+        headers.join(','),
+        ...services.map(service => [
+          service.id,
+          `"${service.name || ''}"`,
+          `"${service.description || ''}"`,
+          `"${service.owner || ''}"`,
+          service.type || '',
+          service.status || '',
+          service.risk_score || 0,
+          service.created_at || ''
+        ].join(','))
+      ].join('\n');
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `services_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
+      showToast('Services exported successfully', 'success');
+    } else {
+      showToast('Failed to export services', 'error');
+    }
+  } catch (error) {
+    console.error('Export services error:', error);
+    showToast('Failed to export services', 'error');
+  }
 }
 
 // User Management Module
@@ -3823,7 +3873,7 @@ function showAddAssessmentModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
     { text: 'Create Assessment', class: 'btn-primary', onclick: 'saveAssessment()' }
   ]);
   
@@ -3902,7 +3952,7 @@ async function saveAssessment() {
     
     if (response.data.success) {
       showToast('Assessment created successfully', 'success');
-      closeUniversalModal();
+      closeModal(this);
       loadComplianceData(); // Refresh the compliance data
       if (typeof loadAssessments === 'function') {
         loadAssessments(); // Refresh assessments if function exists
@@ -4014,7 +4064,7 @@ function showAddIncidentModal() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
     { text: 'Report Incident', class: 'btn-primary', onclick: 'saveIncident()' }
   ]);
   
@@ -4185,8 +4235,8 @@ async function viewAssessment(id) {
         </div>
       </div>
     `, [
-      { text: 'Close', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
-      { text: 'Edit Assessment', class: 'btn-primary', onclick: `closeUniversalModal(); editAssessment(${id})` }
+      { text: 'Close', class: 'btn-secondary', onclick: 'closeModal(this)' },
+      { text: 'Edit Assessment', class: 'btn-primary', onclick: `closeModal(this); editAssessment(${id})` }
     ], 'max-w-4xl');
     
   } catch (error) {
@@ -4296,7 +4346,7 @@ async function editAssessment(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
       { text: 'Update Assessment', class: 'btn-primary', onclick: `updateAssessment(${id})` }
     ]);
     
@@ -4368,7 +4418,7 @@ async function updateAssessment(id) {
     
     if (response.data.success) {
       showToast('Assessment updated successfully', 'success');
-      closeUniversalModal();
+      closeModal(this);
       loadComplianceData(); // Refresh the compliance data
       if (typeof loadAssessments === 'function') {
         loadAssessments(); // Refresh assessments if function exists
@@ -4985,8 +5035,8 @@ async function viewIncident(id) {
         </div>
       </div>
     `, [
-      { text: 'Close', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
-      { text: 'Edit Incident', class: 'btn-primary', onclick: `closeUniversalModal(); editIncident(${id})` }
+      { text: 'Close', class: 'btn-secondary', onclick: 'closeModal(this)' },
+      { text: 'Edit Incident', class: 'btn-primary', onclick: `closeModal(this); editIncident(${id})` }
     ], 'max-w-4xl');
     
   } catch (error) {
@@ -5095,7 +5145,7 @@ async function editIncident(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
       { text: 'Update Incident', class: 'btn-primary', onclick: `updateIncident(${id})` }
     ]);
     
@@ -5166,7 +5216,7 @@ async function updateIncident(id) {
     
     if (response.data.success) {
       showToast('Incident updated successfully', 'success');
-      closeUniversalModal();
+      closeModal(this);
       if (typeof loadIncidentsData === 'function') {
         loadIncidentsData(); // Refresh incidents if function exists
       }
@@ -5217,7 +5267,7 @@ async function assignIncident(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
       { text: 'Assign Incident', class: 'btn-primary', onclick: `saveIncidentAssignment(${id})` }
     ]);
     
@@ -5273,7 +5323,7 @@ async function escalateIncident(id) {
         </div>
       </form>
     `, [
-      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+      { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
       { text: 'Escalate Incident', class: 'btn-primary', onclick: `saveIncidentEscalation(${id})` }
     ]);
     
@@ -5790,7 +5840,30 @@ function createModal(title, content) {
 
 function closeModal(button) {
   const modal = button.closest('.fixed');
-  modal.remove();
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Universal function to handle X button clicks and other close actions
+function setupModalCloseHandlers(modal) {
+  if (!modal) return;
+  
+  // Handle X button clicks (fa-times icons)
+  const closeButtons = modal.querySelectorAll('button i.fa-times, button .fa-times');
+  closeButtons.forEach(icon => {
+    const button = icon.closest('button');
+    if (button && !button.onclick) {
+      button.onclick = () => closeModal(button);
+    }
+  });
+  
+  // Handle clicking outside modal to close
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      closeModal(modal);
+    }
+  });
 }
 
 // Risk Form Functions
@@ -6439,9 +6512,9 @@ function renderFrameworksPage(frameworks) {
           <div>
             <h1 class="text-3xl font-bold text-gray-900 mb-2">
               <i class="fas fa-list-check text-blue-600 mr-3"></i>
-              Compliance Frameworks
+              Compliance Frameworks & Controls
             </h1>
-            <p class="text-gray-600">Manage and assess compliance with industry standards and regulations</p>
+            <p class="text-gray-600">Manage compliance frameworks, risk controls, and security assessments</p>
           </div>
           <div class="flex space-x-3">
             <button onclick="showImportFrameworkModal()" class="btn-primary">
@@ -6452,11 +6525,44 @@ function renderFrameworksPage(frameworks) {
             </button>
           </div>
         </div>
+        
+        <!-- Navigation Tabs -->
+        <div class="mt-6 border-b border-gray-200">
+          <nav class="flex space-x-8">
+            <button id="frameworks-tab" onclick="switchFrameworkTab('frameworks')" class="framework-tab active">
+              <i class="fas fa-list-check mr-2"></i>Frameworks
+            </button>
+            <button id="controls-tab" onclick="switchFrameworkTab('controls')" class="framework-tab">
+              <i class="fas fa-shield-halved mr-2"></i>Controls
+            </button>
+          </nav>
+        </div>
       </div>
 
-      <!-- Frameworks Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        ${frameworks.map(framework => renderFrameworkCard(framework)).join('')}
+      <!-- Frameworks Content -->
+      <div id="frameworks-content" class="framework-content">
+        <!-- Frameworks Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          ${frameworks.map(framework => renderFrameworkCard(framework)).join('')}
+        </div>
+      </div>
+      
+      <!-- Controls Content -->
+      <div id="controls-content" class="framework-content hidden">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900">Risk Controls</h2>
+              <p class="text-gray-600 mt-1">Manage security controls and their effectiveness</p>
+            </div>
+            <button onclick="showAddControlModal()" class="btn-primary">
+              <i class="fas fa-plus mr-2"></i>Add Control
+            </button>
+          </div>
+          <div id="controls-list">
+            <!-- Controls will be loaded here -->
+          </div>
+        </div>
       </div>
 
       <!-- Recent Framework Activities -->
@@ -6795,13 +6901,124 @@ function closeImportModal() {
 }
 
 async function startFrameworkAssessment(frameworkId) {
-  // Placeholder for starting framework assessment
-  showInfoMessage('Framework assessment functionality will be available in a future update.');
+  try {
+    const token = localStorage.getItem('dmt_token');
+    if (!token) {
+      showToast('Please log in to start assessments', 'error');
+      return;
+    }
+
+    // Get framework details first
+    const frameworkResponse = await axios.get(`/api/frameworks/${frameworkId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const framework = frameworkResponse.data.data;
+    
+    // Create new assessment for this framework
+    const assessmentData = {
+      framework_id: frameworkId,
+      name: `${framework.name} Assessment - ${new Date().toLocaleDateString()}`,
+      description: `Assessment for ${framework.name} framework started on ${new Date().toLocaleDateString()}`,
+      status: 'in_progress',
+      planned_start_date: new Date().toISOString().split('T')[0],
+      planned_end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
+      assessor_id: 1 // Current user
+    };
+
+    const response = await axios.post('/api/framework-assessments', assessmentData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.data.success) {
+      showToast(`Started ${framework.name} assessment successfully!`, 'success');
+      // Refresh the frameworks view
+      showFrameworks();
+    } else {
+      showToast('Failed to start assessment: ' + response.data.error, 'error');
+    }
+  } catch (error) {
+    console.error('Error starting framework assessment:', error);
+    showToast('Failed to start framework assessment', 'error');
+  }
 }
 
 function assessControl(controlId) {
   // Placeholder for control assessment
   showInfoMessage('Control assessment functionality will be available in a future update.');
+}
+
+function createFrameworkAssessment() {
+  // Show the same modal as the compliance section
+  showAddAssessmentModal();
+}
+
+function switchFrameworkTab(tab) {
+  // Remove active class from all tabs
+  document.querySelectorAll('.framework-tab').forEach(t => t.classList.remove('active'));
+  
+  // Hide all content sections
+  document.querySelectorAll('.framework-content').forEach(c => c.classList.add('hidden'));
+  
+  // Show selected tab content
+  const selectedTab = document.getElementById(`${tab}-tab`);
+  const selectedContent = document.getElementById(`${tab}-content`);
+  
+  if (selectedTab && selectedContent) {
+    selectedTab.classList.add('active');
+    selectedContent.classList.remove('hidden');
+    
+    // Load controls data if switching to controls tab
+    if (tab === 'controls') {
+      loadControlsInFrameworks();
+    }
+  }
+}
+
+async function loadControlsInFrameworks() {
+  const controlsList = document.getElementById('controls-list');
+  if (!controlsList) return;
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/controls', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      const controls = response.data.data;
+      controlsList.innerHTML = controls.map(control => `
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <h3 class="font-semibold text-gray-900">${control.name}</h3>
+              <p class="text-gray-600 text-sm mt-1">${control.description || 'No description'}</p>
+              <div class="flex items-center space-x-4 mt-3">
+                <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                  ${control.category || 'General'}
+                </span>
+                <span class="text-xs px-2 py-1 rounded-full ${control.effectiveness >= 80 ? 'bg-green-100 text-green-800' : control.effectiveness >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
+                  ${control.effectiveness || 0}% Effective
+                </span>
+              </div>
+            </div>
+            <button onclick="editControl(${control.id})" class="text-blue-600 hover:text-blue-700">
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (error) {
+    console.error('Error loading controls:', error);
+    controlsList.innerHTML = '<p class="text-gray-500">Failed to load controls</p>';
+  }
 }
 
 function viewControlDetails(controlId) {
@@ -6833,7 +7050,7 @@ function showModal(title, content, buttons = []) {
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
-          <button onclick="closeUniversalModal()" class="text-gray-400 hover:text-gray-600">
+          <button onclick="closeModal(this)" class="text-gray-400 hover:text-gray-600">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -6852,6 +7069,10 @@ function showModal(title, content, buttons = []) {
   `;
   
   document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Setup close handlers for the new modal
+  const modal = document.getElementById('universal-modal');
+  setupModalCloseHandlers(modal);
 }
 
 function closeUniversalModal() {

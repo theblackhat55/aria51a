@@ -54,13 +54,14 @@ app.get('/', (c) => {
 
   <!-- Main Application Container -->
   <div id="app" class="min-h-screen">
-    <!-- Navigation -->
-    <nav id="navigation" class="bg-white shadow-lg">
+    <!-- Modern Collapsible Navigation -->
+    <nav id="navigation" class="bg-white shadow-lg border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between items-center h-16">
+          <!-- Logo and Brand -->
           <div class="flex items-center">
             <div class="flex-shrink-0">
-              <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
+              <div class="h-10 w-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
                 <i class="fas fa-shield-alt text-white"></i>
               </div>
             </div>
@@ -70,47 +71,78 @@ app.get('/', (c) => {
             </div>
           </div>
           
-          <div class="flex items-center space-x-4">
-            <nav class="flex space-x-8">
-              <a href="#" class="nav-item active" id="nav-dashboard">
-                <i class="fas fa-chart-pie mr-2"></i>Dashboard
-              </a>
-              <a href="#" class="nav-item" id="nav-risks">
-                <i class="fas fa-exclamation-triangle mr-2"></i>Risks
-              </a>
-              <a href="#" class="nav-item" id="nav-controls">
-                <i class="fas fa-shield-halved mr-2" style="color: #000000;"></i>Controls
-              </a>
-              <a href="#" class="nav-item" id="nav-compliance">
-                <i class="fas fa-clipboard-check mr-2"></i>Compliance
-              </a>
-              <a href="#" class="nav-item" id="nav-frameworks">
-                <i class="fas fa-list-check mr-2"></i>Frameworks
-              </a>
-              <a href="#" class="nav-item" id="nav-incidents">
-                <i class="fas fa-bell mr-2"></i>Incidents
-              </a>
-              <a href="#" class="nav-item" id="nav-assets">
-                <i class="fas fa-server mr-2"></i>Assets
-              </a>
-              <a href="#" class="nav-item" id="nav-services">
-                <i class="fas fa-cogs mr-2"></i>Services
-              </a>
-              <a href="#" class="nav-item" id="nav-documents">
-                <i class="fas fa-file-alt mr-2"></i>Documents
-              </a>
-              <a href="#" class="nav-item" id="nav-settings">
-                <i class="fas fa-cog mr-2"></i>Settings
-              </a>
-            </nav>
+          <!-- Navigation Menu -->
+          <div class="flex items-center space-x-6">
+            <!-- Collapsible Navigation -->
+            <div class="nav-container group">
+              <div class="nav-trigger flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <i class="fas fa-bars text-gray-600"></i>
+                <span class="text-sm font-medium text-gray-700">Menu</span>
+                <i class="fas fa-chevron-down text-gray-400 text-xs transform group-hover:rotate-180 transition-transform duration-200"></i>
+              </div>
+              
+              <!-- Expanded Menu -->
+              <div class="nav-menu absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div class="p-4">
+                  <div class="grid grid-cols-2 gap-2">
+                    <a href="#" class="nav-menu-item active" id="nav-dashboard">
+                      <i class="fas fa-chart-pie text-blue-600"></i>
+                      <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-risks">
+                      <i class="fas fa-exclamation-triangle text-red-600"></i>
+                      <span>Risks</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-services">
+                      <i class="fas fa-cogs text-purple-600"></i>
+                      <span>Services</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-assets">
+                      <i class="fas fa-server text-green-600"></i>
+                      <span>Assets</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-incidents">
+                      <i class="fas fa-bell text-orange-600"></i>
+                      <span>Incidents</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-compliance">
+                      <i class="fas fa-clipboard-check text-indigo-600"></i>
+                      <span>Compliance</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-frameworks">
+                      <i class="fas fa-list-check text-cyan-600"></i>
+                      <span>Frameworks</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-documents">
+                      <i class="fas fa-file-alt text-yellow-600"></i>
+                      <span>Documents</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-settings">
+                      <i class="fas fa-cog text-gray-600"></i>
+                      <span>Settings</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
             
-            <div class="flex items-center">
-              <span class="text-sm text-gray-600 mr-4" id="welcome-message">
-                Welcome, Guest
-              </span>
-              <button class="text-sm text-blue-600 hover:text-blue-700" id="auth-button">
-                <i class="fas fa-sign-in-alt mr-1"></i>Login
-              </button>
+            <!-- User Section -->
+            <div class="flex items-center space-x-4">
+              <!-- Notifications -->
+              <div class="relative">
+                <button id="notifications-btn" class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+                  <i class="fas fa-bell text-lg"></i>
+                  <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </button>
+              </div>
+              
+              <!-- User Menu -->
+              <div class="flex items-center space-x-3">
+                <span class="text-sm text-gray-600" id="welcome-message">Welcome, Guest</span>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200" id="auth-button">
+                  <i class="fas fa-sign-in-alt mr-1"></i>Login
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -129,9 +161,9 @@ app.get('/', (c) => {
   <div id="aria-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-40">
     <div class="flex items-center justify-center h-full p-4">
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200 relative">
           <h3 class="text-lg font-semibold text-gray-900">ARIA - AI Risk Assistant</h3>
-          <button id="close-aria" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+          <button id="close-aria" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">
             <i class="fas fa-times"></i>
           </button>
         </div>

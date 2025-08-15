@@ -133,7 +133,7 @@ function initializeNavigation() {
   const navLinks = [
     { id: 'nav-dashboard', page: 'dashboard' },
     { id: 'nav-risks', page: 'risks' },
-    { id: 'nav-controls', page: 'controls' },
+
     { id: 'nav-compliance', page: 'compliance' },
     { id: 'nav-frameworks', page: 'frameworks' },
     { id: 'nav-incidents', page: 'incidents' },
@@ -367,59 +367,88 @@ function showDashboard() {
   }
   
   mainContent.innerHTML = `
-    <div class="space-y-6">
-      <!-- Page Header -->
-      <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold text-gray-900">Risk Dashboard</h2>
-        <div class="flex space-x-3">
-          <button onclick="refreshDashboard()" class="btn-secondary">
-            <i class="fas fa-sync-alt mr-2"></i>Refresh
-          </button>
-          <button onclick="showReports()" class="btn-primary">
-            <i class="fas fa-chart-bar mr-2"></i>Reports
-          </button>
+    <div class="space-y-8">
+      <!-- Modern Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-bold mb-2">Risk Management Dashboard</h1>
+            <p class="text-blue-100">Real-time insights into your organization's risk posture</p>
+          </div>
+          <div class="flex space-x-3">
+            <button onclick="refreshDashboard()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200">
+              <i class="fas fa-sync-alt mr-2"></i>Refresh
+            </button>
+            <button onclick="showReports()" class="bg-white text-blue-600 px-6 py-2 rounded-lg font-medium hover:bg-blue-50 transition-all duration-200">
+              <i class="fas fa-chart-bar mr-2"></i>Reports
+            </button>
+          </div>
         </div>
       </div>
       
-      <!-- Key Metrics -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="metric-card">
-          <div>
-            <div class="metric-value text-blue-600">${dashboardData.total_risks}</div>
-            <div class="metric-label">Total Active Risks</div>
-          </div>
-          <div class="metric-icon bg-blue-100 text-blue-600">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-        </div>
-        
-        <div class="metric-card">
-          <div>
-            <div class="metric-value text-red-600">${dashboardData.high_risks}</div>
-            <div class="metric-label">High/Critical Risks</div>
-          </div>
-          <div class="metric-icon bg-red-100 text-red-600">
-            <i class="fas fa-fire"></i>
+      <!-- Modern Key Metrics -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Risks</p>
+              <p class="text-3xl font-bold text-gray-900 mt-2">${dashboardData.total_risks}</p>
+              <div class="flex items-center mt-2">
+                <i class="fas fa-arrow-up text-green-500 text-sm mr-1"></i>
+                <span class="text-sm text-green-600 font-medium">Active monitoring</span>
+              </div>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-xl">
+              <i class="fas fa-exclamation-triangle text-blue-600 text-xl"></i>
+            </div>
           </div>
         </div>
         
-        <div class="metric-card">
-          <div>
-            <div class="metric-value text-orange-600">${dashboardData.open_findings}</div>
-            <div class="metric-label">Open Findings</div>
-          </div>
-          <div class="metric-icon bg-orange-100 text-orange-600">
-            <i class="fas fa-clipboard-list"></i>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">High Risk</p>
+              <p class="text-3xl font-bold text-red-600 mt-2">${dashboardData.high_risks}</p>
+              <div class="flex items-center mt-2">
+                <i class="fas fa-fire text-red-500 text-sm mr-1"></i>
+                <span class="text-sm text-red-600 font-medium">Requires attention</span>
+              </div>
+            </div>
+            <div class="bg-red-50 p-3 rounded-xl">
+              <i class="fas fa-fire text-red-600 text-xl"></i>
+            </div>
           </div>
         </div>
         
-        <div class="metric-card">
-          <div>
-            <div class="metric-value text-green-600">${dashboardData.compliance_score}%</div>
-            <div class="metric-label">Compliance Score</div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Open Findings</p>
+              <p class="text-3xl font-bold text-orange-600 mt-2">${dashboardData.open_findings}</p>
+              <div class="flex items-center mt-2">
+                <i class="fas fa-clock text-orange-500 text-sm mr-1"></i>
+                <span class="text-sm text-orange-600 font-medium">In progress</span>
+              </div>
+            </div>
+            <div class="bg-orange-50 p-3 rounded-xl">
+              <i class="fas fa-clipboard-list text-orange-600 text-xl"></i>
+            </div>
           </div>
-          <div class="metric-icon bg-green-100 text-green-600">
-            <i class="fas fa-check-circle"></i>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Compliance</p>
+              <p class="text-3xl font-bold text-green-600 mt-2">${dashboardData.compliance_score}%</p>
+              <div class="flex items-center mt-2">
+                <i class="fas fa-check-circle text-green-500 text-sm mr-1"></i>
+                <span class="text-sm text-green-600 font-medium">On track</span>
+              </div>
+            </div>
+            <div class="bg-green-50 p-3 rounded-xl">
+              <i class="fas fa-shield-alt text-green-600 text-xl"></i>
+            </div>
           </div>
         </div>
       </div>
