@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Login Test</h1>
+    <button onclick="testLogin()">Test Login Flow</button>
+    <div id="result"></div>
+
+    <script>
+        console.log('Script loaded');
+        
+        // Auto-start the test after page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, starting automatic test in 2 seconds...');
+            setTimeout(() => {
+                console.log('Starting test now...');
+                testLogin();
+            }, 2000);
+        });
+        
+        async function testLogin() {
+            console.log('🔄 Starting login test...');
+            
+            try {
+                // Step 1: Login
+                console.log('📡 Sending login request...');
+                const loginResponse = await axios.post('/api/auth/login', {
+                    username: 'admin',
+                    password: 'demo123'
+                });
+                
+                console.log('✅ Login response:', loginResponse.data);
+                
+                if (loginResponse.data.success) {
+                    const token = loginResponse.data.data.token;
+                    const user = loginResponse.data.data.user;
+                    
+                    // Store token
+                    localStorage.setItem('dmt_token', token);
+                    localStorage.setItem('dmt_user', JSON.stringify(user));
+                    console.log('💾 Token stored in localStorage');
+                    
+                    // Step 2: Test auth/me endpoint
+                    console.log('📡 Testing /api/auth/me...');
+                    const meResponse = await axios.get('/api/auth/me', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    console.log('✅ /api/auth/me response:', meResponse.data);
+                    
+                    // Step 3: Test dashboard endpoint
+                    console.log('📡 Testing /api/dashboard...');
+                    const dashboardResponse = await axios.get('/api/dashboard', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    console.log('✅ /api/dashboard response:', dashboardResponse.data);
+                    
+                    // Step 4: Simulate what the main app does
+                    console.log('🔄 Simulating main app authentication flow...');
+                    
+                    // Check localStorage (like checkAuthentication does)
+                    const storedToken = localStorage.getItem('dmt_token');
+                    const storedUser = localStorage.getItem('dmt_user');
+                    console.log('🔑 Stored token exists:', !!storedToken);
+                    console.log('👤 Stored user exists:', !!storedUser);
+                    
+                    // Simulate auth verification
+                    const authVerifyResponse = await axios.get('/api/auth/me', {
+                        headers: { Authorization: `Bearer ${storedToken}` }
+                    });
+                    console.log('✅ Auth verification:', authVerifyResponse.data);
+                    
+                    // Now simulate dashboard loading
+                    console.log('📊 Simulating dashboard data loading...');
+                    const dashboardLoadResponse = await axios.get('/api/dashboard', {
+                        headers: { Authorization: `Bearer ${storedToken}` }
+                    });
+                    console.log('✅ Dashboard load simulation:', dashboardLoadResponse.data);
+                    
+                    document.getElementById('result').innerHTML = '<p style="color: green;">✅ All API calls successful! Check console for details.</p>';
+                } else {
+                    console.error('❌ Login failed:', loginResponse.data);
+                    document.getElementById('result').innerHTML = '<p style="color: red;">❌ Login failed</p>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ Test failed: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

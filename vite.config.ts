@@ -11,15 +11,9 @@ export default defineConfig({
       entry: 'src/index.tsx'
     })
   ],
-  css: {
-    postcss: './postcss.config.js'
-  },
   build: {
     cssCodeSplit: false,
     rollupOptions: {
-      input: {
-        main: 'src/input.css'
-      },
       output: {
         assetFileNames: 'static/[name].[ext]'
       }

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Dashboard Loading</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+  <div id="main-content" class="max-w-6xl mx-auto">
+    <div class="text-center py-8">
+      <h2>Dashboard Loading Test</h2>
+      <button id="test-btn" onclick="testDashboard()" class="bg-blue-600 text-white px-6 py-3 rounded-lg mt-4">Test Dashboard Loading</button>
+    </div>
+  </div>
+  
+  <script>
+    // Set up fake authentication state
+    let currentUser = { first_name: 'Test', last_name: 'User' };
+    let dashboardData = null;
+    
+    // Mock token
+    localStorage.setItem('dmt_token', 'test-token-for-dashboard-test');
+    
+    // Mock functions
+    function updateActiveNavigation(nav) { console.log('Navigation:', nav); }
+    function showLoading(elementId) {
+      document.getElementById(elementId).innerHTML = `
+        <div class="flex items-center justify-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span class="ml-3 text-gray-600">Loading...</span>
+        </div>
+      `;
+    }
+    function showError(message) {
+      console.error('Error:', message);
+      document.getElementById('main-content').innerHTML = `<div class="text-red-600 text-center py-8">Error: ${message}</div>`;
+    }
+    
+    async function testDashboard() {
+      console.log('Testing dashboard initialization...');
+      
+      // Test the real API first
+      try {
+        const response = await axios.get('/api/dashboard', {
+          headers: { Authorization: 'Bearer real-token-here' }
+        });
+        console.log('API Response:', response.data);
+      } catch (error) {
+        console.log('API Error (expected):', error.message);
+      }
+      
+      // Test loading data function
+      await loadDashboardData();
+      
+      // Test showing dashboard
+      showDashboard();
+    }
+  </script>
+  
+  <script src="/static/app.js"></script>
+  
+  <script>
+    console.log('Dashboard test page loaded');
+    console.log('Available functions:', {
+      loadDashboardData: typeof loadDashboardData,
+      showDashboard: typeof showDashboard,
+      initializeDashboard: typeof initializeDashboard
+    });
+  </script>
+</body>
+</html>

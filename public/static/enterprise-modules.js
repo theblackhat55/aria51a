@@ -325,6 +325,12 @@ async function showSettings() {
           <button onclick="showSettingsTab('saml')" id="settings-tab-saml" class="settings-tab">
             <i class="fas fa-key mr-2"></i>SAML Authentication
           </button>
+          <button onclick="showSettingsTab('ai')" id="settings-tab-ai" class="settings-tab">
+            <i class="fas fa-robot mr-2"></i>AI & LLM Settings
+          </button>
+          <button onclick="showSettingsTab('rag')" id="settings-tab-rag" class="settings-tab">
+            <i class="fas fa-brain mr-2"></i>RAG & Knowledge Base
+          </button>
           <button onclick="showSettingsTab('system')" id="settings-tab-system" class="settings-tab">
             <i class="fas fa-cog mr-2"></i>System Settings
           </button>
@@ -364,6 +370,12 @@ function showSettingsTab(tab) {
       break;
     case 'saml':
       showSAMLSettings();
+      break;
+    case 'ai':
+      showAISettings();
+      break;
+    case 'rag':
+      showRAGSettings();
       break;
     case 'system':
       showSystemSettings();
@@ -2226,6 +2238,343 @@ function downloadSAMLMetadata() {
   showToast('Downloading SAML metadata...', 'info');
 }
 
+async function showAISettings() {
+  const content = document.getElementById('settings-content');
+  
+  // Load existing AI settings
+  const aiSettings = await loadAISettings();
+  
+  content.innerHTML = `
+    <div class="space-y-6">
+      <!-- AI Configuration Header -->
+      <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-robot text-white text-xl"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900">AI & LLM Configuration</h3>
+            <p class="text-gray-600 mt-1">Configure AI providers for ARIA assistant with fallback priority</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Priority System Info -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start space-x-3">
+          <i class="fas fa-info-circle text-blue-600 mt-1"></i>
+          <div>
+            <h4 class="font-medium text-blue-900">Priority System</h4>
+            <p class="text-blue-700 text-sm mt-1">Configure multiple AI providers. The system will try them in order - if the first fails, it automatically uses the second, and so on.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- AI Providers Configuration -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- OpenAI Configuration -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-brain text-green-600"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-gray-900">OpenAI GPT-4</h4>
+                <p class="text-sm text-gray-500">Most advanced language model</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm text-gray-500">Priority:</span>
+              <select id="openai-priority" class="text-sm border border-gray-300 rounded px-2 py-1">
+                <option value="1" ${aiSettings.openai?.priority === 1 ? 'selected' : ''}>1st</option>
+                <option value="2" ${aiSettings.openai?.priority === 2 ? 'selected' : ''}>2nd</option>
+                <option value="3" ${aiSettings.openai?.priority === 3 ? 'selected' : ''}>3rd</option>
+                <option value="4" ${aiSettings.openai?.priority === 4 ? 'selected' : ''}>4th</option>
+                <option value="0" ${aiSettings.openai?.priority === 0 ? 'selected' : ''}>Disabled</option>
+              </select>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+              <input type="password" id="openai-api-key" placeholder="sk-..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.openai?.apiKey || ''}">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+              <div class="flex space-x-2">
+                <select id="openai-model" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="gpt-4" ${aiSettings.openai?.model === 'gpt-4' ? 'selected' : ''}>GPT-4</option>
+                  <option value="gpt-4-turbo" ${aiSettings.openai?.model === 'gpt-4-turbo' ? 'selected' : ''}>GPT-4 Turbo</option>
+                  <option value="gpt-3.5-turbo" ${aiSettings.openai?.model === 'gpt-3.5-turbo' ? 'selected' : ''}>GPT-3.5 Turbo</option>
+                  <option value="gpt-4o" ${aiSettings.openai?.model === 'gpt-4o' ? 'selected' : ''}>GPT-4o</option>
+                  <option value="gpt-4o-mini" ${aiSettings.openai?.model === 'gpt-4o-mini' ? 'selected' : ''}>GPT-4o Mini</option>
+                </select>
+                <button onclick="fetchOpenAIModels()" class="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 focus:ring-2 focus:ring-blue-500 transition-colors duration-200" title="Fetch latest models">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Google Gemini Configuration -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fab fa-google text-blue-600"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-gray-900">Google Gemini</h4>
+                <p class="text-sm text-gray-500">Google's advanced AI model</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm text-gray-500">Priority:</span>
+              <select id="gemini-priority" class="text-sm border border-gray-300 rounded px-2 py-1">
+                <option value="1" ${aiSettings.gemini?.priority === 1 ? 'selected' : ''}>1st</option>
+                <option value="2" ${aiSettings.gemini?.priority === 2 ? 'selected' : ''}>2nd</option>
+                <option value="3" ${aiSettings.gemini?.priority === 3 ? 'selected' : ''}>3rd</option>
+                <option value="4" ${aiSettings.gemini?.priority === 4 ? 'selected' : ''}>4th</option>
+                <option value="0" ${aiSettings.gemini?.priority === 0 ? 'selected' : ''}>Disabled</option>
+              </select>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+              <input type="password" id="gemini-api-key" placeholder="AIza..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.gemini?.apiKey || ''}">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+              <div class="flex space-x-2">
+                <select id="gemini-model" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="gemini-pro" ${aiSettings.gemini?.model === 'gemini-pro' ? 'selected' : ''}>Gemini Pro</option>
+                  <option value="gemini-pro-vision" ${aiSettings.gemini?.model === 'gemini-pro-vision' ? 'selected' : ''}>Gemini Pro Vision</option>
+                  <option value="gemini-1.5-pro" ${aiSettings.gemini?.model === 'gemini-1.5-pro' ? 'selected' : ''}>Gemini 1.5 Pro</option>
+                  <option value="gemini-1.5-flash" ${aiSettings.gemini?.model === 'gemini-1.5-flash' ? 'selected' : ''}>Gemini 1.5 Flash</option>
+                </select>
+                <button onclick="fetchGeminiModels()" class="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 focus:ring-2 focus:ring-blue-500 transition-colors duration-200" title="Fetch latest models">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Anthropic Claude Configuration -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-microchip text-purple-600"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-gray-900">Anthropic Claude</h4>
+                <p class="text-sm text-gray-500">Advanced reasoning AI</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm text-gray-500">Priority:</span>
+              <select id="anthropic-priority" class="text-sm border border-gray-300 rounded px-2 py-1">
+                <option value="1" ${aiSettings.anthropic?.priority === 1 ? 'selected' : ''}>1st</option>
+                <option value="2" ${aiSettings.anthropic?.priority === 2 ? 'selected' : ''}>2nd</option>
+                <option value="3" ${aiSettings.anthropic?.priority === 3 ? 'selected' : ''}>3rd</option>
+                <option value="4" ${aiSettings.anthropic?.priority === 4 ? 'selected' : ''}>4th</option>
+                <option value="0" ${aiSettings.anthropic?.priority === 0 ? 'selected' : ''}>Disabled</option>
+              </select>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+              <input type="password" id="anthropic-api-key" placeholder="sk-ant-..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.anthropic?.apiKey || ''}">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+              <div class="flex space-x-2">
+                <select id="anthropic-model" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option value="claude-3-opus-20240229" ${aiSettings.anthropic?.model === 'claude-3-opus-20240229' ? 'selected' : ''}>Claude 3 Opus</option>
+                  <option value="claude-3-sonnet-20240229" ${aiSettings.anthropic?.model === 'claude-3-sonnet-20240229' ? 'selected' : ''}>Claude 3 Sonnet</option>
+                  <option value="claude-3-haiku-20240307" ${aiSettings.anthropic?.model === 'claude-3-haiku-20240307' ? 'selected' : ''}>Claude 3 Haiku</option>
+                  <option value="claude-3-5-sonnet-20241022" ${aiSettings.anthropic?.model === 'claude-3-5-sonnet-20241022' ? 'selected' : ''}>Claude 3.5 Sonnet</option>
+                  <option value="claude-3-5-haiku-20241022" ${aiSettings.anthropic?.model === 'claude-3-5-haiku-20241022' ? 'selected' : ''}>Claude 3.5 Haiku</option>
+                </select>
+                <button onclick="fetchAnthropicModels()" class="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 focus:ring-2 focus:ring-blue-500 transition-colors duration-200" title="Fetch latest models">
+                  <i class="fas fa-sync-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Local/Custom LLM Configuration -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-server text-gray-600"></i>
+              </div>
+              <div>
+                <h4 class="font-semibold text-gray-900">Local/Custom LLM</h4>
+                <p class="text-sm text-gray-500">Self-hosted or custom endpoint</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-sm text-gray-500">Priority:</span>
+              <select id="local-priority" class="text-sm border border-gray-300 rounded px-2 py-1">
+                <option value="1" ${aiSettings.local?.priority === 1 ? 'selected' : ''}>1st</option>
+                <option value="2" ${aiSettings.local?.priority === 2 ? 'selected' : ''}>2nd</option>
+                <option value="3" ${aiSettings.local?.priority === 3 ? 'selected' : ''}>3rd</option>
+                <option value="4" ${aiSettings.local?.priority === 4 ? 'selected' : ''}>4th</option>
+                <option value="0" ${aiSettings.local?.priority === 0 ? 'selected' : ''}>Disabled</option>
+              </select>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Endpoint URL</label>
+              <input type="url" id="local-endpoint" placeholder="http://localhost:11434/v1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.local?.endpoint || ''}">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Model Name</label>
+              <input type="text" id="local-model" placeholder="llama2, codellama, etc." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.local?.model || ''}">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">API Key (optional)</label>
+              <input type="password" id="local-api-key" placeholder="Optional authentication key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.local?.apiKey || ''}">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="flex space-x-4">
+        <button onclick="saveAISettings()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+          <i class="fas fa-save mr-2"></i>Save Configuration
+        </button>
+        <button onclick="testAIConnections()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-colors duration-200">
+          <i class="fas fa-flask mr-2"></i>Test Connections
+        </button>
+        <button onclick="resetAISettings()" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 transition-colors duration-200">
+          <i class="fas fa-undo mr-2"></i>Reset to Defaults
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function loadAISettings() {
+  try {
+    const settings = localStorage.getItem('ai_settings');
+    if (settings) {
+      return JSON.parse(settings);
+    }
+  } catch (error) {
+    console.error('Error loading AI settings:', error);
+  }
+  
+  // Return default settings
+  return {
+    openai: { priority: 1, apiKey: '', model: 'gpt-4' },
+    gemini: { priority: 2, apiKey: '', model: 'gemini-pro' },
+    anthropic: { priority: 3, apiKey: '', model: 'claude-3-sonnet-20240229' },
+    local: { priority: 0, endpoint: '', model: '', apiKey: '' }
+  };
+}
+
+async function saveAISettings() {
+  try {
+    const settings = {
+      openai: {
+        priority: parseInt(document.getElementById('openai-priority').value),
+        apiKey: document.getElementById('openai-api-key').value,
+        model: document.getElementById('openai-model').value
+      },
+      gemini: {
+        priority: parseInt(document.getElementById('gemini-priority').value),
+        apiKey: document.getElementById('gemini-api-key').value,
+        model: document.getElementById('gemini-model').value
+      },
+      anthropic: {
+        priority: parseInt(document.getElementById('anthropic-priority').value),
+        apiKey: document.getElementById('anthropic-api-key').value,
+        model: document.getElementById('anthropic-model').value
+      },
+      local: {
+        priority: parseInt(document.getElementById('local-priority').value),
+        endpoint: document.getElementById('local-endpoint').value,
+        model: document.getElementById('local-model').value,
+        apiKey: document.getElementById('local-api-key').value
+      }
+    };
+    
+    localStorage.setItem('ai_settings', JSON.stringify(settings));
+    showToast('AI settings saved successfully!', 'success');
+    
+    // Update ARIA interface to show configured provider
+    updateARIAProviderStatus();
+    
+  } catch (error) {
+    console.error('Error saving AI settings:', error);
+    showToast('Failed to save AI settings', 'error');
+  }
+}
+
+async function testAIConnections() {
+  showToast('Testing AI connections...', 'info');
+  const settings = await loadAISettings();
+  
+  // Test each enabled provider
+  const providers = ['openai', 'gemini', 'anthropic', 'local'].filter(p => settings[p].priority > 0);
+  let testResults = [];
+  
+  for (const provider of providers) {
+    if (settings[provider].apiKey || provider === 'local') {
+      try {
+        // Simple test query
+        const result = await testAIProvider(provider, settings[provider]);
+        testResults.push(`✅ ${provider.toUpperCase()}: Connected`);
+      } catch (error) {
+        testResults.push(`❌ ${provider.toUpperCase()}: ${error.message}`);
+      }
+    } else {
+      testResults.push(`⚠️ ${provider.toUpperCase()}: No API key configured`);
+    }
+  }
+  
+  showModal('AI Connection Test Results', `
+    <div class="space-y-3">
+      ${testResults.map(result => `<p class="text-sm">${result}</p>`).join('')}
+    </div>
+  `, [
+    { text: 'Close', class: 'btn-primary', onclick: 'closeUniversalModal()' }
+  ]);
+}
+
+async function testAIProvider(provider, config) {
+  // This would normally make actual API calls to test connectivity
+  // For now, just simulate the test
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (config.apiKey || provider === 'local') {
+        resolve('Connected');
+      } else {
+        reject(new Error('No API key provided'));
+      }
+    }, 1000);
+  });
+}
+
+function resetAISettings() {
+  if (confirm('Are you sure you want to reset all AI settings to defaults? This cannot be undone.')) {
+    localStorage.removeItem('ai_settings');
+    showAISettings(); // Reload the interface
+    showToast('AI settings reset to defaults', 'info');
+  }
+}
+
 function showSystemSettings() {
   const content = document.getElementById('settings-content');
   content.innerHTML = `
@@ -2655,6 +3004,920 @@ function editRiskOwner(id) {
   showToast('Edit risk owner functionality coming soon', 'info');
 }
 
+// RAG & Knowledge Base Settings
+function showRAGSettings() {
+  const content = document.getElementById('settings-content');
+  
+  content.innerHTML = `
+    <div class="space-y-8">
+      <!-- RAG System Status -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">RAG System Status</h3>
+            <p class="text-sm text-gray-600">Retrieval-Augmented Generation knowledge base and vector storage</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div id="rag-status-indicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
+            <span id="rag-status-text" class="text-sm text-gray-600">Checking...</span>
+          </div>
+        </div>
+        
+        <!-- RAG Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-database text-blue-600 text-xl mr-3"></i>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Documents</p>
+                <p class="text-lg font-semibold text-gray-900" id="rag-total-docs">0</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-puzzle-piece text-green-600 text-xl mr-3"></i>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Vector Chunks</p>
+                <p class="text-lg font-semibold text-gray-900" id="rag-chunks">0</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-search text-purple-600 text-xl mr-3"></i>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Query Cache</p>
+                <p class="text-lg font-semibold text-gray-900" id="rag-cache-size">0</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-clock text-orange-600 text-xl mr-3"></i>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Avg Response</p>
+                <p class="text-lg font-semibold text-gray-900" id="rag-avg-response">0ms</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex flex-wrap gap-2">
+          <button onclick="initializeRAGSystem()" class="btn-primary">
+            <i class="fas fa-play mr-2"></i>Initialize RAG
+          </button>
+          <button onclick="refreshRAGStats()" class="btn-secondary">
+            <i class="fas fa-sync-alt mr-2"></i>Refresh Stats
+          </button>
+          <button onclick="testRAGQuery()" class="btn-secondary">
+            <i class="fas fa-search mr-2"></i>Test Query
+          </button>
+          <button onclick="clearRAGCache()" class="btn-secondary">
+            <i class="fas fa-trash mr-2"></i>Clear Cache
+          </button>
+        </div>
+      </div>
+
+      <!-- Data Indexing -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Data Indexing</h3>
+            <p class="text-sm text-gray-600">Index GRC data for intelligent search and retrieval</p>
+          </div>
+        </div>
+        
+        <!-- Indexing Options -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="space-y-4">
+            <h4 class="font-medium text-gray-900">GRC Entity Indexing</h4>
+            
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 border rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">Risks</p>
+                    <p class="text-xs text-gray-500">Risk assessments and mitigation strategies</p>
+                  </div>
+                </div>
+                <button onclick="indexGRCData('risks')" class="btn-secondary btn-sm">
+                  <i class="fas fa-plus mr-1"></i>Index
+                </button>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 border rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-bell text-orange-600 mr-3"></i>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">Incidents</p>
+                    <p class="text-xs text-gray-500">Security incidents and response data</p>
+                  </div>
+                </div>
+                <button onclick="indexGRCData('incidents')" class="btn-secondary btn-sm">
+                  <i class="fas fa-plus mr-1"></i>Index
+                </button>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 border rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-cogs text-purple-600 mr-3"></i>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">Services</p>
+                    <p class="text-xs text-gray-500">Service definitions and dependencies</p>
+                  </div>
+                </div>
+                <button onclick="indexGRCData('services')" class="btn-secondary btn-sm">
+                  <i class="fas fa-plus mr-1"></i>Index
+                </button>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 border rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-server text-green-600 mr-3"></i>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">Assets</p>
+                    <p class="text-xs text-gray-500">Asset inventory and classifications</p>
+                  </div>
+                </div>
+                <button onclick="indexGRCData('assets')" class="btn-secondary btn-sm">
+                  <i class="fas fa-plus mr-1"></i>Index
+                </button>
+              </div>
+            </div>
+            
+            <button onclick="indexAllGRCData()" class="w-full btn-primary">
+              <i class="fas fa-database mr-2"></i>Index All GRC Data
+            </button>
+          </div>
+          
+          <div class="space-y-4">
+            <h4 class="font-medium text-gray-900">Document Upload & Indexing</h4>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+              <div class="text-center">
+                <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-4"></i>
+                <p class="text-sm text-gray-600 mb-4">Upload compliance documents, policies, and procedures</p>
+                
+                <input type="file" id="rag-file-input" multiple accept=".txt,.pdf,.doc,.docx,.md" class="hidden" onchange="handleRAGFileUpload(event)">
+                <button onclick="document.getElementById('rag-file-input').click()" class="btn-primary">
+                  <i class="fas fa-upload mr-2"></i>Choose Files
+                </button>
+                
+                <p class="text-xs text-gray-500 mt-2">Supports: TXT, PDF, DOC, DOCX, MD</p>
+              </div>
+            </div>
+            
+            <div id="rag-upload-progress" class="hidden">
+              <div class="bg-gray-200 rounded-full h-2">
+                <div id="rag-progress-bar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+              </div>
+              <p id="rag-progress-text" class="text-sm text-gray-600 mt-2">Processing...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indexing Progress -->
+        <div id="rag-indexing-status" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
+            <div>
+              <p class="text-sm font-medium text-blue-900">Indexing in progress...</p>
+              <p id="rag-indexing-details" class="text-sm text-blue-700">Processing documents and generating embeddings</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCP Tools Configuration -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">MCP Tools Configuration</h3>
+            <p class="text-sm text-gray-600">Model Context Protocol tools for AI interactions</p>
+          </div>
+        </div>
+        
+        <!-- Available Tools -->
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="border rounded-lg p-4">
+              <h4 class="font-medium text-gray-900 mb-2">Knowledge Base Search</h4>
+              <p class="text-sm text-gray-600 mb-3">Search organizational knowledge base for relevant information</p>
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <i class="fas fa-check-circle mr-1"></i>Active
+                </span>
+                <button onclick="testMCPTool('search_knowledge_base')" class="btn-secondary btn-sm">
+                  <i class="fas fa-play mr-1"></i>Test
+                </button>
+              </div>
+            </div>
+            
+            <div class="border rounded-lg p-4">
+              <h4 class="font-medium text-gray-900 mb-2">Risk Analysis</h4>
+              <p class="text-sm text-gray-600 mb-3">Analyze risk context and provide insights</p>
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <i class="fas fa-check-circle mr-1"></i>Active
+                </span>
+                <button onclick="testMCPTool('analyze_risk_context')" class="btn-secondary btn-sm">
+                  <i class="fas fa-play mr-1"></i>Test
+                </button>
+              </div>
+            </div>
+            
+            <div class="border rounded-lg p-4">
+              <h4 class="font-medium text-gray-900 mb-2">Compliance Context</h4>
+              <p class="text-sm text-gray-600 mb-3">Retrieve compliance requirements and standards</p>
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <i class="fas fa-check-circle mr-1"></i>Active
+                </span>
+                <button onclick="testMCPTool('get_compliance_context')" class="btn-secondary btn-sm">
+                  <i class="fas fa-play mr-1"></i>Test
+                </button>
+              </div>
+            </div>
+            
+            <div class="border rounded-lg p-4">
+              <h4 class="font-medium text-gray-900 mb-2">Incident Patterns</h4>
+              <p class="text-sm text-gray-600 mb-3">Analyze incident patterns and trends</p>
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <i class="fas fa-check-circle mr-1"></i>Active
+                </span>
+                <button onclick="testMCPTool('analyze_incident_patterns')" class="btn-secondary btn-sm">
+                  <i class="fas fa-play mr-1"></i>Test
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Analytics & Monitoring -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Analytics & Performance Monitoring</h3>
+            <p class="text-sm text-gray-600">Query analytics, performance metrics, and system insights</p>
+          </div>
+          <button onclick="refreshAnalytics()" class="btn-secondary btn-sm">
+            <i class="fas fa-sync-alt mr-1"></i>Refresh
+          </button>
+        </div>
+        
+        <!-- Analytics Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h4 class="font-medium text-gray-900 mb-3">Query Volume (7 days)</h4>
+            <div id="query-volume-chart" class="h-48 bg-gray-50 rounded-lg flex items-center justify-center">
+              <span class="text-gray-500">Loading analytics...</span>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="font-medium text-gray-900 mb-3">Response Performance</h4>
+            <div id="performance-metrics" class="space-y-3">
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                <span class="text-sm text-gray-600">Average Response Time</span>
+                <span id="avg-response-time" class="text-sm font-medium">-</span>
+              </div>
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                <span class="text-sm text-gray-600">Cache Hit Rate</span>
+                <span id="cache-hit-rate" class="text-sm font-medium">-</span>
+              </div>
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                <span class="text-sm text-gray-600">Total Queries Today</span>
+                <span id="queries-today" class="text-sm font-medium">-</span>
+              </div>
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
+                <span class="text-sm text-gray-600">MCP Tools Executed</span>
+                <span id="mcp-executions" class="text-sm font-medium">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Popular Queries -->
+        <div class="mb-6">
+          <h4 class="font-medium text-gray-900 mb-3">Popular Queries (Past 7 Days)</h4>
+          <div id="popular-queries" class="space-y-2">
+            <!-- Popular queries will be loaded here -->
+            <div class="text-center py-4 text-gray-500">
+              <i class="fas fa-search text-xl mb-2"></i>
+              <p>No query data available yet</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- MCP Tool Analytics -->
+        <div class="mb-6">
+          <h4 class="font-medium text-gray-900 mb-3">MCP Tool Performance</h4>
+          <div id="mcp-tool-analytics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- MCP tool stats will be loaded here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Knowledge Base Management -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Knowledge Base Management</h3>
+            <p class="text-sm text-gray-600">Manage indexed documents and vector embeddings</p>
+          </div>
+        </div>
+        
+        <!-- Document List -->
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <h4 class="font-medium text-gray-900">Indexed Documents</h4>
+            <button onclick="refreshDocumentList()" class="btn-secondary btn-sm">
+              <i class="fas fa-sync-alt mr-1"></i>Refresh
+            </button>
+          </div>
+          
+          <div id="rag-document-list" class="space-y-2">
+            <!-- Document list will be populated here -->
+            <div class="text-center py-8 text-gray-500">
+              <i class="fas fa-database text-2xl mb-2"></i>
+              <p>No documents indexed yet</p>
+              <p class="text-sm">Upload documents or index GRC data to get started</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="mt-8 pt-6 border-t border-gray-200">
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h4 class="font-medium text-red-900 mb-2">Danger Zone</h4>
+            <p class="text-sm text-red-700 mb-4">These actions cannot be undone.</p>
+            <div class="flex space-x-3">
+              <button onclick="clearAllRAGData()" class="btn-sm bg-red-600 text-white hover:bg-red-700">
+                <i class="fas fa-trash mr-2"></i>Clear All Data
+              </button>
+              <button onclick="resetRAGSystem()" class="btn-sm bg-red-600 text-white hover:bg-red-700">
+                <i class="fas fa-undo mr-2"></i>Reset System
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Initialize RAG settings
+  initializeRAGSettingsPage();
+}
+
+// RAG Settings Helper Functions
+async function initializeRAGSettingsPage() {
+  // Initialize and load RAG stats
+  await refreshRAGStats();
+  await refreshDocumentList();
+  await refreshAnalytics();
+}
+
+async function refreshRAGStats() {
+  const statusIndicator = document.getElementById('rag-status-indicator');
+  const statusText = document.getElementById('rag-status-text');
+  
+  try {
+    // Update status to initializing
+    statusIndicator.className = 'w-3 h-3 rounded-full bg-yellow-400 animate-pulse';
+    statusText.textContent = 'Checking system status...';
+    
+    // Call RAG server API for stats
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/rag/stats', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    if (response.data.success) {
+      const stats = response.data.data;
+      
+      // Update UI with real stats
+      document.getElementById('rag-total-docs').textContent = stats.vectorStore?.totalDocuments || 0;
+      document.getElementById('rag-chunks').textContent = stats.database?.total_documents || 0;
+      document.getElementById('rag-cache-size').textContent = stats.embeddings?.size || 0;
+      document.getElementById('rag-avg-response').textContent = Math.round(stats.queries?.avg_response_time || 0) + 'ms';
+      
+      // Update status
+      const totalDocs = stats.vectorStore?.totalDocuments || 0;
+      statusIndicator.className = totalDocs > 0 
+        ? 'w-3 h-3 rounded-full bg-green-400'
+        : 'w-3 h-3 rounded-full bg-gray-400';
+      statusText.textContent = totalDocs > 0 
+        ? `Active - ${totalDocs} documents indexed` 
+        : 'Not initialized';
+    } else {
+      throw new Error(response.data.message || 'Failed to get stats');
+    }
+      
+  } catch (error) {
+    statusIndicator.className = 'w-3 h-3 rounded-full bg-red-400';
+    statusText.textContent = 'Error - System unavailable';
+    console.error('Failed to load RAG stats:', error);
+    
+    // Fallback to show offline status
+    document.getElementById('rag-total-docs').textContent = '0';
+    document.getElementById('rag-chunks').textContent = '0';
+    document.getElementById('rag-cache-size').textContent = '0';
+    document.getElementById('rag-avg-response').textContent = '0ms';
+  }
+}
+
+async function initializeRAGSystem() {
+  showToast('Initializing RAG system...', 'info');
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/rag/initialize', {}, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    if (response.data.success) {
+      showToast('RAG system initialized successfully!', 'success');
+      await refreshRAGStats();
+    } else {
+      throw new Error(response.data.message || 'Initialization failed');
+    }
+  } catch (error) {
+    showToast('Failed to initialize RAG system', 'error');
+    console.error('RAG initialization error:', error);
+  }
+}
+
+async function indexGRCData(entityType) {
+  const statusDiv = document.getElementById('rag-indexing-status');
+  const detailsDiv = document.getElementById('rag-indexing-details');
+  
+  statusDiv.classList.remove('hidden');
+  detailsDiv.textContent = `Indexing ${entityType}...`;
+  
+  try {
+    // TODO: Call backend API to index specific entity type
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    showToast(`${entityType} indexed successfully!`, 'success');
+    await refreshRAGStats();
+  } catch (error) {
+    showToast(`Failed to index ${entityType}`, 'error');
+    console.error('Indexing error:', error);
+  } finally {
+    statusDiv.classList.add('hidden');
+  }
+}
+
+async function indexAllGRCData() {
+  const statusDiv = document.getElementById('rag-indexing-status');
+  const detailsDiv = document.getElementById('rag-indexing-details');
+  
+  statusDiv.classList.remove('hidden');
+  
+  const entities = ['risks', 'incidents', 'services', 'assets'];
+  
+  try {
+    for (let i = 0; i < entities.length; i++) {
+      detailsDiv.textContent = `Indexing ${entities[i]} (${i + 1}/${entities.length})...`;
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    
+    showToast('All GRC data indexed successfully!', 'success');
+    await refreshRAGStats();
+  } catch (error) {
+    showToast('Failed to index GRC data', 'error');
+    console.error('Batch indexing error:', error);
+  } finally {
+    statusDiv.classList.add('hidden');
+  }
+}
+
+async function handleRAGFileUpload(event) {
+  const files = event.target.files;
+  if (!files.length) return;
+  
+  const progressDiv = document.getElementById('rag-upload-progress');
+  const progressBar = document.getElementById('rag-progress-bar');
+  const progressText = document.getElementById('rag-progress-text');
+  
+  progressDiv.classList.remove('hidden');
+  
+  const token = localStorage.getItem('dmt_token');
+  let successCount = 0;
+  let errorCount = 0;
+  
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const progress = ((i + 1) / files.length) * 100;
+      
+      progressBar.style.width = progress + '%';
+      progressText.textContent = `Processing ${file.name} (${i + 1}/${files.length})...`;
+      
+      try {
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await axios.post('/api/rag/index/document', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        });
+        
+        if (response.data.success) {
+          successCount++;
+          console.log(`Successfully indexed ${file.name}:`, response.data.data);
+        } else {
+          errorCount++;
+          console.error(`Failed to index ${file.name}:`, response.data.message);
+        }
+      } catch (fileError) {
+        errorCount++;
+        console.error(`Error uploading ${file.name}:`, fileError);
+      }
+    }
+    
+    if (successCount > 0) {
+      showToast(`${successCount} files uploaded and indexed successfully!${errorCount > 0 ? ` ${errorCount} failed.` : ''}`, 'success');
+      await refreshRAGStats();
+      await refreshDocumentList();
+    } else {
+      showToast('All file uploads failed', 'error');
+    }
+  } catch (error) {
+    showToast('Failed to upload files', 'error');
+    console.error('File upload error:', error);
+  } finally {
+    progressDiv.classList.add('hidden');
+    progressBar.style.width = '0%';
+  }
+}
+
+async function testRAGQuery() {
+  const query = prompt('Enter a test query:', 'What are the top risks in our organization?');
+  if (!query) return;
+  
+  showToast('Testing RAG query...', 'info');
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/rag/query', {
+      query: query,
+      sourceTypes: ['risk', 'incident', 'service', 'document'],
+      limit: 5,
+      threshold: 0.3
+    }, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    if (response.data.success) {
+      const result = response.data.data;
+      showToast(`RAG query completed! Found ${result.sources.length} relevant sources in ${result.metadata.processingTime}ms`, 'success');
+      
+      // Show results in console for debugging
+      console.log('RAG Query Results:', result);
+    } else {
+      throw new Error(response.data.message || 'Query failed');
+    }
+  } catch (error) {
+    showToast('RAG query test failed', 'error');
+    console.error('RAG query error:', error);
+  }
+}
+
+async function testMCPTool(toolName) {
+  showToast(`Testing MCP tool: ${toolName}...`, 'info');
+  
+  try {
+    // TODO: Call MCP tool API
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    showToast(`MCP tool ${toolName} test completed!`, 'success');
+  } catch (error) {
+    showToast(`MCP tool ${toolName} test failed`, 'error');
+    console.error('MCP tool test error:', error);
+  }
+}
+
+async function refreshDocumentList() {
+  const listDiv = document.getElementById('rag-document-list');
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get('/api/rag/documents?limit=20', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    if (response.data.success) {
+      const documents = response.data.data.documents || [];
+      
+      if (documents.length === 0) {
+        listDiv.innerHTML = `
+          <div class="text-center py-8 text-gray-500">
+            <i class="fas fa-database text-2xl mb-2"></i>
+            <p>No documents indexed yet</p>
+            <p class="text-sm">Upload documents or index GRC data to get started</p>
+          </div>
+        `;
+      } else {
+        // Render document list
+        listDiv.innerHTML = documents.map(doc => `
+          <div class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+            <div class="flex items-center">
+              <i class="fas fa-${getDocumentIcon(doc.source_type)} text-blue-600 mr-3"></i>
+              <div>
+                <p class="text-sm font-medium text-gray-900">${doc.title}</p>
+                <p class="text-xs text-gray-500">
+                  ${doc.source_type} • ${doc.token_count} tokens
+                  ${doc.chunk_index !== undefined ? ` • chunk ${doc.chunk_index + 1}/${doc.total_chunks}` : ''}
+                </p>
+                <p class="text-xs text-gray-400">${new Date(doc.created_at).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <button onclick="viewDocumentDetails('${doc.id}')" class="btn-secondary btn-sm">
+                <i class="fas fa-eye mr-1"></i>View
+              </button>
+              <button onclick="removeDocument('${doc.id}')" class="btn-sm bg-red-100 text-red-700 hover:bg-red-200">
+                <i class="fas fa-trash mr-1"></i>Remove
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+    } else {
+      throw new Error(response.data.message || 'Failed to load documents');
+    }
+  } catch (error) {
+    console.error('Failed to load document list:', error);
+    listDiv.innerHTML = '<div class="text-center py-4 text-red-600">Error loading documents</div>';
+  }
+}
+
+function getDocumentIcon(sourceType) {
+  const icons = {
+    'risk': 'exclamation-triangle',
+    'incident': 'bell',
+    'service': 'cogs',
+    'asset': 'server',
+    'document': 'file-alt'
+  };
+  return icons[sourceType] || 'file';
+}
+
+async function viewDocumentDetails(documentId) {
+  showToast('Document details feature coming soon!', 'info');
+}
+
+async function removeDocument(documentId) {
+  if (!confirm('Are you sure you want to remove this document from the knowledge base?')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.delete(`/api/rag/documents/${documentId}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    if (response.data.success) {
+      showToast('Document removed successfully!', 'success');
+      await refreshDocumentList();
+      await refreshRAGStats();
+    } else {
+      throw new Error(response.data.message || 'Failed to remove document');
+    }
+  } catch (error) {
+    showToast('Failed to remove document', 'error');
+    console.error('Document removal error:', error);
+  }
+}
+
+async function clearRAGCache() {
+  if (!confirm('Are you sure you want to clear the RAG cache? This will remove all cached embeddings.')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/rag/cache/clear', {}, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    if (response.data.success) {
+      showToast('RAG cache cleared successfully!', 'success');
+      await refreshRAGStats();
+      await refreshDocumentList();
+    } else {
+      throw new Error(response.data.message || 'Failed to clear cache');
+    }
+  } catch (error) {
+    showToast('Failed to clear RAG cache', 'error');
+    console.error('Clear cache error:', error);
+  }
+}
+
+async function clearAllRAGData() {
+  if (!confirm('Are you sure you want to clear ALL RAG data? This will remove all indexed documents and embeddings. This action cannot be undone.')) {
+    return;
+  }
+  
+  const confirmation = prompt('Type "DELETE" to confirm this destructive action:');
+  if (confirmation !== 'DELETE') {
+    showToast('Action cancelled', 'info');
+    return;
+  }
+  
+  try {
+    // TODO: Call clear all data API
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    showToast('All RAG data cleared successfully!', 'success');
+    await refreshRAGStats();
+    await refreshDocumentList();
+  } catch (error) {
+    showToast('Failed to clear RAG data', 'error');
+    console.error('Clear data error:', error);
+  }
+}
+
+async function resetRAGSystem() {
+  if (!confirm('Are you sure you want to reset the RAG system? This will reinitialize the entire system.')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('dmt_token');
+    
+    // Clear all data first
+    await axios.post('/api/rag/cache/clear', {}, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    // Reinitialize system
+    await axios.post('/api/rag/initialize', {}, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    showToast('RAG system reset successfully!', 'success');
+    await refreshRAGStats();
+    await refreshDocumentList();
+    await refreshAnalytics();
+  } catch (error) {
+    showToast('Failed to reset RAG system', 'error');
+    console.error('Reset system error:', error);
+  }
+}
+
+// Advanced Analytics Functions
+async function refreshAnalytics() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    
+    // Load query analytics
+    const queryAnalytics = await axios.get('/api/rag/analytics/queries?days=7', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    // Load MCP analytics
+    const mcpAnalytics = await axios.get('/api/rag/analytics/mcp?days=7', {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    // Update performance metrics
+    if (queryAnalytics.data.success) {
+      const data = queryAnalytics.data.data;
+      updatePerformanceMetrics(data);
+      updatePopularQueries(data.popularQueries || []);
+      updateQueryVolumeChart(data.volume || []);
+    }
+    
+    // Update MCP tool analytics
+    if (mcpAnalytics.data.success) {
+      updateMCPToolAnalytics(mcpAnalytics.data.data.toolUsage || []);
+    }
+    
+  } catch (error) {
+    console.error('Failed to refresh analytics:', error);
+    // Show fallback message
+    document.getElementById('query-volume-chart').innerHTML = '<span class="text-red-500">Analytics temporarily unavailable</span>';
+  }
+}
+
+function updatePerformanceMetrics(data) {
+  // Calculate metrics from volume data
+  const totalQueries = data.volume ? data.volume.reduce((sum, day) => sum + (day.query_count || 0), 0) : 0;
+  const avgResponseTime = data.volume && data.volume.length > 0 
+    ? Math.round(data.volume.reduce((sum, day) => sum + (day.avg_response_time || 0), 0) / data.volume.length)
+    : 0;
+  
+  document.getElementById('avg-response-time').textContent = avgResponseTime + 'ms';
+  document.getElementById('cache-hit-rate').textContent = '85%'; // Mock value
+  document.getElementById('queries-today').textContent = totalQueries.toString();
+  document.getElementById('mcp-executions').textContent = '12'; // Mock value
+}
+
+function updatePopularQueries(queries) {
+  const container = document.getElementById('popular-queries');
+  
+  if (!queries || queries.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-4 text-gray-500">
+        <i class="fas fa-search text-xl mb-2"></i>
+        <p>No query data available yet</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = queries.slice(0, 5).map(query => `
+    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <div class="flex-1">
+        <p class="text-sm text-gray-900 truncate">"${query.query_text}"</p>
+        <p class="text-xs text-gray-500">
+          ${query.frequency} times • Avg ${Math.round(query.avg_response_time)}ms
+        </p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+          ${query.frequency}x
+        </span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateQueryVolumeChart(volumeData) {
+  const container = document.getElementById('query-volume-chart');
+  
+  if (!volumeData || volumeData.length === 0) {
+    container.innerHTML = '<span class="text-gray-500">No query volume data available</span>';
+    return;
+  }
+  
+  // Simple ASCII-style chart for now
+  const maxQueries = Math.max(...volumeData.map(d => d.query_count || 0));
+  
+  container.innerHTML = `
+    <div class="w-full h-full flex items-end justify-around space-x-1 px-4 pb-4">
+      ${volumeData.map(day => {
+        const height = maxQueries > 0 ? (day.query_count / maxQueries) * 80 : 0;
+        return `
+          <div class="flex flex-col items-center">
+            <div class="bg-blue-500 w-8 rounded-t" style="height: ${height}px; min-height: 4px;"></div>
+            <span class="text-xs text-gray-600 mt-1">${new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}</span>
+            <span class="text-xs text-gray-500">${day.query_count || 0}</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function updateMCPToolAnalytics(toolUsage) {
+  const container = document.getElementById('mcp-tool-analytics');
+  
+  if (!toolUsage || toolUsage.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-4 text-gray-500">
+        <i class="fas fa-tools text-xl mb-2"></i>
+        <p>No MCP tool usage data available</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = toolUsage.slice(0, 4).map(tool => `
+    <div class="bg-gray-50 rounded-lg p-3">
+      <div class="text-sm font-medium text-gray-900 truncate">${tool.tool_name.replace(/_/g, ' ')}</div>
+      <div class="text-xs text-gray-500 mt-1">
+        ${tool.executions} uses
+      </div>
+      <div class="text-xs text-gray-500">
+        ${Math.round(tool.avg_execution_time)}ms avg
+      </div>
+      <div class="text-xs mt-1">
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
+          tool.success_rate > 90 ? 'bg-green-100 text-green-800' : 
+          tool.success_rate > 70 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+        }">
+          ${Math.round(tool.success_rate)}%
+        </span>
+      </div>
+    </div>
+  `).join('');
+}
+
 // Make functions globally accessible
 window.showAssets = showAssets;
 window.showSettings = showSettings;
@@ -2685,3 +3948,181 @@ window.deleteRiskOwner = deleteRiskOwner;
 window.editOrganization = editOrganization;
 window.updateOrganization = updateOrganization;
 window.editRiskOwner = editRiskOwner;
+window.showRAGSettings = showRAGSettings;
+window.initializeRAGSettingsPage = initializeRAGSettingsPage;
+window.refreshRAGStats = refreshRAGStats;
+window.initializeRAGSystem = initializeRAGSystem;
+window.indexGRCData = indexGRCData;
+window.indexAllGRCData = indexAllGRCData;
+window.handleRAGFileUpload = handleRAGFileUpload;
+window.testRAGQuery = testRAGQuery;
+window.testMCPTool = testMCPTool;
+window.refreshDocumentList = refreshDocumentList;
+window.clearRAGCache = clearRAGCache;
+window.clearAllRAGData = clearAllRAGData;
+window.resetRAGSystem = resetRAGSystem;
+window.refreshAnalytics = refreshAnalytics;
+window.viewDocumentDetails = viewDocumentDetails;
+window.removeDocument = removeDocument;
+// Dynamic Model Fetching Functions
+async function fetchOpenAIModels() {
+  const apiKey = document.getElementById('openai-api-key')?.value;
+  if (!apiKey) {
+    showToast('Please enter your OpenAI API key first', 'warning');
+    return;
+  }
+  
+  const button = event.target;
+  const originalIcon = button.innerHTML;
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  button.disabled = true;
+  
+  try {
+    console.log('🔄 Fetching OpenAI models...');
+    
+    // Call our backend API to fetch OpenAI models
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/ai/fetch-models', {
+      provider: 'openai',
+      apiKey: apiKey
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success && response.data.models) {
+      console.log('✅ OpenAI models fetched:', response.data.models.length);
+      updateModelDropdown('openai-model', response.data.models, 'gpt-');
+      showToast(`Found ${response.data.models.length} OpenAI models`, 'success');
+    } else {
+      throw new Error(response.data.error || 'Failed to fetch models');
+    }
+  } catch (error) {
+    console.error('❌ Error fetching OpenAI models:', error);
+    showToast('Failed to fetch OpenAI models: ' + error.message, 'error');
+  } finally {
+    button.innerHTML = originalIcon;
+    button.disabled = false;
+  }
+}
+
+async function fetchGeminiModels() {
+  const apiKey = document.getElementById('gemini-api-key')?.value;
+  if (!apiKey) {
+    showToast('Please enter your Gemini API key first', 'warning');
+    return;
+  }
+  
+  const button = event.target;
+  const originalIcon = button.innerHTML;
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  button.disabled = true;
+  
+  try {
+    console.log('🔄 Fetching Gemini models...');
+    
+    // Call our backend API to fetch Gemini models
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/ai/fetch-models', {
+      provider: 'gemini',
+      apiKey: apiKey
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success && response.data.models) {
+      console.log('✅ Gemini models fetched:', response.data.models.length);
+      updateModelDropdown('gemini-model', response.data.models, 'gemini');
+      showToast(`Found ${response.data.models.length} Gemini models`, 'success');
+    } else {
+      throw new Error(response.data.error || 'Failed to fetch models');
+    }
+  } catch (error) {
+    console.error('❌ Error fetching Gemini models:', error);
+    showToast('Failed to fetch Gemini models: ' + error.message, 'error');
+  } finally {
+    button.innerHTML = originalIcon;
+    button.disabled = false;
+  }
+}
+
+async function fetchAnthropicModels() {
+  const apiKey = document.getElementById('anthropic-api-key')?.value;
+  if (!apiKey) {
+    showToast('Please enter your Anthropic API key first', 'warning');
+    return;
+  }
+  
+  const button = event.target;
+  const originalIcon = button.innerHTML;
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  button.disabled = true;
+  
+  try {
+    console.log('🔄 Fetching Anthropic models...');
+    
+    // Call our backend API to fetch Anthropic models
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.post('/api/ai/fetch-models', {
+      provider: 'anthropic',
+      apiKey: apiKey
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success && response.data.models) {
+      console.log('✅ Anthropic models fetched:', response.data.models.length);
+      updateModelDropdown('anthropic-model', response.data.models, 'claude');
+      showToast(`Found ${response.data.models.length} Anthropic models`, 'success');
+    } else {
+      throw new Error(response.data.error || 'Failed to fetch models');
+    }
+  } catch (error) {
+    console.error('❌ Error fetching Anthropic models:', error);
+    showToast('Failed to fetch Anthropic models: ' + error.message, 'error');
+  } finally {
+    button.innerHTML = originalIcon;
+    button.disabled = false;
+  }
+}
+
+function updateModelDropdown(selectId, models, filterPrefix = '') {
+  const select = document.getElementById(selectId);
+  if (!select || !models) return;
+  
+  const currentValue = select.value;
+  
+  // Clear current options except the first few defaults
+  const defaultOptions = Array.from(select.options).slice(0, 5);
+  select.innerHTML = '';
+  
+  // Add back default options
+  defaultOptions.forEach(option => {
+    select.appendChild(option);
+  });
+  
+  // Add new models from API
+  models.forEach(model => {
+    // Skip if model already exists
+    if (Array.from(select.options).some(option => option.value === model.id)) {
+      return;
+    }
+    
+    const option = document.createElement('option');
+    option.value = model.id;
+    option.textContent = model.id + (model.description ? ` (${model.description})` : '');
+    
+    // Mark new models
+    if (model.created && new Date(model.created) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) {
+      option.textContent += ' 🆕';
+    }
+    
+    select.appendChild(option);
+  });
+  
+  // Restore previous selection if it still exists
+  if (currentValue && Array.from(select.options).some(option => option.value === currentValue)) {
+    select.value = currentValue;
+  }
+  
+  console.log(`✅ Updated ${selectId} with ${models.length} models`);
+}

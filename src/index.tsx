@@ -73,8 +73,8 @@ app.get('/', (c) => {
           
           <!-- Navigation Menu -->
           <div class="flex items-center space-x-6">
-            <!-- Collapsible Navigation -->
-            <div class="nav-container group">
+            <!-- Collapsible Navigation (Hidden until login) -->
+            <div class="nav-container group hidden" id="internal-nav">
               <div class="nav-trigger flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
                 <i class="fas fa-bars text-gray-600"></i>
                 <span class="text-sm font-medium text-gray-700">Menu</span>
@@ -128,8 +128,8 @@ app.get('/', (c) => {
             
             <!-- User Section -->
             <div class="flex items-center space-x-4">
-              <!-- Notifications -->
-              <div class="relative">
+              <!-- Notifications (Hidden until login) -->
+              <div class="relative hidden" id="notifications-container">
                 <button id="notifications-btn" class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-200">
                   <i class="fas fa-bell text-lg"></i>
                   <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
@@ -152,66 +152,85 @@ app.get('/', (c) => {
     <!-- Main Content Area -->
     <main id="main-content" class="container mx-auto px-4 py-8">
       <div id="dashboard-content">
-        <!-- Dashboard content will be loaded here -->
+        <!-- Content will be loaded here based on authentication status -->
       </div>
     </main>
   </div>
 
   <!-- ARIA AI Assistant Modal -->
-  <div id="aria-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-40">
-    <div class="flex items-center justify-center h-full p-4">
-      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 relative">
-          <h3 class="text-lg font-semibold text-gray-900">ARIA - AI Risk Assistant</h3>
-          <button id="close-aria" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">
-            <i class="fas fa-times"></i>
+  <div id="aria-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-robot text-white text-lg"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">ARIA - AI Risk Assistant</h3>
+              <p class="text-sm text-gray-500">Powered by multiple AI providers</p>
+            </div>
+          </div>
+          <button id="close-aria" class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200">
+            <i class="fas fa-times text-lg"></i>
           </button>
         </div>
-        <div id="aria-chat" class="p-6 h-64 overflow-y-auto">
-          <!-- Chat messages will appear here -->
+        
+        <!-- Chat Area -->
+        <div id="aria-chat" class="flex-1 p-6 overflow-y-auto bg-gray-50" style="min-height: 300px; max-height: 400px;">
+          <div class="text-center text-gray-500 mt-8">
+            <i class="fas fa-robot text-4xl text-gray-300 mb-4"></i>
+            <p class="text-lg font-medium">Hello! I'm ARIA, your AI Risk Assistant.</p>
+            <p class="text-sm mt-2">Ask me about risk analysis, compliance, security recommendations, or use the quick actions below.</p>
+          </div>
         </div>
-        <div class="px-6 py-4 border-t border-gray-200 space-y-3">
-          <!-- LLM Provider Selection -->
+        
+        <!-- Input Section -->
+        <div class="px-6 py-4 bg-white border-t border-gray-200 space-y-4">
+          <!-- Provider Selection (Simplified) -->
           <div class="flex items-center justify-between text-sm">
-            <label for="aria-provider" class="text-gray-700 font-medium">AI Provider:</label>
-            <select id="aria-provider" class="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500">
-              <option value="openai">GPT-4 (OpenAI)</option>
-              <option value="gemini">Gemini Pro (Google)</option>
-              <option value="anthropic">Claude 3 (Anthropic)</option>
-              <option value="local">Local LLM</option>
-            </select>
+            <span class="text-gray-600">AI Provider:</span>
+            <span id="current-provider" class="text-blue-600 font-medium">Configure in Settings</span>
           </div>
           
           <!-- Chat Input -->
-          <div class="flex space-x-2">
-            <input type="text" id="aria-input" placeholder="Ask ARIA about risks, compliance, or security..." class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-            <button id="send-aria" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <div class="flex space-x-3">
+            <input type="text" id="aria-input" placeholder="Ask ARIA about risks, compliance, or security..." class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <button id="send-aria" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 flex items-center space-x-2">
               <i class="fas fa-paper-plane"></i>
+              <span class="hidden sm:block">Send</span>
             </button>
           </div>
           
           <!-- Quick Action Buttons -->
           <div class="flex flex-wrap gap-2">
-            <button onclick="quickARIAQuery('Analyze my top risks')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
-              Analyze Risks
+            <button onclick="quickARIAQuery('Analyze my top risks')" class="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-chart-line mr-1"></i>Analyze Risks
             </button>
-            <button onclick="quickARIAQuery('Show me compliance insights')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
-              Compliance
+            <button onclick="quickARIAQuery('Show me compliance insights')" class="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-clipboard-check mr-1"></i>Compliance
             </button>
-            <button onclick="quickARIAQuery('What are my risk predictions?')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
-              Predictions
+            <button onclick="quickARIAQuery('What are my risk predictions?')" class="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-crystal-ball mr-1"></i>Predictions
             </button>
-            <button onclick="quickARIAQuery('Give me security recommendations')" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hover:bg-gray-200">
-              Security
+            <button onclick="quickARIAQuery('Give me security recommendations')" class="px-3 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-shield-alt mr-1"></i>Security
             </button>
+          </div>
+          
+          <!-- Note about configuration -->
+          <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+            <i class="fas fa-info-circle mr-1"></i>
+            Configure your AI providers in <strong>Settings</strong> to enable ARIA functionality.
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Floating ARIA Button -->
-  <button id="aria-button" class="fixed bottom-6 right-6 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-30" title="Ask ARIA - AI Risk Assistant">
+  <!-- Floating ARIA Button (Hidden until login) -->
+  <button id="aria-button" class="hidden fixed bottom-6 right-6 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-30" title="Ask ARIA - AI Risk Assistant">
     <i class="fas fa-robot text-xl"></i>
   </button>
 
@@ -221,12 +240,12 @@ app.get('/', (c) => {
   </div>
 
   <!-- JavaScript -->
-  <script src="/static/modules.js?v=5"></script>
-  <script src="/static/enterprise-modules.js?v=2"></script>
-  <script src="/static/notifications.js?v=2"></script>
-  <script src="/static/document-management.js?v=2"></script>
-  <script src="/static/mobile-interface.js?v=2"></script>
-  <script src="/static/app.js?v=5"></script>
+  <script src="/static/modules.js?v=6"></script>
+  <script src="/static/enterprise-modules.js?v=3"></script>
+  <script src="/static/notifications.js?v=3"></script>
+  <script src="/static/document-management.js?v=3"></script>
+  <script src="/static/mobile-interface.js?v=3"></script>
+  <script src="/static/app.js?v=6"></script>
 </body>
 </html>`);
 });

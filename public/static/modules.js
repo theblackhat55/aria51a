@@ -2063,10 +2063,15 @@ let referenceData = {
   users: []
 };
 
-// Load reference data on page load
+// Load reference data when authenticated
 async function loadReferenceData() {
   try {
     const token = localStorage.getItem('dmt_token');
+    if (!token) {
+      console.log('No authentication token, skipping reference data load');
+      return;
+    }
+    
     const [categoriesResponse, organizationsResponse, usersResponse] = await Promise.all([
       axios.get('/api/reference/categories', { headers: { Authorization: `Bearer ${token}` } }),
       axios.get('/api/reference/organizations', { headers: { Authorization: `Bearer ${token}` } }),
@@ -2076,13 +2081,17 @@ async function loadReferenceData() {
     referenceData.categories = categoriesResponse.data.data || [];
     referenceData.organizations = organizationsResponse.data.data || [];
     referenceData.users = usersResponse.data.data || [];
+    console.log('Reference data loaded successfully');
   } catch (error) {
     console.error('Error loading reference data:', error);
   }
 }
 
-// Call loadReferenceData when modules.js loads
-loadReferenceData();
+// Load reference data only when authenticated
+// This will be called after successful login
+if (localStorage.getItem('dmt_token')) {
+  loadReferenceData();
+}
 
 // Risk Management CRUD Functions
 async function showAddRiskModal() {

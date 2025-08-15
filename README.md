@@ -250,3 +250,115 @@ npm run db:console:local
 **Last Updated**: August 15, 2025
 **Version**: 2.0 - Enhanced Edition
 **Maintenance Status**: Active Development
+## 🚀 Latest Features Added (August 15, 2025)
+
+### ✅ RAG (Retrieval-Augmented Generation) System
+- **Vector Database**: Local SQLite-based vector storage with cosine similarity search
+- **Document Processing**: Automatic text extraction and embedding generation
+- **Smart Context Retrieval**: Relevant document chunks for AI queries
+- **Knowledge Base**: Upload and query organizational documents
+- **Multi-Provider Embeddings**: Support for OpenAI and local embedding models
+- **Performance**: Fast in-memory vector operations without external dependencies
+
+### ✅ MCP (Model Context Protocol) Tools
+- **6 Specialized GRC Tools**: Purpose-built for risk and compliance workflows
+- **Risk Assessment Tool**: Automated risk scoring and analysis
+- **Compliance Framework Tool**: Standards mapping and gap analysis
+- **Vulnerability Scanner Tool**: Security assessment integration
+- **Control Effectiveness Tool**: Control testing and validation
+- **Incident Response Tool**: Automated incident management workflows
+- **Audit Trail Tool**: Comprehensive activity logging and reporting
+
+### ✅ Dynamic AI Model Discovery
+- **Real-Time Model Fetching**: Automatically discover latest AI models from providers
+- **OpenAI Integration**: Fetch current GPT models including GPT-4o, GPT-5 (when available)
+- **Gemini Integration**: Discover latest Google AI models and versions  
+- **Anthropic Integration**: Access to Claude 3.5 and newest model releases
+- **One-Click Updates**: Refresh model lists with a single button click in LLM settings
+- **Smart UI Updates**: Automatically populate dropdown menus with latest models
+
+### ✅ Enhanced Authentication & Dashboard
+- **Fixed Authentication Flow**: Resolved persistent dashboard loading issues
+- **Enhanced UI Visibility**: Authentication-based progressive feature disclosure
+- **Improved Error Handling**: Comprehensive debugging and error reporting
+- **Performance Optimization**: Faster dashboard loading and data retrieval
+
+## 🎯 Technical Implementation Highlights
+
+### Frontend Enhancements
+- **Dynamic Model Fetching UI**: Refresh buttons next to each AI provider's model dropdown
+- **Enhanced Authentication**: Progressive UI disclosure based on login status
+- **Improved Error Handling**: Comprehensive console logging and user feedback
+- **Mobile Optimization**: Touch-friendly interfaces for all new features
+
+### Backend API Additions
+- **POST /api/ai/fetch-models**: Dynamic model discovery from AI providers
+- **RAG System APIs**: Complete vector storage and retrieval endpoints
+- **MCP Tool Integration**: 6 specialized GRC workflow tools
+- **Enhanced Error Handling**: Better API responses and error management
+
+### Database Enhancements
+- **Vector Storage Tables**: SQLite-based vector database for RAG system
+- **Document Processing**: Automated text extraction and chunking
+- **Performance Optimization**: Indexed searches and efficient queries
+
+## 🔧 Developer Setup Updates
+
+### New Environment Variables
+```bash
+# AI Provider API Keys (configured in LLM settings)
+OPENAI_API_KEY=your_openai_key
+GEMINI_API_KEY=your_gemini_key
+ANTHROPIC_API_KEY=your_anthropic_key
+
+# Vector Database Settings
+VECTOR_DIMENSION=1536
+SIMILARITY_THRESHOLD=0.7
+```
+
+### Updated Development Commands
+```bash
+# Test dynamic model fetching
+curl -X POST http://localhost:3000/api/ai/fetch-models \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "openai", "apiKey": "YOUR_API_KEY"}'
+
+# Test RAG system
+curl -X POST http://localhost:3000/api/rag/upload \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@document.pdf"
+
+# Test MCP tools
+curl -X POST http://localhost:3000/api/mcp/risk-assessment \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"riskData": {...}}'
+```
+
+## 📋 User Guide Updates
+
+### Using Dynamic Model Discovery
+1. **Login** to the platform with admin credentials
+2. **Navigate to Settings** → LLM Integration
+3. **Enter API Key** for your preferred AI provider
+4. **Click Refresh Button** (🔄) next to the model dropdown
+5. **Select Latest Model** from automatically updated list
+6. **Save Configuration** to apply changes
+
+### Using RAG System
+1. **Upload Documents** via Settings → Document Management
+2. **Wait for Processing** (automatic text extraction and vectorization)
+3. **Query ARIA Assistant** with questions about your documents
+4. **Get Contextual Answers** based on your uploaded content
+
+### Using MCP Tools
+1. **Access via ARIA** assistant or direct API calls
+2. **Risk Assessment**: Automated scoring and analysis
+3. **Compliance Mapping**: Framework alignment checking
+4. **Incident Response**: Automated workflow triggers
+
+---
+**Latest Update**: August 15, 2025 - Added RAG system, MCP tools, and dynamic model discovery
+**Status**: ✅ All features implemented and fully functional
+**Next Phase**: Enhanced AI model training and multi-tenant support

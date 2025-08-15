@@ -2,8 +2,10 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { AuthService, authMiddleware, requireRole, ARIAAssistant, SecurityUtils, RiskScoring } from './auth';
-import { CloudflareBindings, Risk, Control, ComplianceAssessment, Incident, DashboardData, ApiResponse, CreateRiskRequest, CreateControlRequest } from './types';
+import { CloudflareBindings, Risk, Control, ComplianceAssessment, Incident, DashboardData, ApiResponse, CreateRiskRequest, CreateControlRequest, User } from './types';
 import { createEnterpriseAPI } from './enterprise-api';
+import { createRAGAPI } from './api/rag';
+import { createARIAAPI } from './api/aria';
 
 export function createAPI() {
   const api = new Hono<{ Bindings: CloudflareBindings }>();
@@ -11,6 +13,14 @@ export function createAPI() {
   // Mount enterprise API routes
   const enterpriseAPI = createEnterpriseAPI();
   api.route('/', enterpriseAPI);
+
+  // Mount RAG system routes
+  const ragAPI = createRAGAPI();
+  api.route('/api/rag', ragAPI);
+
+  // Mount Enhanced ARIA routes
+  const ariaAPI = createARIAAPI();
+  api.route('/api/aria', ariaAPI);
 
   // CORS middleware
   api.use('/api/*', cors({
@@ -913,8 +923,8 @@ export function createAPI() {
 
 
 
-  // AI Assistant (ARIA) API
-  api.post('/api/aria/query', authMiddleware, async (c) => {
+  // AI Assistant (ARIA) API - removed duplicate basic handler (handled by enhanced ARIA router in /api/aria)
+  /* api.post('/api/aria/query', authMiddleware, async (c) => {
     try {
       const { query } = await c.req.json();
       const user = c.get('user');
@@ -939,7 +949,7 @@ export function createAPI() {
         error: 'Failed to process ARIA query' 
       }, 500);
     }
-  });
+  }); */
 
   // Reporting and Analytics
   api.get('/api/reports/risk-heatmap', authMiddleware, async (c) => {
@@ -2122,7 +2132,7 @@ export function createAPI() {
     }
   });
 
-  // Risk Owners API endpoints
+  // Risk Owners API endpoints (consolidated schema)
   api.get('/api/risk-owners', authMiddleware, async (c) => {
     try {
       const results = await c.env.DB.prepare(`
@@ -2207,7 +2217,7 @@ export function createAPI() {
   });
 
   // Risk Owners API endpoints
-  api.get('/api/risk-owners', authMiddleware, async (c) => {
+  api.get('/api/risk-owners/legacy', authMiddleware, async (c) => {
     try {
       const results = await c.env.DB.prepare(`
         SELECT ro.*, 
@@ -2232,7 +2242,7 @@ export function createAPI() {
     }
   });
 
-  api.post('/api/risk-owners', authMiddleware, async (c) => {
+  api.post('/api/risk-owners/legacy', authMiddleware, async (c) => {
     try {
       const data = await c.req.json();
       
@@ -2278,7 +2288,7 @@ export function createAPI() {
     }
   });
 
-  api.delete('/api/risk-owners/:id', authMiddleware, async (c) => {
+  api.delete('/api/risk-owners/legacy/:id', authMiddleware, async (c) => {
     try {
       const id = c.req.param('id');
       
@@ -3779,6 +3789,51 @@ export function createAPI() {
     return prediction;
   }
 
+  // AI Model Fetching API
+  api.post('/api/ai/fetch-models', authMiddleware, async (c) => {
+    try {
+      const { provider, apiKey } = await c.req.json();
+      
+      if (!provider || !apiKey) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Provider and API key are required' 
+        }, 400);
+      }
+
+      let models = [];
+      
+      switch (provider.toLowerCase()) {
+        case 'openai':
+          models = await fetchOpenAIModels(apiKey);
+          break;
+        case 'gemini':
+          models = await fetchGeminiModels(apiKey);
+          break;
+        case 'anthropic':
+          models = await fetchAnthropicModels(apiKey);
+          break;
+        default:
+          return c.json<ApiResponse<null>>({ 
+            success: false, 
+            error: 'Unsupported provider' 
+          }, 400);
+      }
+      
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: { models },
+        message: `Successfully fetched ${models.length} models from ${provider}` 
+      });
+    } catch (error) {
+      console.error('AI model fetch error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to fetch models' 
+      }, 500);
+    }
+  });
+
   return api;
 }
 
@@ -4246,4 +4301,98 @@ async function importUAEIAFramework(db: any) {
       null
     ).run();
   }
+}
+// Helper functions to fetch models from different providers
+async function fetchOpenAIModels(apiKey: string) {
+  try {
+    const response = await fetch('https://api.openai.com/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Filter and format models
+    return data.data
+      .filter((model: any) => model.id.includes('gpt') || model.id.includes('davinci') || model.id.includes('text'))
+      .map((model: any) => ({
+        id: model.id,
+        description: model.id.includes('gpt-4') ? 'GPT-4 Model' : 
+                    model.id.includes('gpt-3.5') ? 'GPT-3.5 Model' : 
+                    model.id.includes('gpt-4o') ? 'GPT-4o Model' :
+                    'OpenAI Model',
+        created: model.created ? new Date(model.created * 1000).toISOString() : null
+      }))
+      .sort((a: any, b: any) => a.id.localeCompare(b.id));
+  } catch (error) {
+    console.error('Error fetching OpenAI models:', error);
+    throw new Error('Failed to fetch OpenAI models: ' + (error instanceof Error ? error.message : 'Unknown error'));
+  }
+}
+
+async function fetchGeminiModels(apiKey: string) {
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Filter and format models
+    return (data.models || [])
+      .filter((model: any) => model.name.includes('gemini'))
+      .map((model: any) => ({
+        id: model.name.replace('models/', ''),
+        description: model.displayName || model.name.replace('models/', ''),
+        created: null // Gemini doesn't provide creation dates
+      }))
+      .sort((a: any, b: any) => a.id.localeCompare(b.id));
+  } catch (error) {
+    console.error('Error fetching Gemini models:', error);
+    throw new Error('Failed to fetch Gemini models: ' + (error instanceof Error ? error.message : 'Unknown error'));
+  }
+}
+
+async function fetchAnthropicModels(apiKey: string) {
+  // Anthropic doesn't have a public models endpoint, so we return a curated list
+  // with the latest known models as of early 2024
+  return [
+    {
+      id: 'claude-3-5-sonnet-20241022',
+      description: 'Claude 3.5 Sonnet (Latest)',
+      created: new Date('2024-10-22').toISOString()
+    },
+    {
+      id: 'claude-3-5-haiku-20241022',
+      description: 'Claude 3.5 Haiku (Latest)',
+      created: new Date('2024-10-22').toISOString()
+    },
+    {
+      id: 'claude-3-opus-20240229',
+      description: 'Claude 3 Opus',
+      created: new Date('2024-02-29').toISOString()
+    },
+    {
+      id: 'claude-3-sonnet-20240229',
+      description: 'Claude 3 Sonnet',
+      created: new Date('2024-02-29').toISOString()
+    },
+    {
+      id: 'claude-3-haiku-20240307',
+      description: 'Claude 3 Haiku',
+      created: new Date('2024-03-07').toISOString()
+    }
+  ];
 }

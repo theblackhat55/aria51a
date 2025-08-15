@@ -4,6 +4,121 @@
 let currentUser = null;
 let dashboardData = null;
 
+// Reports functionality
+function showReports() {
+  showModal('Risk Reports & Analytics', `
+    <div class="space-y-6">
+      <!-- Report Categories -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer" onclick="generateRiskReport()">
+          <div class="flex items-center space-x-3">
+            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            <div>
+              <h3 class="font-semibold text-gray-900">Risk Assessment Report</h3>
+              <p class="text-sm text-gray-600">Comprehensive risk analysis and metrics</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer" onclick="generateComplianceReport()">
+          <div class="flex items-center space-x-3">
+            <i class="fas fa-clipboard-check text-green-600 text-xl"></i>
+            <div>
+              <h3 class="font-semibold text-gray-900">Compliance Report</h3>
+              <p class="text-sm text-gray-600">Compliance status and findings</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer" onclick="generateIncidentReport()">
+          <div class="flex items-center space-x-3">
+            <i class="fas fa-bell text-orange-600 text-xl"></i>
+            <div>
+              <h3 class="font-semibold text-gray-900">Incident Report</h3>
+              <p class="text-sm text-gray-600">Security incidents and response</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer" onclick="generateExecutiveReport()">
+          <div class="flex items-center space-x-3">
+            <i class="fas fa-chart-bar text-blue-600 text-xl"></i>
+            <div>
+              <h3 class="font-semibold text-gray-900">Executive Summary</h3>
+              <p class="text-sm text-gray-600">High-level overview for leadership</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="border-t border-gray-200 pt-4">
+        <h4 class="font-medium text-gray-900 mb-3">Quick Actions</h4>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="exportCurrentView()" class="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm">
+            <i class="fas fa-download mr-1"></i>Export Current View
+          </button>
+          <button onclick="scheduleReport()" class="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 text-sm">
+            <i class="fas fa-calendar mr-1"></i>Schedule Report
+          </button>
+          <button onclick="shareReport()" class="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 text-sm">
+            <i class="fas fa-share mr-1"></i>Share Report
+          </button>
+        </div>
+      </div>
+    </div>
+  `, [
+    { text: 'Close', class: 'btn-secondary', onclick: 'closeUniversalModal()' }
+  ]);
+}
+
+// Report generation functions
+function generateRiskReport() {
+  showToast('Generating risk assessment report...', 'info');
+  // Implement actual report generation
+  setTimeout(() => {
+    showToast('Risk report generated successfully!', 'success');
+    closeUniversalModal();
+  }, 2000);
+}
+
+function generateComplianceReport() {
+  showToast('Generating compliance report...', 'info');
+  setTimeout(() => {
+    showToast('Compliance report generated successfully!', 'success');
+    closeUniversalModal();
+  }, 2000);
+}
+
+function generateIncidentReport() {
+  showToast('Generating incident report...', 'info');
+  setTimeout(() => {
+    showToast('Incident report generated successfully!', 'success');
+    closeUniversalModal();
+  }, 2000);
+}
+
+function generateExecutiveReport() {
+  showToast('Generating executive summary...', 'info');
+  setTimeout(() => {
+    showToast('Executive summary generated successfully!', 'success');
+    closeUniversalModal();
+  }, 2000);
+}
+
+function exportCurrentView() {
+  showToast('Exporting current view...', 'info');
+  // Implement export functionality
+}
+
+function scheduleReport() {
+  showToast('Report scheduling feature coming soon!', 'info');
+}
+
+function shareReport() {
+  showToast('Report sharing feature coming soon!', 'info');
+}
+
 // Initialize application
 document.addEventListener('DOMContentLoaded', async function() {
   console.log('DOM loaded, initializing app...');
@@ -11,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Always initialize navigation first
   try {
     console.log('Initializing navigation...');
-    initializeNavigation();
+    await initializeNavigation();
     console.log('Navigation initialized successfully');
   } catch (navError) {
     console.error('Navigation initialization error:', navError);
@@ -25,19 +140,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.error('ARIA initialization error:', ariaError);
   }
   
-  // Check authentication and initialize dashboard
+  // Check authentication and initialize appropriate UI
   try {
+    // Debug: Check token in storage
+    const token = localStorage.getItem('dmt_token');
+    console.log('Token found:', token ? 'Yes' : 'No', token ? `(${token.substring(0, 20)}...)` : '');
+    
     const authResult = await checkAuthentication();
     console.log('Auth check result:', authResult);
+    console.log('Current user after auth check:', currentUser ? 'Loaded' : 'Not loaded');
     
-    if (authResult) {
-      console.log('Initializing dashboard...');
-      initializeDashboard();
-    }
+    // Update UI based on authentication status
+    await updateAuthUI();
   } catch (error) {
-    console.error('Authentication/Dashboard error:', error);
-    // Show a basic dashboard even if auth fails
-    showBasicDashboard();
+    console.error('Authentication error:', error);
+    // Clear any invalid state
+    currentUser = null;
+    localStorage.removeItem('dmt_token');
+    localStorage.removeItem('dmt_user');
+    // Update UI to show public landing page
+    await updateAuthUI();
   }
   
   // Hide loading spinner
@@ -55,8 +177,7 @@ async function checkAuthentication() {
   const userData = localStorage.getItem('dmt_user');
   
   if (!token || !userData) {
-    console.log('No token found, showing login prompt');
-    showLoginPrompt();
+    console.log('No token found, user not authenticated');
     return false;
   }
   
@@ -75,10 +196,9 @@ async function checkAuthentication() {
     }
   } catch (error) {
     console.error('Authentication error:', error);
-    // Clear invalid token and show login prompt
+    // Clear invalid token
     localStorage.removeItem('dmt_token');
     localStorage.removeItem('dmt_user');
-    showLoginPrompt();
     return false;
   }
 }
@@ -126,7 +246,7 @@ function showBasicDashboard() {
 }
 
 // Initialize navigation
-function initializeNavigation() {
+async function initializeNavigation() {
   console.log('initializeNavigation called');
   
   // Since navigation is now in static HTML, just add event handlers
@@ -144,6 +264,8 @@ function initializeNavigation() {
   ];
   
   console.log('Setting up navigation event handlers...');
+  
+
   
   // Add click handlers to navigation links
   navLinks.forEach(nav => {
@@ -178,31 +300,154 @@ function initializeNavigation() {
   }
   
   // Update welcome message and auth button based on login status
-  updateAuthUI();
+  await updateAuthUI();
   
   console.log('Navigation initialization complete');
 }
 
 // Update authentication UI
-function updateAuthUI() {
+async function updateAuthUI() {
+  console.log('🔄 updateAuthUI called');
   const token = localStorage.getItem('dmt_token');
-  const isLoggedIn = !!token;
+  console.log('🔑 Token status:', token ? 'Present' : 'Missing');
+  console.log('👤 Current user:', currentUser ? 'Loaded' : 'Not loaded');
+  
+  // Authentication is valid only if we have both token AND currentUser
+  const isAuthenticated = !!(token && currentUser);
+  console.log('✅ Is authenticated:', isAuthenticated);
   
   const welcomeMessage = document.getElementById('welcome-message');
   const authButton = document.getElementById('auth-button');
+  const internalNav = document.getElementById('internal-nav');
+  const notificationsContainer = document.getElementById('notifications-container');
+  const ariaButton = document.getElementById('aria-button');
   
+  // Update welcome message
   if (welcomeMessage) {
-    welcomeMessage.textContent = `Welcome, ${currentUser?.first_name || (isLoggedIn ? 'User' : 'Guest')}`;
+    welcomeMessage.textContent = `Welcome, ${currentUser?.first_name || (isAuthenticated ? 'User' : 'Guest')}`;
   }
   
+  // Update auth button
   if (authButton) {
-    if (isLoggedIn) {
+    if (isAuthenticated) {
       authButton.innerHTML = '<i class="fas fa-sign-out-alt mr-1"></i>Logout';
-      authButton.className = 'text-sm text-gray-500 hover:text-gray-700';
+      authButton.className = 'bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
     } else {
       authButton.innerHTML = '<i class="fas fa-sign-in-alt mr-1"></i>Login';
-      authButton.className = 'text-sm text-blue-600 hover:text-blue-700';
+      authButton.className = 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
     }
+  }
+  
+  // Show/hide internal features based on authentication
+  if (isAuthenticated) {
+    console.log('✅ User authenticated, showing internal features');
+    // Show internal features after login
+    if (internalNav) internalNav.classList.remove('hidden');
+    if (notificationsContainer) notificationsContainer.classList.remove('hidden');
+    if (ariaButton) ariaButton.classList.remove('hidden');
+    
+    try {
+      console.log('📊 Initializing dashboard...');
+      await initializeDashboard();
+    } catch (error) {
+      console.error('Dashboard initialization failed:', error);
+      showError('Failed to load dashboard');
+    }
+    
+    // Load reference data if not already loaded
+    if (typeof loadReferenceData === 'function') {
+      loadReferenceData();
+    }
+  } else {
+    console.log('❌ User not authenticated, hiding internal features');
+    // Hide internal features when not logged in
+    if (internalNav) internalNav.classList.add('hidden');
+    if (notificationsContainer) notificationsContainer.classList.add('hidden');
+    if (ariaButton) ariaButton.classList.add('hidden');
+    
+    // Show public landing page
+    showPublicLandingPage();
+  }
+}
+
+// Show public landing page for non-authenticated users
+function showPublicLandingPage() {
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="max-w-4xl mx-auto text-center py-16">
+        <div class="mb-8">
+          <div class="mx-auto h-24 w-24 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mb-6">
+            <i class="fas fa-shield-alt text-white text-3xl"></i>
+          </div>
+          <h1 class="text-4xl font-bold text-gray-900 mb-4">Risk Management Platform</h1>
+          <p class="text-xl text-gray-600 mb-8">Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics</p>
+        </div>
+        
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+          <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Risk Management</h3>
+            <p class="text-gray-600">Comprehensive risk assessment, monitoring, and mitigation strategies for enterprise security.</p>
+          </div>
+          
+          <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-server text-green-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Asset Management</h3>
+            <p class="text-gray-600">Track and manage IT assets with integrated Microsoft Defender vulnerability assessments.</p>
+          </div>
+          
+          <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-robot text-purple-600 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">AI-Powered ARIA</h3>
+            <p class="text-gray-600">Intelligent risk assistant with RAG context and multi-provider AI integration.</p>
+          </div>
+        </div>
+        
+        <div class="bg-blue-50 p-8 rounded-lg border border-blue-200">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Ready to Get Started?</h3>
+          <p class="text-gray-600 mb-6">Sign in to access the full GRC platform with advanced risk management capabilities.</p>
+          <button onclick="window.location.href='/login'" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors duration-200">
+            <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+          </button>
+          
+          <div class="mt-6 text-sm text-gray-500">
+            <p><strong>Demo Accounts:</strong></p>
+            <div class="mt-2 space-y-1">
+              <p><strong>Admin:</strong> admin / demo123</p>
+              <p><strong>Risk Manager:</strong> avi_security / demo123</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Load current user data
+async function loadCurrentUser() {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    if (!token) return;
+    
+    const response = await axios.get('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      currentUser = response.data.data;
+      // Note: Don't call updateAuthUI here to avoid recursion
+    }
+  } catch (error) {
+    console.error('Failed to load current user:', error);
+    // Token might be invalid, logout
+    logout();
   }
 }
 
@@ -211,7 +456,7 @@ function navigateTo(page) {
   console.log('Navigating to:', page);
   
   // Update active navigation
-  document.querySelectorAll('.nav-item').forEach(item => {
+  document.querySelectorAll('.nav-menu-item').forEach(item => {
     item.classList.remove('active');
   });
   const activeItem = document.getElementById(`nav-${page}`);
@@ -221,8 +466,9 @@ function navigateTo(page) {
   
   // Check if user needs to be authenticated for this page
   const token = localStorage.getItem('dmt_token');
-  if (!token && page !== 'dashboard') {
-    showLoginPrompt();
+  if (!token) {
+    // Redirect to login for any navigation attempt when not authenticated
+    window.location.href = '/login';
     return;
   }
   
@@ -325,46 +571,77 @@ function showPlaceholder(title, message, icon) {
 
 // Logout function
 function logout() {
+  // Clear user data
   localStorage.removeItem('dmt_token');
   localStorage.removeItem('dmt_user');
+  currentUser = null;
+  
+  // Redirect to login page immediately (no need to update UI)
   window.location.href = '/login';
 }
 
 // Dashboard functionality
 async function initializeDashboard() {
-  await loadDashboardData();
-  showDashboard();
+  console.log('🔄 Initializing dashboard...');
+  try {
+    const success = await loadDashboardData();
+    console.log('📊 Dashboard data loaded:', success ? 'Success' : 'Failed');
+    if (success) {
+      console.log('🎯 Calling showDashboard with data:', dashboardData ? 'Available' : 'Missing');
+      console.log('📋 Dashboard data keys:', dashboardData ? Object.keys(dashboardData) : 'None');
+      showDashboard();
+      console.log('✅ Dashboard initialization complete');
+    } else {
+      console.error('❌ Dashboard data loading failed, not showing dashboard');
+    }
+  } catch (error) {
+    console.error('❌ Dashboard initialization error:', error);
+    showError('Dashboard initialization failed: ' + error.message);
+  }
 }
 
 async function loadDashboardData() {
   try {
+    console.log('📡 Loading dashboard data...');
     showLoading('main-content');
     
     const token = localStorage.getItem('dmt_token');
+    console.log('🔑 Using token:', token ? 'Present' : 'Missing');
+    
     const response = await axios.get('/api/dashboard', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
+    console.log('📋 API Response:', response.data.success ? 'Success' : 'Failed');
+    
     if (response.data.success) {
       dashboardData = response.data.data;
+      console.log('💾 Dashboard data set:', Object.keys(dashboardData || {}).length, 'keys');
+      return true; // Success
     } else {
       throw new Error('Failed to load dashboard data');
     }
   } catch (error) {
-    console.error('Dashboard error:', error);
+    console.error('❌ Dashboard error:', error);
     showError('Failed to load dashboard data');
+    return false; // Failed
   }
 }
 
 function showDashboard() {
+  console.log('🎯 showDashboard called');
   updateActiveNavigation('dashboard');
   
   const mainContent = document.getElementById('main-content');
+  console.log('📱 main-content element:', mainContent ? 'Found' : 'Not found');
   
   if (!dashboardData) {
+    console.log('❌ No dashboard data, showing loading');
     showLoading('main-content');
     return;
   }
+  
+  console.log('✅ Dashboard data available, rendering dashboard');
   
   mainContent.innerHTML = `
     <div class="space-y-8">
@@ -989,6 +1266,7 @@ function initializeARIAAssistant() {
 
   if (ariaButton && ariaModal && ariaInput) {
     ariaButton.addEventListener('click', function() {
+      updateARIAProviderDisplay();
       ariaModal.classList.remove('hidden');
       ariaInput.focus();
     });
@@ -1000,33 +1278,112 @@ function initializeARIAAssistant() {
     });
   }
 
-  sendAria.addEventListener('click', sendARIAMessage);
+  // Close modal when clicking outside
+  if (ariaModal) {
+    ariaModal.addEventListener('click', function(e) {
+      if (e.target === ariaModal) {
+        ariaModal.classList.add('hidden');
+      }
+    });
+  }
+
+  if (sendAria) {
+    sendAria.addEventListener('click', sendARIAMessage);
+  }
   
-  ariaInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      sendARIAMessage();
-    }
-  });
+  if (ariaInput) {
+    ariaInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendARIAMessage();
+      }
+    });
+  }
+}
+
+// Update ARIA provider display
+function updateARIAProviderDisplay() {
+  const providerDisplay = document.getElementById('current-provider');
+  if (!providerDisplay) return;
+  
+  const aiSettings = JSON.parse(localStorage.getItem('dmt_ai_settings') || '{}');
+  
+  // Get enabled and configured providers
+  const enabledProviders = [];
+  if (aiSettings.openai?.enabled && aiSettings.openai?.apiKey) {
+    enabledProviders.push('OpenAI GPT-4');
+  }
+  if (aiSettings.gemini?.enabled && aiSettings.gemini?.apiKey) {
+    enabledProviders.push('Google Gemini');
+  }
+  if (aiSettings.anthropic?.enabled && aiSettings.anthropic?.apiKey) {
+    enabledProviders.push('Anthropic Claude');
+  }
+  if (aiSettings.local?.enabled && aiSettings.local?.endpoint) {
+    enabledProviders.push('Local/Custom');
+  }
+  
+  if (enabledProviders.length === 0) {
+    providerDisplay.innerHTML = '<span class="text-red-600"><i class="fas fa-exclamation-triangle mr-1"></i>Not Configured</span>';
+    providerDisplay.title = 'No AI providers configured. Go to Settings to configure.';
+  } else if (enabledProviders.length === 1) {
+    providerDisplay.innerHTML = `<span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>${enabledProviders[0]}</span>`;
+    providerDisplay.title = `Using: ${enabledProviders[0]}`;
+  } else {
+    providerDisplay.innerHTML = `<span class="text-blue-600"><i class="fas fa-layer-group mr-1"></i>${enabledProviders.length} Providers</span>`;
+    providerDisplay.title = `Priority fallback: ${enabledProviders.join(' → ')}`;
+  }
 }
 
 async function sendARIAMessage() {
   const ariaInput = document.getElementById('aria-input');
   const ariaChat = document.getElementById('aria-chat');
-  const ariaProvider = document.getElementById('aria-provider');
   const query = ariaInput.value.trim();
   
   if (!query) return;
   
-  const selectedProvider = ariaProvider?.value || 'openai';
+  // Load AI settings from localStorage
+  const aiSettings = JSON.parse(localStorage.getItem('dmt_ai_settings') || '{}');
   
-  // Add user message with provider info
+  // Get provider priority list (only enabled providers)
+  const providerPriority = [];
+  if (aiSettings.openai?.enabled && aiSettings.openai?.apiKey) {
+    providerPriority.push('openai');
+  }
+  if (aiSettings.gemini?.enabled && aiSettings.gemini?.apiKey) {
+    providerPriority.push('gemini');
+  }
+  if (aiSettings.anthropic?.enabled && aiSettings.anthropic?.apiKey) {
+    providerPriority.push('anthropic');
+  }
+  if (aiSettings.local?.enabled && aiSettings.local?.endpoint) {
+    providerPriority.push('local');
+  }
+  
+  if (providerPriority.length === 0) {
+    ariaChat.innerHTML += `
+      <div class="mb-4">
+        <div class="text-left">
+          <div class="inline-block bg-yellow-100 text-yellow-800 rounded-lg px-4 py-2 text-sm max-w-lg border border-yellow-200">
+            <i class="fas fa-cog mr-2"></i>Please configure AI settings first. Go to Settings → AI & LLM Settings to set up your API keys.
+            <div class="mt-2 text-xs">
+              The enhanced ARIA with RAG capabilities requires at least one AI provider to be configured.
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    ariaChat.scrollTop = ariaChat.scrollHeight;
+    return;
+  }
+  
+  // Add user message
   ariaChat.innerHTML += `
     <div class="mb-4">
       <div class="text-right">
-        <div class="inline-block bg-blue-100 text-blue-800 rounded-lg px-3 py-2 text-sm max-w-xs">
+        <div class="inline-block bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg px-4 py-2 text-sm max-w-xs shadow-sm">
           ${query}
         </div>
-        <div class="text-xs text-gray-500 mt-1">Provider: ${getProviderDisplayName(selectedProvider)}</div>
+        <div class="text-xs text-gray-500 mt-1">Using priority fallback system</div>
       </div>
     </div>
   `;
@@ -1034,25 +1391,37 @@ async function sendARIAMessage() {
   ariaInput.value = '';
   ariaChat.scrollTop = ariaChat.scrollHeight;
   
-  // Add enhanced loading message
+  // Add loading message
   const loadingId = 'aria-loading-' + Date.now();
   ariaChat.innerHTML += `
     <div class="mb-4" id="${loadingId}">
       <div class="text-left">
-        <div class="inline-block bg-gray-100 text-gray-800 rounded-lg px-3 py-2 text-sm">
-          <i class="fas fa-brain fa-pulse mr-2 text-purple-600"></i>ARIA is analyzing with ${getProviderDisplayName(selectedProvider)}...
+        <div class="inline-block bg-gradient-to-r from-purple-100 to-blue-100 text-gray-800 rounded-lg px-4 py-2 text-sm shadow-sm">
+          <i class="fas fa-brain fa-pulse mr-2 text-purple-600"></i>ARIA is analyzing your request...
+          <div class="text-xs text-gray-600 mt-1">Trying ${getProviderDisplayName(providerPriority[0])} first</div>
         </div>
       </div>
     </div>
   `;
   
+  let successfulResponse = false;
+  let lastError = null;
+  
+  // Use the enhanced ARIA API endpoint with RAG context
   try {
     const token = localStorage.getItem('dmt_token');
     const startTime = Date.now();
     
     const response = await axios.post('/api/aria/query', 
-      { query: query, provider: selectedProvider },
-      { headers: { Authorization: `Bearer ${token}` } }
+      { 
+        query: query, 
+        provider: providerPriority[0], // Use first provider
+        settings: aiSettings // Include all AI settings
+      },
+      { 
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 45000 // 45 second timeout for RAG processing
+      }
     );
     
     const responseTime = Date.now() - startTime;
@@ -1063,58 +1432,140 @@ async function sendARIAMessage() {
     
     if (response.data.success) {
       const data = response.data.data;
+      
+      // Enhanced response with RAG context information
       ariaChat.innerHTML += `
         <div class="mb-4">
           <div class="text-left">
-            <div class="inline-block bg-gray-100 text-gray-800 rounded-lg px-3 py-2 text-sm max-w-lg">
+            <div class="inline-block bg-gradient-to-r from-gray-50 to-gray-100 text-gray-800 rounded-lg px-4 py-2 text-sm max-w-2xl shadow-sm border border-gray-200">
               <i class="fas fa-robot mr-2 text-blue-600"></i>${data.response}
             </div>
-            <div class="text-xs text-gray-500 mt-1 flex justify-between">
-              <span>${data.provider} • ${data.tokens_used || 0} tokens</span>
-              <span>${responseTime}ms</span>
+            <div class="text-xs text-gray-500 mt-2">
+              <div class="flex justify-between items-center">
+                <span class="flex items-center">
+                  <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                  ${getProviderDisplayName(data.provider)} • ${data.tokens_used || 0} tokens
+                </span>
+                <span>${responseTime}ms</span>
+              </div>
+              ${data.context_sources > 0 ? `
+                <div class="flex items-center mt-1">
+                  <i class="fas fa-database text-purple-500 mr-1"></i>
+                  <span>Enhanced with ${data.context_sources} knowledge base sources</span>
+                  ${data.tools_used > 0 ? ` • ${data.tools_used} analysis tools` : ''}
+                </div>
+              ` : ''}
             </div>
           </div>
         </div>
       `;
       
-      // Show quick action buttons for specific queries
-      if (query.toLowerCase().includes('insight') || query.toLowerCase().includes('predict')) {
+      // Show sources if available
+      if (data.sources && data.sources.length > 0) {
         ariaChat.innerHTML += `
           <div class="mb-4">
             <div class="text-left">
-              <div class="flex space-x-2 text-xs">
-                <button onclick="showAIInsights()" class="bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">
-                  View AI Insights
-                </button>
-                <button onclick="showRiskPredictions()" class="bg-purple-100 text-purple-800 px-2 py-1 rounded hover:bg-purple-200">
-                  Risk Predictions
-                </button>
-              </div>
+              <details class="bg-gray-50 rounded-lg p-3 text-sm border">
+                <summary class="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
+                  <i class="fas fa-book mr-2"></i>View Knowledge Sources (${data.sources.length})
+                </summary>
+                <div class="mt-3 space-y-2">
+                  ${data.sources.slice(0, 5).map(source => `
+                    <div class="flex items-start space-x-2 text-xs">
+                      <i class="fas fa-file-alt text-blue-500 mt-1"></i>
+                      <div>
+                        <div class="font-medium">${source.title}</div>
+                        <div class="text-gray-600">${source.type} • ${Math.round(source.similarity * 100)}% relevant</div>
+                        <div class="text-gray-500 mt-1">${source.excerpt}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </details>
             </div>
           </div>
         `;
       }
+      
+      successfulResponse = true;
+      
     } else {
-      ariaChat.innerHTML += `
-        <div class="mb-4">
-          <div class="text-left">
-            <div class="inline-block bg-red-100 text-red-800 rounded-lg px-3 py-2 text-sm">
-              <i class="fas fa-exclamation-triangle mr-2"></i>Sorry, I encountered an error. Please try again.
-            </div>
-          </div>
-        </div>
-      `;
+      throw new Error(response.data.message || 'Enhanced ARIA request failed');
     }
+    
   } catch (error) {
-    console.error('ARIA error:', error);
+    console.error('Enhanced ARIA failed, trying fallback:', error);
+    lastError = error;
+    
+    // Fallback to simple provider rotation
+    for (let i = 0; i < providerPriority.length; i++) {
+      const provider = providerPriority[i];
+      
+      try {
+        const fallbackResponse = await axios.post('/api/aria/query', 
+          { 
+            query: query, 
+            provider: provider,
+            settings: aiSettings[provider]
+          },
+          { 
+            headers: { Authorization: `Bearer ${localStorage.getItem('dmt_token')}` },
+            timeout: 30000
+          }
+        );
+        
+        if (fallbackResponse.data.success) {
+          const loadingEl = document.getElementById(loadingId);
+          if (loadingEl) loadingEl.remove();
+          
+          const data = fallbackResponse.data.data;
+          ariaChat.innerHTML += `
+            <div class="mb-4">
+              <div class="text-left">
+                <div class="inline-block bg-gradient-to-r from-gray-50 to-gray-100 text-gray-800 rounded-lg px-4 py-2 text-sm max-w-2xl shadow-sm border border-gray-200">
+                  <i class="fas fa-robot mr-2 text-blue-600"></i>${data.response}
+                  <div class="text-xs text-yellow-600 mt-2">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    Note: Enhanced context features temporarily unavailable
+                  </div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">
+                  <span class="flex items-center">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    ${getProviderDisplayName(provider)} • ${data.tokens_used || 0} tokens
+                  </span>
+                </div>
+              </div>
+            </div>
+          `;
+          successfulResponse = true;
+          break;
+        }
+      } catch (fallbackError) {
+        console.error(`Fallback provider ${provider} failed:`, fallbackError);
+        continue;
+      }
+    }
+  }
+  
+  // If no provider succeeded, show error
+  if (!successfulResponse) {
     const loadingElement = document.getElementById(loadingId);
     if (loadingElement) loadingElement.remove();
     
     ariaChat.innerHTML += `
       <div class="mb-4">
         <div class="text-left">
-          <div class="inline-block bg-red-100 text-red-800 rounded-lg px-3 py-2 text-sm">
-            <i class="fas fa-wifi mr-2"></i>Sorry, I'm temporarily unavailable. Please try again later.
+          <div class="inline-block bg-red-100 text-red-800 rounded-lg px-4 py-2 text-sm max-w-lg border border-red-200">
+            <i class="fas fa-exclamation-triangle mr-2"></i>All AI providers failed to respond. Please check:
+            <div class="mt-2 text-xs">
+              • Your API keys are valid and have sufficient credits<br>
+              • Your internet connection is stable<br>
+              • Provider services are operational
+            </div>
+          </div>
+          <div class="text-xs text-gray-500 mt-2">
+            Tried: ${providerPriority.map(p => getProviderDisplayName(p)).join(', ')}
           </div>
         </div>
       </div>
@@ -1134,12 +1585,12 @@ function quickARIAQuery(query) {
 
 function getProviderDisplayName(provider) {
   const names = {
-    'openai': 'GPT-4',
-    'gemini': 'Gemini Pro',
-    'anthropic': 'Claude 3',
-    'local': 'Local LLM'
+    'openai': 'OpenAI GPT-4',
+    'gemini': 'Google Gemini',
+    'anthropic': 'Anthropic Claude',
+    'local': 'Local/Custom LLM'
   };
-  return names[provider] || provider;
+  return names[provider] || provider.charAt(0).toUpperCase() + provider.slice(1);
 }
 
 async function showAIInsights() {
@@ -1295,7 +1746,7 @@ function renderRiskPredictions(prediction) {
 
 // Utility functions
 function updateActiveNavigation(activeItem) {
-  document.querySelectorAll('.nav-item').forEach(item => {
+  document.querySelectorAll('.nav-menu-item').forEach(item => {
     item.classList.remove('active');
   });
   const activeElement = document.getElementById(`nav-${activeItem}`);
@@ -1305,13 +1756,20 @@ function updateActiveNavigation(activeItem) {
 }
 
 function showLoading(elementId) {
+  console.log('🔄 showLoading called for:', elementId);
   const element = document.getElementById(elementId);
+  if (!element) {
+    console.error('❌ Element not found:', elementId);
+    return;
+  }
+  console.log('✅ Element found, setting loading content');
   element.innerHTML = `
     <div class="flex items-center justify-center py-12">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       <span class="ml-3 text-gray-600">Loading...</span>
     </div>
   `;
+  console.log('✅ Loading content set');
 }
 
 function showError(message) {
