@@ -1,374 +1,252 @@
-# Risk Management Platform v2.0
+# DMT Risk Assessment Platform v2.0
 
-**Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics**
+## 🚀 Project Overview
+- **Name**: DMT Risk Assessment Platform
+- **Version**: 2.0 - Enhanced Edition
+- **Goal**: Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics
+- **Technology Stack**: Hono + TypeScript + Cloudflare Workers/Pages + D1 Database + TailwindCSS
 
-## 🛡️ Project Overview
+## 🌟 New Features Implemented
 
-The Risk Management Platform v2.0 is a comprehensive, AI-powered Enterprise Governance, Risk, and Compliance (GRC) platform designed for modern organizations. Built on cutting-edge technologies including Hono framework, Cloudflare Workers, and advanced AI capabilities, this system provides real-time risk monitoring, compliance tracking, and intelligent analytics.
+### ✅ Advanced Risk Heat Maps
+- **Interactive Visualizations**: Multiple view modes for comprehensive risk analysis
+  - Probability vs Impact heat map with bubble sizing
+  - Organizational risk matrix by department
+  - Temporal risk evolution over time
+  - Risk distribution by category with radar charts
+- **Features**: Full-screen mode, real-time data updates, color-coded severity levels
+- **Location**: Dashboard → Advanced Risk Heat Maps section
 
-### Key Features
+### ✅ Automated Workflow Notifications
+- **In-App Notification System**: Real-time notifications with badge counts
+- **Workflow Automation**: Rule-based triggers for risk events
+  - High-risk auto-alerts to management
+  - Critical risk escalation workflows  
+  - Incident response team notifications
+  - Risk review reminders
+- **Database Schema**: Complete notification and workflow tables
+- **UI Components**: Notification bell, dropdown, full notifications page
 
-- **🤖 AI-Powered Intelligence**: Advanced risk scoring, predictive analytics, and automated anomaly detection
-- **📊 Real-Time Dashboard**: Interactive analytics with risk heatmaps, trend analysis, and KPI monitoring  
-- **🔒 Zero Trust Security**: Multi-factor authentication, role-based access control, and encrypted data storage
-- **🏢 Enterprise Scale**: Multi-tenant architecture supporting complex organizational structures
-- **📱 Mobile-First Design**: Responsive interface optimized for all devices
-- **🔧 No-Code Workflows**: Visual workflow builder for automated risk management processes
-- **🎯 ARIA AI Assistant**: Intelligent chatbot for GRC guidance and support
+### ✅ Document Management System
+- **File Management**: Upload, organize, and manage risk-related documents
+- **Access Control**: Private, public, and restricted visibility levels
+- **Document Types**: Policies, procedures, reports, evidence, certificates, contracts, training, audits
+- **Features**: File versioning, access logging, search and filtering, document preview
+- **Security**: Role-based access control and audit trails
 
-## 🚀 Live Platform Access
+### ✅ Mobile-Responsive Interface
+- **Mobile-First Design**: Optimized for smartphones and tablets
+- **Touch-Friendly UI**: 44px minimum touch targets, swipe gestures
+- **Bottom Navigation**: Easy thumb navigation on mobile devices
+- **Pull-to-Refresh**: Intuitive refresh mechanism
+- **Responsive Components**: All forms, tables, and modals optimized for mobile
 
-### 🌐 Production URLs
-- **Main Platform**: https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev
-- **API Endpoints**: https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev/api/*
+### ✅ AI-Powered Risk Insights
+- **Trend Analysis**: Predictive analytics for risk evolution
+- **Anomaly Detection**: Identification of unusual risk patterns
+- **Risk Predictions**: Scenario-based forecasting with confidence scores
+- **Automated Insights**: Real-time risk intelligence and recommendations
+- **Visual Analytics**: AI-generated charts and trend visualizations
 
-### 🔑 Demo Login Credentials
-- **Username**: `admin`
-- **Password**: `demo123`
-- **Role**: System Administrator (Full Access)
+### ✅ Multi-LLM Integration for Enhanced ARIA
+- **Multiple Providers**: OpenAI GPT-4, Google Gemini Pro, Anthropic Claude 3, Local LLM
+- **Provider Selection**: Users can choose their preferred AI model
+- **Enhanced Capabilities**: 
+  - Risk analysis and recommendations
+  - Compliance guidance
+  - Predictive insights
+  - Security assessments
+- **Conversation History**: Full chat history with performance metrics
+- **Quick Actions**: Pre-built prompts for common queries
 
-**Alternative Test Accounts:**
-- **Risk Manager**: `avi_security` / `demo123` 
-- **Compliance Officer**: `mchen` / `demo123`
-- **Auditor**: `edavis` / `demo123`
+## 🌐 URLs
+- **Live Application**: https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev/
+- **GitHub Repository**: https://github.com/theblackhat55/GRC
+- **Project Backup**: https://page.gensparksite.com/project_backups/tooluse_QUKE4t7UQPuBq6WOH-JkKw.tar.gz
 
-## 🎯 Production-Ready Features - **ALL IMPLEMENTED** ✅
+## 🗄️ Data Architecture
 
-### ✅ Core System Architecture - **FULLY FUNCTIONAL**
-- Hono framework with TypeScript for robust backend API
-- Cloudflare Workers edge deployment for global performance
-- Cloudflare D1 database with vulnerability tracking and enhanced schema
-- Modern responsive UI with Tailwind CSS
-- **PM2 process management for Ubuntu server deployment**
-- **All placeholder functions replaced with full implementations**
+### Core Data Models
+- **Users & Authentication**: Role-based access with MFA support
+- **Organizations**: Hierarchical organization structure with risk tolerance
+- **Risks**: Comprehensive risk data with scoring algorithms
+- **Controls**: Risk controls with effectiveness ratings
+- **Incidents**: Security incident tracking and response
+- **Assets & Services**: IT asset inventory with risk correlations
 
-### ✅ Enhanced Authentication & Authorization - **UPGRADED**
-- JWT-based authentication system
-- **New Enhanced Role System**: Admin, Risk Analyst, Service Owner, Auditor, Integration Operator, ReadOnly
-- **Multi-Provider Authentication**: Local accounts + SAML (Microsoft Entra ID)
-- **Conditional Password Requirements**: Local users need passwords, SAML users auto-provisioned
-- Session management and token validation
-- Secure password handling
+### New Data Models
+- **Notifications**: In-app notification system with workflow automation
+- **Documents**: File management with access control and versioning
+- **AI Insights**: Cached AI analysis results and predictions
+- **LLM Provider Configs**: Multiple AI provider configurations
+- **Conversation History**: ARIA chat history with performance metrics
+- **Workflow Rules**: Automated business process definitions
 
-### ✅ Risk Management Module - **FULLY FUNCTIONAL CRUD**
-- **Complete Risk Register**: Comprehensive risk profiles with full CRUD operations
-- **Add New Risks**: Modal form with comprehensive risk data collection
-- **Edit Existing Risks**: Complete inline editing with form validation
-- **Delete Risks**: Secure deletion with confirmation prompts
-- **View Risk Details**: Detailed risk information in popup modals
-- **Advanced Risk Scoring**: 1-25 scale with automated calculations (Probability × Impact)
-- **Risk Categories & Taxonomy**: Structured risk classification system
-- **Risk Treatment Strategies**: Accept, Mitigate, Transfer, Avoid options
-- **Filtering & Search**: Advanced filtering by status, category, risk score, and text search
-- **Risk Statistics Dashboard**: Real-time metrics for critical risks, overdue reviews, and average scores
-- **Data Import/Export**: Risk data import and export functionality for reporting
-- **Interactive Tables**: Sortable, searchable data tables with pagination
+### Storage Services
+- **Cloudflare D1**: Primary SQLite database for all structured data
+- **Local Development**: Automatic local SQLite databases with `--local` flag
+- **Migrations**: Version-controlled database schema updates
+- **Indexes**: Optimized for performance with comprehensive indexing
 
-### ✅ Control Management Module - **FULLY FUNCTIONAL CRUD**
-- **Complete Control Library**: Multi-framework support (ISO27001, NIST, SOX, COBIT, GDPR)
-- **Add New Controls**: Comprehensive control creation with framework mapping
-- **Edit Control Details**: Full control configuration and effectiveness tracking
-- **Delete Controls**: Secure control removal with dependency checking
-- **View Control Information**: Detailed control specifications in popup modals
-- **Effectiveness Monitoring**: Design and operating effectiveness tracking
-- **Control Testing**: Testing workflows and evidence collection capabilities
-- **Risk-Control Mapping**: Gap analysis and control coverage assessment
-- **Control Statistics**: Real-time metrics for effective, untested, and automated controls
-- **Data Import/Export**: Control data import and export functionality
-- **Framework Filtering**: Filter controls by framework, type, and effectiveness
-
-### ✅ Compliance Management Module - **API COMPLETE**
-- **Compliance Assessments**: Full CRUD operations for compliance assessments
-- **Assessment Planning**: Create and manage assessment schedules and scope
-- **Assessment Execution**: Track assessment progress and findings
-- **Compliance Requirements**: Manage regulatory and policy requirements
-- **Data Import/Export**: Compliance data import and export functionality
-- **Assessment Reporting**: Generate comprehensive compliance reports
-- **Status Tracking**: Monitor assessment status and completion rates
-
-### ✅ Compliance Frameworks Module - **FULLY IMPLEMENTED** 🆕
-- **Framework Library**: Complete ISO 27001:2022 and UAE Information Assurance Standard frameworks
-- **Control Management**: 174 framework controls with detailed implementation guidance
-- **Framework Navigation**: Dedicated frameworks page with visual framework cards
-- **Control Browsing**: Comprehensive control listing with search and filtering
-- **Framework Sections**: Organized control navigation by framework sections
-- **Control Details**: Full control information including references and implementation guidance
-- **Framework Import**: Import functionality for additional compliance frameworks
-- **Assessment Integration**: Framework assessment creation and management (API ready)
-- **Framework Statistics**: Real-time metrics for control counts and implementation progress
-
-### ✅ Asset Management Module - **NEW COMPREHENSIVE SYSTEM**
-- **Complete Asset Inventory**: Full CRUD operations for IT assets and infrastructure
-- **Asset Creation Modal**: Rich form with asset type, OS, network config, risk assessment
-- **Microsoft Defender Integration**: Automatic asset discovery and sync from Defender
-- **Vulnerability Tracking**: Link vulnerabilities to assets with severity and CVSS scoring
-- **Risk Score Enhancement**: Combined incident + vulnerability risk methodology
-- **Asset-Service Mapping**: Link assets to business services for impact assessment
-- **Owner Assignment**: Flexible asset ownership with user/organization hierarchy
-- **Device Tagging**: Categorization and metadata management
-- **Real-time Statistics**: Asset counts, risk levels, and vulnerability exposure metrics
-
-### ✅ Incident Management Module - **ENHANCED WITH MICROSOFT DEFENDER**
-- **Incident Response**: Full CRUD operations for security and operational incidents
-- **Microsoft Defender Integration**: Automatic sync of security incidents from Defender
-- **Asset-Incident Correlation**: Link incidents to affected assets and services
-- **Incident Classification**: Severity levels and incident type categorization
-- **Assignment & Escalation**: Assign incidents to response teams and escalate as needed
-- **SLA Tracking**: Monitor incident response times and SLA compliance
-- **Incident Statistics**: Real-time metrics for open incidents, MTTR, and severity distribution
-- **Response Workflows**: Structured incident response processes
-- **Data Import/Export**: Incident data import and export functionality
-
-### ✅ Microsoft Defender Vulnerability Management - **NEW ENTERPRISE FEATURE**
-- **Vulnerability Data Import**: Comprehensive CVE data sync from Microsoft Defender
-- **Asset-Vulnerability Correlation**: Link vulnerabilities to specific assets
-- **CVSS Scoring Integration**: Severity assessment with industry-standard scoring
-- **Automated Risk Updates**: Enhanced risk calculations using vulnerability + incident data
-- **Vulnerability Dashboard**: Real-time metrics for critical vulnerabilities and exposure
-- **Remediation Tracking**: Status tracking for vulnerability mitigation efforts
-- **API Integration**: RESTful endpoints for vulnerability data access and management
-
-### ✅ Dashboard & Analytics
-- **Executive Dashboard**: High-level risk and compliance overview
-- **Risk Heatmap**: Visual risk distribution and concentration
-- **KPI Monitoring**: Key performance indicators and trend analysis
-- **Real-Time Data**: Live updates and refresh capabilities
-- **Mobile Responsive**: Optimized for desktop, tablet, and mobile devices
-
-### ✅ AI Assistant (ARIA)
-- **Intelligent Query Processing**: Natural language risk and compliance queries
-- **Context-Aware Responses**: Personalized guidance based on user role and data
-- **Risk Recommendations**: AI-powered risk mitigation suggestions
-- **Interactive Chat Interface**: Real-time communication with AI assistant
-
-## 📋 Technical Implementation Status
-
-### 🟢 Completed & Tested
-1. **Backend API**: Complete REST API with JWT authentication
-2. **Database Schema**: 20+ interconnected tables with proper relationships including frameworks
-3. **Risk CRUD**: Full Create, Read, Update, Delete operations with UI
-4. **Control CRUD**: Full Create, Read, Update, Delete operations with UI
-5. **Compliance API**: Complete CRUD endpoints for assessments
-6. **Incident API**: Complete CRUD endpoints for incidents
-7. **Framework Integration**: Complete ISO 27001 and UAE ISR frameworks with 174 controls
-8. **Reference Data**: Categories, organizations, users lookup APIs
-9. **Authentication**: Multi-user login system with role validation
-10. **Frontend Modal Forms**: Dynamic forms for risk and control management
-11. **Data Validation**: Frontend and backend validation systems
-12. **Error Handling**: Comprehensive error management and user feedback
-13. **Import Functionality**: CSV/Excel import modals for all modules (risks, controls, compliance, incidents, users)
-14. **Framework Management**: Complete framework and control browsing interface
-
-### ✅ Import/Export Features
-- **Import Modals**: CSV/Excel import functionality for all modules
-- **File Validation**: Template guidance and required column specifications
-- **Import Processing**: File parsing and data validation workflows
-- **Export Functions**: Data export capabilities for all modules
-
-### 🔄 Integration Ready
-- Compliance Management frontend forms (API completed)
-- Incident Management frontend forms (API completed)
-- Advanced reporting and analytics
-- Workflow automation
-- File upload and attachment management
-
-## 📊 Data Architecture
-
-### 🗄️ Database Tables - **ENHANCED SCHEMA WITH FRAMEWORKS**
-- **Users & Organizations**: Multi-tenant user management with SAML provider support
-- **Risks & Categories**: Comprehensive risk taxonomy with automated scoring
-- **Controls & Frameworks**: Multi-standard control library
-- **Compliance Assessments**: Regulatory compliance tracking
-- **Compliance Frameworks**: ISO 27001, UAE ISR, and extensible framework management
-- **Framework Controls**: 174 detailed controls with implementation guidance and priorities
-- **Framework Assessments**: Gap analysis and maturity assessments with scoring
-- **Control Assessments**: Individual control compliance status and evidence tracking
-- **Control Relationships**: Inter-control dependencies and mappings
-- **Control-Risk Mappings**: Risk mitigation and control effectiveness tracking
-- **Control-Asset Mappings**: Asset-specific control applicability and implementation
-- **Incidents**: Security and operational incident management with Microsoft Defender sync
-- **Assets**: Complete IT asset inventory with vulnerability correlation
-- **Vulnerabilities**: CVE database with CVSS scoring and remediation tracking
-- **Asset-Vulnerability Relationships**: Detailed mapping with detection dates and status
-- **API Credentials & JWT Settings**: Enterprise integration management
-- **Email Configuration**: Notification system settings
-- **Risk Notifications**: Automated alert system (30/15/7 day reminders)
-- **Workflows**: Process automation and approval chains
-- **Audit Trails**: Complete activity logging and tracking
-
-### 📈 Storage Services
-- **Cloudflare D1**: Primary SQLite database for relational data
-- **Local Development**: Automatic local SQLite with --local mode
-- **Data Backup**: Migration-based schema management
-
-## 🧪 Testing Results
-
-### ✅ API Testing (All Passed)
-- **Authentication**: Login, token validation, role-based access ✅
-- **Risk Management**: GET, POST, PUT, DELETE operations ✅
-- **Control Management**: GET, POST, PUT, DELETE operations ✅
-- **Compliance**: GET, POST, PUT, DELETE operations ✅
-- **Incidents**: GET, POST, PUT, DELETE operations ✅
-- **Reference Data**: Categories, organizations, users lookup ✅
-
-### ✅ Frontend Testing (All Functional)
-- **Risk Modal Forms**: Create, edit, view risk details ✅
-- **Control Modal Forms**: Create, edit, view control details ✅  
-- **Data Validation**: Required fields, data types, relationships ✅
-- **User Experience**: Responsive design, loading states, error handling ✅
-- **Authentication Flow**: Login, logout, session management ✅
-
-## 🚀 User Guide
+## 📱 User Guide
 
 ### Getting Started
-1. **Access**: Navigate to https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev
-2. **Login**: Use `admin` / `demo123` for full system access
-3. **Dashboard**: Review high-level risk and compliance metrics
-4. **Navigation**: Use the top navigation to access different modules
+1. **Login**: Use credentials - Username: `admin` / Password: `demo123`
+2. **Dashboard**: Overview with metrics and interactive heat maps
+3. **Navigation**: 
+   - Desktop: Top navigation bar
+   - Mobile: Bottom navigation with swipe gestures
 
-### Managing Risks
-1. **View Risks**: Click "Risk Management" in navigation
-2. **Add New Risk**: Click "Add Risk" button to open creation form
-3. **Edit Risk**: Click the edit icon (pencil) in any risk row
-4. **View Details**: Click the view icon (eye) to see complete risk information
-5. **Delete Risk**: Click the delete icon (trash) and confirm deletion
-6. **Filter/Search**: Use the filter controls and search box to find specific risks
+### Key Features Usage
 
-### Managing Controls
-1. **View Controls**: Click "Control Framework" in navigation
-2. **Add New Control**: Click "Add Control" button to open creation form
-3. **Edit Control**: Click the edit icon in any control row
-4. **View Details**: Click the view icon to see complete control information
-5. **Delete Control**: Click the delete icon and confirm deletion
-6. **Filter by Framework**: Use framework dropdown to filter by compliance standard
+#### Risk Heat Maps
+- Navigate to Dashboard
+- View "Advanced Risk Heat Maps" section
+- Select visualization type (Probability/Impact, Organizational, Temporal, Category)
+- Click fullscreen icon for detailed analysis
+- Hover over data points for detailed information
 
-### Managing Compliance Frameworks 🆕
-1. **View Frameworks**: Click "Frameworks" in navigation to see available frameworks
-2. **Browse Framework Controls**: Click "View Controls" on any framework card
-3. **Import Frameworks**: Click "Import Framework" to add ISO 27001 or UAE ISR standards
-4. **Search Controls**: Use search and section filters to find specific controls
-5. **Start Assessments**: Click "Start Assessment" to begin framework compliance assessments
-6. **Filter by Section**: Use section dropdown to filter controls by framework sections
+#### Notifications
+- Click notification bell (top-right on desktop, header on mobile)
+- View recent notifications in dropdown
+- Click "View All Notifications" for complete list
+- Mark individual or all notifications as read
 
-### Using ARIA AI Assistant
-1. **Activate**: Click the robot icon in bottom-right corner
-2. **Ask Questions**: Type natural language questions about risks or compliance
-3. **Get Guidance**: Receive intelligent recommendations and guidance
-4. **Context Aware**: ARIA understands your role and provides relevant advice
+#### ARIA AI Assistant
+- Click floating robot icon (bottom-right)
+- Select AI provider (GPT-4, Gemini Pro, Claude 3, Local LLM)
+- Use quick action buttons or type custom queries
+- Ask about risk analysis, compliance, predictions, security
 
-## 🚀 Deployment & Technical Stack
+#### Document Management
+- Navigate to Documents section
+- Upload files with metadata (title, type, description, tags)
+- Set visibility levels (private, public, restricted)
+- Search and filter documents
+- View, download, edit, or share documents
 
-### Production Environment
-- **Platform**: Cloudflare Pages (Edge Computing)
-- **Runtime**: Hono + TypeScript + Cloudflare Workers
-- **Database**: Cloudflare D1 (Globally Distributed SQLite)
-- **CDN**: Cloudflare global network for optimal performance
-- **Security**: JWT authentication, role-based access control
+#### Mobile Interface
+- Automatic detection for mobile devices
+- Bottom navigation for easy thumb access
+- Pull down to refresh any screen
+- Swipe left/right for page navigation
+- Touch-optimized forms and buttons
 
-### Development Stack
-- **Framework**: Hono v4.0+ (Fast, lightweight, edge-first)
-- **Language**: TypeScript for type safety and better developer experience
-- **Styling**: Tailwind CSS for rapid, responsive UI development
-- **Build Tool**: Vite for fast development and optimized builds
-- **Process Management**: PM2 for local development server management
+## 🚀 Deployment
 
-### Key Technical Decisions
-- **Edge-First Architecture**: Optimized for global deployment and low latency
-- **TypeScript**: Enhanced code quality and developer productivity
-- **Component-Based UI**: Modular, reusable interface components
-- **RESTful API**: Clean, predictable API design following REST principles
-- **JWT Authentication**: Stateless, secure user authentication
-- **Role-Based Security**: Granular permissions based on user roles
+### Current Status
+- **Platform**: Cloudflare Pages with Hono framework
+- **Status**: ✅ Active and fully functional
+- **Environment**: Development with local D1 database
+- **Performance**: Fast edge deployment with global CDN
 
-## 📋 Next Recommended Development Steps
+### Tech Stack Details
+- **Backend**: Hono TypeScript framework on Cloudflare Workers
+- **Frontend**: Vanilla JavaScript with TailwindCSS
+- **Database**: Cloudflare D1 (SQLite) with local development support
+- **Charts**: Chart.js for all visualizations and heat maps
+- **Icons**: Font Awesome for consistent iconography
+- **Mobile**: Progressive Web App features with responsive design
 
-### High Priority
-1. **API Credentials Management Interface**: OAuth clients, JWT settings, token lifetime management
-2. **Email Integration Settings**: SMTP configuration, notification templates, delivery preferences
-3. **Risk Notification System**: Automated alerts (30/15/7 days), email delivery, user preferences
-4. **Risk Owners/Organizations/Categories Management**: Admin interfaces for taxonomy management
-5. **Complete SAML SSO Integration**: Full Microsoft Entra ID integration with user provisioning
+### API Endpoints
 
-### Medium Priority
-1. **Complete Compliance Frontend**: Implement modal forms for compliance assessments
-2. **Complete Incident Frontend**: Implement modal forms for incident management
-3. **Advanced Reporting**: PDF generation and comprehensive analytics
-4. **File Attachments**: Document upload and evidence management
-5. **Advanced Analytics**: Trend analysis, predictive modeling with vulnerability data
+#### Core APIs
+- `GET /api/dashboard` - Dashboard data and metrics
+- `GET /api/risks` - Risk management CRUD operations
+- `GET /api/organizations` - Organization management
+- `GET /api/users` - User management and authentication
 
-### Technical Enhancements  
-1. **Caching Layer**: Redis/KV caching for improved performance
-2. **Real-time Updates**: WebSocket integration for live data
-3. **Advanced Search**: Full-text search and faceted filtering
-4. **Data Visualization**: Interactive charts and risk heatmaps
-5. **Audit Logging**: Comprehensive activity tracking and compliance trails
+#### New Enhanced APIs
+- `POST /api/aria/query` - Enhanced AI assistant with multiple LLM providers
+- `GET /api/ai/insights` - AI-powered risk insights and predictions
+- `POST /api/ai/analyze-risk` - Comprehensive AI risk analysis
+- `GET/POST /api/notifications` - Notification system with workflow automation
+- `GET/POST /api/documents` - Document management with access control
+- `GET/POST/PUT/DELETE /api/workflow-rules` - Automated workflow management
 
-## 🎯 Recently Completed (This Session)
+## 🔧 Development Setup
 
-### ✅ Major Enhancements Delivered
-1. **Complete Project Backup**: Full system backup created and available
-2. **Controls Icon Fix**: Updated to black shield icon as requested
-3. **Microsoft Defender Vulnerability Integration**: Complete CVE import and risk correlation
-4. **Add Asset Modal**: Full-featured asset creation interface with validation
-5. **Enhanced User Roles**: New roles including Risk Analyst, Service Owner, Integration Operator, ReadOnly
-6. **Authentication Provider Selection**: Local vs SAML account creation with conditional password requirements
-7. **Vulnerability-Enhanced Risk Methodology**: Combined vulnerability + incident risk scoring
-8. **API Endpoints**: All vulnerability and asset management endpoints implemented
-9. **Database Schema**: 25-command migration applied with comprehensive vulnerability tracking
+### Prerequisites
+- Node.js 18+ with npm
+- Wrangler CLI for Cloudflare development
+- PM2 for process management (pre-installed in sandbox)
 
-### 📊 Implementation Statistics
-- **New Database Tables**: 6 (vulnerabilities, asset relationships, API management)
-- **Enhanced Tables**: 4 (assets, risks, users with new columns)
-- **New API Endpoints**: 8 (vulnerability sync, asset management, enhanced filtering)
-- **Frontend Enhancements**: Complete asset modal, vulnerability sync UI, enhanced user forms
-- **Risk Methodology**: Multi-factor scoring (incidents + vulnerabilities + asset criticality)
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/theblackhat55/GRC.git
+cd GRC
 
-### 🚀 **PRODUCTION READY - Framework Integration Update** (August 15, 2025)
+# Install dependencies
+npm install
 
-**COMPLIANCE FRAMEWORKS INTEGRATION COMPLETED** ✅
-- ✅ **ISO 27001:2022 Framework** - Complete 93 controls with organizational structure
-- ✅ **UAE Information Assurance Standard** - Complete 81 controls with domain hierarchy
-- ✅ **Framework Database Schema** - Complete migration with 8 new tables for comprehensive framework management
-- ✅ **Framework Controls API** - Full CRUD operations with search, filtering, and pagination
-- ✅ **Framework Management UI** - Modern interface with framework cards, control browsing, and import functionality
-- ✅ **Excel-to-JSON Conversion** - Automated processing of framework Excel files to structured database format
-- ✅ **Framework Import System** - Real-time import of frameworks with control count validation
-- ✅ **Control Search & Filtering** - Advanced filtering by section, priority, and text search
-- ✅ **Framework Statistics** - Real-time metrics for control counts and implementation progress
+# Apply database migrations
+npx wrangler d1 migrations apply dmt-production --local
 
-**PREVIOUS IMPLEMENTATION - ALL PLACEHOLDER FUNCTIONS FIXED** ✅
-- ✅ **exportRisks()** - Full CSV export with comprehensive risk data fields
-- ✅ **exportControls()** - Complete CSV export with framework and testing data  
-- ✅ **exportIncidents()** - Full CSV export with incident lifecycle data
-- ✅ **viewAsset()** - Detailed modal with complete asset information display
-- ✅ **deleteAsset()** - Full delete functionality with confirmation dialogs
-- ✅ **showImportAssetsModal()** - Comprehensive CSV import with template and validation
-- ✅ **exportAssets()** - Complete CSV export functionality
-- ✅ **filterAssets()** - Advanced filtering by type, risk level, and service criteria
-- ✅ **All Previously Fixed**: testControl, exportUsers, filterAssessments, viewIncident, assignIncident, escalateIncident
+# Build the project
+npm run build
 
-**PRODUCTION DEPLOYMENT TESTED** ✅
-- ✅ **Ubuntu Server Compatibility**: Successfully runs with PM2 process management
-- ✅ **Database Functionality**: All migrations applied, framework seed data loaded, APIs tested
-- ✅ **Authentication System**: Login working with admin/demo123 credentials
-- ✅ **API Endpoints**: All 6 modules (risks, controls, incidents, assets, users, frameworks) returning data
-- ✅ **Framework APIs**: All framework endpoints tested and returning correct data (174 total controls)
-- ✅ **CSV Export Functions**: All export functions ready for production use
-- ✅ **Modal Interfaces**: All view/edit/create modals fully implemented
-- ✅ **Framework UI**: Complete frameworks page with navigation and control browsing
+# Start development server
+pm2 start ecosystem.config.cjs
+```
 
-**COMPREHENSIVE TESTING COMPLETED** ✅
-- API health endpoint: ✅ Responding correctly
-- Authentication: ✅ JWT tokens working properly  
-- Framework APIs: ✅ All framework endpoints returning correct data
-- Data queries: ✅ All modules returning proper data counts (ISO 27001: 93 controls, UAE ISR: 81 controls)
-- Server startup: ✅ Clean startup with PM2 management
-- Framework import: ✅ Import functionality tested for both frameworks
-- GitHub integration: ✅ Code successfully pushed to repository
+### Database Commands
+```bash
+# Apply new migrations
+npm run db:migrate:local
+
+# Reset local database
+npm run db:reset
+
+# Access database console
+npm run db:console:local
+```
+
+## 🔄 Recent Updates (Version 2.0)
+
+### Performance Improvements
+- Enhanced Chart.js integration for real-time heat maps
+- Optimized mobile rendering with touch-first design
+- Improved API response times with efficient queries
+- Advanced caching for AI insights and predictions
+
+### Security Enhancements
+- Role-based access control for all new features
+- Document access logging and audit trails
+- Encrypted API keys for LLM providers
+- Secure conversation history storage
+
+### User Experience
+- Intuitive mobile navigation with bottom bar
+- Real-time notifications with workflow automation
+- AI-powered insights with multiple provider options
+- Comprehensive document management system
+- Interactive heat maps with multiple visualization modes
+
+### Developer Experience
+- Comprehensive TypeScript interfaces
+- Database migrations with version control
+- API endpoint documentation and testing
+- Mobile-responsive component library
+- AI integration framework for future enhancements
+
+## 📊 System Metrics
+- **Database Tables**: 15+ comprehensive data models
+- **API Endpoints**: 25+ RESTful endpoints
+- **Frontend Components**: 10+ reusable JavaScript modules
+- **Mobile Optimization**: 100% responsive design
+- **AI Integration**: 4 LLM providers supported
+- **Visualization Types**: 4 interactive heat map modes
+
+## 🔮 Future Enhancements
+- Real-time collaboration features
+- Advanced reporting and dashboard customization
+- Integration with external security tools
+- Machine learning model training on user data
+- Advanced document OCR and content analysis
+- Multi-tenant organization support
 
 ---
-
-**Status**: 🎯 **PRODUCTION READY** - Complete framework integration with ISO 27001 and UAE ISR standards
-**GitHub**: https://github.com/theblackhat55/GRC  
 **Last Updated**: August 15, 2025
-**Version**: 2.1.0 Production with Frameworks
+**Version**: 2.0 - Enhanced Edition
+**Maintenance Status**: Active Development
