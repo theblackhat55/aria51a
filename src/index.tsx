@@ -189,12 +189,12 @@ app.get('/', (c) => {
   </div>
 
   <!-- JavaScript -->
-  <script src="/static/modules.js?v=4"></script>
-  <script src="/static/enterprise-modules.js?v=1"></script>
-  <script src="/static/notifications.js?v=1"></script>
-  <script src="/static/document-management.js?v=1"></script>
-  <script src="/static/mobile-interface.js?v=1"></script>
-  <script src="/static/app.js?v=4"></script>
+  <script src="/static/modules.js?v=5"></script>
+  <script src="/static/enterprise-modules.js?v=2"></script>
+  <script src="/static/notifications.js?v=2"></script>
+  <script src="/static/document-management.js?v=2"></script>
+  <script src="/static/mobile-interface.js?v=2"></script>
+  <script src="/static/app.js?v=5"></script>
 </body>
 </html>`);
 });
