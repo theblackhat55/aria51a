@@ -2560,23 +2560,53 @@ function renderServicesTable(services) {
 }
 
 function getRiskColorClass(risk) {
-  switch(risk?.toLowerCase()) {
-    case 'critical': return 'bg-red-600';
-    case 'high': return 'bg-orange-500';
-    case 'medium': return 'bg-yellow-500';
-    case 'low': return 'bg-green-500';
-    default: return 'bg-gray-400';
+  // Handle both numeric risk ratings and string risk levels
+  if (typeof risk === 'number') {
+    // Convert numeric risk rating to color (0-25 scale typically)
+    if (risk >= 20) return 'bg-red-600';    // Critical
+    if (risk >= 15) return 'bg-orange-500'; // High  
+    if (risk >= 10) return 'bg-yellow-500'; // Medium
+    if (risk >= 5) return 'bg-green-500';   // Low
+    return 'bg-gray-400'; // Very low/none
   }
+  
+  // Handle string risk levels
+  if (typeof risk === 'string') {
+    switch(risk.toLowerCase()) {
+      case 'critical': return 'bg-red-600';
+      case 'high': return 'bg-orange-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-gray-400';
+    }
+  }
+  
+  return 'bg-gray-400'; // Default for null/undefined
 }
 
 function getRiskTextClass(risk) {
-  switch(risk?.toLowerCase()) {
-    case 'critical': return 'text-red-800';
-    case 'high': return 'text-orange-800';
-    case 'medium': return 'text-yellow-800';
-    case 'low': return 'text-green-800';
-    default: return 'text-gray-800';
+  // Handle both numeric risk ratings and string risk levels
+  if (typeof risk === 'number') {
+    // Convert numeric risk rating to text color (0-25 scale typically)
+    if (risk >= 20) return 'text-red-800';    // Critical
+    if (risk >= 15) return 'text-orange-800'; // High  
+    if (risk >= 10) return 'text-yellow-800'; // Medium
+    if (risk >= 5) return 'text-green-800';   // Low
+    return 'text-gray-800'; // Very low/none
   }
+  
+  // Handle string risk levels
+  if (typeof risk === 'string') {
+    switch(risk.toLowerCase()) {
+      case 'critical': return 'text-red-800';
+      case 'high': return 'text-orange-800';
+      case 'medium': return 'text-yellow-800';
+      case 'low': return 'text-green-800';
+      default: return 'text-gray-800';
+    }
+  }
+  
+  return 'text-gray-800'; // Default for null/undefined
 }
 
 function getServiceStatusClass(status) {
