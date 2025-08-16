@@ -3,8 +3,7 @@ import { Context } from 'hono';
 import { sign, verify } from 'hono/jwt';
 import { CloudflareBindings, User, AuthRequest, AuthResponse } from './types';
 
-// JWT Secret - In production, this should be from environment variables
-const JWT_SECRET = 'dmt-risk-assessment-secret-key-2024';
+// JWT Secret - Uses environment variable with fallback for development
 const TOKEN_EXPIRY = '24h';
 
 export class AuthService {
@@ -14,19 +13,23 @@ export class AuthService {
     this.db = db;
   }
 
-  // Simple password hashing (in production, use bcrypt or similar)
-  private hashPassword(password: string): string {
-    // This is a simple hash for demo purposes
-    // In production, use a proper hashing library
-    return btoa(password + 'salt');
+  // Secure password hashing using Web Crypto API
+  private async hashPassword(password: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  private verifyPassword(password: string, hash: string): boolean {
-    return this.hashPassword(password) === hash;
+  private async verifyPassword(password: string, hash: string): Promise<boolean> {
+    const hashedPassword = await this.hashPassword(password);
+    return hashedPassword === hash;
   }
 
   // Generate JWT token
-  async generateToken(user: Omit<User, 'password_hash' | 'mfa_secret'>): Promise<string> {
+  async generateToken(user: Omit<User, 'password_hash' | 'mfa_secret'>, env: any): Promise<string> {
+    const JWT_SECRET = env.JWT_SECRET || 'development-fallback-secret';
     const payload = {
       id: user.id,
       username: user.username,
@@ -40,31 +43,22 @@ export class AuthService {
       return await sign(payload, JWT_SECRET);
     } catch (error) {
       console.error('JWT signing error:', error);
-      // Fallback: create a simple token for demo purposes
-      return btoa(JSON.stringify(payload));
+      throw new Error('Failed to generate token');
     }
   }
 
   // Verify JWT token
-  async verifyToken(token: string): Promise<any> {
+  async verifyToken(token: string, env: any): Promise<any> {
+    const JWT_SECRET = env.JWT_SECRET || 'development-fallback-secret';
     try {
       return await verify(token, JWT_SECRET);
     } catch (error) {
-      // Fallback: try to decode simple token
-      try {
-        const payload = JSON.parse(atob(token));
-        if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-          throw new Error('Token expired');
-        }
-        return payload;
-      } catch (fallbackError) {
-        throw new Error('Invalid token');
-      }
+      throw new Error('Invalid or expired token');
     }
   }
 
   // Authenticate user
-  async authenticate(credentials: AuthRequest): Promise<AuthResponse> {
+  async authenticate(credentials: AuthRequest, env: any): Promise<AuthResponse> {
     const { username, password } = credentials;
 
     // Find user by username or email
@@ -81,7 +75,7 @@ export class AuthService {
     }
 
     // Verify password
-    if (!this.verifyPassword(password, user.password_hash)) {
+    if (!(await this.verifyPassword(password, user.password_hash))) {
       throw new Error('Invalid credentials');
     }
 
@@ -90,7 +84,7 @@ export class AuthService {
       'UPDATE users SET last_login = datetime("now") WHERE id = ?'
     ).bind(user.id).run();
 
-    // Generate token
+    // Generate token with environment
     const token = await this.generateToken({
       id: user.id,
       email: user.email,
@@ -106,7 +100,7 @@ export class AuthService {
       mfa_enabled: user.mfa_enabled,
       created_at: user.created_at,
       updated_at: user.updated_at
-    });
+    }, env);
 
     return {
       user: {
@@ -159,6 +153,7 @@ export async function authMiddleware(c: Context<{ Bindings: CloudflareBindings }
     let payload;
     try {
       // Try JWT verification first
+      const JWT_SECRET = c.env.JWT_SECRET || 'development-fallback-secret';
       payload = await verify(token, JWT_SECRET);
     } catch (jwtError) {
       try {

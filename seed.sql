@@ -11,11 +11,11 @@ INSERT OR IGNORE INTO organizations (id, name, description, org_type, contact_em
 
 -- Insert sample users (password: demo123)
 INSERT OR IGNORE INTO users (id, email, username, password_hash, first_name, last_name, department, job_title, role) VALUES
-(1, 'admin@dmt-corp.com', 'admin', 'ZGVtbzEyM3NhbHQ=', 'System', 'Administrator', 'IT', 'System Administrator', 'admin'),
-(2, 'avi@dmt-corp.com', 'avi_security', 'ZGVtbzEyM3NhbHQ=', 'Avi', 'Security', 'IT', 'Security Specialist', 'risk_manager'),
-(3, 'sarah.johnson@dmt-corp.com', 'sjohnson', 'ZGVtbzEyM3NhbHQ=', 'Sarah', 'Johnson', 'Finance', 'Risk Manager', 'risk_manager'),
-(4, 'mike.chen@dmt-corp.com', 'mchen', 'ZGVtbzEyM3NhbHQ=', 'Mike', 'Chen', 'Operations', 'Compliance Officer', 'compliance_officer'),
-(5, 'emma.davis@dmt-corp.com', 'edavis', 'ZGVtbzEyM3NhbHQ=', 'Emma', 'Davis', 'HR', 'Internal Auditor', 'auditor');
+(1, 'admin@dmt-corp.com', 'admin', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'System', 'Administrator', 'IT', 'System Administrator', 'admin'),
+(2, 'avi@dmt-corp.com', 'avi_security', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'Avi', 'Security', 'IT', 'Security Specialist', 'risk_manager'),
+(3, 'sarah.johnson@dmt-corp.com', 'sjohnson', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'Sarah', 'Johnson', 'Finance', 'Risk Manager', 'risk_manager'),
+(4, 'mike.chen@dmt-corp.com', 'mchen', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'Mike', 'Chen', 'Operations', 'Compliance Officer', 'compliance_officer'),
+(5, 'emma.davis@dmt-corp.com', 'edavis', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'Emma', 'Davis', 'HR', 'Internal Auditor', 'auditor');
 
 -- Insert risk categories
 INSERT OR IGNORE INTO risk_categories (id, name, description, category_type, risk_appetite) VALUES

@@ -1,23 +1,61 @@
 // DMT Risk Assessment System v2.0 - Authentication JavaScript
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   const loginForm = document.getElementById('login-form');
   const errorDiv = document.getElementById('login-error');
   
-  // Check if user is already logged in
+  // Check if user is already logged in with valid token
   const token = localStorage.getItem('dmt_token');
+  console.log('Auth.js: Checking existing token:', token ? 'Found' : 'Not found');
+  
   if (token) {
-    // Redirect to dashboard if already logged in
-    window.location.href = '/';
-    return;
+    console.log('Auth.js: Validating existing token...');
+    // Validate token before redirecting
+    try {
+      const response = await axios.get('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        console.log('Auth.js: Token valid, redirecting to dashboard');
+        // Valid token, redirect to dashboard
+        window.location.href = '/';
+        return;
+      } else {
+        console.log('Auth.js: Token invalid, clearing storage');
+        // Invalid token, clear it and continue to login form
+        localStorage.removeItem('dmt_token');
+        localStorage.removeItem('dmt_expires_at');
+        localStorage.removeItem('dmt_user');
+      }
+    } catch (error) {
+      // Token validation failed, clear it and continue to login form
+      console.log('Auth.js: Token validation failed, clearing storage:', error.message);
+      localStorage.removeItem('dmt_token');
+      localStorage.removeItem('dmt_expires_at');
+      localStorage.removeItem('dmt_user');
+    }
   }
+  
+  console.log('Auth.js: Setting up login form listeners');
 
   if (loginForm) {
     loginForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      // Client-side validation
+      if (!username || username.length < 3) {
+        showError('Username must be at least 3 characters');
+        return;
+      }
+      
+      if (!password || password.length < 6) {
+        showError('Password must be at least 6 characters');
+        return;
+      }
       
       // Clear previous errors
       errorDiv.classList.add('hidden');
@@ -35,10 +73,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (response.data.success) {
-          // Store token and user data
-          localStorage.setItem('dmt_token', response.data.data.token);
+          console.log('Auth.js: Login successful, storing token and redirecting');
+          // Store token with expiration check
+          const token = response.data.data.token;
+          const expiresAt = response.data.data.expires_at;
+          
+          localStorage.setItem('dmt_token', token);
+          localStorage.setItem('dmt_expires_at', expiresAt);
           localStorage.setItem('dmt_user', JSON.stringify(response.data.data.user));
           
+          console.log('Auth.js: Token stored, redirecting to dashboard');
           // Redirect to dashboard
           window.location.href = '/';
         } else {
@@ -62,5 +106,18 @@ document.addEventListener('DOMContentLoaded', function() {
   function showError(message) {
     errorDiv.textContent = message;
     errorDiv.classList.remove('hidden');
+    
+    // Auto-hide error after 5 seconds
+    setTimeout(() => {
+      errorDiv.classList.add('hidden');
+    }, 5000);
   }
+
+  // Add security: Clear sensitive data on logout
+  window.logout = function() {
+    localStorage.removeItem('dmt_token');
+    localStorage.removeItem('dmt_expires_at');
+    localStorage.removeItem('dmt_user');
+    window.location.href = '/login';
+  };
 });

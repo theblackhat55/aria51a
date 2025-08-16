@@ -10,13 +10,28 @@ const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 // Enable CORS for all routes
 app.use('*', cors({
-  origin: ['http://localhost:3000', 'https://*.pages.dev'],
+  origin: ['http://localhost:3000', 'https://dmt-risk-assessment.pages.dev', 'https://*.pages.dev'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400, // 24 hours
+  credentials: true,
 }));
 
 // Serve static files
 app.use('/static/*', serveStatic({ root: './public' }));
+
+// Security headers middleware
+app.use('*', async (c, next) => {
+  await next();
+  
+  // Security headers
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('X-XSS-Protection', '1; mode=block');
+  c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.groq.com");
+});
 
 // API routes
 const api = createAPI();
@@ -92,6 +107,18 @@ app.get('/', (c) => {
                     <a href="#" class="nav-menu-item" id="nav-risks">
                       <i class="fas fa-exclamation-triangle text-red-600"></i>
                       <span>Risks</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-ai-heatmap">
+                      <i class="fas fa-fire text-red-500"></i>
+                      <span>AI Heat Map</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-compliance-gaps">
+                      <i class="fas fa-shield-alt text-blue-500"></i>
+                      <span>Gap Analysis</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-executive-ai">
+                      <i class="fas fa-robot text-purple-600"></i>
+                      <span>AI Dashboard</span>
                     </a>
                     <a href="#" class="nav-menu-item" id="nav-services">
                       <i class="fas fa-cogs text-purple-600"></i>

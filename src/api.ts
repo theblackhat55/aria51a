@@ -24,10 +24,63 @@ export function createAPI() {
 
   // CORS middleware
   api.use('/api/*', cors({
-    origin: ['http://localhost:3000', 'https://*.pages.dev'],
+    origin: ['http://localhost:3000', 'https://dmt-risk-assessment.pages.dev', 'https://*.pages.dev'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400,
+    credentials: true,
   }));
+
+  // Rate limiting middleware (simple implementation)
+  const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+  
+  api.use('/api/*', async (c, next) => {
+    const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000; // 15 minutes
+    const maxRequests = 100;
+
+    if (!rateLimitMap.has(clientIP)) {
+      rateLimitMap.set(clientIP, { count: 1, resetTime: now + windowMs });
+    } else {
+      const limit = rateLimitMap.get(clientIP)!;
+      if (now > limit.resetTime) {
+        limit.count = 1;
+        limit.resetTime = now + windowMs;
+      } else {
+        limit.count++;
+      }
+
+      if (limit.count > maxRequests) {
+        return c.json({ success: false, error: 'Rate limit exceeded' }, 429);
+      }
+    }
+
+    await next();
+  });
+
+  // Input validation helper
+  function validateInput(schema: any, data: any): { valid: boolean; errors?: string[] } {
+    const errors: string[] = [];
+    
+    for (const [key, rules] of Object.entries(schema)) {
+      const value = data[key];
+      
+      if (rules.required && (!value || value.toString().trim() === '')) {
+        errors.push(`${key} is required`);
+      }
+      
+      if (value && rules.type === 'email' && !SecurityUtils.validateEmail(value)) {
+        errors.push(`${key} must be a valid email address`);
+      }
+      
+      if (value && rules.minLength && value.toString().length < rules.minLength) {
+        errors.push(`${key} must be at least ${rules.minLength} characters long`);
+      }
+    }
+    
+    return { valid: errors.length === 0, errors };
+  }
 
   // Health check endpoint
   api.get('/api/health', (c) => {
@@ -46,15 +99,28 @@ export function createAPI() {
     try {
       const { username, password } = await c.req.json();
       
-      if (!username || !password) {
+      // Input validation
+      const validation = validateInput({
+        username: { required: true, minLength: 3 },
+        password: { required: true, minLength: 6 }
+      }, { username, password });
+
+      if (!validation.valid) {
         return c.json<ApiResponse<null>>({ 
           success: false, 
-          error: 'Username and password are required' 
+          error: validation.errors?.join(', ') || 'Invalid input' 
         }, 400);
       }
 
+      // Additional sanitization
+      const sanitizedUsername = SecurityUtils.sanitizeInput(username);
+      const sanitizedPassword = SecurityUtils.sanitizeInput(password);
+
       const authService = new AuthService(c.env.DB);
-      const result = await authService.authenticate({ username, password });
+      const result = await authService.authenticate({ 
+        username: sanitizedUsername, 
+        password: sanitizedPassword 
+      }, c.env);
       
       return c.json<ApiResponse<typeof result>>({ 
         success: true, 
@@ -3796,6 +3862,463 @@ export function createAPI() {
       }, 500);
     }
   });
+
+  // =============================================================================
+  // TIER 1 AI-POWERED RISK INTELLIGENCE ENDPOINTS
+  // =============================================================================
+
+  // AI Risk Analysis Endpoint
+  api.post('/api/risks/:id/ai-analysis', authMiddleware, async (c) => {
+    try {
+      const riskId = parseInt(c.req.param('id'));
+      const db = c.env.DB;
+
+      // Get the risk data
+      const risk = await db.prepare('SELECT * FROM risks WHERE id = ?').bind(riskId).first<Risk>();
+      if (!risk) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Risk not found' 
+        }, 404);
+      }
+
+      // Import and use AI Risk Intelligence
+      const { AIRiskIntelligence } = await import('./ai-risk-intelligence');
+      const aiRisk = new AIRiskIntelligence(c.env);
+      
+      const analysis = await aiRisk.calculateAIRiskScore(risk);
+      
+      return c.json<ApiResponse<typeof analysis>>({ 
+        success: true, 
+        data: analysis,
+        message: 'AI risk analysis completed successfully'
+      });
+    } catch (error) {
+      console.error('AI risk analysis error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to perform AI risk analysis' 
+      }, 500);
+    }
+  });
+
+  // Bulk AI Analysis for All Active Risks
+  api.post('/api/risks/bulk-ai-analysis', authMiddleware, requireRole(['admin', 'risk_manager']), async (c) => {
+    try {
+      const db = c.env.DB;
+      const { AIRiskIntelligence } = await import('./ai-risk-intelligence');
+      const aiRisk = new AIRiskIntelligence(c.env);
+
+      // Get all active risks
+      const risks = await db.prepare('SELECT * FROM risks WHERE status = ?').bind('active').all<Risk>();
+      
+      const results = [];
+      let processed = 0;
+      let failed = 0;
+
+      for (const risk of risks.results) {
+        try {
+          const analysis = await aiRisk.calculateAIRiskScore(risk);
+          results.push({
+            risk_id: risk.id,
+            title: risk.title,
+            analysis: analysis,
+            status: 'success'
+          });
+          processed++;
+        } catch (error) {
+          results.push({
+            risk_id: risk.id,
+            title: risk.title,
+            error: error instanceof Error ? error.message : 'Analysis failed',
+            status: 'failed'
+          });
+          failed++;
+        }
+      }
+
+      return c.json<ApiResponse<typeof results>>({ 
+        success: true, 
+        data: results,
+        message: `Bulk AI analysis completed: ${processed} successful, ${failed} failed`
+      });
+    } catch (error) {
+      console.error('Bulk AI analysis error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to perform bulk AI analysis' 
+      }, 500);
+    }
+  });
+
+  // Risk Heat Map Data Endpoint
+  api.get('/api/analytics/risk-heat-map', authMiddleware, async (c) => {
+    try {
+      const { AIRiskIntelligence } = await import('./ai-risk-intelligence');
+      const aiRisk = new AIRiskIntelligence(c.env);
+      
+      const heatMapData = await aiRisk.generateRiskHeatMapData();
+      
+      // Calculate heat map statistics
+      const stats = {
+        total_risks: heatMapData.length,
+        high_risk_count: heatMapData.filter(r => r.heat_intensity > 0.7).length,
+        medium_risk_count: heatMapData.filter(r => r.heat_intensity > 0.4 && r.heat_intensity <= 0.7).length,
+        low_risk_count: heatMapData.filter(r => r.heat_intensity <= 0.4).length,
+        average_intensity: heatMapData.reduce((sum, r) => sum + r.heat_intensity, 0) / Math.max(heatMapData.length, 1),
+        trending_up: heatMapData.filter(r => r.trend === 'increasing').length,
+        trending_down: heatMapData.filter(r => r.trend === 'decreasing').length
+      };
+
+      return c.json<ApiResponse<{heat_map: typeof heatMapData, statistics: typeof stats}>>({ 
+        success: true, 
+        data: {
+          heat_map: heatMapData,
+          statistics: stats
+        },
+        message: 'Risk heat map data generated successfully'
+      });
+    } catch (error) {
+      console.error('Risk heat map error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to generate risk heat map' 
+      }, 500);
+    }
+  });
+
+  // Risk Trend Analysis Endpoint
+  api.get('/api/analytics/risk-trends', authMiddleware, async (c) => {
+    try {
+      const db = c.env.DB;
+      
+      // Get risk trend analysis data
+      const trendData = await db.prepare(`
+        SELECT 
+          rta.*,
+          r.title,
+          r.risk_id,
+          rc.name as category_name
+        FROM risk_trend_analysis rta
+        LEFT JOIN risks r ON rta.risk_id = r.id
+        LEFT JOIN risk_categories rc ON r.category_id = rc.id
+        WHERE rta.analysis_date >= DATE('now', '-30 days')
+        ORDER BY rta.analysis_date DESC, rta.velocity DESC
+      `).all();
+
+      // Calculate trend statistics
+      const trendStats = {
+        total_analyzed: trendData.results.length,
+        increasing_trends: trendData.results.filter((t: any) => t.trend_direction === 'increasing').length,
+        decreasing_trends: trendData.results.filter((t: any) => t.trend_direction === 'decreasing').length,
+        stable_trends: trendData.results.filter((t: any) => t.trend_direction === 'stable').length,
+        high_velocity_risks: trendData.results.filter((t: any) => t.velocity > 0.5).length
+      };
+
+      return c.json<ApiResponse<{trends: typeof trendData.results, statistics: typeof trendStats}>>({ 
+        success: true, 
+        data: {
+          trends: trendData.results,
+          statistics: trendStats
+        },
+        message: 'Risk trend analysis data retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Risk trends error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to retrieve risk trends' 
+      }, 500);
+    }
+  });
+
+  // Compliance Gap Analysis Endpoint
+  api.post('/api/compliance/gap-analysis/:framework', authMiddleware, async (c) => {
+    try {
+      const framework = c.req.param('framework');
+      const { AIRiskIntelligence } = await import('./ai-risk-intelligence');
+      const aiRisk = new AIRiskIntelligence(c.env);
+      
+      const gapAnalysis = await aiRisk.generateComplianceGapAnalysis(framework);
+      
+      return c.json<ApiResponse<typeof gapAnalysis>>({ 
+        success: true, 
+        data: gapAnalysis,
+        message: `Compliance gap analysis completed for ${framework}`
+      });
+    } catch (error) {
+      console.error('Compliance gap analysis error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to perform compliance gap analysis'
+      }, 500);
+    }
+  });
+
+  // Get All Framework Gap Analyses
+  api.get('/api/compliance/gap-analyses', authMiddleware, async (c) => {
+    try {
+      const db = c.env.DB;
+      
+      const analyses = await db.prepare(`
+        SELECT 
+          cga.*,
+          u.first_name,
+          u.last_name
+        FROM compliance_gap_analysis cga
+        LEFT JOIN users u ON cga.created_by = u.id
+        ORDER BY cga.analysis_date DESC
+        LIMIT 50
+      `).all();
+
+      // Calculate summary statistics
+      const summaryStats = {
+        total_analyses: analyses.results.length,
+        frameworks_analyzed: new Set((analyses.results as any[]).map(a => a.framework)).size,
+        average_compliance_score: analyses.results.length > 0 
+          ? Math.round((analyses.results as any[]).reduce((sum, a) => sum + a.overall_compliance_score, 0) / analyses.results.length)
+          : 0,
+        critical_frameworks: (analyses.results as any[]).filter(a => a.gap_severity === 'critical').length
+      };
+
+      return c.json<ApiResponse<{analyses: typeof analyses.results, summary: typeof summaryStats}>>({ 
+        success: true, 
+        data: {
+          analyses: analyses.results,
+          summary: summaryStats
+        },
+        message: 'Compliance gap analyses retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Get gap analyses error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to retrieve compliance gap analyses' 
+      }, 500);
+    }
+  });
+
+  // AI Risk Predictions Endpoint
+  api.get('/api/analytics/risk-predictions', authMiddleware, async (c) => {
+    try {
+      const db = c.env.DB;
+      
+      const predictions = await db.prepare(`
+        SELECT 
+          arp.*,
+          r.title,
+          r.risk_id,
+          rc.name as category_name
+        FROM ai_risk_predictions arp
+        LEFT JOIN risks r ON arp.risk_id = r.id
+        LEFT JOIN risk_categories rc ON r.category_id = rc.id
+        WHERE arp.prediction_date >= DATE('now')
+        ORDER BY arp.confidence_level DESC, arp.predicted_value DESC
+        LIMIT 50
+      `).all();
+
+      // Generate prediction insights
+      const insights = {
+        total_predictions: predictions.results.length,
+        high_confidence_predictions: (predictions.results as any[]).filter(p => p.confidence_level > 0.8).length,
+        escalation_predictions: (predictions.results as any[]).filter(p => p.predicted_value > p.current_value).length,
+        average_confidence: predictions.results.length > 0 
+          ? Math.round((predictions.results as any[]).reduce((sum, p) => sum + p.confidence_level, 0) / predictions.results.length * 100) / 100
+          : 0
+      };
+
+      return c.json<ApiResponse<{predictions: typeof predictions.results, insights: typeof insights}>>({ 
+        success: true, 
+        data: {
+          predictions: predictions.results,
+          insights
+        },
+        message: 'AI risk predictions retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Risk predictions error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to retrieve risk predictions' 
+      }, 500);
+    }
+  });
+
+  // Threat Intelligence Endpoint
+  api.get('/api/threat-intelligence', authMiddleware, async (c) => {
+    try {
+      const db = c.env.DB;
+      const category = c.req.query('category');
+      const threatLevel = c.req.query('threat_level');
+      
+      let query = 'SELECT * FROM threat_intelligence';
+      const params: any[] = [];
+      const conditions: string[] = [];
+
+      if (category) {
+        conditions.push('category LIKE ?');
+        params.push(`%${category}%`);
+      }
+
+      if (threatLevel) {
+        conditions.push('threat_level >= ?');
+        params.push(parseFloat(threatLevel));
+      }
+
+      if (conditions.length > 0) {
+        query += ` WHERE ${conditions.join(' AND ')}`;
+      }
+
+      query += ' ORDER BY threat_level DESC, published_date DESC LIMIT 100';
+
+      const threatData = await db.prepare(query).bind(...params).all();
+
+      // Calculate threat statistics
+      const stats = {
+        total_threats: threatData.results.length,
+        high_threat_level: (threatData.results as any[]).filter(t => t.threat_level > 0.7).length,
+        categories: [...new Set((threatData.results as any[]).map(t => t.category))],
+        latest_threats: (threatData.results as any[]).filter(t => 
+          new Date(t.published_date) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        ).length
+      };
+
+      return c.json<ApiResponse<{threats: typeof threatData.results, statistics: typeof stats}>>({ 
+        success: true, 
+        data: {
+          threats: threatData.results,
+          statistics: stats
+        },
+        message: 'Threat intelligence data retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Threat intelligence error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to retrieve threat intelligence' 
+      }, 500);
+    }
+  });
+
+  // Executive AI Analytics Dashboard
+  api.get('/api/analytics/executive-ai-dashboard', authMiddleware, requireRole(['admin', 'executive']), async (c) => {
+    try {
+      const db = c.env.DB;
+      
+      // Get comprehensive AI analytics
+      const [riskMetrics, complianceMetrics, threatMetrics, trendMetrics] = await Promise.all([
+        // Risk metrics with AI scores
+        db.prepare(`
+          SELECT 
+            COUNT(*) as total_risks,
+            AVG(COALESCE(ai_risk_score, risk_score)) as avg_ai_score,
+            COUNT(CASE WHEN COALESCE(ai_risk_score, risk_score) > 15 THEN 1 END) as high_ai_risks,
+            COUNT(CASE WHEN risk_trend = 'increasing' THEN 1 END) as escalating_risks,
+            AVG(confidence_level) as avg_confidence
+          FROM risks 
+          WHERE status = 'active'
+        `).first(),
+        
+        // Compliance metrics
+        db.prepare(`
+          SELECT 
+            AVG(overall_compliance_score) as avg_compliance_score,
+            COUNT(CASE WHEN gap_severity = 'critical' THEN 1 END) as critical_gaps,
+            COUNT(DISTINCT framework) as frameworks_monitored
+          FROM compliance_gap_analysis 
+          WHERE analysis_date >= DATE('now', '-30 days')
+        `).first(),
+        
+        // Threat intelligence metrics
+        db.prepare(`
+          SELECT 
+            COUNT(*) as total_threats,
+            AVG(threat_level) as avg_threat_level,
+            COUNT(CASE WHEN threat_level > 0.7 THEN 1 END) as high_threats
+          FROM threat_intelligence
+        `).first(),
+        
+        // Trend analysis
+        db.prepare(`
+          SELECT 
+            COUNT(CASE WHEN trend_direction = 'increasing' THEN 1 END) as increasing_trends,
+            COUNT(CASE WHEN trend_direction = 'decreasing' THEN 1 END) as decreasing_trends,
+            AVG(velocity) as avg_velocity
+          FROM risk_trend_analysis 
+          WHERE analysis_date >= DATE('now', '-7 days')
+        `).first()
+      ]);
+
+      const executiveDashboard = {
+        ai_powered_insights: {
+          total_risks_analyzed: riskMetrics?.total_risks || 0,
+          average_ai_risk_score: Math.round((riskMetrics?.avg_ai_score || 0) * 100) / 100,
+          high_priority_ai_risks: riskMetrics?.high_ai_risks || 0,
+          escalating_risks: riskMetrics?.escalating_risks || 0,
+          ai_confidence_level: Math.round((riskMetrics?.avg_confidence || 0) * 100) / 100
+        },
+        compliance_intelligence: {
+          average_compliance_score: Math.round((complianceMetrics?.avg_compliance_score || 0) * 100) / 100,
+          critical_compliance_gaps: complianceMetrics?.critical_gaps || 0,
+          frameworks_monitored: complianceMetrics?.frameworks_monitored || 0
+        },
+        threat_landscape: {
+          total_threats_monitored: threatMetrics?.total_threats || 0,
+          average_threat_level: Math.round((threatMetrics?.avg_threat_level || 0) * 100) / 100,
+          high_severity_threats: threatMetrics?.high_threats || 0
+        },
+        predictive_analytics: {
+          risks_trending_up: trendMetrics?.increasing_trends || 0,
+          risks_trending_down: trendMetrics?.decreasing_trends || 0,
+          average_risk_velocity: Math.round((trendMetrics?.avg_velocity || 0) * 1000) / 1000
+        },
+        recommendations: generateExecutiveRecommendations(riskMetrics, complianceMetrics, threatMetrics)
+      };
+
+      return c.json<ApiResponse<typeof executiveDashboard>>({ 
+        success: true, 
+        data: executiveDashboard,
+        message: 'Executive AI analytics dashboard generated successfully'
+      });
+    } catch (error) {
+      console.error('Executive AI dashboard error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to generate executive AI dashboard' 
+      }, 500);
+    }
+  });
+
+  // Helper function for executive recommendations
+  function generateExecutiveRecommendations(riskMetrics: any, complianceMetrics: any, threatMetrics: any): string[] {
+    const recommendations = [];
+    
+    if (riskMetrics?.high_ai_risks > 5) {
+      recommendations.push('High number of AI-identified critical risks require immediate executive attention');
+    }
+    
+    if (riskMetrics?.escalating_risks > 3) {
+      recommendations.push('Multiple risks are trending upward - consider increasing risk management resources');
+    }
+    
+    if (complianceMetrics?.avg_compliance_score < 70) {
+      recommendations.push('Overall compliance score below acceptable threshold - implement compliance improvement program');
+    }
+    
+    if (complianceMetrics?.critical_gaps > 0) {
+      recommendations.push('Critical compliance gaps identified - immediate remediation required');
+    }
+    
+    if (threatMetrics?.high_threats > 10) {
+      recommendations.push('High threat environment detected - enhance security monitoring and controls');
+    }
+    
+    if (recommendations.length === 0) {
+      recommendations.push('Risk posture is stable - continue monitoring and maintain current controls');
+    }
+    
+    return recommendations;
+  }
 
   return api;
 }

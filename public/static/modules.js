@@ -5848,7 +5848,19 @@ function createModal(title, content) {
 }
 
 function closeModal(button) {
-  const modal = button.closest('.fixed');
+  let modal;
+  
+  if (button && button.closest) {
+    // If button is provided, find the modal using it
+    modal = button.closest('.fixed') || button.closest('.modal-overlay') || button.closest('[class*="modal"]');
+  } else {
+    // Fallback: find any open modal
+    modal = document.querySelector('.modal-overlay') || 
+            document.querySelector('#universal-modal') || 
+            document.querySelector('.fixed[class*="modal"]') ||
+            document.querySelector('[class*="modal-overlay"]');
+  }
+  
   if (modal) {
     modal.remove();
   }
@@ -6434,6 +6446,772 @@ function getControlViewHTML(control) {
     </div>
   `;
 }
+// =============================================================================
+// TIER 1 AI-POWERED RISK INTELLIGENCE FEATURES
+// =============================================================================
+
+// AI Risk Heat Map Visualization
+async function showAIRiskHeatMap() {
+  try {
+    showToast('Loading AI-powered risk heat map...', 'info');
+    
+    const response = await fetch('/api/analytics/risk-heat-map', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load heat map data');
+    }
+
+    const result = await response.json();
+    const { heat_map, statistics } = result.data;
+
+    const content = `
+      <div class="ai-heat-map-container">
+        <!-- Heat Map Header -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                <i class="fas fa-fire text-red-500 mr-3"></i>
+                AI-Powered Risk Heat Map
+              </h2>
+              <p class="text-gray-600 mt-1">Real-time risk visualization with AI intelligence</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="refreshHeatMap()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+              </button>
+              <button onclick="exportHeatMapData()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                <i class="fas fa-download mr-2"></i>Export
+              </button>
+            </div>
+          </div>
+
+          <!-- Statistics Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div class="text-red-800 text-2xl font-bold">${statistics.high_risk_count}</div>
+              <div class="text-red-600 text-sm">High Risk</div>
+            </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div class="text-yellow-800 text-2xl font-bold">${statistics.medium_risk_count}</div>
+              <div class="text-yellow-600 text-sm">Medium Risk</div>
+            </div>
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div class="text-green-800 text-2xl font-bold">${statistics.low_risk_count}</div>
+              <div class="text-green-600 text-sm">Low Risk</div>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div class="text-blue-800 text-2xl font-bold">${statistics.total_risks}</div>
+              <div class="text-blue-600 text-sm">Total Risks</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Heat Map Visualization -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Risk Probability vs Impact Matrix</h3>
+            <p class="text-sm text-gray-600">Bubble size indicates risk score, color indicates AI-assessed threat level</p>
+          </div>
+          
+          <div class="relative">
+            <canvas id="heatMapCanvas" width="800" height="600" class="border border-gray-200 rounded-lg"></canvas>
+          </div>
+
+          <!-- Legend -->
+          <div class="mt-4 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="text-sm text-gray-600">Risk Level:</div>
+              <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-red-500 rounded-full"></div>
+                <span class="text-sm">Critical</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-orange-500 rounded-full"></div>
+                <span class="text-sm">High</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                <span class="text-sm">Medium</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                <span class="text-sm">Low</span>
+              </div>
+            </div>
+            <div class="text-sm text-gray-500">
+              Impact (1-5) →
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Details Table -->
+        <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Risk Details</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Score</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Heat Intensity</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                ${heat_map.map(risk => `
+                  <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                      <div class="text-sm font-medium text-gray-900">${escapeHtml(risk.title)}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        ${escapeHtml(risk.category)}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center">
+                        <div class="text-sm font-medium text-gray-900">${risk.ai_risk_score || risk.risk_score}</div>
+                        <div class="ml-2 w-16 bg-gray-200 rounded-full h-2">
+                          <div class="bg-${risk.heat_intensity > 0.7 ? 'red' : risk.heat_intensity > 0.4 ? 'yellow' : 'green'}-600 h-2 rounded-full" style="width: ${Math.max(risk.heat_intensity * 100, 10)}%"></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        risk.trend === 'increasing' ? 'bg-red-100 text-red-800' :
+                        risk.trend === 'decreasing' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }">
+                        <i class="fas fa-${risk.trend === 'increasing' ? 'arrow-up' : risk.trend === 'decreasing' ? 'arrow-down' : 'minus'} mr-1"></i>
+                        ${risk.trend}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="text-sm text-gray-900">${(risk.heat_intensity * 100).toFixed(1)}%</div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <button onclick="runAIAnalysis(${risk.risk_id})" class="text-blue-600 hover:text-blue-900 text-sm font-medium">
+                        <i class="fas fa-robot mr-1"></i>AI Analysis
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('dashboard-content').innerHTML = content;
+    
+    // Render the heat map visualization
+    setTimeout(() => renderHeatMapCanvas(heat_map), 100);
+    
+    showToast('AI Risk Heat Map loaded successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error loading AI heat map:', error);
+    showToast('Failed to load AI heat map', 'error');
+  }
+}
+
+// Render Heat Map Canvas
+function renderHeatMapCanvas(heatMapData) {
+  const canvas = document.getElementById('heatMapCanvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, width, height);
+  
+  // Draw grid
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.lineWidth = 1;
+  
+  // Vertical lines (Impact)
+  for (let i = 1; i <= 5; i++) {
+    const x = (i / 5) * (width - 100) + 50;
+    ctx.beginPath();
+    ctx.moveTo(x, 50);
+    ctx.lineTo(x, height - 50);
+    ctx.stroke();
+  }
+  
+  // Horizontal lines (Probability)
+  for (let i = 1; i <= 5; i++) {
+    const y = height - ((i / 5) * (height - 100) + 50);
+    ctx.beginPath();
+    ctx.moveTo(50, y);
+    ctx.lineTo(width - 50, y);
+    ctx.stroke();
+  }
+  
+  // Draw labels
+  ctx.fillStyle = '#6b7280';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  
+  // Impact labels (bottom)
+  for (let i = 1; i <= 5; i++) {
+    const x = (i / 5) * (width - 100) + 50;
+    ctx.fillText(i.toString(), x, height - 25);
+  }
+  
+  // Probability labels (left)
+  ctx.textAlign = 'right';
+  for (let i = 1; i <= 5; i++) {
+    const y = height - ((i / 5) * (height - 100) + 50) + 4;
+    ctx.fillText(i.toString(), 35, y);
+  }
+  
+  // Axis labels
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('Impact →', width / 2, height - 5);
+  
+  ctx.save();
+  ctx.translate(15, height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('← Probability', 0, 0);
+  ctx.restore();
+  
+  // Draw risk bubbles
+  heatMapData.forEach(risk => {
+    const x = (risk.impact / 5) * (width - 100) + 50;
+    const y = height - ((risk.probability / 5) * (height - 100) + 50);
+    const size = Math.max(risk.risk_score * 2, 5);
+    
+    // Draw bubble
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, 2 * Math.PI);
+    ctx.fillStyle = risk.color + '80'; // Add transparency
+    ctx.fill();
+    ctx.strokeStyle = risk.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Add risk ID label
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(risk.risk_id.toString(), x, y + 3);
+  });
+}
+
+// AI Risk Analysis Modal
+async function runAIAnalysis(riskId) {
+  try {
+    showToast('Running AI analysis...', 'info');
+    
+    const response = await fetch(`/api/risks/${riskId}/ai-analysis`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to run AI analysis');
+    }
+
+    const result = await response.json();
+    const analysis = result.data;
+
+    showModal('AI Risk Analysis Results', `
+      <div class="ai-analysis-results">
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <div class="text-blue-800 text-2xl font-bold">${analysis.ai_risk_score}</div>
+            <div class="text-blue-600 text-sm">AI Risk Score</div>
+          </div>
+          <div class="bg-green-50 p-4 rounded-lg">
+            <div class="text-green-800 text-2xl font-bold">${(analysis.confidence_level * 100).toFixed(1)}%</div>
+            <div class="text-green-600 text-sm">Confidence Level</div>
+          </div>
+          <div class="bg-yellow-50 p-4 rounded-lg">
+            <div class="text-yellow-800 text-lg font-bold capitalize">${analysis.risk_trend}</div>
+            <div class="text-yellow-600 text-sm">Risk Trend</div>
+          </div>
+          <div class="bg-purple-50 p-4 rounded-lg">
+            <div class="text-purple-800 text-lg font-bold">${(analysis.external_threat_level * 100).toFixed(1)}%</div>
+            <div class="text-purple-600 text-sm">External Threat Level</div>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <h4 class="font-semibold text-gray-900 mb-3">Contributing Factors</h4>
+          <ul class="space-y-2">
+            ${analysis.contributing_factors.map(factor => `
+              <li class="flex items-start">
+                <i class="fas fa-chevron-right text-blue-500 text-xs mt-1.5 mr-2"></i>
+                <span class="text-sm text-gray-700">${escapeHtml(factor)}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <div class="mb-6">
+          <h4 class="font-semibold text-gray-900 mb-3">AI Recommendations</h4>
+          <ul class="space-y-2">
+            ${analysis.recommendations.map(rec => `
+              <li class="flex items-start">
+                <i class="fas fa-lightbulb text-yellow-500 text-xs mt-1.5 mr-2"></i>
+                <span class="text-sm text-gray-700">${escapeHtml(rec)}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span class="font-medium text-gray-600">Threat Multiplier:</span>
+            <span class="text-gray-900">${analysis.threat_multiplier}</span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-600">Industry Factor:</span>
+            <span class="text-gray-900">${analysis.industry_factor}</span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-600">Risk Velocity:</span>
+            <span class="text-gray-900">${analysis.risk_velocity}</span>
+          </div>
+        </div>
+
+        ${analysis.predicted_impact_date ? `
+          <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+              <span class="text-red-800 font-medium">Predicted Escalation Date: ${analysis.predicted_impact_date}</span>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `);
+    
+    showToast('AI analysis completed successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error running AI analysis:', error);
+    showToast('Failed to run AI analysis', 'error');
+  }
+}
+
+// Compliance Gap Analysis
+async function showComplianceGapAnalysis() {
+  try {
+    showToast('Loading compliance frameworks...', 'info');
+    
+    const frameworks = ['ISO27001', 'GDPR', 'NIST', 'SOX', 'COBIT'];
+    
+    const content = `
+      <div class="compliance-gap-analysis">
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-shield-alt text-blue-500 mr-3"></i>
+            AI-Powered Compliance Gap Analysis
+          </h2>
+          <p class="text-gray-600 mt-1">Automated gap identification and remediation recommendations</p>
+        </div>
+
+        <!-- Framework Selection -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Select Framework for Analysis</h3>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            ${frameworks.map(framework => `
+              <button onclick="runComplianceGapAnalysis('${framework}')" 
+                      class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors duration-200 group">
+                <div class="text-center">
+                  <i class="fas fa-clipboard-check text-2xl text-gray-400 group-hover:text-blue-500 mb-2"></i>
+                  <div class="font-medium text-gray-900">${framework}</div>
+                  <div class="text-xs text-gray-500 mt-1">Click to analyze</div>
+                </div>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="gap-analysis-results" class="hidden">
+          <!-- Results will be loaded here -->
+        </div>
+      </div>
+    `;
+
+    document.getElementById('dashboard-content').innerHTML = content;
+    showToast('Compliance gap analysis ready', 'success');
+    
+  } catch (error) {
+    console.error('Error loading compliance gap analysis:', error);
+    showToast('Failed to load compliance gap analysis', 'error');
+  }
+}
+
+// Run Compliance Gap Analysis
+async function runComplianceGapAnalysis(framework) {
+  try {
+    showToast(`Running gap analysis for ${framework}...`, 'info');
+    
+    const response = await fetch(`/api/compliance/gap-analysis/${framework}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to analyze ${framework}`);
+    }
+
+    const result = await response.json();
+    const analysis = result.data;
+
+    const resultsContainer = document.getElementById('gap-analysis-results');
+    resultsContainer.className = 'mt-6';
+    resultsContainer.innerHTML = `
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-semibold text-gray-900">${framework} Gap Analysis Results</h3>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+            analysis.gap_severity === 'critical' ? 'bg-red-100 text-red-800' :
+            analysis.gap_severity === 'high' ? 'bg-orange-100 text-orange-800' :
+            analysis.gap_severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+            'bg-green-100 text-green-800'
+          }">
+            ${analysis.gap_severity.toUpperCase()}
+          </span>
+        </div>
+
+        <!-- Summary Metrics -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-blue-50 p-4 rounded-lg text-center">
+            <div class="text-blue-800 text-2xl font-bold">${analysis.overall_compliance_score}%</div>
+            <div class="text-blue-600 text-sm">Overall Score</div>
+          </div>
+          <div class="bg-green-50 p-4 rounded-lg text-center">
+            <div class="text-green-800 text-2xl font-bold">${analysis.compliant_requirements}</div>
+            <div class="text-green-600 text-sm">Compliant</div>
+          </div>
+          <div class="bg-red-50 p-4 rounded-lg text-center">
+            <div class="text-red-800 text-2xl font-bold">${analysis.non_compliant_requirements}</div>
+            <div class="text-red-600 text-sm">Non-Compliant</div>
+          </div>
+          <div class="bg-yellow-50 p-4 rounded-lg text-center">
+            <div class="text-yellow-800 text-2xl font-bold">${analysis.partially_compliant_requirements}</div>
+            <div class="text-yellow-600 text-sm">Partial</div>
+          </div>
+        </div>
+
+        <!-- Compliance Progress Bar -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">Compliance Progress</span>
+            <span class="text-sm text-gray-500">${analysis.overall_compliance_score}%</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-3">
+            <div class="h-3 rounded-full ${
+              analysis.overall_compliance_score >= 80 ? 'bg-green-600' :
+              analysis.overall_compliance_score >= 60 ? 'bg-yellow-600' :
+              'bg-red-600'
+            }" style="width: ${analysis.overall_compliance_score}%"></div>
+          </div>
+        </div>
+
+        <!-- AI Recommendations -->
+        ${analysis.recommendations.length > 0 ? `
+          <div class="mb-6">
+            <h4 class="font-semibold text-gray-900 mb-3">AI Recommendations</h4>
+            <ul class="space-y-2">
+              ${analysis.recommendations.map(rec => `
+                <li class="flex items-start">
+                  <i class="fas fa-robot text-blue-500 text-sm mt-1 mr-2"></i>
+                  <span class="text-sm text-gray-700">${escapeHtml(rec)}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        <!-- Identified Gaps -->
+        ${analysis.gaps_identified.length > 0 ? `
+          <div class="mb-6">
+            <h4 class="font-semibold text-gray-900 mb-3">Identified Gaps (${analysis.gaps_identified.length})</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Requirement</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Gap Type</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Risk Level</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Priority</th>
+                    <th class="px-4 py-2 text-left font-medium text-gray-500">Effort</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                  ${analysis.gaps_identified.slice(0, 10).map(gap => `
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-4 py-2">
+                        <div class="font-medium text-gray-900">${escapeHtml(gap.requirement_id)}</div>
+                        <div class="text-xs text-gray-500">${escapeHtml(gap.requirement_text.substring(0, 100))}...</div>
+                      </td>
+                      <td class="px-4 py-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          ${gap.gap_type}
+                        </span>
+                      </td>
+                      <td class="px-4 py-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          gap.risk_level === 'critical' ? 'bg-red-100 text-red-800' :
+                          gap.risk_level === 'high' ? 'bg-orange-100 text-orange-800' :
+                          gap.risk_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }">
+                          ${gap.risk_level}
+                        </span>
+                      </td>
+                      <td class="px-4 py-2">
+                        <div class="text-gray-900 font-medium">${gap.priority_score}</div>
+                      </td>
+                      <td class="px-4 py-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          gap.estimated_effort === 'high' ? 'bg-red-100 text-red-800' :
+                          gap.estimated_effort === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }">
+                          ${gap.estimated_effort}
+                        </span>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Next Assessment -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-gray-900">Next Assessment Due</div>
+              <div class="text-sm text-gray-600">${analysis.next_assessment_date}</div>
+            </div>
+            <button onclick="scheduleAssessment('${framework}')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+              <i class="fas fa-calendar-plus mr-2"></i>Schedule
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    showToast(`${framework} gap analysis completed`, 'success');
+    
+  } catch (error) {
+    console.error('Error running compliance gap analysis:', error);
+    showToast(`Failed to analyze ${framework}`, 'error');
+  }
+}
+
+// Executive AI Dashboard
+async function showExecutiveAIDashboard() {
+  try {
+    showToast('Loading executive AI dashboard...', 'info');
+    
+    const response = await fetch('/api/analytics/executive-ai-dashboard', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load executive dashboard');
+    }
+
+    const result = await response.json();
+    const dashboard = result.data;
+
+    const content = `
+      <div class="executive-ai-dashboard">
+        <div class="mb-6">
+          <h2 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-chart-line text-blue-500 mr-3"></i>
+            Executive AI Analytics Dashboard
+          </h2>
+          <p class="text-gray-600 mt-1">AI-powered insights for strategic risk management</p>
+        </div>
+
+        <!-- AI-Powered Insights -->
+        <div class="mb-8">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">AI-Powered Risk Intelligence</h3>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="text-blue-600 text-3xl font-bold">${dashboard.ai_powered_insights.total_risks_analyzed}</div>
+              <div class="text-gray-600 text-sm mt-1">Total Risks Analyzed</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="text-green-600 text-3xl font-bold">${dashboard.ai_powered_insights.average_ai_risk_score}</div>
+              <div class="text-gray-600 text-sm mt-1">Average AI Score</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="text-red-600 text-3xl font-bold">${dashboard.ai_powered_insights.high_priority_ai_risks}</div>
+              <div class="text-gray-600 text-sm mt-1">High Priority Risks</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="text-orange-600 text-3xl font-bold">${dashboard.ai_powered_insights.escalating_risks}</div>
+              <div class="text-gray-600 text-sm mt-1">Escalating Risks</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="text-purple-600 text-3xl font-bold">${(dashboard.ai_powered_insights.ai_confidence_level * 100).toFixed(1)}%</div>
+              <div class="text-gray-600 text-sm mt-1">AI Confidence</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compliance Intelligence -->
+        <div class="mb-8">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Compliance Intelligence</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-semibold text-gray-900">Overall Compliance</h4>
+                <i class="fas fa-shield-check text-blue-500"></i>
+              </div>
+              <div class="text-4xl font-bold mb-2 ${
+                dashboard.compliance_intelligence.average_compliance_score >= 80 ? 'text-green-600' :
+                dashboard.compliance_intelligence.average_compliance_score >= 60 ? 'text-yellow-600' :
+                'text-red-600'
+              }">${dashboard.compliance_intelligence.average_compliance_score}%</div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full ${
+                  dashboard.compliance_intelligence.average_compliance_score >= 80 ? 'bg-green-600' :
+                  dashboard.compliance_intelligence.average_compliance_score >= 60 ? 'bg-yellow-600' :
+                  'bg-red-600'
+                }" style="width: ${dashboard.compliance_intelligence.average_compliance_score}%"></div>
+              </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-semibold text-gray-900">Critical Gaps</h4>
+                <i class="fas fa-exclamation-triangle text-red-500"></i>
+              </div>
+              <div class="text-4xl font-bold text-red-600 mb-2">${dashboard.compliance_intelligence.critical_compliance_gaps}</div>
+              <div class="text-gray-600 text-sm">Require immediate attention</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-semibold text-gray-900">Frameworks</h4>
+                <i class="fas fa-list-check text-green-500"></i>
+              </div>
+              <div class="text-4xl font-bold text-blue-600 mb-2">${dashboard.compliance_intelligence.frameworks_monitored}</div>
+              <div class="text-gray-600 text-sm">Currently monitored</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Threat Landscape -->
+        <div class="mb-8">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Threat Intelligence</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600 mb-2">${dashboard.threat_landscape.total_threats_monitored}</div>
+                <div class="text-gray-600 text-sm">Total Threats Monitored</div>
+              </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="text-center">
+                <div class="text-3xl font-bold text-yellow-600 mb-2">${(dashboard.threat_landscape.average_threat_level * 100).toFixed(1)}%</div>
+                <div class="text-gray-600 text-sm">Average Threat Level</div>
+              </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              <div class="text-center">
+                <div class="text-3xl font-bold text-red-600 mb-2">${dashboard.threat_landscape.high_severity_threats}</div>
+                <div class="text-gray-600 text-sm">High Severity Threats</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Predictive Analytics -->
+        <div class="mb-8">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Predictive Analytics</h3>
+          <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-red-600 mb-2 flex items-center justify-center">
+                  <i class="fas fa-arrow-up mr-2"></i>
+                  ${dashboard.predictive_analytics.risks_trending_up}
+                </div>
+                <div class="text-gray-600 text-sm">Risks Trending Up</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-600 mb-2 flex items-center justify-center">
+                  <i class="fas fa-arrow-down mr-2"></i>
+                  ${dashboard.predictive_analytics.risks_trending_down}
+                </div>
+                <div class="text-gray-600 text-sm">Risks Trending Down</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600 mb-2">${dashboard.predictive_analytics.average_risk_velocity}</div>
+                <div class="text-gray-600 text-sm">Average Risk Velocity</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Recommendations -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <i class="fas fa-robot text-blue-500 mr-2"></i>
+            AI Strategic Recommendations
+          </h3>
+          <ul class="space-y-3">
+            ${dashboard.recommendations.map(rec => `
+              <li class="flex items-start">
+                <i class="fas fa-lightbulb text-yellow-500 text-sm mt-1.5 mr-3"></i>
+                <span class="text-gray-700">${escapeHtml(rec)}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('dashboard-content').innerHTML = content;
+    showToast('Executive AI dashboard loaded successfully', 'success');
+    
+  } catch (error) {
+    console.error('Error loading executive AI dashboard:', error);
+    showToast('Failed to load executive AI dashboard', 'error');
+  }
+}
+
+// Helper functions
+function refreshHeatMap() {
+  showAIRiskHeatMap();
+}
+
+function exportHeatMapData() {
+  showToast('Heat map export feature coming soon', 'info');
+}
+
+function scheduleAssessment(framework) {
+  showToast(`Assessment scheduling for ${framework} coming soon`, 'info');
+}
+
 // Make functions globally accessible
 window.showRisks = showRisks;
 window.showControls = showControls;
@@ -6442,6 +7220,16 @@ window.showIncidents = showIncidents;
 window.showUsers = showUsers;
 window.loadUsers = loadUsers;
 window.renderUsersTable = renderUsersTable;
+
+// Make AI functions globally accessible
+window.showAIRiskHeatMap = showAIRiskHeatMap;
+window.runAIAnalysis = runAIAnalysis;
+window.showComplianceGapAnalysis = showComplianceGapAnalysis;
+window.runComplianceGapAnalysis = runComplianceGapAnalysis;
+window.showExecutiveAIDashboard = showExecutiveAIDashboard;
+window.refreshHeatMap = refreshHeatMap;
+window.exportHeatMapData = exportHeatMapData;
+window.scheduleAssessment = scheduleAssessment;
 
 // Import functions
 window.showImportRisksModal = showImportRisksModal;

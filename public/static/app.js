@@ -253,7 +253,9 @@ async function initializeNavigation() {
   const navLinks = [
     { id: 'nav-dashboard', page: 'dashboard' },
     { id: 'nav-risks', page: 'risks' },
-
+    { id: 'nav-ai-heatmap', page: 'ai-heatmap' },
+    { id: 'nav-compliance-gaps', page: 'compliance-gaps' },
+    { id: 'nav-executive-ai', page: 'executive-ai' },
     { id: 'nav-compliance', page: 'compliance' },
     { id: 'nav-frameworks', page: 'frameworks' },
     { id: 'nav-incidents', page: 'incidents' },
@@ -543,6 +545,27 @@ function navigateTo(page) {
           showSettings();
         } else {
           showPlaceholder('Settings', 'Settings module loading...', 'cog');
+        }
+        break;
+      case 'ai-heatmap':
+        if (typeof showAIRiskHeatMap === 'function') {
+          showAIRiskHeatMap();
+        } else {
+          showPlaceholder('AI Risk Heat Map', 'AI Heat Map module loading...', 'fire');
+        }
+        break;
+      case 'compliance-gaps':
+        if (typeof showComplianceGapAnalysis === 'function') {
+          showComplianceGapAnalysis();
+        } else {
+          showPlaceholder('Compliance Gap Analysis', 'Gap Analysis module loading...', 'shield-alt');
+        }
+        break;
+      case 'executive-ai':
+        if (typeof showExecutiveAIDashboard === 'function') {
+          showExecutiveAIDashboard();
+        } else {
+          showPlaceholder('Executive AI Dashboard', 'AI Dashboard module loading...', 'robot');
         }
         break;
       default:

@@ -329,6 +329,80 @@ export function createEnterpriseAPI() {
     }
   });
 
+  // Create Service API
+  api.post('/api/services', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user');
+      const serviceData = await c.req.json();
+      
+      // Generate unique service ID
+      const serviceId = `SVC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Validate service_type (must be one of the allowed values)
+      const validServiceTypes = ['infrastructure', 'application', 'database', 'network', 'business_process'];
+      const serviceType = serviceData.service_type && validServiceTypes.includes(serviceData.service_type) 
+        ? serviceData.service_type 
+        : 'application';
+
+      // Validate criticality (must be one of the allowed values)
+      const validCriticalities = ['critical', 'high', 'medium', 'low'];
+      const criticality = serviceData.criticality && validCriticalities.includes(serviceData.criticality)
+        ? serviceData.criticality
+        : 'medium';
+
+      console.log('Create service data:', {
+        serviceId,
+        name: serviceData.name,
+        description: serviceData.description || '',
+        service_type: serviceType,
+        criticality: criticality,
+        organization_id: serviceData.organization_id || 1,
+        service_owner_id: serviceData.service_owner_id || user.id,
+        business_owner_id: serviceData.business_owner_id || user.id
+      });
+
+      // Insert new service (matching actual table structure)
+      const result = await c.env.DB.prepare(`
+        INSERT INTO services (
+          service_id, name, description, service_type, criticality,
+          organization_id, service_owner_id, business_owner_id, 
+          status, risk_rating, availability_requirement, 
+          recovery_time_objective, recovery_point_objective,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).bind(
+        serviceId,
+        serviceData.name,
+        serviceData.description || '',
+        serviceType, // Fixed: using validated serviceType
+        criticality, // Fixed: using criticality instead of criticality_level
+        serviceData.organization_id || 1,
+        serviceData.service_owner_id || user.id,
+        serviceData.business_owner_id || user.id,
+        'active',
+        0.0, // Default risk rating
+        parseFloat(serviceData.availability_requirement) || 99.0,
+        parseInt(serviceData.recovery_time_objective) || 4,
+        parseInt(serviceData.recovery_point_objective) || 1
+      ).run();
+
+      // Get the created service
+      const service = await c.env.DB.prepare('SELECT * FROM services WHERE id = ?').bind(result.meta.last_row_id).first();
+
+      return c.json<ApiResponse<any>>({
+        success: true,
+        data: service,
+        message: 'Service created successfully'
+      }, 201);
+    } catch (error) {
+      console.error('Create service error:', error);
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Failed to create service'
+      }, 500);
+    }
+  });
+
   // Microsoft Defender Integration APIs
   api.get('/api/microsoft/incidents', authMiddleware, async (c) => {
     try {
