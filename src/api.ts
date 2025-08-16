@@ -3314,46 +3314,9 @@ export function createAPI() {
 
   // === AI-POWERED RISK INSIGHTS & LLM INTEGRATION ===
 
-  // Enhanced ARIA Assistant with Multiple LLM Providers
-  api.post('/api/aria/query', authMiddleware, async (c) => {
-    try {
-      const user = c.get('user') as User;
-      const { query, provider, model } = await c.req.json();
-      
-      if (!query) {
-        return c.json<ApiResponse<null>>({ 
-          success: false, 
-          error: 'Query is required' 
-        }, 400);
-      }
-
-      // Get user context for better responses
-      const userContext = await getUserContext(user.id, c.env.DB);
-      
-      // Generate response using selected LLM provider
-      const aiResponse = await generateAIResponse(query, userContext, provider || 'openai', model);
-      
-      // Store conversation history
-      await storeConversation(user.id, query, aiResponse, provider || 'openai', c.env.DB);
-
-      return c.json<ApiResponse<any>>({ 
-        success: true, 
-        data: {
-          response: aiResponse.content,
-          provider: aiResponse.provider,
-          model: aiResponse.model,
-          tokens_used: aiResponse.tokensUsed,
-          response_time: aiResponse.responseTime
-        }
-      });
-    } catch (error) {
-      console.error('ARIA query error:', error);
-      return c.json<ApiResponse<null>>({ 
-        success: false, 
-        error: 'Failed to process query' 
-      }, 500);
-    }
-  });
+  // NOTE: ARIA routes are mounted from src/api/aria.ts at /api/aria/*
+  // The legacy inline handler for POST /api/aria/query has been removed to avoid duplication.
+  // See createARIAAPI() for the authoritative implementation.
 
   // Get AI Risk Insights
   api.get('/api/ai/insights', authMiddleware, async (c) => {

@@ -1303,6 +1303,284 @@ function closeAddAssetModal() {
   }
 }
 
+// User Management - Add User Modal
+function showAddUserModal() {
+  const modalHTML = `
+    <div id="add-user-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display:block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <!-- Modal Header -->
+          <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">Add New User</h3>
+            <button onclick="closeAddUserModal()" class="text-gray-400 hover:text-gray-600" aria-label="Close add user form">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <form id="add-user-form" class="mt-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                <input type="text" name="first_name" class="form-input" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                <input type="text" name="last_name" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                <input type="email" name="email" class="form-input" placeholder="user@example.com" required>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                <input type="text" name="username" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                <select name="role" class="form-select" required>
+                  <option value="">Select role</option>
+                  <option value="admin">Admin</option>
+                  <option value="risk_manager">Risk Manager</option>
+                  <option value="risk_analyst">Risk Analyst</option>
+                  <option value="service_owner">Service Owner</option>
+                  <option value="auditor">Auditor</option>
+                  <option value="integration_operator">Integration Operator</option>
+                  <option value="readonly">Read Only</option>
+                  <option value="compliance_officer">Compliance Officer</option>
+                  <option value="incident_manager">Incident Manager</option>
+                  <option value="user">User</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Auth Provider</label>
+                <select name="auth_provider" class="form-select">
+                  <option value="local" selected>Local</option>
+                  <option value="saml">SAML</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                <input type="text" name="department" class="form-input" placeholder="e.g., IT Security">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
+                <input type="text" name="job_title" class="form-input" placeholder="e.g., Security Specialist">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input type="text" name="phone" class="form-input" placeholder="+1 555-1234">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                <div class="flex space-x-2">
+                  <input type="text" id="new-user-password" name="password" class="form-input flex-1" minlength="8" required>
+                  <button type="button" id="generate-password-btn" class="btn-secondary whitespace-nowrap"><i class="fas fa-magic mr-2"></i>Generate</button>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">Minimum 8 characters. Use Generate for a strong password.</div>
+              </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end space-x-3 pt-6 border-t">
+              <button type="button" onclick="closeAddUserModal()" class="btn-secondary">
+                <i class="fas fa-times mr-2"></i>Cancel
+              </button>
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-user-plus mr-2"></i>Create User
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  setupAddUserFormHandlers();
+  attachModalCommonHandlers('add-user-modal', closeAddUserModal);
+}
+
+function attachModalCommonHandlers(modalId, closeFn) {
+  const overlay = document.getElementById(modalId);
+  if (!overlay) return;
+  const clickHandler = (e) => { if (e.target.id === modalId) closeFn(); };
+  const keyHandler = (e) => { if (e.key === 'Escape') closeFn(); };
+  overlay.addEventListener('click', clickHandler);
+  document.addEventListener('keydown', keyHandler);
+  // store handlers to remove later
+  overlay._escKeyHandler = keyHandler;
+  overlay._clickHandler = clickHandler;
+}
+
+function closeAddUserModal() {
+  const modal = document.getElementById('add-user-modal');
+  if (modal) {
+    if (modal._escKeyHandler) document.removeEventListener('keydown', modal._escKeyHandler);
+    if (modal._clickHandler) modal.removeEventListener('click', modal._clickHandler);
+    modal.remove();
+  }
+}
+
+function setupAddUserFormHandlers() {
+  const form = document.getElementById('add-user-form');
+  const genBtn = document.getElementById('generate-password-btn');
+  const pwdInput = document.getElementById('new-user-password');
+  if (!form) return;
+
+  if (genBtn && pwdInput) {
+    genBtn.addEventListener('click', async () => {
+      try {
+        const token = localStorage.getItem('dmt_token');
+        const resp = await axios.get('/api/generate-password', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (resp.data.success && resp.data.data?.password) {
+          pwdInput.value = resp.data.data.password;
+          showToast('Generated a strong password', 'success');
+        } else {
+          // fallback client-side
+          pwdInput.value = generateClientPassword();
+        }
+      } catch (_) {
+        pwdInput.value = generateClientPassword();
+      }
+    });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const userData = {
+      first_name: fd.get('first_name')?.toString().trim(),
+      last_name: fd.get('last_name')?.toString().trim(),
+      email: fd.get('email')?.toString().trim(),
+      username: fd.get('username')?.toString().trim(),
+      role: fd.get('role')?.toString(),
+      auth_provider: fd.get('auth_provider')?.toString() || 'local',
+      department: fd.get('department')?.toString() || null,
+      job_title: fd.get('job_title')?.toString() || null,
+      phone: fd.get('phone')?.toString() || null,
+      password: fd.get('password')?.toString()
+    };
+
+    if (!userData.first_name || !userData.last_name || !userData.email || !userData.username || !userData.role || !userData.password) {
+      showToast('Please fill in all required fields', 'error');
+      return;
+    }
+    if (userData.password.length < 8) {
+      showToast('Password must be at least 8 characters', 'error');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('dmt_token');
+      const resp = await axios.post('/api/users', userData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (resp.data.success) {
+        showToast('User created successfully', 'success');
+        closeAddUserModal();
+        // refresh users table if on settings users tab
+        if (typeof loadUsersForSettings === 'function') {
+          await loadUsersForSettings();
+        }
+      } else {
+        showToast(resp.data.error || 'Failed to create user', 'error');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to create user';
+      showToast(msg, 'error');
+    }
+  });
+}
+
+function generateClientPassword() {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+{}[]';
+  let pwd = '';
+  for (let i = 0; i < 16; i++) {
+    pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pwd;
+}
+
+// Placeholder: Organizations modal (to avoid undefined onclick)
+function showAddOrganizationModal() {
+  const html = `
+    <div id="add-organization-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display:block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+          <h3 class="text-lg font-medium text-gray-900">Add Organization</h3>
+          <button onclick="closeAddOrganizationModal()" class="text-gray-400 hover:text-gray-600" aria-label="Close add organization form">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-4 text-sm text-gray-700">
+          This form is coming soon. Please use API or seed data for now.
+        </div>
+        <div class="flex justify-end space-x-3 pt-4 border-t">
+          <button type="button" onclick="closeAddOrganizationModal()" class="btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+  attachModalCommonHandlers('add-organization-modal', closeAddOrganizationModal);
+}
+function closeAddOrganizationModal() {
+  const modal = document.getElementById('add-organization-modal');
+  if (modal) {
+    if (modal._escKeyHandler) document.removeEventListener('keydown', modal._escKeyHandler);
+    if (modal._clickHandler) modal.removeEventListener('click', modal._clickHandler);
+    modal.remove();
+  }
+}
+
+// Placeholder: Risk Owners modal (to avoid undefined onclick)
+function showAddRiskOwnerModal() {
+  const html = `
+    <div id="add-risk-owner-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display:block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="flex justify-between items-center pb-4 border-b">
+          <h3 class="text-lg font-medium text-gray-900">Add Risk Owner</h3>
+          <button onclick="closeAddRiskOwnerModal()" class="text-gray-400 hover:text-gray-600" aria-label="Close add risk owner form">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        <div class="p-4 text-sm text-gray-700">
+          This form is coming soon. Please use Users to create a user and assign as risk owner.
+        </div>
+        <div class="flex justify-end space-x-3 pt-4 border-t">
+          <button type="button" onclick="closeAddRiskOwnerModal()" class="btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', html);
+  attachModalCommonHandlers('add-risk-owner-modal', closeAddRiskOwnerModal);
+}
+function closeAddRiskOwnerModal() {
+  const modal = document.getElementById('add-risk-owner-modal');
+  if (modal) {
+    if (modal._escKeyHandler) document.removeEventListener('keydown', modal._escKeyHandler);
+    if (modal._clickHandler) modal.removeEventListener('click', modal._clickHandler);
+    modal.remove();
+  }
+}
+
+
 function updateRiskScoreDisplay(value) {
   const display = document.getElementById('risk-score-display');
   if (display) {
