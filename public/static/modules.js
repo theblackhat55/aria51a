@@ -6457,7 +6457,7 @@ async function showAIRiskHeatMap() {
     
     const response = await fetch('/api/analytics/risk-heat-map', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${localStorage.getItem('dmt_token')}`
       }
     });
 
@@ -6612,7 +6612,14 @@ async function showAIRiskHeatMap() {
       </div>
     `;
 
-    document.getElementById('dashboard-content').innerHTML = content;
+    const contentElement = document.getElementById('dashboard-content') || document.getElementById('main-content');
+    if (contentElement) {
+      contentElement.innerHTML = content;
+    } else {
+      console.error('No content container found for AI heat map');
+      showToast('Content container not found', 'error');
+      return;
+    }
     
     // Render the heat map visualization
     setTimeout(() => renderHeatMapCanvas(heat_map), 100);
@@ -6719,7 +6726,7 @@ async function runAIAnalysis(riskId) {
     const response = await fetch(`/api/risks/${riskId}/ai-analysis`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${localStorage.getItem('dmt_token')}`
       }
     });
 
@@ -6850,8 +6857,15 @@ async function showComplianceGapAnalysis() {
       </div>
     `;
 
-    document.getElementById('dashboard-content').innerHTML = content;
-    showToast('Compliance gap analysis ready', 'success');
+    const contentElement = document.getElementById('dashboard-content') || document.getElementById('main-content');
+    if (contentElement) {
+      contentElement.innerHTML = content;
+      showToast('Compliance gap analysis ready', 'success');
+    } else {
+      console.error('No content container found for compliance gap analysis');
+      showToast('Content container not found', 'error');
+      return;
+    }
     
   } catch (error) {
     console.error('Error loading compliance gap analysis:', error);
@@ -6867,7 +6881,7 @@ async function runComplianceGapAnalysis(framework) {
     const response = await fetch(`/api/compliance/gap-analysis/${framework}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${localStorage.getItem('dmt_token')}`
       }
     });
 
@@ -7031,7 +7045,7 @@ async function showExecutiveAIDashboard() {
     
     const response = await fetch('/api/analytics/executive-ai-dashboard', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${localStorage.getItem('dmt_token')}`
       }
     });
 
@@ -7190,8 +7204,15 @@ async function showExecutiveAIDashboard() {
       </div>
     `;
 
-    document.getElementById('dashboard-content').innerHTML = content;
-    showToast('Executive AI dashboard loaded successfully', 'success');
+    const contentElement = document.getElementById('dashboard-content') || document.getElementById('main-content');
+    if (contentElement) {
+      contentElement.innerHTML = content;
+      showToast('Executive AI dashboard loaded successfully', 'success');
+    } else {
+      console.error('No content container found for executive AI dashboard');
+      showToast('Content container not found', 'error');
+      return;
+    }
     
   } catch (error) {
     console.error('Error loading executive AI dashboard:', error);
