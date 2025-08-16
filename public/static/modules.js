@@ -6450,6 +6450,17 @@ function getControlViewHTML(control) {
 // TIER 1 AI-POWERED RISK INTELLIGENCE FEATURES
 // =============================================================================
 
+// HTML escaping utility function
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') return unsafe;
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // AI Risk Heat Map Visualization
 async function showAIRiskHeatMap() {
   try {
