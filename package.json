@@ -1,7 +1,7 @@
 {
   "name": "dmt-risk-assessment",
-  "version": "2.0.0",
-  "description": "DMT Risk Assessment System v2.0 - Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics",
+  "version": "2.0.1",
+  "description": "DMT Risk Assessment System v2.0.1 - Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics (Bug Fix Release)",
   "type": "module",
   "scripts": {
     "dev": "vite",
