@@ -2577,6 +2577,7 @@ async function showAISettings() {
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
               <input type="password" id="openai-api-key" placeholder="sk-..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.openai?.apiKey || ''}">
+              <p class="text-xs text-gray-500 mt-1">Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" class="text-blue-600 hover:underline">OpenAI Platform</a>. Click "Refresh Models" after entering a valid key.</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
@@ -2623,6 +2624,7 @@ async function showAISettings() {
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
               <input type="password" id="gemini-api-key" placeholder="AIza..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.gemini?.apiKey || ''}">
+              <p class="text-xs text-gray-500 mt-1">Get your API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">Google AI Studio</a>. Click "Refresh Models" after entering a valid key.</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
@@ -2668,6 +2670,7 @@ async function showAISettings() {
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
               <input type="password" id="anthropic-api-key" placeholder="sk-ant-..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="${aiSettings.anthropic?.apiKey || ''}">
+              <p class="text-xs text-gray-500 mt-1">Get your API key from <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-blue-600 hover:underline">Anthropic Console</a>. Click "Refresh Models" after entering a valid key.</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
@@ -4276,7 +4279,20 @@ async function fetchOpenAIModels() {
     }
   } catch (error) {
     console.error('❌ Error fetching OpenAI models:', error);
-    showToast('Failed to fetch OpenAI models: ' + error.message, 'error');
+    
+    // Provide more specific error guidance
+    let errorMessage = 'Failed to fetch OpenAI models';
+    if (error.message && error.message.includes('401')) {
+      errorMessage = 'Invalid OpenAI API key. Please check your API key and try again.';
+    } else if (error.message && error.message.includes('403')) {
+      errorMessage = 'OpenAI API key lacks permission. Please check your API key permissions.';
+    } else if (error.message && error.message.includes('Network Error')) {
+      errorMessage = 'Network error. Please check your internet connection and try again.';
+    } else if (error.message) {
+      errorMessage = 'Error: ' + error.message;
+    }
+    
+    showToast(errorMessage, 'error');
   } finally {
     button.innerHTML = originalIcon;
     button.disabled = false;
@@ -4316,7 +4332,20 @@ async function fetchGeminiModels() {
     }
   } catch (error) {
     console.error('❌ Error fetching Gemini models:', error);
-    showToast('Failed to fetch Gemini models: ' + error.message, 'error');
+    
+    // Provide more specific error guidance for Gemini
+    let errorMessage = 'Failed to fetch Gemini models';
+    if (error.message && error.message.includes('401')) {
+      errorMessage = 'Invalid Gemini API key. Please check your API key and try again.';
+    } else if (error.message && error.message.includes('403')) {
+      errorMessage = 'Gemini API key lacks permission. Please check your API key permissions.';
+    } else if (error.message && error.message.includes('Network Error')) {
+      errorMessage = 'Network error. Please check your internet connection and try again.';
+    } else if (error.message) {
+      errorMessage = 'Error: ' + error.message;
+    }
+    
+    showToast(errorMessage, 'error');
   } finally {
     button.innerHTML = originalIcon;
     button.disabled = false;
@@ -4356,7 +4385,20 @@ async function fetchAnthropicModels() {
     }
   } catch (error) {
     console.error('❌ Error fetching Anthropic models:', error);
-    showToast('Failed to fetch Anthropic models: ' + error.message, 'error');
+    
+    // Provide more specific error guidance for Anthropic
+    let errorMessage = 'Failed to fetch Anthropic models';
+    if (error.message && error.message.includes('401')) {
+      errorMessage = 'Invalid Anthropic API key. Please check your API key and try again.';
+    } else if (error.message && error.message.includes('403')) {
+      errorMessage = 'Anthropic API key lacks permission. Please check your API key permissions.';
+    } else if (error.message && error.message.includes('Network Error')) {
+      errorMessage = 'Network error. Please check your internet connection and try again.';
+    } else if (error.message) {
+      errorMessage = 'Error: ' + error.message;
+    }
+    
+    showToast(errorMessage, 'error');
   } finally {
     button.innerHTML = originalIcon;
     button.disabled = false;
