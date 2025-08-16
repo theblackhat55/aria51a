@@ -64,6 +64,12 @@
 - **GitHub Repository**: https://github.com/theblackhat55/GRC
 - **Project Backup**: https://page.gensparksite.com/project_backups/tooluse_QUKE4t7UQPuBq6WOH-JkKw.tar.gz
 
+## 🔧 Latest Updates (v2.0.1)
+- **Status**: ✅ All critical bugs fixed and deployed
+- **Last Updated**: August 16, 2025
+- **Bug Fixes**: Services API creation, AI dashboard navigation, modal close functionality
+- **Test Credentials**: admin / demo123
+
 ## 🗄️ Data Architecture
 
 ### Core Data Models
