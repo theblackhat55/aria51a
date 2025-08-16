@@ -416,11 +416,23 @@ export function createAPI() {
           updated_at = datetime('now')
         WHERE id = ?
       `).bind(
-        riskData.title, riskData.description, riskData.category_id,
-        riskData.organization_id, riskData.owner_id, riskData.status,
-        riskData.probability, riskData.impact, riskScore, riskData.root_cause,
-        riskData.potential_impact, riskData.treatment_strategy, riskData.mitigation_plan,
-        riskData.next_review_date, riskData.related_services, riskData.service_impact_factor, id
+        riskData.title ?? null, 
+        riskData.description ?? null, 
+        riskData.category_id ?? null,
+        riskData.organization_id ?? null, 
+        riskData.owner_id ?? null, 
+        riskData.status ?? null,
+        riskData.probability ?? null, 
+        riskData.impact ?? null, 
+        riskScore ?? null, 
+        riskData.root_cause ?? null,
+        riskData.potential_impact ?? null, 
+        riskData.treatment_strategy ?? null, 
+        riskData.mitigation_plan ?? null,
+        riskData.next_review_date ?? null, 
+        riskData.related_services ?? null, 
+        riskData.service_impact_factor ?? null, 
+        id
       ).run();
 
       if (result.changes === 0) {

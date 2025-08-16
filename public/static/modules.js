@@ -2623,7 +2623,7 @@ function updateServicesStatistics(services) {
   const critical = services.filter(s => s.risk_rating === 'Critical').length;
   const high = services.filter(s => s.risk_rating === 'High').length;
   const active = services.filter(s => s.status === 'Active').length;
-  const totalAssets = services.reduce((sum, s) => sum + (s.linked_assets || 0), 0);
+  const totalAssets = services.reduce((sum, s) => sum + (s.asset_count || 0), 0);
   
   document.getElementById('total-services-count').textContent = total;
   document.getElementById('critical-services-count').textContent = critical;
