@@ -2744,6 +2744,7 @@ async function saveService() {
       showToast('Service added successfully', 'success');
       closeUniversalModal();
       loadServicesData();
+      refreshDashboardData(); // Refresh dashboard data
     }
   } catch (error) {
     showToast('Failed to add service', 'error');
@@ -2762,6 +2763,7 @@ async function deleteService(id) {
     if (response.data.success) {
       showToast('Service deleted successfully', 'success');
       loadServicesData();
+      refreshDashboardData(); // Refresh dashboard data
     }
   } catch (error) {
     showToast('Failed to delete service', 'error');
@@ -2778,6 +2780,7 @@ async function calculateServiceRisk(id) {
     if (response.data.success) {
       showToast('Service risk recalculated successfully', 'success');
       loadServicesData();
+      refreshDashboardData(); // Refresh dashboard data
     }
   } catch (error) {
     showToast('Failed to calculate service risk', 'error');
@@ -2796,19 +2799,289 @@ async function importServicesFromAssets() {
     if (response.data.success) {
       showToast(`${response.data.data.imported} services imported successfully`, 'success');
       loadServicesData();
+      refreshDashboardData(); // Refresh dashboard data
     }
   } catch (error) {
     showToast('Failed to import services from assets', 'error');
   }
 }
 
-// Stub functions for advanced operations
-function viewService(id) {
-  showToast('View service functionality coming soon', 'info');
+// Service management functions
+async function viewService(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/services/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      const service = response.data.data;
+      showServiceViewModal(service);
+    } else {
+      showToast('Failed to load service details', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading service:', error);
+    showToast('Failed to load service details', 'error');
+  }
 }
 
-function editService(id) {
-  showToast('Edit service functionality coming soon', 'info');
+async function editService(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.get(`/api/services/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      const service = response.data.data;
+      showServiceEditModal(service);
+    } else {
+      showToast('Failed to load service for editing', 'error');
+    }
+  } catch (error) {
+    console.error('Error loading service for edit:', error);
+    showToast('Failed to load service for editing', 'error');
+  }
+}
+
+function showServiceViewModal(service) {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-900">Service Details</h2>
+        <button onclick="closeModal(this)" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Service ID</label>
+          <p class="mt-1 text-sm text-gray-900">${escapeHtml(service.service_id)}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Name</label>
+          <p class="mt-1 text-sm text-gray-900">${escapeHtml(service.name)}</p>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Description</label>
+          <p class="mt-1 text-sm text-gray-900">${escapeHtml(service.description || 'No description provided')}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Service Type</label>
+          <p class="mt-1 text-sm text-gray-900">${escapeHtml(service.service_type)}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Criticality</label>
+          <p class="mt-1 text-sm text-gray-900">${escapeHtml(service.criticality)}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Status</label>
+          <p class="mt-1 text-sm text-gray-900">${escapeHtml(service.status)}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Risk Rating</label>
+          <p class="mt-1 text-sm text-gray-900">${service.risk_rating || 'Not assessed'}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Availability Requirement</label>
+          <p class="mt-1 text-sm text-gray-900">${service.availability_requirement || 'Not specified'}%</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Recovery Time Objective</label>
+          <p class="mt-1 text-sm text-gray-900">${service.recovery_time_objective || 'Not specified'} minutes</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Recovery Point Objective</label>
+          <p class="mt-1 text-sm text-gray-900">${service.recovery_point_objective || 'Not specified'} minutes</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Created</label>
+          <p class="mt-1 text-sm text-gray-900">${new Date(service.created_at).toLocaleDateString()}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Last Updated</label>
+          <p class="mt-1 text-sm text-gray-900">${new Date(service.updated_at).toLocaleDateString()}</p>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex justify-end space-x-3">
+        <button onclick="editService(${service.id})" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+          <i class="fas fa-edit mr-2"></i>Edit Service
+        </button>
+        <button onclick="closeModal(this)" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+          Close
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+function showServiceEditModal(service) {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-900">Edit Service</h2>
+        <button onclick="closeModal(this)" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form id="edit-service-form" onsubmit="updateService(event, ${service.id})">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Name *</label>
+            <input type="text" name="name" value="${escapeHtml(service.name)}" required 
+                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea name="description" rows="3" 
+                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">${escapeHtml(service.description || '')}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Service Type *</label>
+            <select name="service_type" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <option value="infrastructure" ${service.service_type === 'infrastructure' ? 'selected' : ''}>Infrastructure</option>
+              <option value="application" ${service.service_type === 'application' ? 'selected' : ''}>Application</option>
+              <option value="database" ${service.service_type === 'database' ? 'selected' : ''}>Database</option>
+              <option value="network" ${service.service_type === 'network' ? 'selected' : ''}>Network</option>
+              <option value="business_process" ${service.service_type === 'business_process' ? 'selected' : ''}>Business Process</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Criticality *</label>
+            <select name="criticality" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              <option value="critical" ${service.criticality === 'critical' ? 'selected' : ''}>Critical</option>
+              <option value="high" ${service.criticality === 'high' ? 'selected' : ''}>High</option>
+              <option value="medium" ${service.criticality === 'medium' ? 'selected' : ''}>Medium</option>
+              <option value="low" ${service.criticality === 'low' ? 'selected' : ''}>Low</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Availability Requirement (%)</label>
+            <input type="number" name="availability_requirement" value="${service.availability_requirement || 99}" 
+                   min="0" max="100" step="0.1" 
+                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Recovery Time Objective (minutes)</label>
+            <input type="number" name="recovery_time_objective" value="${service.recovery_time_objective || ''}" 
+                   min="0" 
+                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Recovery Point Objective (minutes)</label>
+            <input type="number" name="recovery_point_objective" value="${service.recovery_point_objective || ''}" 
+                   min="0" 
+                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+          </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end space-x-3">
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <i class="fas fa-save mr-2"></i>Update Service
+          </button>
+          <button type="button" onclick="closeModal(this)" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+async function updateService(event, serviceId) {
+  event.preventDefault();
+  
+  try {
+    const formData = new FormData(event.target);
+    const serviceData = {
+      name: formData.get('name'),
+      description: formData.get('description'),
+      service_type: formData.get('service_type'),
+      criticality: formData.get('criticality'),
+      availability_requirement: parseFloat(formData.get('availability_requirement')),
+      recovery_time_objective: formData.get('recovery_time_objective') ? parseInt(formData.get('recovery_time_objective')) : null,
+      recovery_point_objective: formData.get('recovery_point_objective') ? parseInt(formData.get('recovery_point_objective')) : null
+    };
+    
+    const token = localStorage.getItem('dmt_token');
+    const response = await axios.put(`/api/services/${serviceId}`, serviceData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('Service updated successfully', 'success');
+      closeModal(event.target.closest('.fixed'));
+      loadServicesData(); // Refresh services list
+      refreshDashboardData(); // Refresh dashboard data
+    } else {
+      showToast('Failed to update service', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating service:', error);
+    showToast('Failed to update service', 'error');
+  }
+}
+
+// Dashboard refresh function to update statistics after service changes
+async function refreshDashboardData() {
+  try {
+    // Check if we're on the dashboard page or if dashboard elements exist
+    const dashboardElements = document.querySelector('#dashboard-content, #main-content');
+    if (!dashboardElements) return;
+    
+    // Check if user is authenticated
+    const token = localStorage.getItem('dmt_token');
+    if (!token) return;
+    
+    // If on dashboard page, reload dashboard data
+    if (currentModule === 'dashboard' || window.location.pathname === '/') {
+      console.log('Refreshing dashboard data after service changes...');
+      
+      // Reload dashboard data
+      const response = await axios.get('/api/dashboard', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        const data = response.data.data;
+        
+        // Update service statistics
+        const servicesCountElement = document.querySelector('#services-count');
+        if (servicesCountElement && data.services_count !== undefined) {
+          servicesCountElement.textContent = data.services_count;
+        }
+        
+        // Update any other dashboard statistics that include services
+        const totalAssetsElement = document.querySelector('#total-assets');
+        if (totalAssetsElement && data.total_assets !== undefined) {
+          totalAssetsElement.textContent = data.total_assets;
+        }
+        
+        // Update risk metrics if they include service data
+        const highRiskElement = document.querySelector('#high-risk-items');
+        if (highRiskElement && data.high_risk_items !== undefined) {
+          highRiskElement.textContent = data.high_risk_items;
+        }
+        
+        console.log('Dashboard data refreshed successfully');
+      }
+    }
+  } catch (error) {
+    console.error('Error refreshing dashboard data:', error);
+    // Don't show error toast for dashboard refresh failures as it's a background operation
+  }
 }
 
 async function exportServices() {

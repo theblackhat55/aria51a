@@ -403,6 +403,98 @@ export function createEnterpriseAPI() {
     }
   });
 
+  // Get Individual Service API
+  api.get('/api/services/:id', authMiddleware, async (c) => {
+    try {
+      const id = c.req.param('id');
+      
+      const service = await c.env.DB.prepare('SELECT * FROM services WHERE id = ?').bind(id).first();
+      
+      if (!service) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'Service not found'
+        }, 404);
+      }
+      
+      return c.json<ApiResponse<any>>({
+        success: true,
+        data: service
+      });
+    } catch (error) {
+      console.error('Get service error:', error);
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Failed to fetch service'
+      }, 500);
+    }
+  });
+
+  // Update Service API
+  api.put('/api/services/:id', authMiddleware, async (c) => {
+    try {
+      const id = c.req.param('id');
+      const serviceData = await c.req.json();
+      
+      // Validate service_type and criticality
+      const validServiceTypes = ['infrastructure', 'application', 'database', 'network', 'business_process'];
+      const validCriticalities = ['critical', 'high', 'medium', 'low'];
+      
+      const serviceType = serviceData.service_type && validServiceTypes.includes(serviceData.service_type) 
+        ? serviceData.service_type 
+        : 'application';
+
+      const criticality = serviceData.criticality && validCriticalities.includes(serviceData.criticality)
+        ? serviceData.criticality
+        : 'medium';
+
+      // Update service
+      const result = await c.env.DB.prepare(`
+        UPDATE services SET 
+          name = ?, 
+          description = ?, 
+          service_type = ?, 
+          criticality = ?,
+          availability_requirement = ?,
+          recovery_time_objective = ?,
+          recovery_point_objective = ?,
+          updated_at = datetime('now')
+        WHERE id = ?
+      `).bind(
+        serviceData.name,
+        serviceData.description || '',
+        serviceType,
+        criticality,
+        parseFloat(serviceData.availability_requirement) || 99.0,
+        serviceData.recovery_time_objective ? parseInt(serviceData.recovery_time_objective) : null,
+        serviceData.recovery_point_objective ? parseInt(serviceData.recovery_point_objective) : null,
+        id
+      ).run();
+
+      if (result.changes === 0) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'Service not found or no changes made'
+        }, 404);
+      }
+
+      // Get updated service
+      const updatedService = await c.env.DB.prepare('SELECT * FROM services WHERE id = ?').bind(id).first();
+
+      return c.json<ApiResponse<any>>({
+        success: true,
+        data: updatedService,
+        message: 'Service updated successfully'
+      });
+    } catch (error) {
+      console.error('Update service error:', error);
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Failed to update service'
+      }, 500);
+    }
+  });
+
   // Microsoft Defender Integration APIs
   api.get('/api/microsoft/incidents', authMiddleware, async (c) => {
     try {
