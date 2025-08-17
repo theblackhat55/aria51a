@@ -138,7 +138,29 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# Switch to application user for database operations
+# Fix directory permissions (handle Docker volume mounts)
+log "🔧 Fixing directory permissions..."
+mkdir -p /app/database /app/logs /app/uploads /app/backups /app/tmp
+chown -R dmtuser:dmtuser /app/database /app/logs /app/uploads /app/backups /app/tmp
+chmod -R 755 /app/database /app/logs /app/uploads /app/backups /app/tmp
+
+log "✅ Directory permissions fixed"
+
+# Test database directory write permissions
+if ! sudo -u dmtuser touch /app/database/.test 2>/dev/null; then
+    log "❌ Still cannot write to database directory, trying alternative approach..."
+    # Try creating with root and then changing ownership
+    touch /app/database/.test
+    chown dmtuser:dmtuser /app/database/.test
+    rm -f /app/database/.test
+else
+    rm -f /app/database/.test
+fi
+
+log "✅ Database directory is writable"
+
+# Initialize database as dmtuser
+log "📊 Initializing database..."
 su - dmtuser -c "cd /app && node -e \"
 const { initializeDatabase } = require('./src/database/sqlite.js');
 initializeDatabase().then(() => {
