@@ -1,4 +1,4 @@
-// API module for Node.js/Docker deployment
+// API module for Node.js/Docker deployment with Keycloak integration
 import { Hono } from 'hono';
 import { getDatabase, createQueryHelpers } from '../database/sqlite.js';
 
@@ -14,20 +14,23 @@ export function createAPI() {
     await next();
   });
 
-  // Import existing API routes (we'll need to convert these from TypeScript)
-  // For now, let's create basic essential routes
-
   // Health check
-  app.get('/health', (c) => {
+  app.get('/api/health', (c) => {
     return c.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       version: '2.0.1',
-      database: 'connected'
+      database: 'connected',
+      keycloak: 'configured'
     });
   });
 
-  // Authentication routes
+  // Mount Keycloak Authentication API
+  const { createKeycloakAPI } = await import('./keycloak.js');
+  const keycloakAPI = createKeycloakAPI();
+  app.route('/api', keycloakAPI);
+
+  // Legacy authentication routes (deprecated - use Keycloak instead)
   app.post('/api/auth/login', async (c) => {
     try {
       const { username, password } = await c.req.json();
@@ -263,4 +266,36 @@ export function createAPI() {
   });
 
   return app;
+}
+
+// Helper functions for Keycloak integration
+
+// Generate secure random state for OAuth flow
+function generateState() {
+  const array = new Uint8Array(32);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(array);
+  } else {
+    // Fallback for Node.js environment
+    const crypto = require('crypto');
+    const buffer = crypto.randomBytes(32);
+    for (let i = 0; i < 32; i++) {
+      array[i] = buffer[i];
+    }
+  }
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// Map Keycloak roles to application roles
+function mapKeycloakRoleToAppRole(roles) {
+  // Priority order for role mapping
+  const rolePriority = ['admin', 'risk_manager', 'compliance_officer', 'auditor', 'risk_owner'];
+  
+  for (const priority of rolePriority) {
+    if (roles.includes(priority)) {
+      return priority;
+    }
+  }
+  
+  return 'risk_owner'; // Default role
 }

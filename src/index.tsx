@@ -276,34 +276,47 @@ app.get('/', (c) => {
   <script src="/static/mobile-interface.js?v=3"></script>
   <script src="/static/app.js?v=14"></script>
   
-  <!-- Conditional Authentication Loading -->
+  <!-- Load Keycloak Authentication -->
+  <script src="/static/keycloak-auth.js?v=1"></script>
+  
+  <!-- Initialize Authentication -->
   <script>
-    function loadAppAuthScript() {
-      const script = document.createElement('script');
+    // Initialize Keycloak authentication for main app
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Main app: Initializing Keycloak authentication...');
       
-      if (window.location.hostname.includes('e2b.dev') || 
-          window.location.hostname === 'localhost') {
-        // Sandbox environment - skip separate auth loading as app.js handles it
-        console.log('Sandbox environment detected - using legacy authentication in app.js');
-        return;
+      // Check if user is authenticated with Keycloak
+      if (window.keycloakAuth && window.keycloakAuth.isAuthenticated()) {
+        console.log('Main app: User is authenticated with Keycloak');
+        window.keycloakAuth.handleAuthenticated();
       } else {
-        // Production environment - load Keycloak authentication
-        script.src = '/static/keycloak-auth.js?v=1';
-        console.log('Production environment - loading Keycloak authentication');
-        
-        script.onload = function() {
-          console.log('Keycloak authentication loaded successfully');
-        };
-        
-        document.head.appendChild(script);
+        console.log('Main app: User not authenticated, showing login prompt');
+        showLoginPrompt();
       }
-    }
+    });
     
-    // Initialize authentication after all scripts are loaded
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', loadAppAuthScript);
-    } else {
-      loadAppAuthScript();
+    function showLoginPrompt() {
+      const app = document.getElementById('app');
+      if (app) {
+        const loginPrompt = document.createElement('div');
+        loginPrompt.id = 'login-prompt';
+        loginPrompt.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        loginPrompt.innerHTML = 
+          '<div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">' +
+            '<div class="text-center">' +
+              '<div class="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">' +
+                '<i class="fas fa-shield-alt text-white text-xl"></i>' +
+              '</div>' +
+              '<h2 class="text-xl font-bold text-gray-900 mb-2">Authentication Required</h2>' +
+              '<p class="text-gray-600 mb-6">Please login to access the Risk Management Platform</p>' +
+              '<button onclick="window.location.href=\\'/login\\'" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200">' +
+                '<i class="fas fa-sign-in-alt mr-2"></i>' +
+                'Login with Keycloak' +
+              '</button>' +
+            '</div>' +
+          '</div>';
+        document.body.appendChild(loginPrompt);
+      }
     }
   </script>
 </body>
@@ -331,68 +344,92 @@ app.get('/login', (c) => {
       <p class="text-gray-600 mt-2">Enterprise GRC Platform v2.0</p>
     </div>
 
-    <form id="login-form">
-      <div class="mb-6">
-        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-          Username or Email
-        </label>
-        <input
-          type="text"
-          id="username"
-          name="username"
-          required
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter your username or email"
+    <div id="legacy-auth" style="display:none;">
+      <form id="login-form">
+        <div class="mb-6">
+          <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+            Username or Email
+          </label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter your username or email"
+          >
+        </div>
+
+        <div class="mb-6">
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+            Password
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter your password"
+          >
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150"
         >
-      </div>
+          <i class="fas fa-sign-in-alt mr-2"></i>
+          Sign In (Legacy)
+        </button>
+      </form>
 
-      <div class="mb-6">
-        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-          Password
-        </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          required
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter your password"
-        >
-      </div>
+      <div id="login-error" class="mt-4 text-red-600 text-sm hidden"></div>
 
-      <button
-        type="submit"
-        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150"
-      >
-        <i class="fas fa-sign-in-alt mr-2"></i>
-        Sign In
-      </button>
-    </form>
-
-    <div id="login-error" class="mt-4 text-red-600 text-sm hidden"></div>
-
-    <div class="mt-8 text-center text-sm text-gray-600">
-      <p>Demo Accounts:</p>
-      <div class="mt-2 space-y-1">
-        <p><strong>Admin:</strong> admin / demo123</p>
-        <p><strong>Risk Manager:</strong> avi_security / demo123</p>
+      <div class="mt-4 text-center text-sm text-gray-600">
+        <p>Legacy Demo Accounts:</p>
+        <div class="mt-2 space-y-1">
+          <p><strong>Admin:</strong> admin / demo123</p>
+          <p><strong>Risk Manager:</strong> avi_security / demo123</p>
+        </div>
       </div>
     </div>
 
-    <!-- Keycloak integration info (for production) -->
-    <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200" id="keycloak-info" style="display:none;">
+    <!-- Keycloak SSO Authentication -->
+    <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200" id="keycloak-info">
       <div class="text-center">
-        <h3 class="font-semibold text-green-900 mb-2">🔐 Enhanced Security Available</h3>
-        <p class="text-sm text-green-800 mb-3">This system supports Keycloak for enterprise-grade authentication</p>
-        <button onclick="window.location.href='/api/auth/keycloak/login'" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
-          <i class="fas fa-shield-alt mr-2"></i>Login with Keycloak
+        <h3 class="font-semibold text-blue-900 mb-2">🔐 Enterprise SSO Authentication</h3>
+        <p class="text-sm text-blue-800 mb-3">Login with Keycloak for enhanced security and role-based access</p>
+        <button onclick="window.location.href='/api/auth/keycloak/login'" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 mb-3">
+          <i class="fas fa-shield-alt mr-2"></i>Login with Keycloak SSO
+        </button>
+        <div class="text-xs text-blue-700">
+          <p><strong>Available Users:</strong></p>
+          <div class="mt-1 space-y-1">
+            <p>admin • avi_security • sjohnson • mchen • edavis</p>
+            <p class="text-blue-600">Password: <code>password123</code></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error display for Keycloak -->
+    <div id="keycloak-error" class="mt-4 text-red-600 text-sm hidden"></div>
+
+    <!-- Legacy Authentication (Fallback) -->
+    <div class="mt-4 pt-4 border-t border-gray-200">
+      <div class="text-center">
+        <p class="text-xs text-gray-500 mb-2">Legacy Authentication (for testing)</p>
+        <button onclick="document.getElementById('legacy-auth').style.display='block'; this.style.display='none';" class="text-gray-400 hover:text-gray-600 text-xs underline">
+          Use Legacy Login
         </button>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-  <!-- Always load legacy auth for login page - keeps it simple -->
+  <!-- Load Keycloak authentication -->
+  <script src="/static/keycloak-auth.js"></script>
+  <!-- Load legacy auth for fallback -->
   <script src="/static/auth.js"></script>
 </body>
 </html>`);

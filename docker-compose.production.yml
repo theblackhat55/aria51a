@@ -1,742 +1,202 @@
+# DMT Risk Assessment Platform - Complete Production Stack
+# Includes Keycloak, PostgreSQL, and DMT Application
 version: '3.8'
 
 services:
-  # ============================================================================
-  # LOAD BALANCER / REVERSE PROXY
-  # ============================================================================
-  nginx:
-    image: nginx:alpine
-    container_name: dmt-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./public:/usr/share/nginx/html/static:ro
-      - nginx-logs:/var/log/nginx
-    depends_on:
-      - dmt-app
-    restart: unless-stopped
-    networks:
-      - dmt-frontend
-      - dmt-backend
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ============================================================================
-  # APPLICATION LAYER
-  # ============================================================================
-  dmt-app:
-    build:
-      context: .
-      dockerfile: Dockerfile.production
-    container_name: dmt-application
+  # PostgreSQL Database for Keycloak
+  postgres:
+    image: postgres:15-alpine
+    container_name: dmt-postgres
     environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://dmt_user:${DB_PASSWORD}@postgres:5432/dmt_production
-      - REDIS_URL=redis://redis:6379
-      - KEYCLOAK_BASE_URL=http://keycloak:8080
-      - KEYCLOAK_REALM=dmt-realm
-      - KEYCLOAK_CLIENT_ID=dmt-webapp
-      - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
-      - JWT_SECRET=${JWT_SECRET}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - PROMETHEUS_ENABLED=true
-      - LOG_LEVEL=info
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-keycloak_secure_password_2024}
     volumes:
-      - app-logs:/app/logs
-      - app-uploads:/app/uploads
-      - app-temp:/tmp
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
-    restart: unless-stopped
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/backups:/backups
     networks:
-      - dmt-backend
+      - dmt-network
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 512M
-          cpus: '0.25'
-    labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/port=3000"
-      - "prometheus.io/path=/metrics"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "5"
+      retries: 5
+      start_period: 30s
 
-  # ============================================================================
-  # AUTHENTICATION & AUTHORIZATION
-  # ============================================================================
+  # Keycloak Identity Provider
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
     container_name: dmt-keycloak
     environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
-      - KC_DB=postgres
-      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
-      - KC_DB_USERNAME=keycloak_user
-      - KC_DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}
-      - KC_HOSTNAME=auth.${DOMAIN_NAME}
-      - KC_HTTP_ENABLED=true
-      - KC_PROXY=edge
-      - KC_HEALTH_ENABLED=true
-      - KC_METRICS_ENABLED=true
-      - JAVA_OPTS=-Xms512m -Xmx1024m
-    volumes:
-      - ./keycloak/import:/opt/keycloak/data/import:ro
-      - ./keycloak/themes:/opt/keycloak/themes:ro
-      - keycloak-data:/opt/keycloak/data
+      # Database configuration
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-keycloak_secure_password_2024}
+      
+      # Keycloak admin configuration
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_secure_password_2024}
+      
+      # Production settings
+      KC_HOSTNAME: ${KC_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      
+      # Security settings
+      KC_PROXY: edge
+      KC_LOG_LEVEL: INFO
+      
     command:
       - start
       - --import-realm
-      - --health-enabled=true
-      - --metrics-enabled=true
+      - --optimized
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+      - ./keycloak/themes:/opt/keycloak/themes:ro
+      - keycloak_data:/opt/keycloak/data
+    ports:
+      - "8080:8080"
+      - "8443:8443"
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
     networks:
-      - dmt-backend
+      - dmt-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 90s
-    deploy:
-      resources:
-        limits:
-          memory: 1.5G
-          cpus: '0.75'
-        reservations:
-          memory: 768M
-          cpus: '0.5'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
-  # ============================================================================
-  # DATABASE LAYER
-  # ============================================================================
-  postgres:
-    image: postgres:15-alpine
-    container_name: dmt-postgres
+  # DMT Risk Assessment Application
+  dmt-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu
+    container_name: dmt-risk-assessment
     environment:
-      - POSTGRES_DB=dmt_production
-      - POSTGRES_USER=dmt_user
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+      NODE_ENV: production
+      PORT: 3000
+      
+      # Keycloak Configuration
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: dmt-risk-platform
+      KEYCLOAK_CLIENT_ID: dmt-webapp
+      KEYCLOAK_CLIENT_SECRET: dmt-webapp-secret-key-2024
+      REDIRECT_URI: http://localhost:3000/api/auth/callback
+      
+      # Database Configuration
+      DATABASE_URL: /app/database/dmt-production.sqlite
+      
+      # Security Configuration
+      JWT_SECRET: ${JWT_SECRET:-dmt-jwt-secret-production-2024}
+      SESSION_SECRET: ${SESSION_SECRET:-dmt-session-secret-production-2024}
+      
+      # Logging
+      LOG_LEVEL: info
+      
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d:ro
-      - ./postgres/backup:/backup
-      - postgres-logs:/var/log/postgresql
-    command: >
-      postgres 
-      -c shared_preload_libraries=pg_stat_statements
-      -c pg_stat_statements.track=all
-      -c max_connections=200
-      -c shared_buffers=256MB
-      -c effective_cache_size=1GB
-      -c maintenance_work_mem=64MB
-      -c checkpoint_completion_target=0.9
-      -c wal_buffers=16MB
-      -c default_statistics_target=100
-      -c random_page_cost=1.1
-      -c effective_io_concurrency=200
-      -c work_mem=4MB
-      -c min_wal_size=1GB
-      -c max_wal_size=4GB
-      -c logging_collector=on
-      -c log_directory=/var/log/postgresql
-      -c log_filename=postgresql-%Y-%m-%d.log
-      -c log_rotation_age=1d
-      -c log_rotation_size=100MB
-    restart: unless-stopped
+      - dmt_data:/app/database
+      - dmt_logs:/app/logs
+      - dmt_uploads:/app/uploads
+      - dmt_backups:/app/backups
+    ports:
+      - "3000:3000"
+      - "80:80"
+    depends_on:
+      keycloak:
+        condition: service_healthy
     networks:
-      - dmt-backend
+      - dmt-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dmt_user -d dmt_production"]
+      test: ["CMD", "/app/healthcheck.sh"]
       interval: 30s
       timeout: 10s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-        reservations:
-          memory: 1G
-          cpus: '0.5'
-    labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/port=9187"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "5"
+      retries: 3
+      start_period: 60s
 
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: dmt-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "443:443"
+    depends_on:
+      - dmt-app
+    networks:
+      - dmt-network
+    restart: unless-stopped
+    profiles:
+      - with-ssl
+
+  # Redis Cache (Optional)
   redis:
     image: redis:7-alpine
     container_name: dmt-redis
-    command: >
-      redis-server 
-      --appendonly yes
-      --appendfsync everysec
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
-      --tcp-keepalive 300
-      --timeout 0
-      --tcp-backlog 511
-      --databases 16
-      --save 900 1
-      --save 300 10
-      --save 60 10000
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secure_password_2024}
     volumes:
-      - redis-data:/data
-      - ./redis/redis.conf:/etc/redis/redis.conf:ro
-      - redis-logs:/var/log/redis
-    restart: unless-stopped
-    networks:
-      - dmt-backend
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 768M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
-    labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/port=9121"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ============================================================================
-  # MONITORING STACK
-  # ============================================================================
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: dmt-prometheus
+      - redis_data:/data
     ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
-      - ./monitoring/prometheus/targets:/etc/prometheus/targets:ro
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-      - '--storage.tsdb.retention.time=30d'
-      - '--storage.tsdb.retention.size=10GB'
-    restart: unless-stopped
+      - "6379:6379"
     networks:
-      - dmt-monitoring
-      - dmt-backend
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-        reservations:
-          memory: 1G
-          cpus: '0.5'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - dmt-network
+    restart: unless-stopped
+    profiles:
+      - with-cache
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: dmt-grafana
-    ports:
-      - "3001:3000"
+  # Backup Service (Optional)
+  backup:
+    image: alpine:latest
+    container_name: dmt-backup
+    volumes:
+      - dmt_data:/source/database:ro
+      - dmt_backups:/backups
+      - ./scripts:/scripts:ro
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel,redis-datasource,postgres-datasource
-      - GF_SECURITY_ALLOW_EMBEDDING=true
-      - GF_AUTH_ANONYMOUS_ENABLED=false
-      - GF_SMTP_ENABLED=true
-      - GF_SMTP_HOST=${SMTP_HOST}:${SMTP_PORT}
-      - GF_SMTP_USER=${SMTP_USER}
-      - GF_SMTP_PASSWORD=${SMTP_PASSWORD}
-      - GF_SMTP_FROM_ADDRESS=alerts@${DOMAIN_NAME}
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./monitoring/grafana/notifiers:/etc/grafana/provisioning/notifiers:ro
-    depends_on:
-      - prometheus
-    restart: unless-stopped
+      BACKUP_SCHEDULE: "0 2 * * *"  # Daily at 2 AM
+      RETENTION_DAYS: 30
+    command: crond -f
     networks:
-      - dmt-monitoring
-      - dmt-frontend
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 512M
-          cpus: '0.25'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  signoz:
-    image: signoz/signoz:latest
-    container_name: dmt-signoz
-    ports:
-      - "3301:3301"
-    environment:
-      - ALERTMANAGER_API_PREFIX=/api/v1
-      - STORAGE=clickhouse
-      - GOMEMLIMIT=1073741824
-    volumes:
-      - signoz-data:/var/lib/signoz
+      - dmt-network
     restart: unless-stopped
-    networks:
-      - dmt-monitoring
-      - dmt-backend
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3301/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 1.5G
-          cpus: '1.0'
-        reservations:
-          memory: 768M
-          cpus: '0.5'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    profiles:
+      - with-backup
 
-  # ============================================================================
-  # SECURITY MONITORING STACK (WAZUH)
-  # ============================================================================
-  wazuh-manager:
-    image: wazuh/wazuh-manager:4.7.0
-    container_name: dmt-wazuh-manager
-    hostname: wazuh-manager
-    ports:
-      - "1514:1514"
-      - "1515:1515"
-      - "514:514/udp"
-      - "55000:55000"
-    environment:
-      - INDEXER_URL=https://wazuh-indexer:9200
-      - INDEXER_USERNAME=admin
-      - INDEXER_PASSWORD=${WAZUH_PASSWORD}
-      - FILEBEAT_SSL_VERIFICATION_MODE=full
-      - API_USERNAME=wazuh-wui
-      - API_PASSWORD=${WAZUH_API_PASSWORD}
-    volumes:
-      - wazuh-manager-data:/var/ossec
-      - ./wazuh/config:/wazuh-config-mount/etc/ossec:ro
-      - wazuh-manager-logs:/var/ossec/logs
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 655360
-        hard: 655360
-    restart: unless-stopped
-    networks:
-      - dmt-security
-    healthcheck:
-      test: ["CMD-SHELL", "/var/ossec/bin/wazuh-control status | grep -q 'wazuh-analysisd is running'"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-        reservations:
-          memory: 1G
-          cpus: '0.5'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "5"
-
-  wazuh-indexer:
-    image: wazuh/wazuh-indexer:4.7.0
-    container_name: dmt-wazuh-indexer
-    hostname: wazuh-indexer
-    environment:
-      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m"
-      - "bootstrap.memory_lock=true"
-      - "discovery.type=single-node"
-      - "network.host=0.0.0.0"
-      - "plugins.security.ssl.http.enabled=false"
-      - "plugins.security.disabled=false"
-    volumes:
-      - wazuh-indexer-data:/var/lib/wazuh-indexer
-      - wazuh-indexer-logs:/usr/share/wazuh-indexer/logs
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
-    restart: unless-stopped
-    networks:
-      - dmt-security
-    healthcheck:
-      test: ["CMD-SHELL", "curl -s -f http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-          cpus: '1.0'
-        reservations:
-          memory: 1.5G
-          cpus: '0.75'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "5"
-
-  wazuh-dashboard:
-    image: wazuh/wazuh-dashboard:4.7.0
-    container_name: dmt-wazuh-dashboard
-    hostname: wazuh-dashboard
-    ports:
-      - "5601:5601"
-    environment:
-      - INDEXER_USERNAME=admin
-      - INDEXER_PASSWORD=${WAZUH_PASSWORD}
-      - WAZUH_API_URL=https://wazuh-manager
-      - DASHBOARD_USERNAME=kibanaserver
-      - DASHBOARD_PASSWORD=${WAZUH_PASSWORD}
-      - API_USERNAME=wazuh-wui
-      - API_PASSWORD=${WAZUH_API_PASSWORD}
-    volumes:
-      - wazuh-dashboard-config:/usr/share/wazuh-dashboard/data
-    depends_on:
-      wazuh-indexer:
-        condition: service_healthy
-      wazuh-manager:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - dmt-security
-      - dmt-frontend
-    healthcheck:
-      test: ["CMD-SHELL", "curl -s -f http://localhost:5601/api/status | grep -q '\"overall\":{\"level\":\"available\"'"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 512M
-          cpus: '0.25'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ============================================================================
-  # EXPORTERS & MONITORING AGENTS
-  # ============================================================================
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: dmt-postgres-exporter
-    environment:
-      - DATA_SOURCE_NAME=postgresql://dmt_user:${DB_PASSWORD}@postgres:5432/dmt_production?sslmode=disable
-      - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yaml
-    volumes:
-      - ./monitoring/postgres-exporter/queries.yaml:/etc/postgres_exporter/queries.yaml:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - dmt-backend
-      - dmt-monitoring
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9187/metrics"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.1'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
-
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: dmt-redis-exporter
-    environment:
-      - REDIS_ADDR=redis:6379
-      - REDIS_EXPORTER_LOG_FORMAT=json
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - dmt-backend
-      - dmt-monitoring
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9121/metrics"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.1'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: dmt-node-exporter
-    command:
-      - '--path.rootfs=/host'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    volumes:
-      - '/:/host:ro,rslave'
-    restart: unless-stopped
-    networks:
-      - dmt-monitoring
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.1'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: dmt-cadvisor
-    privileged: true
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    devices:
-      - /dev/kmsg:/dev/kmsg
-    restart: unless-stopped
-    networks:
-      - dmt-monitoring
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.2'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
-
-  # ============================================================================
-  # LOG MANAGEMENT
-  # ============================================================================
-  filebeat:
-    image: docker.elastic.co/beats/filebeat:8.11.0
-    container_name: dmt-filebeat
-    user: root
-    volumes:
-      - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - filebeat-data:/usr/share/filebeat/data
-    environment:
-      - ELASTICSEARCH_HOSTS=["wazuh-indexer:9200"]
-      - KIBANA_HOST=wazuh-dashboard:5601
-    depends_on:
-      - wazuh-indexer
-    restart: unless-stopped
-    networks:
-      - dmt-security
-      - dmt-monitoring
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.2'
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-# ============================================================================
-# NETWORKS
-# ============================================================================
-networks:
-  dmt-frontend:
-    driver: bridge
-    name: dmt-frontend
-    ipam:
-      config:
-        - subnet: 172.20.1.0/24
-
-  dmt-backend:
-    driver: bridge
-    name: dmt-backend
-    ipam:
-      config:
-        - subnet: 172.20.2.0/24
-
-  dmt-monitoring:
-    driver: bridge
-    name: dmt-monitoring
-    ipam:
-      config:
-        - subnet: 172.20.3.0/24
-
-  dmt-security:
-    driver: bridge
-    name: dmt-security
-    ipam:
-      config:
-        - subnet: 172.20.4.0/24
-
-# ============================================================================
-# VOLUMES
-# ============================================================================
+# Named volumes for data persistence
 volumes:
-  # Application Data
-  postgres-data:
+  postgres_data:
     driver: local
-  redis-data:
+  keycloak_data:
     driver: local
-  keycloak-data:
+  dmt_data:
     driver: local
-  app-logs:
+  dmt_logs:
     driver: local
-  app-uploads:
+  dmt_uploads:
     driver: local
-  app-temp:
+  dmt_backups:
     driver: local
-
-  # Monitoring Data
-  grafana-data:
-    driver: local
-  prometheus-data:
-    driver: local
-  signoz-data:
+  redis_data:
     driver: local
 
-  # Security Data
-  wazuh-manager-data:
-    driver: local
-  wazuh-indexer-data:
-    driver: local
-  wazuh-dashboard-config:
-    driver: local
-  filebeat-data:
-    driver: local
-
-  # Log Volumes
-  nginx-logs:
-    driver: local
-  postgres-logs:
-    driver: local
-  redis-logs:
-    driver: local
-  wazuh-manager-logs:
-    driver: local
-  wazuh-indexer-logs:
-    driver: local
+# Networks
+networks:
+  dmt-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

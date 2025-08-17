@@ -120,10 +120,10 @@ app.get('/', (c) => {
   </div>
 
   <!-- Scripts -->
+  <script src="/static/keycloak-only-auth.js"></script>
   <script src="/static/app.js"></script>
   <script src="/static/modules.js"></script>
   <script src="/static/notifications.js"></script>
-  <script src="/static/auth.js"></script>
   <script src="/static/risk-management-enhanced.js"></script>
   <script src="/static/incident-management-enhanced.js"></script>
   <script src="/static/document-management.js"></script>
@@ -168,18 +168,78 @@ app.get('/login', (c) => {
     </div>
     
     <div id="login-container" class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-      <!-- Login form will be loaded here -->
+      <!-- Keycloak-Only SSO Authentication -->
+      <div class="space-y-6">
+        <div class="text-center">
+          <div class="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+            <i class="fas fa-shield-alt text-blue-600 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Enterprise Single Sign-On</h3>
+          <p class="text-gray-600 mb-6">Secure authentication with Keycloak</p>
+          
+          <button onclick="window.dmtAuth.login()" data-keycloak-login class="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105">
+            <i class="fas fa-sign-in-alt mr-3 text-lg"></i>
+            Login with Keycloak SSO
+          </button>
+        </div>
+        
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+          <div class="text-center">
+            <h4 class="font-semibold text-blue-900 mb-3">✨ Available Test Users</h4>
+            <div class="grid grid-cols-1 gap-2 text-sm text-blue-800">
+              <div class="flex justify-between items-center py-1">
+                <span class="font-medium">admin</span>
+                <span class="text-xs bg-blue-200 px-2 py-1 rounded">System Administrator</span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="font-medium">avi_security</span>
+                <span class="text-xs bg-green-200 px-2 py-1 rounded">Risk Manager</span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="font-medium">sjohnson</span>
+                <span class="text-xs bg-yellow-200 px-2 py-1 rounded">Compliance Officer</span>
+              </div>
+            </div>
+            <div class="mt-4 p-3 bg-blue-100 rounded-lg">
+              <p class="text-sm text-blue-900">
+                <i class="fas fa-key mr-2"></i>
+                Password for all users: <code class="bg-white px-2 py-1 rounded font-mono text-blue-700">password123</code>
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Error display -->
+        <div id="keycloak-error" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm hidden">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          <span id="error-message"></span>
+        </div>
+        
+        <!-- Status display -->
+        <div class="text-center">
+          <div class="inline-flex items-center text-xs text-gray-500">
+            <div class="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+            Keycloak SSO Ready
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-  <script src="/static/auth.js"></script>
+  <script src="/static/keycloak-only-auth.js"></script>
   <script>
-    // Auto-load login form
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
-      if (typeof showLogin === 'function') {
-        showLogin();
-      }
+      console.log('🔐 DMT Login Page: Initializing Keycloak-only authentication');
+      
+      // Auto-focus the login button after a short delay
+      setTimeout(() => {
+        const loginBtn = document.querySelector('[data-keycloak-login]');
+        if (loginBtn) {
+          loginBtn.focus();
+        }
+      }, 500);
     });
   </script>
 </body>
