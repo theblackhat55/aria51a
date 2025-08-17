@@ -285,16 +285,6 @@ function getRiskFormHTML(risk = null) {
       </form>
     </div>
     
-    <!-- Form Actions - Fixed at bottom -->
-    <div class="modal-form-buttons flex justify-end space-x-3">
-      <button type="button" onclick="closeModal(this)" class="btn-secondary">
-        <i class="fas fa-times mr-2"></i>Cancel
-      </button>
-      <button type="button" onclick="submitRiskForm()" class="btn-primary">
-        <i class="fas fa-save mr-2"></i>${isEdit ? 'Update Risk' : 'Create Risk'}
-      </button>
-    </div>
-    
     <script>
       // Initialize form behavior
       document.addEventListener('DOMContentLoaded', function() {
@@ -915,6 +905,18 @@ function submitRiskForm() {
     }
 }
 
+function submitRiskFormEdit(riskId) {
+    const form = document.getElementById('risk-form');
+    if (form) {
+        // Trigger form validation and submission
+        if (form.checkValidity()) {
+            handleEnhancedRiskSubmit(riskId);
+        } else {
+            form.reportValidity();
+        }
+    }
+}
+
 async function handleEnhancedRiskSubmit(riskId = null) {
     const form = document.getElementById('risk-form');
     if (!form.checkValidity()) {
@@ -982,6 +984,7 @@ window.getRiskFormHTML = getRiskFormHTML;
 window.getEnhancedRiskFormHTML = getEnhancedRiskFormHTML;
 window.handleEnhancedRiskSubmit = handleEnhancedRiskSubmit;
 window.submitRiskForm = submitRiskForm;
+window.submitRiskFormEdit = submitRiskFormEdit;
 window.getRiskViewHTML = getRiskViewHTML;
 window.changeRiskStatus = changeRiskStatus;
 window.analyzeRiskWithAI = analyzeRiskWithAI;
@@ -1001,7 +1004,12 @@ window.generateControlMappings = () => showToast('Control mappings functionality
 function createEnhancedRisk() {
     if (typeof getEnhancedRiskFormHTML === 'function') {
         const content = getEnhancedRiskFormHTML();
-        const modal = createModal('Create Enhanced Risk Assessment', content);
+        const buttons = [
+            { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
+            { text: 'Create Risk', class: 'btn-primary', onclick: 'submitRiskForm()' }
+        ];
+        const modal = createModal('Create Enhanced Risk Assessment', content, buttons);
+        document.body.appendChild(modal);
         
         // Wait for modal to be added to DOM
         setTimeout(() => {
@@ -1018,7 +1026,12 @@ function createEnhancedRisk() {
         // Fallback to standard form if enhanced framework not loaded
         console.warn('Enhanced risk framework not loaded, using standard form');
         const content = getRiskFormHTML();
-        const modal = createModal('Create Risk Assessment', content);
+        const buttons = [
+            { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
+            { text: 'Create Risk', class: 'btn-primary', onclick: 'submitRiskForm()' }
+        ];
+        const modal = createModal('Create Risk Assessment', content, buttons);
+        document.body.appendChild(modal);
         
         setTimeout(() => {
             const form = document.getElementById('risk-form');
@@ -1043,7 +1056,12 @@ function editEnhancedRisk(riskId) {
     
     if (typeof getEnhancedRiskFormHTML === 'function') {
         const content = getEnhancedRiskFormHTML(risk);
-        const modal = createModal('Edit Enhanced Risk Assessment', content);
+        const buttons = [
+            { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
+            { text: 'Update Risk', class: 'btn-primary', onclick: `submitRiskFormEdit(${riskId})` }
+        ];
+        const modal = createModal('Edit Enhanced Risk Assessment', content, buttons);
+        document.body.appendChild(modal);
         
         setTimeout(() => {
             // Handle form submission with enhanced framework
@@ -1059,7 +1077,12 @@ function editEnhancedRisk(riskId) {
         // Fallback to standard form
         console.warn('Enhanced risk framework not loaded, using standard form');
         const content = getRiskFormHTML(risk);
-        const modal = createModal('Edit Risk Assessment', content);
+        const buttons = [
+            { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
+            { text: 'Update Risk', class: 'btn-primary', onclick: `submitRiskFormEdit(${riskId})` }
+        ];
+        const modal = createModal('Edit Risk Assessment', content, buttons);
+        document.body.appendChild(modal);
         
         setTimeout(() => {
             const form = document.getElementById('risk-form');

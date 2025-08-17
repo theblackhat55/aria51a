@@ -59,7 +59,7 @@ app.get('/', (c) => {
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
   
   <!-- Custom Styles -->
-  <link href="/static/styles.css" rel="stylesheet">
+  <link href="/static/styles.css?v=2" rel="stylesheet">
 </head>
 <body class="bg-gray-50 font-sans antialiased">
   <!-- Loading Spinner -->
@@ -272,7 +272,7 @@ app.get('/', (c) => {
   <script src="/static/enhanced-settings.js?v=4"></script>
   <script src="/static/system-settings-integration.js?v=4"></script>
   <script src="/static/framework-management.js?v=1"></script>
-  <script src="/static/risk-management-enhanced.js?v=1"></script>
+  <script src="/static/risk-management-enhanced.js?v=2"></script>
   <script src="/static/incident-management-enhanced.js?v=1"></script>
   <script src="/static/asset-service-management.js?v=1"></script>
   <script src="/static/integrated-risk-framework.js?v=1"></script>
