@@ -62,7 +62,9 @@
 ## 🌐 URLs
 - **Live Application**: https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev/
 - **GitHub Repository**: https://github.com/theblackhat55/GRC
-- **Project Backup**: https://page.gensparksite.com/project_backups/tooluse_QUKE4t7UQPuBq6WOH-JkKw.tar.gz
+- **Version 3.0 Branch**: https://github.com/theblackhat55/GRC/tree/v3.0
+- **Version 3.0 Release**: https://github.com/theblackhat55/GRC/releases/tag/v3.0
+- **Project Backup**: https://page.gensparksite.com/project_backups/tooluse_j6ZW1KLFQLWkHADklHq47A.tar.gz
 
 ## 🔧 Latest Updates (v2.0.1)
 - **Status**: ✅ All critical bugs fixed and deployed
@@ -330,8 +332,10 @@ npm run db:console:local
 
 ---
 **Last Updated**: August 17, 2025
-**Version**: 2.1 - Comprehensive Risk Framework Edition
-**Maintenance Status**: Active Development with Industry Standards Compliance
+**Version**: 3.0 - Comprehensive Risk Management Framework
+**GitHub Branch**: v3.0 
+**Release**: https://github.com/theblackhat55/GRC/releases/tag/v3.0
+**Maintenance Status**: Production Ready with Enterprise-Grade GRC Capabilities
 ## 🚀 Latest Features Added (August 15, 2025)
 
 ### ✅ RAG (Retrieval-Augmented Generation) System
