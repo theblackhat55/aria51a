@@ -281,6 +281,16 @@ function getRiskFormHTML(risk = null) {
           </div>
         </div>
       </div>
+      
+      <!-- Form Actions -->
+      <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+        <button type="button" onclick="closeModal(this)" class="btn-secondary">
+          <i class="fas fa-times mr-2"></i>Cancel
+        </button>
+        <button type="submit" class="btn-primary">
+          <i class="fas fa-save mr-2"></i>${isEdit ? 'Update Risk' : 'Create Risk'}
+        </button>
+      </div>
     </form>
     
     <script>
@@ -883,8 +893,77 @@ function updateAISuggestions() {
   console.log('AI suggestions would be updated here');
 }
 
+// Enhanced Risk Form Functions
+function getEnhancedRiskFormHTML(risk = null) {
+    return getRiskFormHTML(risk);
+}
+
+async function handleEnhancedRiskSubmit(riskId = null) {
+    const form = document.getElementById('risk-form');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    // Get form data
+    const formData = {
+        risk_id: document.getElementById('risk-id')?.value,
+        title: document.getElementById('risk-title')?.value,
+        description: document.getElementById('risk-description')?.value,
+        category_id: parseInt(document.getElementById('risk-category')?.value),
+        probability: parseInt(document.getElementById('risk-probability')?.value),
+        impact: parseInt(document.getElementById('risk-impact')?.value),
+        status: document.getElementById('risk-status')?.value || 'active',
+        owner_id: parseInt(document.getElementById('risk-owner')?.value),
+        next_review_date: document.getElementById('next-review-date')?.value,
+        mitigation_strategy: document.getElementById('mitigation-strategy')?.value,
+        asset_type: document.getElementById('asset-type')?.value,
+        service_type: document.getElementById('service-type')?.value,
+        treatment_type: document.getElementById('treatment-type')?.value,
+        priority_level: document.getElementById('priority-level')?.value
+    };
+    
+    // Calculate enhanced risk score
+    formData.risk_score = calculateRiskScore();
+    
+    try {
+        const token = localStorage.getItem('dmt_token');
+        const url = riskId ? `/api/risks/${riskId}` : '/api/risks';
+        const method = riskId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Risk ${riskId ? 'updated' : 'created'} successfully`, 'success');
+            closeModal();
+            
+            // Refresh the current view
+            if (typeof showRisks === 'function') {
+                showRisks();
+            }
+        } else {
+            showToast(result.error || `Failed to ${riskId ? 'update' : 'create'} risk`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error submitting enhanced risk:', error);
+        showToast(`Failed to ${riskId ? 'update' : 'create'} risk`, 'error');
+    }
+}
+
 // Export functions for global access
 window.getRiskFormHTML = getRiskFormHTML;
+window.getEnhancedRiskFormHTML = getEnhancedRiskFormHTML;
+window.handleEnhancedRiskSubmit = handleEnhancedRiskSubmit;
 window.getRiskViewHTML = getRiskViewHTML;
 window.changeRiskStatus = changeRiskStatus;
 window.analyzeRiskWithAI = analyzeRiskWithAI;
@@ -904,18 +983,34 @@ window.generateControlMappings = () => showToast('Control mappings functionality
 function createEnhancedRisk() {
     if (typeof getEnhancedRiskFormHTML === 'function') {
         const content = getEnhancedRiskFormHTML();
-        createModal('Create Enhanced Risk Assessment', content, []);
+        const modal = createModal('Create Enhanced Risk Assessment', content);
         
-        // Handle form submission with enhanced framework
-        document.getElementById('enhancedRiskForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await handleEnhancedRiskSubmit();
-        });
+        // Wait for modal to be added to DOM
+        setTimeout(() => {
+            // Handle form submission with enhanced framework
+            const form = document.getElementById('risk-form');
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await handleEnhancedRiskSubmit();
+                });
+            }
+        }, 100);
     } else {
         // Fallback to standard form if enhanced framework not loaded
         console.warn('Enhanced risk framework not loaded, using standard form');
         const content = getRiskFormHTML();
-        createModal('Create Risk Assessment', content, []);
+        const modal = createModal('Create Risk Assessment', content);
+        
+        setTimeout(() => {
+            const form = document.getElementById('risk-form');
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await handleRiskSubmit();
+                });
+            }
+        }, 100);
     }
 }
 
@@ -924,30 +1019,46 @@ function editEnhancedRisk(riskId) {
     const risk = risks.find(r => r.id === riskId || r.risk_id === riskId);
     
     if (!risk) {
-        showNotification('Risk not found', 'error');
+        showToast('Risk not found', 'error');
         return;
     }
     
     if (typeof getEnhancedRiskFormHTML === 'function') {
         const content = getEnhancedRiskFormHTML(risk);
-        createModal('Edit Enhanced Risk Assessment', content, []);
+        const modal = createModal('Edit Enhanced Risk Assessment', content);
         
-        // Handle form submission with enhanced framework
-        document.getElementById('enhancedRiskForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await handleEnhancedRiskSubmit(riskId);
-        });
+        setTimeout(() => {
+            // Handle form submission with enhanced framework
+            const form = document.getElementById('risk-form');
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await handleEnhancedRiskSubmit(riskId);
+                });
+            }
+        }, 100);
     } else {
         // Fallback to standard form
         console.warn('Enhanced risk framework not loaded, using standard form');
         const content = getRiskFormHTML(risk);
-        createModal('Edit Risk Assessment', content, []);
+        const modal = createModal('Edit Risk Assessment', content);
+        
+        setTimeout(() => {
+            const form = document.getElementById('risk-form');
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    await handleRiskSubmit(riskId);
+                });
+            }
+        }, 100);
     }
 }
 
 // Override global functions to use enhanced versions
 window.createEnhancedRisk = createEnhancedRisk;
 window.editEnhancedRisk = editEnhancedRisk;
+window.showAddRiskModal = createEnhancedRisk;
 
 // Auto-upgrade existing functions if enhanced framework is available
 document.addEventListener('DOMContentLoaded', function() {
@@ -955,6 +1066,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Enhanced Risk Framework detected, enabling advanced features');
         
         // Replace standard risk creation with enhanced version
+        if (window.showAddRiskModal) {
+            window.showAddRiskModal = createEnhancedRisk;
+        }
         if (window.createRisk) {
             window.createRisk = createEnhancedRisk;
         }
@@ -963,5 +1077,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.editRisk) {
             window.editRisk = editEnhancedRisk;
         }
+    } else {
+        console.log('Standard risk framework in use');
     }
 });
