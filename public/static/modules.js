@@ -6468,26 +6468,47 @@ function getRiskFormHTML(risk = null) {
 }
 
 async function populateRiskFormDropdowns() {
-  // Populate categories
-  const categorySelect = document.getElementById('risk-category');
-  categorySelect.innerHTML = '<option value="">Select Category</option>';
-  referenceData.categories.forEach(category => {
-    categorySelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
-  });
-  
-  // Populate organizations
-  const orgSelect = document.getElementById('risk-organization');
-  orgSelect.innerHTML = '<option value="">Select Organization</option>';
-  referenceData.organizations.forEach(org => {
-    orgSelect.innerHTML += `<option value="${org.id}">${org.name}</option>`;
-  });
-  
-  // Populate users
-  const ownerSelect = document.getElementById('risk-owner');
-  ownerSelect.innerHTML = '<option value="">Select Owner</option>';
-  referenceData.users.forEach(user => {
-    ownerSelect.innerHTML += `<option value="${user.id}">${user.first_name} ${user.last_name}</option>`;
-  });
+  try {
+    // Populate categories (with null check)
+    const categorySelect = document.getElementById('risk-category');
+    if (categorySelect) {
+      categorySelect.innerHTML = '<option value="">Select Category</option>';
+      if (referenceData?.categories) {
+        referenceData.categories.forEach(category => {
+          categorySelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+        });
+      }
+    }
+    
+    // Populate organizations (with null check)
+    const orgSelect = document.getElementById('risk-organization');
+    if (orgSelect) {
+      orgSelect.innerHTML = '<option value="">Select Organization</option>';
+      if (referenceData?.organizations) {
+        referenceData.organizations.forEach(org => {
+          orgSelect.innerHTML += `<option value="${org.id}">${org.name}</option>`;
+        });
+      } else {
+        orgSelect.innerHTML += '<option value="1">Default Organization</option>';
+      }
+    }
+    
+    // Populate users (with null check)
+    const ownerSelect = document.getElementById('risk-owner');
+    if (ownerSelect) {
+      ownerSelect.innerHTML = '<option value="">Select Owner</option>';
+      if (referenceData?.users) {
+        referenceData.users.forEach(user => {
+          ownerSelect.innerHTML += `<option value="${user.id}">${user.first_name} ${user.last_name}</option>`;
+        });
+      } else {
+        ownerSelect.innerHTML += '<option value="1">Admin User</option>';
+        ownerSelect.innerHTML += '<option value="2">Avi Security</option>';
+      }
+    }
+  } catch (error) {
+    console.error('Error in populateRiskFormDropdowns:', error);
+  }
   
   // Populate services
   await loadServicesForRiskForm();
