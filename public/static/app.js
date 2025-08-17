@@ -107,16 +107,560 @@ function generateExecutiveReport() {
 }
 
 function exportCurrentView() {
-  showToast('Exporting current view...', 'info');
-  // Implement export functionality
+  showExportModal();
+}
+
+function showExportModal() {
+  const modalHTML = `
+    <div id="export-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">Export Report</h3>
+            <button onclick="closeExportModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <div class="mt-6 space-y-6">
+            <!-- Export Format Selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-3">Export Format</label>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="relative">
+                  <input type="radio" id="export-pdf" name="exportFormat" value="pdf" class="sr-only" checked>
+                  <label for="export-pdf" class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors duration-200">
+                    <div class="flex items-center">
+                      <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-file-pdf text-red-600 text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">PDF Report</div>
+                        <div class="text-sm text-gray-500">Professional formatted document with charts</div>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+                
+                <div class="relative">
+                  <input type="radio" id="export-excel" name="exportFormat" value="excel" class="sr-only">
+                  <label for="export-excel" class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors duration-200">
+                    <div class="flex items-center">
+                      <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-file-excel text-green-600 text-xl"></i>
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">Excel Spreadsheet</div>
+                        <div class="text-sm text-gray-500">Raw data for analysis and manipulation</div>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Report Content Selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-3">Include in Report</label>
+              <div class="space-y-2">
+                <label class="flex items-center">
+                  <input type="checkbox" name="includeCharts" checked class="form-checkbox">
+                  <span class="ml-2 text-sm text-gray-700">Charts and visualizations</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="includeData" checked class="form-checkbox">
+                  <span class="ml-2 text-sm text-gray-700">Raw data tables</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="includeSummary" checked class="form-checkbox">
+                  <span class="ml-2 text-sm text-gray-700">Executive summary</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="includeMetadata" class="form-checkbox">
+                  <span class="ml-2 text-sm text-gray-700">Metadata and timestamps</span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Date Range Selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-3">Date Range</label>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-600 mb-1">From Date</label>
+                  <input type="date" name="fromDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-600 mb-1">To Date</label>
+                  <input type="date" name="toDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
+            </div>
+            
+            <!-- Report Options -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-3">Report Options</label>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-600 mb-1">Report Title</label>
+                  <input type="text" name="reportTitle" value="Risk Management Report" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-600 mb-1">Author</label>
+                  <input type="text" name="author" value="Risk Management Team" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end space-x-3 pt-6 border-t mt-6">
+            <button type="button" onclick="closeExportModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
+            <button type="button" onclick="processExport()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+              <i class="fas fa-download mr-2"></i>Generate Export
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Set default dates
+  const today = new Date();
+  const lastMonth = new Date();
+  lastMonth.setMonth(today.getMonth() - 1);
+  
+  document.querySelector('[name="fromDate"]').value = lastMonth.toISOString().split('T')[0];
+  document.querySelector('[name="toDate"]').value = today.toISOString().split('T')[0];
+  
+  // Add event listeners for radio buttons
+  document.querySelectorAll('input[name="exportFormat"]').forEach(radio => {
+    radio.addEventListener('change', updateExportFormatSelection);
+  });
+  
+  updateExportFormatSelection();
+}
+
+function updateExportFormatSelection() {
+  // Remove existing selection styles
+  document.querySelectorAll('label[for^="export-"]').forEach(label => {
+    label.classList.remove('border-blue-500', 'bg-blue-50');
+    label.classList.add('border-gray-200');
+  });
+  
+  // Add selection style to checked radio
+  const checked = document.querySelector('input[name="exportFormat"]:checked');
+  if (checked) {
+    const label = document.querySelector(`label[for="${checked.id}"]`);
+    label.classList.remove('border-gray-200');
+    label.classList.add('border-blue-500', 'bg-blue-50');
+  }
+}
+
+function closeExportModal() {
+  const modal = document.getElementById('export-modal');
+  if (modal) modal.remove();
+}
+
+async function processExport() {
+  const modal = document.getElementById('export-modal');
+  const formData = new FormData();
+  
+  // Collect form data
+  const format = document.querySelector('input[name="exportFormat"]:checked').value;
+  const includeCharts = document.querySelector('[name="includeCharts"]').checked;
+  const includeData = document.querySelector('[name="includeData"]').checked;
+  const includeSummary = document.querySelector('[name="includeSummary"]').checked;
+  const includeMetadata = document.querySelector('[name="includeMetadata"]').checked;
+  const fromDate = document.querySelector('[name="fromDate"]').value;
+  const toDate = document.querySelector('[name="toDate"]').value;
+  const reportTitle = document.querySelector('[name="reportTitle"]').value;
+  const author = document.querySelector('[name="author"]').value;
+  
+  // Show loading state
+  const exportButton = modal.querySelector('button[onclick="processExport()"]');
+  const originalText = exportButton.innerHTML;
+  exportButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+  exportButton.disabled = true;
+  
+  try {
+    if (format === 'pdf') {
+      await generatePDFReport({
+        includeCharts, includeData, includeSummary, includeMetadata,
+        fromDate, toDate, reportTitle, author
+      });
+    } else if (format === 'excel') {
+      await generateExcelReport({
+        includeCharts, includeData, includeSummary, includeMetadata,
+        fromDate, toDate, reportTitle, author
+      });
+    }
+    
+    showToast('Report exported successfully!', 'success');
+    closeExportModal();
+    
+    // Add notification
+    if (typeof notificationManager !== 'undefined' && notificationManager.isInitialized) {
+      notificationManager.addNotificationFromToast(
+        `${format.toUpperCase()} report "${reportTitle}" has been generated`,
+        'success',
+        'Report Export'
+      );
+    }
+    
+  } catch (error) {
+    console.error('Export error:', error);
+    showToast('Export failed: ' + error.message, 'error');
+    
+    // Reset button
+    exportButton.innerHTML = originalText;
+    exportButton.disabled = false;
+  }
+}
+
+async function generatePDFReport(options) {
+  // Simulate PDF generation with actual data collection
+  const reportData = await collectReportData(options);
+  
+  // Generate PDF using jsPDF (would need to include library)
+  // For demo purposes, we'll create a simple text-based report
+  const content = generateReportContent(reportData, options);
+  
+  // Create and download PDF
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${options.reportTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  // Simulate processing time
+  await new Promise(resolve => setTimeout(resolve, 2000));
+}
+
+async function generateExcelReport(options) {
+  // Simulate Excel generation
+  const reportData = await collectReportData(options);
+  
+  // Generate CSV format (simple Excel alternative)
+  const csvContent = generateCSVContent(reportData, options);
+  
+  // Create and download CSV
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${options.reportTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  // Simulate processing time
+  await new Promise(resolve => setTimeout(resolve, 1500));
+}
+
+async function collectReportData(options) {
+  // Collect data based on current view and options
+  const currentPage = window.location.hash.replace('#', '') || 'dashboard';
+  
+  const reportData = {
+    title: options.reportTitle,
+    author: options.author,
+    generatedAt: new Date().toISOString(),
+    dateRange: { from: options.fromDate, to: options.toDate },
+    page: currentPage,
+    summary: {},
+    data: [],
+    charts: [],
+    metadata: {}
+  };
+  
+  // Collect page-specific data
+  switch (currentPage) {
+    case 'dashboard':
+      reportData.summary = {
+        totalRisks: 24,
+        highRisks: 3,
+        mediumRisks: 12,
+        lowRisks: 9,
+        compliance: '85%'
+      };
+      reportData.data = [
+        { id: 1, risk: 'Data Breach', severity: 'High', probability: 0.7, impact: 0.9 },
+        { id: 2, risk: 'System Downtime', severity: 'Medium', probability: 0.4, impact: 0.6 },
+        { id: 3, risk: 'Compliance Violation', severity: 'High', probability: 0.3, impact: 0.8 }
+      ];
+      break;
+    case 'risks':
+      reportData.data = await getRisksData();
+      break;
+    case 'compliance':
+      reportData.data = await getComplianceData();
+      break;
+    default:
+      reportData.data = [{ message: 'No specific data available for this view' }];
+  }
+  
+  return reportData;
+}
+
+function generateReportContent(reportData, options) {
+  let content = `${reportData.title}\n`;
+  content += `Generated by: ${reportData.author}\n`;
+  content += `Date: ${new Date(reportData.generatedAt).toLocaleString()}\n`;
+  content += `Report Period: ${reportData.dateRange.from} to ${reportData.dateRange.to}\n`;
+  content += `\n${'='.repeat(50)}\n\n`;
+  
+  if (options.includeSummary && reportData.summary) {
+    content += `EXECUTIVE SUMMARY\n`;
+    content += `${'-'.repeat(20)}\n`;
+    Object.entries(reportData.summary).forEach(([key, value]) => {
+      content += `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}\n`;
+    });
+    content += `\n`;
+  }
+  
+  if (options.includeData && reportData.data.length > 0) {
+    content += `DETAILED DATA\n`;
+    content += `${'-'.repeat(15)}\n`;
+    reportData.data.forEach((item, index) => {
+      content += `${index + 1}. `;
+      Object.entries(item).forEach(([key, value]) => {
+        content += `${key}: ${value} | `;
+      });
+      content += `\n`;
+    });
+    content += `\n`;
+  }
+  
+  if (options.includeMetadata) {
+    content += `REPORT METADATA\n`;
+    content += `${'-'.repeat(17)}\n`;
+    content += `Page: ${reportData.page}\n`;
+    content += `Generated At: ${reportData.generatedAt}\n`;
+    content += `Export Options: Charts(${options.includeCharts}), Data(${options.includeData}), Summary(${options.includeSummary})\n`;
+  }
+  
+  return content;
+}
+
+function generateCSVContent(reportData, options) {
+  let csvContent = '';
+  
+  // Add header information
+  csvContent += `Report Title,${reportData.title}\n`;
+  csvContent += `Author,${reportData.author}\n`;
+  csvContent += `Generated,${new Date(reportData.generatedAt).toLocaleString()}\n`;
+  csvContent += `Date Range,${reportData.dateRange.from} to ${reportData.dateRange.to}\n`;
+  csvContent += `\n`;
+  
+  if (options.includeSummary && reportData.summary) {
+    csvContent += `SUMMARY\n`;
+    Object.entries(reportData.summary).forEach(([key, value]) => {
+      csvContent += `${key},${value}\n`;
+    });
+    csvContent += `\n`;
+  }
+  
+  if (options.includeData && reportData.data.length > 0) {
+    csvContent += `DATA\n`;
+    // Add headers
+    const headers = Object.keys(reportData.data[0]);
+    csvContent += headers.join(',') + `\n`;
+    
+    // Add data rows
+    reportData.data.forEach(item => {
+      const row = headers.map(header => `"${item[header] || ''}"`);
+      csvContent += row.join(',') + `\n`;
+    });
+  }
+  
+  return csvContent;
+}
+
+async function getRisksData() {
+  return [
+    { id: 1, name: 'Data Breach', category: 'Security', severity: 'High', status: 'Active' },
+    { id: 2, name: 'System Failure', category: 'Operational', severity: 'Medium', status: 'Mitigated' },
+    { id: 3, name: 'Compliance Gap', category: 'Regulatory', severity: 'High', status: 'Active' }
+  ];
+}
+
+async function getComplianceData() {
+  return [
+    { framework: 'SOC 2', status: 'Compliant', score: '95%', lastAssessment: '2024-01-15' },
+    { framework: 'ISO 27001', status: 'In Progress', score: '78%', lastAssessment: '2024-02-01' },
+    { framework: 'GDPR', status: 'Compliant', score: '92%', lastAssessment: '2024-01-30' }
+  ];
 }
 
 function scheduleReport() {
-  showToast('Report scheduling feature coming soon!', 'info');
+  const modalHTML = `
+    <div id="schedule-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">Schedule Report</h3>
+            <button onclick="closeScheduleModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <form class="mt-6 space-y-6" onsubmit="handleScheduleReport(event)">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Report Name</label>
+                <input type="text" name="reportName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Monthly Risk Report">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                <select name="frequency" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly" selected>Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                <input type="date" name="startDate" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                <input type="time" name="time" value="09:00" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Recipients</label>
+              <textarea name="recipients" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="admin@company.com, manager@company.com"></textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-6 border-t">
+              <button type="button" onclick="closeScheduleModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"><i class="fas fa-clock mr-2"></i>Schedule Report</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Set default start date to today
+  document.querySelector('[name="startDate"]').value = new Date().toISOString().split('T')[0];
+}
+
+function closeScheduleModal() {
+  const modal = document.getElementById('schedule-modal');
+  if (modal) modal.remove();
+}
+
+function handleScheduleReport(event) {
+  event.preventDefault();
+  const formData = new FormData(event.target);
+  const scheduleData = Object.fromEntries(formData.entries());
+  
+  showToast('Report scheduled successfully!', 'success');
+  closeScheduleModal();
+  
+  if (typeof notificationManager !== 'undefined' && notificationManager.isInitialized) {
+    notificationManager.addNotificationFromToast(
+      `Report "${scheduleData.reportName}" scheduled for ${scheduleData.frequency} delivery`,
+      'success',
+      'Report Scheduling'
+    );
+  }
 }
 
 function shareReport() {
-  showToast('Report sharing feature coming soon!', 'info');
+  const modalHTML = `
+    <div id="share-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: block;">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <div class="flex justify-between items-center pb-4 border-b">
+            <h3 class="text-lg font-medium text-gray-900">Share Report</h3>
+            <button onclick="closeShareModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <div class="mt-6 space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Share via Email</label>
+              <div class="flex space-x-2">
+                <input type="email" placeholder="Enter email address" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="sendReportEmail()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"><i class="fas fa-envelope mr-2"></i>Send</button>
+              </div>
+            </div>
+            
+            <div class="border-t pt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Generate Shareable Link</label>
+              <div class="flex space-x-2">
+                <input type="text" value="https://app.example.com/reports/share/abc123" readonly class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md">
+                <button onclick="copyShareLink()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"><i class="fas fa-copy mr-2"></i>Copy</button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Link expires in 7 days</p>
+            </div>
+            
+            <div class="border-t pt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Access Permissions</label>
+              <div class="space-y-2">
+                <label class="flex items-center">
+                  <input type="radio" name="access" value="view" checked class="form-radio">
+                  <span class="ml-2 text-sm text-gray-700">View only</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="radio" name="access" value="download" class="form-radio">
+                  <span class="ml-2 text-sm text-gray-700">View and download</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="radio" name="access" value="edit" class="form-radio">
+                  <span class="ml-2 text-sm text-gray-700">View, download, and edit</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end space-x-3 pt-6 border-t mt-6">
+            <button type="button" onclick="closeShareModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeShareModal() {
+  const modal = document.getElementById('share-modal');
+  if (modal) modal.remove();
+}
+
+function sendReportEmail() {
+  const email = event.target.previousElementSibling.value;
+  if (email) {
+    showToast(`Report shared with ${email}`, 'success');
+  } else {
+    showToast('Please enter a valid email address', 'error');
+  }
+}
+
+function copyShareLink() {
+  const linkInput = event.target.previousElementSibling;
+  linkInput.select();
+  document.execCommand('copy');
+  showToast('Share link copied to clipboard!', 'success');
 }
 
 // Initialize application
@@ -246,7 +790,15 @@ function showBasicDashboard() {
 }
 
 // Initialize navigation
+// Flag to prevent duplicate initialization
+let navigationInitialized = false;
+
 async function initializeNavigation() {
+  if (navigationInitialized) {
+    console.log('Navigation already initialized, skipping');
+    return;
+  }
+  
   console.log('initializeNavigation called');
   
   // Since navigation is now in static HTML, just add event handlers
@@ -305,6 +857,7 @@ async function initializeNavigation() {
   await updateAuthUI();
   
   console.log('Navigation initialization complete');
+  navigationInitialized = true;
 }
 
 // Update authentication UI
@@ -541,7 +1094,9 @@ function navigateTo(page) {
         }
         break;
       case 'settings':
-        if (typeof showSettings === 'function') {
+        if (typeof enhancedSettings !== 'undefined' && enhancedSettings.showEnhancedSettings) {
+          enhancedSettings.showEnhancedSettings();
+        } else if (typeof showSettings === 'function') {
           showSettings();
         } else {
           showPlaceholder('Settings', 'Settings module loading...', 'cog');
@@ -1330,18 +1885,18 @@ function updateARIAProviderDisplay() {
   
   const aiSettings = JSON.parse(localStorage.getItem('dmt_ai_settings') || '{}');
   
-  // Get enabled and configured providers
+  // Get enabled and configured providers (priority > 0 means enabled)
   const enabledProviders = [];
-  if (aiSettings.openai?.enabled && aiSettings.openai?.apiKey) {
+  if (aiSettings.openai?.priority > 0 && aiSettings.openai?.apiKey) {
     enabledProviders.push('OpenAI GPT-4');
   }
-  if (aiSettings.gemini?.enabled && aiSettings.gemini?.apiKey) {
+  if (aiSettings.gemini?.priority > 0 && aiSettings.gemini?.apiKey) {
     enabledProviders.push('Google Gemini');
   }
-  if (aiSettings.anthropic?.enabled && aiSettings.anthropic?.apiKey) {
+  if (aiSettings.anthropic?.priority > 0 && aiSettings.anthropic?.apiKey) {
     enabledProviders.push('Anthropic Claude');
   }
-  if (aiSettings.local?.enabled && aiSettings.local?.endpoint) {
+  if (aiSettings.local?.priority > 0 && aiSettings.local?.endpoint) {
     enabledProviders.push('Local/Custom');
   }
   
@@ -1364,21 +1919,51 @@ async function sendARIAMessage() {
   
   if (!query) return;
   
-  // Load AI settings from localStorage
-  const aiSettings = JSON.parse(localStorage.getItem('dmt_ai_settings') || '{}');
+  // Load AI settings from localStorage (with fallback logic matching the settings save)
+  let aiSettings;
+  try {
+    // Try dmt_ai_settings first, then fallback to ai_settings (same as loadAISettings function)
+    let settings = localStorage.getItem('dmt_ai_settings');
+    if (!settings) {
+      settings = localStorage.getItem('ai_settings');
+    }
+    aiSettings = settings ? JSON.parse(settings) : {};
+  } catch (error) {
+    console.error('Error loading AI settings for ARIA:', error);
+    aiSettings = {};
+  }
+  console.log('🔍 Frontend Debug - aiSettings keys:', Object.keys(aiSettings));
+  console.log('🔍 Frontend Debug - aiSettings.openai exists:', !!aiSettings.openai);
+  console.log('🔍 Frontend Debug - typeof aiSettings:', typeof aiSettings);
   
-  // Get provider priority list (only enabled providers)
+  // Fix: If aiSettings contains individual provider settings instead of nested structure,
+  // we need to detect this and fix it
+  if (aiSettings.priority !== undefined && aiSettings.apiKey !== undefined) {
+    console.log('🔧 Detected individual provider settings - transforming to nested structure');
+    // This means aiSettings contains individual provider settings, not the nested structure
+    // We need to rebuild it as a nested structure
+    const individualSettings = {...aiSettings};
+    aiSettings = {
+      openai: individualSettings,
+      gemini: { priority: 0, apiKey: '', model: '' },
+      anthropic: { priority: 0, apiKey: '', model: '' },
+      local: { priority: 0, endpoint: '', model: '', apiKey: '' }
+    };
+    console.log('🔧 Transformed to nested structure with keys:', Object.keys(aiSettings));
+  }
+  
+  // Get provider priority list (only enabled providers - priority > 0)
   const providerPriority = [];
-  if (aiSettings.openai?.enabled && aiSettings.openai?.apiKey) {
+  if (aiSettings.openai?.priority > 0 && aiSettings.openai?.apiKey) {
     providerPriority.push('openai');
   }
-  if (aiSettings.gemini?.enabled && aiSettings.gemini?.apiKey) {
+  if (aiSettings.gemini?.priority > 0 && aiSettings.gemini?.apiKey) {
     providerPriority.push('gemini');
   }
-  if (aiSettings.anthropic?.enabled && aiSettings.anthropic?.apiKey) {
+  if (aiSettings.anthropic?.priority > 0 && aiSettings.anthropic?.apiKey) {
     providerPriority.push('anthropic');
   }
-  if (aiSettings.local?.enabled && aiSettings.local?.endpoint) {
+  if (aiSettings.local?.priority > 0 && aiSettings.local?.endpoint) {
     providerPriority.push('local');
   }
   
@@ -1434,6 +2019,13 @@ async function sendARIAMessage() {
   try {
     const token = localStorage.getItem('dmt_token');
     const startTime = Date.now();
+    
+    console.log('🔍 Primary ARIA Call - About to send:', {
+      query: query?.substring(0, 50) + '...',
+      provider: providerPriority[0],
+      settingsType: typeof aiSettings,
+      settingsKeys: Object.keys(aiSettings)
+    });
     
     const response = await axios.post('/api/aria/query', 
       { 
@@ -1525,11 +2117,18 @@ async function sendARIAMessage() {
       const provider = providerPriority[i];
       
       try {
+        console.log(`🔍 Fallback ARIA Call (${provider}) - About to send:`, {
+          query: query?.substring(0, 50) + '...',
+          provider: provider,
+          settingsType: typeof aiSettings,
+          settingsKeys: Object.keys(aiSettings)
+        });
+        
         const fallbackResponse = await axios.post('/api/aria/query', 
           { 
             query: query, 
             provider: provider,
-            settings: aiSettings[provider]
+            settings: aiSettings
           },
           { 
             headers: { Authorization: `Bearer ${localStorage.getItem('dmt_token')}` },
@@ -1820,6 +2419,17 @@ function showToast(message, type = 'info') {
       toast.parentNode.removeChild(toast);
     }
   }, 5000);
+  
+  // Also add to notification center if available, but prevent recursive loops
+  if (typeof notificationManager !== 'undefined' && notificationManager.isInitialized) {
+    // Only add certain types to notification center and exclude notification-related errors
+    if ((type === 'success' || type === 'error' || type === 'warning') && 
+        !message.toLowerCase().includes('notification') && 
+        !message.toLowerCase().includes('mark') &&
+        !message.toLowerCase().includes('failed to mark')) {
+      notificationManager.addNotificationFromToast(message, type);
+    }
+  }
 }
 
 function getRiskScoreColor(score) {

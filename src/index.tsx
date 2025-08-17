@@ -267,12 +267,19 @@ app.get('/', (c) => {
   </div>
 
   <!-- JavaScript -->
-  <script src="/static/modules.js?v=6"></script>
-  <script src="/static/enterprise-modules.js?v=3"></script>
-  <script src="/static/notifications.js?v=3"></script>
+  <script src="/static/modules.js?v=9"></script>
+  <script src="/static/enterprise-modules.js?v=7"></script>
+  <script src="/static/enhanced-settings.js?v=4"></script>
+  <script src="/static/system-settings-integration.js?v=4"></script>
+  <script src="/static/framework-management.js?v=1"></script>
+  <script src="/static/risk-management-enhanced.js?v=1"></script>
+  <script src="/static/incident-management-enhanced.js?v=1"></script>
+  <script src="/static/asset-service-management.js?v=1"></script>
+  <script src="/static/integrated-risk-framework.js?v=1"></script>
+  <script src="/static/notifications.js?v=5"></script>
   <script src="/static/document-management.js?v=3"></script>
   <script src="/static/mobile-interface.js?v=3"></script>
-  <script src="/static/app.js?v=6"></script>
+  <script src="/static/app.js?v=14"></script>
 </body>
 </html>`);
 });

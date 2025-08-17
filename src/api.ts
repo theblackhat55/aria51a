@@ -3835,6 +3835,8 @@ export function createAPI() {
     try {
       const { provider, apiKey } = await c.req.json();
       
+      console.log(`🔄 Fetching ${provider} models with API key: ${apiKey?.substring(0, 10)}...`);
+      
       if (!provider || !apiKey) {
         return c.json<ApiResponse<null>>({ 
           success: false, 
@@ -3861,16 +3863,34 @@ export function createAPI() {
           }, 400);
       }
       
+      console.log(`✅ Successfully fetched ${models.length} ${provider} models`);
       return c.json<ApiResponse<any>>({ 
         success: true, 
         data: { models },
         message: `Successfully fetched ${models.length} models from ${provider}` 
       });
     } catch (error) {
-      console.error('AI model fetch error:', error);
+      console.error(`❌ AI model fetch error for ${provider}:`, error);
+      
+      // Provide more specific error messages based on the error
+      let errorMessage = 'Failed to fetch models';
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          errorMessage = `Invalid ${provider} API key. Please verify your API key is correct and active.`;
+        } else if (error.message.includes('403')) {
+          errorMessage = `${provider} API key lacks sufficient permissions. Please check your API key settings.`;
+        } else if (error.message.includes('429')) {
+          errorMessage = `${provider} API rate limit exceeded. Please wait a moment and try again.`;
+        } else if (error.message.includes('fetch')) {
+          errorMessage = `Network error connecting to ${provider} API. Please check your connection.`;
+        } else {
+          errorMessage = `${provider} API error: ${error.message}`;
+        }
+      }
+      
       return c.json<ApiResponse<null>>({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to fetch models' 
+        error: errorMessage 
       }, 500);
     }
   });
@@ -4836,20 +4856,26 @@ async function fetchOpenAIModels(apiKey: string) {
 
 async function fetchGeminiModels(apiKey: string) {
   try {
+    console.log('🔄 Calling Gemini API to fetch models...');
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
       headers: {
         'Content-Type': 'application/json'
       }
     });
     
+    console.log(`📡 Gemini API response status: ${response.status} ${response.statusText}`);
+    
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Gemini API error response:`, errorText);
       throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
+    console.log(`📊 Gemini API returned ${data.models?.length || 0} total models`);
     
     // Filter and format models
-    return (data.models || [])
+    const filteredModels = (data.models || [])
       .filter((model: any) => model.name.includes('gemini'))
       .map((model: any) => ({
         id: model.name.replace('models/', ''),
@@ -4857,8 +4883,11 @@ async function fetchGeminiModels(apiKey: string) {
         created: null // Gemini doesn't provide creation dates
       }))
       .sort((a: any, b: any) => a.id.localeCompare(b.id));
+      
+    console.log(`✅ Filtered to ${filteredModels.length} Gemini models:`, filteredModels.map(m => m.id));
+    return filteredModels;
   } catch (error) {
-    console.error('Error fetching Gemini models:', error);
+    console.error('❌ Error fetching Gemini models:', error);
     throw new Error('Failed to fetch Gemini models: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 }

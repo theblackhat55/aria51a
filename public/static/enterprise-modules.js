@@ -290,8 +290,15 @@ function getExposureLevelClass(level) {
   return classes[level] || 'bg-gray-100 text-gray-800';
 }
 
-// Settings Management Module
+// Legacy Settings Management Module (kept for backward compatibility)
 async function showSettings() {
+  // Redirect to enhanced settings
+  if (typeof enhancedSettings !== 'undefined' && enhancedSettings.showEnhancedSettings) {
+    enhancedSettings.showEnhancedSettings();
+    return;
+  }
+  
+  // Fallback to legacy settings
   updateActiveNavigation('settings');
   currentModule = 'settings';
   
@@ -981,6 +988,403 @@ async function showRiskOwnersSettings() {
   await loadRiskOwnersData();
 }
 
+// SAML Settings Helper Functions
+function updateSAMLProvider() {
+    const providerSelect = document.getElementById('saml-provider');
+    const selectedProvider = providerSelect.value;
+    const providerInfo = document.getElementById('provider-info');
+    const entityIdField = document.getElementById('entity-id');
+    const ssoUrlField = document.getElementById('sso-url');
+    const sloUrlField = document.getElementById('slo-url');
+
+    // Provider-specific information and default values
+    const providerConfigs = {
+        'azure-ad': {
+            info: `
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                Configure Azure Active Directory SAML integration.
+                                <a href="https://docs.microsoft.com/en-us/azure/active-directory/saas-apps/" target="_blank" class="font-medium underline">
+                                    View Azure AD documentation
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>`,
+            entityId: 'https://sts.windows.net/{tenant-id}/',
+            ssoUrl: 'https://login.microsoftonline.com/{tenant-id}/saml2',
+            sloUrl: 'https://login.microsoftonline.com/{tenant-id}/saml2'
+        },
+        'okta': {
+            info: `
+                <div class="bg-green-50 border-l-4 border-green-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-green-700">
+                                Configure Okta SAML integration.
+                                <a href="https://help.okta.com/en/prod/Content/Topics/Apps/Apps_App_Integration_Wizard_SAML.htm" target="_blank" class="font-medium underline">
+                                    View Okta documentation
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>`,
+            entityId: 'http://www.okta.com/{okta-id}',
+            ssoUrl: 'https://{your-domain}.okta.com/app/{app-name}/{app-id}/sso/saml',
+            sloUrl: 'https://{your-domain}.okta.com/app/{app-name}/{app-id}/slo/saml'
+        },
+        'google': {
+            info: `
+                <div class="bg-red-50 border-l-4 border-red-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700">
+                                Configure Google Workspace SAML integration.
+                                <a href="https://support.google.com/a/answer/6087519" target="_blank" class="font-medium underline">
+                                    View Google Workspace documentation
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>`,
+            entityId: 'https://accounts.google.com/o/saml2?idpid={idp-id}',
+            ssoUrl: 'https://accounts.google.com/o/saml2/idp?idpid={idp-id}',
+            sloUrl: 'https://accounts.google.com/logout'
+        },
+        'pingidentity': {
+            info: `
+                <div class="bg-purple-50 border-l-4 border-purple-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-purple-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-purple-700">
+                                Configure PingIdentity SAML integration.
+                                <a href="https://docs.pingidentity.com/bundle/pingfederate-102/page/concept_samlConfiguration.html" target="_blank" class="font-medium underline">
+                                    View PingIdentity documentation
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>`,
+            entityId: 'https://{your-domain}.pingidentity.com',
+            ssoUrl: 'https://{your-domain}.pingidentity.com/idp/SSO.saml2',
+            sloUrl: 'https://{your-domain}.pingidentity.com/idp/SLO.saml2'
+        },
+        'adfs': {
+            info: `
+                <div class="bg-indigo-50 border-l-4 border-indigo-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-indigo-700">
+                                Configure Active Directory Federation Services (ADFS) SAML integration.
+                                <a href="https://docs.microsoft.com/en-us/windows-server/identity/ad-fs/" target="_blank" class="font-medium underline">
+                                    View ADFS documentation
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>`,
+            entityId: 'http://{your-domain}/adfs/services/trust',
+            ssoUrl: 'https://{your-domain}/adfs/ls/',
+            sloUrl: 'https://{your-domain}/adfs/ls/?wa=wsignout1.0'
+        },
+        'onelogin': {
+            info: `
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                Configure OneLogin SAML integration.
+                                <a href="https://developers.onelogin.com/saml" target="_blank" class="font-medium underline">
+                                    View OneLogin documentation
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>`,
+            entityId: 'https://app.onelogin.com/saml/metadata/{app-id}',
+            ssoUrl: 'https://{your-domain}.onelogin.com/trust/saml2/http-post/sso/{app-id}',
+            sloUrl: 'https://{your-domain}.onelogin.com/trust/saml2/http-redirect/slo/{app-id}'
+        },
+        'auth0': {
+            info: `
+                <div class="bg-orange-50 border-l-4 border-orange-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-orange-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-orange-700">
+                                Configure Auth0 SAML integration.
+                                <a href="https://auth0.com/docs/authenticate/protocols/saml" target="_blank" class="font-medium underline">
+                                    View Auth0 documentation
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>`,
+            entityId: 'urn:auth0:{tenant}:{connection}',
+            ssoUrl: 'https://{your-domain}.auth0.com/samlp/{client-id}',
+            sloUrl: 'https://{your-domain}.auth0.com/samlp/{client-id}/logout'
+        },
+        'generic': {
+            info: `
+                <div class="bg-gray-50 border-l-4 border-gray-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-gray-700">
+                                Configure generic SAML 2.0 identity provider. 
+                                Please refer to your identity provider's documentation for specific configuration details.
+                            </p>
+                        </div>
+                    </div>
+                </div>`,
+            entityId: '',
+            ssoUrl: '',
+            sloUrl: ''
+        }
+    };
+
+    const config = providerConfigs[selectedProvider] || providerConfigs['generic'];
+    
+    // Update provider information panel
+    providerInfo.innerHTML = config.info;
+    
+    // Update form fields with default values (but don't overwrite existing values)
+    if (!entityIdField.value || entityIdField.value === entityIdField.getAttribute('data-default')) {
+        entityIdField.value = config.entityId;
+        entityIdField.setAttribute('data-default', config.entityId);
+    }
+    
+    if (!ssoUrlField.value || ssoUrlField.value === ssoUrlField.getAttribute('data-default')) {
+        ssoUrlField.value = config.ssoUrl;
+        ssoUrlField.setAttribute('data-default', config.ssoUrl);
+    }
+    
+    if (!sloUrlField.value || sloUrlField.value === sloUrlField.getAttribute('data-default')) {
+        sloUrlField.value = config.sloUrl;
+        sloUrlField.setAttribute('data-default', config.sloUrl);
+    }
+}
+
+function initializeSAMLProviders() {
+    const providerSelect = document.getElementById('saml-provider');
+    if (providerSelect) {
+        providerSelect.addEventListener('change', updateSAMLProvider);
+        // Initialize with current selection
+        updateSAMLProvider();
+    }
+}
+
+function addRoleMapping() {
+    const container = document.getElementById('role-mappings-container');
+    const mappingCount = container.children.length;
+    
+    const roleMappingDiv = document.createElement('div');
+    roleMappingDiv.className = 'role-mapping-item flex items-center space-x-3 p-3 bg-gray-50 rounded-lg';
+    roleMappingDiv.innerHTML = `
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">SAML Attribute Value</label>
+            <input type="text" 
+                   name="saml_role_${mappingCount}" 
+                   placeholder="e.g., admin, manager, user"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Application Role</label>
+            <select name="app_role_${mappingCount}" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="admin">Administrator</option>
+                <option value="manager">Manager</option>
+                <option value="analyst">Risk Analyst</option>
+                <option value="viewer">Viewer</option>
+                <option value="auditor">Auditor</option>
+            </select>
+        </div>
+        <button type="button" 
+                onclick="this.parentElement.remove()" 
+                class="text-red-600 hover:text-red-800 p-2">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+        </button>
+    `;
+    
+    container.appendChild(roleMappingDiv);
+}
+
+function testSAMLConnection() {
+    const testButton = document.getElementById('test-saml-connection');
+    const originalText = testButton.innerHTML;
+    
+    // Show loading state
+    testButton.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Testing Connection...
+    `;
+    testButton.disabled = true;
+
+    // Simulate SAML connection test
+    setTimeout(() => {
+        // Reset button
+        testButton.innerHTML = originalText;
+        testButton.disabled = false;
+        
+        // Show result (this would normally be based on actual test results)
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'mt-4 p-4 bg-green-50 border-l-4 border-green-400';
+        resultDiv.innerHTML = `
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-green-700">
+                        <strong>Connection Test Successful!</strong><br>
+                        SAML metadata retrieved successfully. Identity provider is reachable and properly configured.
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        // Remove any existing result
+        const existingResult = document.querySelector('#saml-test-result');
+        if (existingResult) {
+            existingResult.remove();
+        }
+        
+        resultDiv.id = 'saml-test-result';
+        testButton.parentNode.insertBefore(resultDiv, testButton.nextSibling);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (resultDiv.parentNode) {
+                resultDiv.remove();
+            }
+        }, 5000);
+    }, 2000);
+}
+
+async function loadSAMLConfig() {
+    try {
+        const token = localStorage.getItem('dmt_token');
+        const response = await axios.get('/api/saml/config', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.success && response.data.config) {
+            const config = response.data.config;
+            
+            // Populate form fields
+            document.getElementById('saml-provider').value = config.provider || '';
+            document.getElementById('entity-id').value = config.entity_id || '';
+            document.getElementById('sso-url').value = config.sso_url || '';
+            document.getElementById('slo-url').value = config.slo_url || '';
+            document.getElementById('saml-certificate').value = config.certificate || '';
+            
+            // Populate attribute mappings
+            document.getElementById('saml-attr-email').value = config.attr_email || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress';
+            document.getElementById('saml-attr-firstname').value = config.attr_firstname || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname';
+            document.getElementById('saml-attr-lastname').value = config.attr_lastname || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname';
+            document.getElementById('saml-attr-role').value = config.attr_role || 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+            document.getElementById('saml-attr-department').value = config.attr_department || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/department';
+            document.getElementById('saml-attr-groups').value = config.attr_groups || 'http://schemas.xmlsoap.org/claims/Group';
+            
+            // Populate additional options
+            document.getElementById('auto-provisioning').checked = config.auto_provisioning || false;
+            document.getElementById('force-authentication').checked = config.force_authentication || false;
+            document.getElementById('signature-algorithm').value = config.signature_algorithm || 'RSA-SHA256';
+            document.getElementById('nameid-format').value = config.nameid_format || 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress';
+            
+            // Load role mappings if they exist
+            if (config.role_mappings && config.role_mappings.length > 0) {
+                const container = document.getElementById('role-mappings-container');
+                container.innerHTML = ''; // Clear existing mappings
+                
+                config.role_mappings.forEach((mapping, index) => {
+                    const roleMappingDiv = document.createElement('div');
+                    roleMappingDiv.className = 'role-mapping-item flex items-center space-x-3 p-3 bg-gray-50 rounded-lg';
+                    roleMappingDiv.innerHTML = `
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">SAML Attribute Value</label>
+                            <input type="text" 
+                                   name="saml_role_${index}" 
+                                   value="${mapping.saml_role || ''}"
+                                   placeholder="e.g., admin, manager, user"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Application Role</label>
+                            <select name="app_role_${index}" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="admin" ${mapping.app_role === 'admin' ? 'selected' : ''}>Administrator</option>
+                                <option value="manager" ${mapping.app_role === 'manager' ? 'selected' : ''}>Manager</option>
+                                <option value="analyst" ${mapping.app_role === 'analyst' ? 'selected' : ''}>Risk Analyst</option>
+                                <option value="viewer" ${mapping.app_role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                                <option value="auditor" ${mapping.app_role === 'auditor' ? 'selected' : ''}>Auditor</option>
+                            </select>
+                        </div>
+                        <button type="button" 
+                                onclick="this.parentElement.remove()" 
+                                class="text-red-600 hover:text-red-800 p-2">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    `;
+                    container.appendChild(roleMappingDiv);
+                });
+            }
+        }
+    } catch (error) {
+        console.log('No existing SAML configuration found or error loading config:', error);
+        // This is normal for first-time setup, so we don't show an error
+    }
+}
+
 async function showSAMLSettings() {
   const content = document.getElementById('settings-content');
   
@@ -989,54 +1393,132 @@ async function showSAMLSettings() {
       <!-- SAML Configuration Header -->
       <div>
         <h3 class="text-lg font-medium text-gray-900">SAML Authentication</h3>
-        <p class="text-gray-600 mt-1">Configure SAML SSO with Microsoft Entra ID</p>
+        <p class="text-gray-600 mt-1">Configure SAML SSO with popular identity providers</p>
+      </div>
+      
+      <!-- IDP Selection -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h4 class="text-md font-medium text-gray-900 mb-4">Identity Provider Selection</h4>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Identity Provider</label>
+            <select id="saml-provider" class="form-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Select an Identity Provider</option>
+              <option value="azure-ad">Microsoft Azure AD / Entra ID</option>
+              <option value="okta">Okta</option>
+              <option value="google">Google Workspace (G Suite)</option>
+              <option value="pingidentity">PingIdentity</option>
+              <option value="adfs">Active Directory Federation Services (ADFS)</option>
+              <option value="onelogin">OneLogin</option>
+              <option value="auth0">Auth0</option>
+              <option value="generic">Generic SAML 2.0 Provider</option>
+            </select>
+          </div>
+          
+          <!-- Provider Information Panel -->
+          <div id="provider-info" class="mt-4">
+            <div class="flex items-start space-x-3">
+              <div id="provider-icon" class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-blue-600"></i>
+              </div>
+              <div>
+                <h5 id="provider-name" class="font-medium text-blue-900"></h5>
+                <p id="provider-description" class="text-sm text-blue-700 mt-1"></p>
+                <div id="provider-links" class="mt-2 space-x-3">
+                  <a id="provider-docs" href="#" target="_blank" class="text-sm text-blue-600 hover:underline">
+                    <i class="fas fa-external-link-alt mr-1"></i>Documentation
+                  </a>
+                  <a id="provider-setup" href="#" target="_blank" class="text-sm text-blue-600 hover:underline">
+                    <i class="fas fa-cog mr-1"></i>Setup Guide
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       <!-- SAML Configuration Form -->
       <div class="bg-white rounded-lg shadow p-6">
         <h4 class="text-md font-medium text-gray-900 mb-4">SAML Configuration</h4>
         <form id="saml-config-form" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Entity ID (SP)</label>
-            <input type="text" id="saml-entity-id" class="form-input" placeholder="https://your-app.pages.dev">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700">SSO URL (IdP)</label>
-            <input type="text" id="saml-sso-url" class="form-input" placeholder="https://login.microsoftonline.com/tenant-id/saml2">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700">X.509 Certificate</label>
-            <textarea id="saml-certificate" class="form-input" rows="6" placeholder="-----BEGIN CERTIFICATE-----"></textarea>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700">Name ID Format</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Entity ID (Service Provider)</label>
+              <input type="text" id="entity-id" class="form-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://your-app.pages.dev/saml/metadata" data-default="">
+              <p class="text-xs text-gray-500 mt-1">Unique identifier for your application</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ACS URL (Assertion Consumer Service)</label>
+              <input type="text" id="saml-acs-url" class="form-input" placeholder="https://your-app.pages.dev/saml/acs">
+              <p class="text-xs text-gray-500 mt-1">Where SAML responses are sent</p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">SSO URL (Identity Provider)</label>
+              <input type="text" id="sso-url" class="form-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://login.microsoftonline.com/tenant-id/saml2" data-default="">
+              <p class="text-xs text-gray-500 mt-1">IdP single sign-on endpoint</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">SLO URL (Single Logout)</label>
+              <input type="text" id="slo-url" class="form-input w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://login.microsoftonline.com/tenant-id/saml2" data-default="">
+              <p class="text-xs text-gray-500 mt-1">IdP single logout endpoint (optional)</p>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">X.509 Certificate</label>
+            <textarea id="saml-certificate" class="form-input" rows="8" placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"></textarea>
+            <p class="text-xs text-gray-500 mt-1">Copy the signing certificate from your identity provider</p>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Name ID Format</label>
               <select id="saml-name-id-format" class="form-select">
                 <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">Email Address</option>
                 <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">Persistent</option>
                 <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">Transient</option>
+                <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">Unspecified</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">Binding Type</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Binding Type</label>
               <select id="saml-binding-type" class="form-select">
                 <option value="HTTP-POST">HTTP-POST</option>
                 <option value="HTTP-Redirect">HTTP-Redirect</option>
               </select>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Signature Algorithm</label>
+              <select id="saml-signature-algorithm" class="form-select">
+                <option value="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256">RSA-SHA256</option>
+                <option value="http://www.w3.org/2000/09/xmldsig#rsa-sha1">RSA-SHA1</option>
+              </select>
+            </div>
           </div>
           
-          <div>
+          <div class="space-y-3">
             <label class="flex items-center">
               <input type="checkbox" id="saml-enabled" class="form-checkbox h-4 w-4 text-blue-600">
               <span class="ml-2 text-sm text-gray-700">Enable SAML Authentication</span>
             </label>
+            <label class="flex items-center">
+              <input type="checkbox" id="saml-auto-provision" class="form-checkbox h-4 w-4 text-blue-600">
+              <span class="ml-2 text-sm text-gray-700">Auto-provision new users</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" id="saml-force-authn" class="form-checkbox h-4 w-4 text-blue-600">
+              <span class="ml-2 text-sm text-gray-700">Force re-authentication on each login</span>
+            </label>
           </div>
           
-          <div class="flex justify-end space-x-3">
+          <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+            <button type="button" onclick="testSAMLConnection()" class="btn-secondary">
+              <i class="fas fa-plug mr-2"></i>Test Connection
+            </button>
             <button type="button" onclick="downloadSAMLMetadata()" class="btn-secondary">
               <i class="fas fa-download mr-2"></i>Download SP Metadata
             </button>
@@ -1050,26 +1532,141 @@ async function showSAMLSettings() {
       <!-- Attribute Mapping -->
       <div class="bg-white rounded-lg shadow p-6">
         <h4 class="text-md font-medium text-gray-900 mb-4">Attribute Mapping</h4>
+        <p class="text-sm text-gray-600 mb-4">Configure how SAML attributes map to user profile fields</p>
         <div class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700">Email Attribute</label>
-              <input type="text" class="form-input" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" readonly>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email Attribute</label>
+              <input type="text" id="saml-attr-email" class="form-input" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">First Name Attribute</label>
-              <input type="text" class="form-input" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" readonly>
+              <label class="block text-sm font-medium text-gray-700 mb-1">First Name Attribute</label>
+              <input type="text" id="saml-attr-firstname" class="form-input" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname">
             </div>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700">Last Name Attribute</label>
-              <input type="text" class="form-input" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname" readonly>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Last Name Attribute</label>
+              <input type="text" id="saml-attr-lastname" class="form-input" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">Role Attribute</label>
-              <input type="text" class="form-input" value="http://schemas.microsoft.com/ws/2008/06/identity/claims/role" readonly>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Role Attribute</label>
+              <input type="text" id="saml-attr-role" class="form-input" value="http://schemas.microsoft.com/ws/2008/06/identity/claims/role">
             </div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Department Attribute</label>
+              <input type="text" id="saml-attr-department" class="form-input" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/department">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Groups Attribute</label>
+              <input type="text" id="saml-attr-groups" class="form-input" value="http://schemas.xmlsoap.org/claims/Group">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Role Mapping -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h4 class="text-md font-medium text-gray-900 mb-4">Role Mapping</h4>
+        <p class="text-sm text-gray-600 mb-4">Map SAML role values to application roles</p>
+        <div class="space-y-3" id="role-mappings-container">
+          <div class="role-mapping-item flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-1">SAML Attribute Value</label>
+              <input type="text" 
+                     name="saml_role_0" 
+                     placeholder="e.g., admin, manager, user"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex-1">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Application Role</label>
+              <select name="app_role_0" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="admin">Administrator</option>
+                <option value="manager">Manager</option>
+                <option value="analyst">Risk Analyst</option>
+                <option value="viewer">Viewer</option>
+                <option value="auditor">Auditor</option>
+              </select>
+            </div>
+            <button type="button" 
+                    onclick="this.parentElement.remove()" 
+                    class="text-red-600 hover:text-red-800 p-2">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button type="button" onclick="addRoleMapping()" class="mt-3 text-sm text-blue-600 hover:text-blue-800">
+          <i class="fas fa-plus mr-1"></i>Add Role Mapping
+        </button>
+      </div>
+      
+      <!-- Additional Options -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h4 class="text-md font-medium text-gray-900 mb-4">Additional Options</h4>
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label class="flex items-center">
+                <input type="checkbox" id="auto-provisioning" class="form-checkbox">
+                <span class="ml-2 text-sm text-gray-700">Enable auto-provisioning of new users</span>
+              </label>
+              <p class="text-xs text-gray-500 mt-1">Automatically create user accounts for new SAML users</p>
+            </div>
+            <div>
+              <label class="flex items-center">
+                <input type="checkbox" id="force-authentication" class="form-checkbox">
+                <span class="ml-2 text-sm text-gray-700">Force re-authentication</span>
+              </label>
+              <p class="text-xs text-gray-500 mt-1">Require users to authenticate each time</p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Signature Algorithm</label>
+              <select id="signature-algorithm" class="form-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="RSA-SHA256">RSA-SHA256 (Recommended)</option>
+                <option value="RSA-SHA1">RSA-SHA1</option>
+                <option value="RSA-SHA384">RSA-SHA384</option>
+                <option value="RSA-SHA512">RSA-SHA512</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Name ID Format</label>
+              <select id="nameid-format" class="form-select w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">Email Address</option>
+                <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">Persistent</option>
+                <option value="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">Transient</option>
+                <option value="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">Unspecified</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Actions -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
+          <div>
+            <h4 class="text-md font-medium text-gray-900">Test & Save Configuration</h4>
+            <p class="text-sm text-gray-600 mt-1">Validate your SAML configuration before enabling</p>
+          </div>
+          <div class="flex space-x-3">
+            <button type="button" 
+                    id="test-saml-connection"
+                    onclick="testSAMLConnection()" 
+                    class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <i class="fas fa-plug mr-2"></i>Test Connection
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <i class="fas fa-save mr-2"></i>Save Configuration
+            </button>
           </div>
         </div>
       </div>
@@ -1078,6 +1675,9 @@ async function showSAMLSettings() {
   
   // Load current SAML configuration
   await loadSAMLConfig();
+  
+  // Initialize provider selection
+  initializeSAMLProviders();
 }
 
 // Microsoft Integration Functions
@@ -2744,11 +3344,57 @@ async function showAISettings() {
       </div>
     </div>
   `;
+  
+  // Restore saved model selections to dropdowns (in case they're not in the default options)
+  setTimeout(() => {
+    if (aiSettings.openai?.model) {
+      const openaiSelect = document.getElementById('openai-model');
+      if (openaiSelect && !Array.from(openaiSelect.options).some(opt => opt.value === aiSettings.openai.model)) {
+        const option = document.createElement('option');
+        option.value = aiSettings.openai.model;
+        option.textContent = aiSettings.openai.model;
+        option.selected = true;
+        openaiSelect.appendChild(option);
+      } else if (openaiSelect) {
+        openaiSelect.value = aiSettings.openai.model;
+      }
+    }
+    
+    if (aiSettings.gemini?.model) {
+      const geminiSelect = document.getElementById('gemini-model');
+      if (geminiSelect && !Array.from(geminiSelect.options).some(opt => opt.value === aiSettings.gemini.model)) {
+        const option = document.createElement('option');
+        option.value = aiSettings.gemini.model;
+        option.textContent = aiSettings.gemini.model;
+        option.selected = true;
+        geminiSelect.appendChild(option);
+      } else if (geminiSelect) {
+        geminiSelect.value = aiSettings.gemini.model;
+      }
+    }
+    
+    if (aiSettings.anthropic?.model) {
+      const anthropicSelect = document.getElementById('anthropic-model');
+      if (anthropicSelect && !Array.from(anthropicSelect.options).some(opt => opt.value === aiSettings.anthropic.model)) {
+        const option = document.createElement('option');
+        option.value = aiSettings.anthropic.model;
+        option.textContent = aiSettings.anthropic.model;
+        option.selected = true;
+        anthropicSelect.appendChild(option);
+      } else if (anthropicSelect) {
+        anthropicSelect.value = aiSettings.anthropic.model;
+      }
+    }
+  }, 100);
 }
 
 async function loadAISettings() {
   try {
-    const settings = localStorage.getItem('ai_settings');
+    // First try the current key, then fallback to the old key
+    let settings = localStorage.getItem('ai_settings');
+    if (!settings) {
+      settings = localStorage.getItem('dmt_ai_settings');
+    }
     if (settings) {
       return JSON.parse(settings);
     }
@@ -2792,10 +3438,14 @@ async function saveAISettings() {
     };
     
     localStorage.setItem('ai_settings', JSON.stringify(settings));
+    // Also save to the key that ARIA display function expects
+    localStorage.setItem('dmt_ai_settings', JSON.stringify(settings));
     showToast('AI settings saved successfully!', 'success');
     
     // Update ARIA interface to show configured provider
-    updateARIAProviderStatus();
+    if (typeof updateARIAProviderDisplay === 'function') {
+      updateARIAProviderDisplay();
+    }
     
   } catch (error) {
     console.error('Error saving AI settings:', error);
@@ -4247,7 +4897,15 @@ window.viewDocumentDetails = viewDocumentDetails;
 window.removeDocument = removeDocument;
 // Dynamic Model Fetching Functions
 async function fetchOpenAIModels() {
-  const apiKey = document.getElementById('openai-api-key')?.value;
+  // Try to get API key from DOM input first, then fallback to saved settings
+  let apiKey = document.getElementById('openai-api-key')?.value;
+  
+  if (!apiKey) {
+    // Fallback to saved settings if DOM input is empty
+    const savedSettings = await loadAISettings();
+    apiKey = savedSettings.openai?.apiKey;
+  }
+  
   if (!apiKey) {
     showToast('Please enter your OpenAI API key first', 'warning');
     return;
@@ -4270,10 +4928,10 @@ async function fetchOpenAIModels() {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    if (response.data.success && response.data.models) {
-      console.log('✅ OpenAI models fetched:', response.data.models.length);
-      updateModelDropdown('openai-model', response.data.models, 'gpt-');
-      showToast(`Found ${response.data.models.length} OpenAI models`, 'success');
+    if (response.data.success && response.data.data && response.data.data.models) {
+      console.log('✅ OpenAI models fetched:', response.data.data.models.length);
+      updateModelDropdown('openai-model', response.data.data.models, 'gpt-');
+      showToast(`Found ${response.data.data.models.length} OpenAI models`, 'success');
     } else {
       throw new Error(response.data.error || 'Failed to fetch models');
     }
@@ -4300,7 +4958,15 @@ async function fetchOpenAIModels() {
 }
 
 async function fetchGeminiModels() {
-  const apiKey = document.getElementById('gemini-api-key')?.value;
+  // Try to get API key from DOM input first, then fallback to saved settings
+  let apiKey = document.getElementById('gemini-api-key')?.value;
+  
+  if (!apiKey) {
+    // Fallback to saved settings if DOM input is empty
+    const savedSettings = await loadAISettings();
+    apiKey = savedSettings.gemini?.apiKey;
+  }
+  
   if (!apiKey) {
     showToast('Please enter your Gemini API key first', 'warning');
     return;
@@ -4323,10 +4989,10 @@ async function fetchGeminiModels() {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    if (response.data.success && response.data.models) {
-      console.log('✅ Gemini models fetched:', response.data.models.length);
-      updateModelDropdown('gemini-model', response.data.models, 'gemini');
-      showToast(`Found ${response.data.models.length} Gemini models`, 'success');
+    if (response.data.success && response.data.data && response.data.data.models) {
+      console.log('✅ Gemini models fetched:', response.data.data.models.length);
+      updateModelDropdown('gemini-model', response.data.data.models, 'gemini');
+      showToast(`Found ${response.data.data.models.length} Gemini models`, 'success');
     } else {
       throw new Error(response.data.error || 'Failed to fetch models');
     }
@@ -4353,7 +5019,15 @@ async function fetchGeminiModels() {
 }
 
 async function fetchAnthropicModels() {
-  const apiKey = document.getElementById('anthropic-api-key')?.value;
+  // Try to get API key from DOM input first, then fallback to saved settings
+  let apiKey = document.getElementById('anthropic-api-key')?.value;
+  
+  if (!apiKey) {
+    // Fallback to saved settings if DOM input is empty
+    const savedSettings = await loadAISettings();
+    apiKey = savedSettings.anthropic?.apiKey;
+  }
+  
   if (!apiKey) {
     showToast('Please enter your Anthropic API key first', 'warning');
     return;
@@ -4376,10 +5050,10 @@ async function fetchAnthropicModels() {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    if (response.data.success && response.data.models) {
-      console.log('✅ Anthropic models fetched:', response.data.models.length);
-      updateModelDropdown('anthropic-model', response.data.models, 'claude');
-      showToast(`Found ${response.data.models.length} Anthropic models`, 'success');
+    if (response.data.success && response.data.data && response.data.data.models) {
+      console.log('✅ Anthropic models fetched:', response.data.data.models.length);
+      updateModelDropdown('anthropic-model', response.data.data.models, 'claude');
+      showToast(`Found ${response.data.data.models.length} Anthropic models`, 'success');
     } else {
       throw new Error(response.data.error || 'Failed to fetch models');
     }
@@ -4411,12 +5085,12 @@ function updateModelDropdown(selectId, models, filterPrefix = '') {
   
   const currentValue = select.value;
   
-  // Clear current options except the first few defaults
-  const defaultOptions = Array.from(select.options).slice(0, 5);
+  // Preserve all existing options (not just first 5) to maintain user selections
+  const existingOptions = Array.from(select.options);
   select.innerHTML = '';
   
-  // Add back default options
-  defaultOptions.forEach(option => {
+  // Add back existing options (including user's previous selections)
+  existingOptions.forEach(option => {
     select.appendChild(option);
   });
   

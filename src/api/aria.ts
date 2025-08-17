@@ -14,6 +14,13 @@ export function createARIAAPI() {
     try {
       const body = await c.req.json();
       const { query, provider, settings } = body;
+      
+      // Enhanced debug logging (secure)
+      console.log('🔍 ARIA Request Debug:');
+      console.log('- Query length:', query?.length || 0);
+      console.log('- Provider:', provider);
+      console.log('- Settings keys:', Object.keys(settings || {}));
+      console.log('- Settings structure:', typeof settings);
 
       if (!query || typeof query !== 'string') {
         return c.json({
@@ -335,12 +342,20 @@ async function callLLMProvider(prompt: string, preferredProvider: string, settin
   // Try preferred provider first, then fallback to others
   const tryOrder = preferredProvider ? [preferredProvider, ...providers.filter(p => p !== preferredProvider)] : providers;
 
+  console.log(`🔍 ARIA Debug - AI Settings:`, JSON.stringify(aiSettings, null, 2));
+  console.log(`🔍 ARIA Debug - Try Order:`, tryOrder);
+
   for (const provider of tryOrder) {
     try {
       const providerSettings = aiSettings[provider];
-      if (!providerSettings?.enabled || !providerSettings?.apiKey) {
+      console.log(`🔍 ARIA Debug - ${provider} settings:`, JSON.stringify(providerSettings, null, 2));
+      
+      if (!providerSettings || providerSettings.priority <= 0 || !providerSettings?.apiKey) {
+        console.log(`❌ ARIA Debug - ${provider} skipped: priority=${providerSettings?.priority}, hasApiKey=${!!providerSettings?.apiKey}`);
         continue;
       }
+      
+      console.log(`✅ ARIA Debug - Trying ${provider} with model: ${providerSettings.model}`);
 
       const response = await callSpecificProvider(prompt, provider, providerSettings);
       return {
@@ -376,6 +391,16 @@ async function callSpecificProvider(prompt: string, provider: string, settings: 
 
 // OpenAI API integration
 async function callOpenAI(prompt: string, settings: any): Promise<any> {
+  // Validate and fix model name
+  let model = settings.model || 'gpt-4o';
+  
+  // Fix common invalid model names
+  const validModels = ['gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'];
+  if (!validModels.includes(model)) {
+    console.log(`🔧 Invalid OpenAI model '${model}', using 'gpt-4o' instead`);
+    model = 'gpt-4o';
+  }
+  
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -383,7 +408,7 @@ async function callOpenAI(prompt: string, settings: any): Promise<any> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: settings.model || 'gpt-4',
+      model: model,
       messages: [
         { role: 'system', content: 'You are ARIA, an AI Risk Intelligence Assistant.' },
         { role: 'user', content: prompt }

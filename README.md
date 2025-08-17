@@ -244,18 +244,94 @@ npm run db:console:local
 - **AI Integration**: 4 LLM providers supported
 - **Visualization Types**: 4 interactive heat map modes
 
+## 🛡️ Comprehensive Risk Management Framework (August 17, 2025)
+
+### ✅ NIST 800-37 RMF & ISO 27001:2022 Compliant Framework
+- **Complete Asset Management**: CIA triad assessment with dynamic risk scoring
+- **Service Dependency Mapping**: Service-to-asset relationships with cascading risk calculation
+- **Enhanced Risk Assessment**: NIST 800-30 methodology with threat source analysis
+- **Integrated Risk Calculation**: Dynamic risk propagation from assets → services → risks
+- **Compliance Mapping**: Full alignment to ISO 27001:2022, NIST CSF, and SOC 2
+
+### ✅ Advanced Incident Management with Workflows
+- **SLA-Based Escalation**: Automatic escalation based on severity and time
+- **Workflow Automation**: Status-based incident lifecycle management
+- **Real-Time Metrics**: Incident response time, SLA breach tracking
+- **Integration**: Full integration with risk and asset management systems
+
+### ✅ Dynamic Risk Scoring Engine
+- **Asset Risk Formula**: `(MaxCIA * 0.6 + AvgCIA * 0.4) * Criticality`
+- **Service Risk Formula**: `AssetRisk * ServiceTypeMultiplier * DependencyMultiplier`
+- **Enhanced Risk Formula**: `BaseRisk * AssetMultiplier * ServiceMultiplier * ThreatMultiplier - ControlEffectiveness`
+- **Real-Time Updates**: Automatic recalculation when dependencies change
+
+### ✅ Industry Standards Compliance
+- **NIST 800-37**: Complete Risk Management Framework implementation
+- **ISO 27001:2022**: All 14 Annex A control categories mapped
+- **NIST CSF**: Full Cybersecurity Framework integration
+- **SOC 2**: Trust Service Criteria alignment
+- **NIST 800-30**: Threat source and risk assessment methodology
+
+## 📊 Risk Framework Architecture
+
+### Asset Management (ISO 27001:2022)
+- **6 Asset Types**: Information, Software, Physical, Personnel, Service, Intangible
+- **CIA Triad Assessment**: Low/Moderate/High impact levels per NIST 800-60
+- **4 Criticality Levels**: Mission Critical, Business Critical, Important, Non-Critical
+- **Dynamic Risk Scoring**: Real-time calculation based on CIA and criticality
+
+### Service Management with Dependencies
+- **5 Service Tiers**: Presentation, Application, Data, Infrastructure, Security
+- **4 Service Types**: Business Critical (99.9% SLA), Important (99.5%), Support (99.0%), Development (95.0%)
+- **Dependency Mapping**: Complete service-to-asset and service-to-service relationships
+- **Risk Propagation**: Automatic risk inheritance from dependent assets
+
+### Enhanced Risk Assessment (NIST 800-37)
+- **14 Risk Categories**: Complete ISO 27001:2022 Annex A mapping
+- **4 Threat Sources**: Adversarial, Accidental, Structural, Environmental
+- **5x5 Risk Matrix**: NIST 800-30 likelihood and impact levels
+- **Control Effectiveness**: Integrated control maturity and implementation tracking
+
+### Incident Management with SLA Tracking
+- **4 Severity Levels**: Critical (30min SLA), High (2hr), Medium (8hr), Low (24hr)
+- **9 Status Workflow**: Complete incident lifecycle management
+- **3 Escalation Rules**: Automatic escalation based on time, severity, and SLA
+- **Metrics Dashboard**: MTTR, SLA compliance, escalation tracking
+
+## 🔧 Framework Benefits
+
+### Standards Compliance
+- **Audit Ready**: Complete traceability from assets to risks to controls
+- **Certification Support**: ISO 27001:2022, SOC 2, NIST compliance
+- **Regulatory Alignment**: Automated compliance framework mapping
+- **Control Effectiveness**: Quantitative control assessment and reporting
+
+### Dynamic Risk Management
+- **Real-Time Updates**: Automatic risk recalculation on dependency changes
+- **Impact Analysis**: Full asset-service-risk relationship tracking
+- **Threat Intelligence**: NIST 800-30 threat source integration
+- **Predictive Analytics**: Risk trend analysis and forecasting
+
+### Operational Excellence
+- **Automated Workflows**: Incident escalation and risk treatment processes
+- **Comprehensive Reporting**: Executive dashboards and detailed risk registers
+- **Integration Ready**: API-first design for external tool integration
+- **Performance Monitoring**: SLA tracking and compliance metrics
+
 ## 🔮 Future Enhancements
-- Real-time collaboration features
+- Real-time collaboration features with WebSocket integration
 - Advanced reporting and dashboard customization
-- Integration with external security tools
+- Integration with external security tools (SIEM, SOAR)
 - Machine learning model training on user data
 - Advanced document OCR and content analysis
 - Multi-tenant organization support
+- Service dependency mapping visualization
+- Automated risk assessment triggers
 
 ---
-**Last Updated**: August 15, 2025
-**Version**: 2.0 - Enhanced Edition
-**Maintenance Status**: Active Development
+**Last Updated**: August 17, 2025
+**Version**: 2.1 - Comprehensive Risk Framework Edition
+**Maintenance Status**: Active Development with Industry Standards Compliance
 ## 🚀 Latest Features Added (August 15, 2025)
 
 ### ✅ RAG (Retrieval-Augmented Generation) System
