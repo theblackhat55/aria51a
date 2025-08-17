@@ -1173,10 +1173,34 @@ function editEnhancedRisk(riskId) {
     }
 }
 
+// Override the problematic function immediately 
+window.showAddRiskModal = async function() {
+    console.log('Using enhanced risk creation (override)');
+    const content = getEnhancedRiskFormHTML();
+    const buttons = [
+        { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
+        { text: 'Create Risk', class: 'btn-primary', onclick: 'submitRiskForm()' }
+    ];
+    const modal = createModal('Create Risk Assessment', content, buttons);
+    document.body.appendChild(modal);
+    
+    // Wait for modal to be added to DOM, then populate dropdowns safely
+    setTimeout(async () => {
+        await populateEnhancedRiskFormDropdowns();
+        
+        const form = document.getElementById('risk-form');
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await handleEnhancedRiskSubmit();
+            });
+        }
+    }, 100);
+};
+
 // Override global functions to use enhanced versions
 window.createEnhancedRisk = createEnhancedRisk;
 window.editEnhancedRisk = editEnhancedRisk;
-window.showAddRiskModal = createEnhancedRisk;
 
 // Auto-upgrade existing functions if enhanced framework is available
 document.addEventListener('DOMContentLoaded', function() {
