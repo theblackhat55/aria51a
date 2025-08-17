@@ -1509,8 +1509,8 @@ function formatDateTime(dateString) {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// Auto-run escalation check every 5 minutes
-setInterval(checkEscalationRules, 5 * 60 * 1000);
+// Auto-run escalation check every 10 minutes (reduced from 5 minutes to avoid rate limiting)
+setInterval(checkEscalationRules, 10 * 60 * 1000);
 
 // Initialize with sample data if no incidents exist
 function initializeIncidentData() {

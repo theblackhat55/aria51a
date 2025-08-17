@@ -580,10 +580,10 @@ class NotificationManager {
   }
 
   startPolling() {
-    // Poll for new notifications every 30 seconds
+    // Poll for new notifications every 2 minutes (reduced from 30 seconds to avoid rate limiting)
     this.pollingInterval = setInterval(() => {
       this.updateNotificationCount();
-    }, 30000);
+    }, 120000);
   }
 
   stopPolling() {

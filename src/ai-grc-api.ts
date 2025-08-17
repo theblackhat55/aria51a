@@ -377,6 +377,159 @@ export function createAIGRCAPI() {
   });
 
   // ====================
+  // AI RISK ASSESSMENT FOR FORMS
+  // ====================
+
+  // AI-powered risk assessment for form creation/editing
+  app.post('/risk-assessment', authMiddleware, async (c) => {
+    try {
+      const { title, description, services, threat_source } = await c.req.json();
+      
+      if (!title && !description) {
+        return c.json({
+          success: false,
+          error: 'Title or description is required for AI assessment'
+        }, 400);
+      }
+
+      console.log('🤖 Generating AI risk assessment for:', { title, description, services, threat_source });
+
+      // Create comprehensive risk context for AI analysis
+      const riskContext = {
+        title: title || 'Untitled Risk',
+        description: description || '',
+        threat_source: threat_source || 'unknown',
+        associated_services: services || [],
+        service_count: Array.isArray(services) ? services.length : 0
+      };
+
+      // AI analysis based on risk characteristics
+      let aiProbability = 3; // Default medium
+      let aiImpact = 3; // Default medium
+      let reasoning = 'Based on standard risk assessment patterns';
+
+      // Analyze threat source impact
+      const threatSourceMultipliers = {
+        'external_threat_actor': { prob: 1.2, impact: 1.3 },
+        'insider_threat': { prob: 1.1, impact: 1.4 },
+        'system_failure': { prob: 1.0, impact: 1.1 },
+        'natural_disaster': { prob: 0.8, impact: 1.5 },
+        'cyber_attack': { prob: 1.3, impact: 1.4 },
+        'human_error': { prob: 1.2, impact: 1.0 },
+        'third_party': { prob: 1.1, impact: 1.2 },
+        'regulatory_change': { prob: 0.9, impact: 1.1 },
+        'unknown': { prob: 1.0, impact: 1.0 }
+      };
+
+      const threatMultiplier = threatSourceMultipliers[threat_source] || threatSourceMultipliers['unknown'];
+
+      // Text analysis for risk keywords
+      const riskText = `${title} ${description}`.toLowerCase();
+      
+      // High-risk keywords
+      const criticalKeywords = ['critical', 'severe', 'catastrophic', 'breach', 'failure', 'outage', 'loss', 'compromise'];
+      const highKeywords = ['significant', 'major', 'important', 'disruption', 'impact', 'vulnerable', 'exploit'];
+      const mediumKeywords = ['moderate', 'potential', 'possible', 'minor', 'temporary', 'limited'];
+
+      let keywordScore = 3; // Default medium
+      if (criticalKeywords.some(keyword => riskText.includes(keyword))) {
+        keywordScore = 5;
+        reasoning += '. Critical risk keywords detected';
+      } else if (highKeywords.some(keyword => riskText.includes(keyword))) {
+        keywordScore = 4;
+        reasoning += '. High-impact keywords detected';
+      } else if (mediumKeywords.some(keyword => riskText.includes(keyword))) {
+        keywordScore = 3;
+        reasoning += '. Standard risk indicators present';
+      }
+
+      // Service dependency impact
+      let serviceImpactMultiplier = 1.0;
+      if (riskContext.service_count > 5) {
+        serviceImpactMultiplier = 1.3;
+        reasoning += '. Multiple service dependencies increase impact';
+      } else if (riskContext.service_count > 2) {
+        serviceImpactMultiplier = 1.2;
+        reasoning += '. Service dependencies present';
+      } else if (riskContext.service_count > 0) {
+        serviceImpactMultiplier = 1.1;
+        reasoning += '. Limited service impact';
+      }
+
+      // Calculate AI suggestions
+      aiProbability = Math.min(5, Math.max(1, Math.round(keywordScore * threatMultiplier.prob)));
+      aiImpact = Math.min(5, Math.max(1, Math.round(keywordScore * threatMultiplier.impact * serviceImpactMultiplier)));
+
+      // Calculate risk score
+      const riskScore = aiProbability * aiImpact;
+      
+      // Determine risk level
+      let riskLevel = 'low';
+      if (riskScore >= 20) riskLevel = 'critical';
+      else if (riskScore >= 12) riskLevel = 'high';
+      else if (riskScore >= 6) riskLevel = 'medium';
+
+      // Generate additional insights
+      const insights = [];
+      
+      if (threat_source === 'cyber_attack' || threat_source === 'external_threat_actor') {
+        insights.push('Consider implementing additional security controls and monitoring');
+      }
+      
+      if (riskContext.service_count > 3) {
+        insights.push('High service dependency requires comprehensive business continuity planning');
+      }
+      
+      if (riskScore >= 15) {
+        insights.push('This risk requires immediate attention and senior management oversight');
+      }
+
+      // Mitigation suggestions based on threat source
+      const mitigationSuggestions = {
+        'cyber_attack': ['Implement multi-factor authentication', 'Regular security assessments', 'Incident response planning'],
+        'system_failure': ['Redundancy planning', 'Regular system maintenance', 'Backup and recovery procedures'],
+        'human_error': ['Staff training programs', 'Process documentation', 'Quality assurance checks'],
+        'natural_disaster': ['Business continuity planning', 'Geographic redundancy', 'Emergency response procedures'],
+        'insider_threat': ['Access controls', 'Background checks', 'Activity monitoring'],
+        'third_party': ['Vendor risk assessments', 'Service level agreements', 'Regular audits']
+      };
+
+      const suggestions = mitigationSuggestions[threat_source] || ['Regular risk assessments', 'Monitoring and review', 'Stakeholder communication'];
+
+      return c.json({
+        success: true,
+        data: {
+          ai_probability: aiProbability,
+          ai_impact: aiImpact,
+          risk_score: riskScore,
+          risk_level: riskLevel,
+          reasoning: reasoning,
+          confidence: Math.min(95, 70 + (riskText.length > 50 ? 20 : 10) + (riskContext.service_count > 0 ? 5 : 0)),
+          insights: insights,
+          mitigation_suggestions: suggestions,
+          analysis_timestamp: new Date().toISOString(),
+          threat_source_analysis: {
+            source: threat_source,
+            probability_multiplier: threatMultiplier.prob,
+            impact_multiplier: threatMultiplier.impact
+          },
+          service_impact_analysis: {
+            services_count: riskContext.service_count,
+            impact_multiplier: serviceImpactMultiplier
+          }
+        },
+        message: 'AI risk assessment completed successfully'
+      });
+    } catch (error) {
+      console.error('AI risk assessment error:', error);
+      return c.json({
+        success: false,
+        error: error.message || 'Failed to generate AI risk assessment'
+      }, 500);
+    }
+  });
+
+  // ====================
   // DYNAMIC RISK ANALYSIS
   // ====================
 

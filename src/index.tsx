@@ -260,6 +260,7 @@ app.get('/', (c) => {
 
   <!-- JavaScript -->
   <script src="/static/modules.js?v=12&t=1734469000"></script>
+  <script src="/static/risk-enhancements.js?v=1"></script>
   <script src="/static/enterprise-modules.js?v=7"></script>
   <script src="/static/enhanced-settings.js?v=4"></script>
   <script src="/static/system-settings-integration.js?v=4"></script>
@@ -267,7 +268,7 @@ app.get('/', (c) => {
   <script src="/static/risk-management-enhanced.js?v=2"></script>
   <script src="/static/incident-management-enhanced.js?v=1"></script>
   <script src="/static/asset-service-management.js?v=1"></script>
-  <script src="/static/integrated-risk-framework.js?v=1"></script>
+  <script src="/static/integrated-risk-framework.js?v=2"></script>
   <script src="/static/ai-grc-dashboard.js?v=1"></script>
   <script src="/static/ai-assure-module.js?v=1"></script>
   <script src="/static/notifications.js?v=5"></script>

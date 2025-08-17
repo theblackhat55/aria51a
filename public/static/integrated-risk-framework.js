@@ -375,7 +375,7 @@ function getEnhancedRiskFormHTML(risk = null) {
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
                     <h3 class="text-lg font-medium text-blue-900 mb-4 flex items-center">
                         <i class="fas fa-info-circle mr-2"></i>
-                        Risk Identification (NIST 800-30)
+                        Risk Identification
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -387,9 +387,9 @@ function getEnhancedRiskFormHTML(risk = null) {
                         </div>
                         
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Risk Category *</label>
-                            <select id="riskCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                                <option value="">Select ISO 27001:2022 Category</option>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Risk Category (Optional)</label>
+                            <select id="riskCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Category (Optional)</option>
                                 ${Object.entries(framework.riskCategories).map(([key, category]) => 
                                     `<option value="${key}" ${isEdit && risk.category === key ? 'selected' : ''}>${category.iso_control} - ${category.label}</option>`
                                 ).join('')}
@@ -425,34 +425,20 @@ function getEnhancedRiskFormHTML(risk = null) {
                 <!-- Asset and Service Impact -->
                 <div class="bg-green-50 border border-green-200 rounded-lg p-6">
                     <h3 class="text-lg font-medium text-green-900 mb-4 flex items-center">
-                        <i class="fas fa-server mr-2"></i>
-                        Affected Assets & Services
+                        <i class="fas fa-cogs mr-2"></i>
+                        Affected Services
                     </h3>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Affected Assets</label>
-                            <div class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto">
-                                ${assets.map(asset => `
-                                    <label class="flex items-center mb-2">
-                                        <input type="checkbox" name="affectedAssets" value="${asset.id}"
-                                            ${isEdit && risk.affectedAssets?.includes(asset.id) ? 'checked' : ''}
-                                            class="mr-2">
-                                        <span class="text-sm">${asset.name} (${asset.assetType})</span>
-                                    </label>
-                                `).join('')}
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Affected Services</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Related Services</label>
                             <div class="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto">
                                 ${services.map(service => `
                                     <label class="flex items-center mb-2">
                                         <input type="checkbox" name="affectedServices" value="${service.id}"
                                             ${isEdit && risk.affectedServices?.includes(service.id) ? 'checked' : ''}
                                             class="mr-2">
-                                        <span class="text-sm">${service.name} (${service.serviceTier})</span>
+                                        <span class="text-sm">${service.name} (${service.criticality || 'Standard'})</span>
                                     </label>
                                 `).join('')}
                             </div>
@@ -464,14 +450,14 @@ function getEnhancedRiskFormHTML(risk = null) {
                 <div class="bg-red-50 border border-red-200 rounded-lg p-6">
                     <h3 class="text-lg font-medium text-red-900 mb-4 flex items-center">
                         <i class="fas fa-calculator mr-2"></i>
-                        Risk Assessment (NIST 800-30)
+                        Risk Assessment
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Likelihood *</label>
                             <select id="likelihood" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                onchange="calculateRiskScore()" required>
+                                onchange="setTimeout(calculateRiskScore, 100)" required>
                                 <option value="">Select Likelihood</option>
                                 ${Object.entries(framework.riskMatrices.nist.likelihood).map(([key, level]) => 
                                     `<option value="${level.value}" ${isEdit && risk.likelihood === level.value ? 'selected' : ''}>${level.label}</option>`
@@ -482,7 +468,7 @@ function getEnhancedRiskFormHTML(risk = null) {
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Impact *</label>
                             <select id="impact" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                                onchange="calculateRiskScore()" required>
+                                onchange="setTimeout(calculateRiskScore, 100)" required>
                                 <option value="">Select Impact</option>
                                 ${Object.entries(framework.riskMatrices.nist.impact).map(([key, level]) => 
                                     `<option value="${level.value}" ${isEdit && risk.impact === level.value ? 'selected' : ''}>${level.label}</option>`
@@ -501,6 +487,59 @@ function getEnhancedRiskFormHTML(risk = null) {
                     <div class="mt-4">
                         <div id="riskMatrix" class="text-sm text-gray-600">
                             Risk will be calculated based on affected assets, services, and NIST methodology
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI Risk Assessment -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-purple-900 mb-4 flex items-center">
+                        <i class="fas fa-brain mr-2"></i>
+                        AI Risk Assessment
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-gray-600">Get AI-powered risk analysis based on your risk details and related services</p>
+                            <button type="button" id="analyze-with-ai" onclick="performAIRiskAssessment()"
+                                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium">
+                                <i class="fas fa-robot mr-2"></i>Analyze with AI
+                            </button>
+                        </div>
+                        
+                        <!-- AI Suggestions Display -->
+                        <div id="ai-suggestions" class="hidden">
+                            <div class="bg-white rounded-lg border border-purple-200 p-4">
+                                <h4 class="font-medium text-purple-900 mb-3">AI Analysis Results:</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">AI Suggested Likelihood:</label>
+                                        <div id="ai-likelihood" class="text-sm text-gray-600 p-2 bg-gray-50 rounded"></div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">AI Suggested Impact:</label>
+                                        <div id="ai-impact" class="text-sm text-gray-600 p-2 bg-gray-50 rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">AI Risk Score:</label>
+                                    <div id="ai-risk-score" class="text-lg font-bold text-purple-700 p-2 bg-gray-50 rounded"></div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">AI Recommendations:</label>
+                                    <div id="ai-recommendations" class="text-sm text-gray-600 p-2 bg-gray-50 rounded"></div>
+                                </div>
+                                <div class="mt-3 flex space-x-2">
+                                    <button type="button" onclick="applyAISuggestions()"
+                                        class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                                        Apply AI Suggestions
+                                    </button>
+                                    <button type="button" onclick="dismissAISuggestions()"
+                                        class="px-3 py-1 bg-gray-400 text-white rounded text-sm hover:bg-gray-500">
+                                        Dismiss
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -574,56 +613,110 @@ function calculateRiskScore() {
     const likelihood = parseInt(document.getElementById('likelihood')?.value) || 0;
     const impact = parseInt(document.getElementById('impact')?.value) || 0;
     
+    // Update risk score display immediately when values are selected
+    const displayElement = document.getElementById('riskScoreDisplay');
+    const matrixElement = document.getElementById('riskMatrix');
+    
     if (likelihood && impact) {
-        // Get selected assets and services
-        const selectedAssets = Array.from(document.querySelectorAll('input[name="affectedAssets"]:checked'))
-            .map(cb => cb.value);
+        // Calculate base risk score (likelihood × impact)
+        const baseRiskScore = likelihood * impact;
+        
+        // Get selected services only (we removed assets from the form)
         const selectedServices = Array.from(document.querySelectorAll('input[name="affectedServices"]:checked'))
             .map(cb => cb.value);
         
-        // Get actual asset and service data
-        const allAssets = JSON.parse(localStorage.getItem('assets') || '[]');
-        const allServices = JSON.parse(localStorage.getItem('services') || '[]');
+        // Calculate service impact factor
+        let serviceImpactMultiplier = 1.0;
+        let serviceImpactDescription = '';
         
-        const affectedAssets = allAssets.filter(asset => selectedAssets.includes(asset.id));
-        const affectedServices = allServices.filter(service => selectedServices.includes(service.id));
-        
-        // Create temporary risk object for calculation
-        const tempRisk = {
-            likelihood: likelihood,
-            impact: impact,
-            affectedAssets: selectedAssets,
-            affectedServices: selectedServices,
-            threatSource: document.getElementById('threatSource')?.value
-        };
-        
-        // Calculate enhanced risk score
-        const framework = new IntegratedRiskFramework();
-        const enhancedScore = framework.calculateEnhancedRiskScore(tempRisk, affectedAssets, affectedServices);
-        
-        // Update display
-        const displayElement = document.getElementById('riskScoreDisplay');
-        if (displayElement) {
-            displayElement.textContent = enhancedScore.toFixed(2);
-            displayElement.style.backgroundColor = getRiskScoreColor(enhancedScore);
-            displayElement.style.color = enhancedScore > 5 ? 'white' : 'black';
+        if (selectedServices.length > 0) {
+            // Fetch service data to calculate impact
+            try {
+                // Simple service impact calculation based on count and criticality
+                // In a real system, you'd fetch actual service criticality from the API
+                const serviceCount = selectedServices.length;
+                
+                if (serviceCount >= 3) {
+                    serviceImpactMultiplier = 1.5; // High impact for multiple services
+                    serviceImpactDescription = 'High service impact (3+ services)';
+                } else if (serviceCount >= 2) {
+                    serviceImpactMultiplier = 1.3; // Medium impact for 2 services
+                    serviceImpactDescription = 'Medium service impact (2 services)';
+                } else if (serviceCount === 1) {
+                    serviceImpactMultiplier = 1.1; // Low impact for 1 service
+                    serviceImpactDescription = 'Low service impact (1 service)';
+                }
+            } catch (error) {
+                console.log('Using default service impact calculation');
+                serviceImpactMultiplier = 1.0 + (selectedServices.length * 0.1);
+                serviceImpactDescription = `Service impact factor: ${selectedServices.length} service(s)`;
+            }
         }
         
-        // Update risk matrix explanation
-        const matrixElement = document.getElementById('riskMatrix');
+        // Calculate final risk score
+        const finalRiskScore = baseRiskScore * serviceImpactMultiplier;
+        
+        // Update main risk score display
+        if (displayElement) {
+            displayElement.textContent = Math.round(finalRiskScore);
+            displayElement.style.backgroundColor = getRiskScoreColor(finalRiskScore);
+            displayElement.style.color = finalRiskScore > 15 ? 'white' : '#374151';
+            displayElement.style.fontWeight = 'bold';
+            displayElement.style.fontSize = '1.25rem';
+        }
+        
+        // Update risk calculation explanation
+        if (matrixElement) {
+            const riskLevel = getRiskLevel(finalRiskScore);
+            matrixElement.innerHTML = `
+                <div class="space-y-2">
+                    <div><strong>Risk Calculation:</strong></div>
+                    <div>Base Risk: ${likelihood} × ${impact} = ${baseRiskScore}</div>
+                    ${selectedServices.length > 0 ? 
+                        `<div>Service Impact: ×${serviceImpactMultiplier.toFixed(1)} (${serviceImpactDescription})</div>
+                         <div><strong>Final Risk Score: ${Math.round(finalRiskScore)} (${riskLevel})</strong></div>` :
+                        `<div><strong>Final Risk Score: ${baseRiskScore} (${getRiskLevel(baseRiskScore)})</strong></div>`
+                    }
+                    <div class="text-xs text-gray-500 mt-2">
+                        Services Affected: ${selectedServices.length}
+                    </div>
+                </div>`
+        }
+    } else {
+        // Clear displays when no values selected
+        if (displayElement) {
+            displayElement.textContent = 'TBD';
+            displayElement.style.backgroundColor = '#f3f4f6';
+            displayElement.style.color = '#6b7280';
+        }
+        
         if (matrixElement) {
             matrixElement.innerHTML = `
-                <strong>Risk Calculation:</strong><br>
-                Base Risk: ${likelihood} × ${impact} = ${likelihood * impact}<br>
-                Enhanced Risk: ${enhancedScore.toFixed(2)} (includes asset/service impact)<br>
-                Assets Affected: ${affectedAssets.length}<br>
-                Services Affected: ${affectedServices.length}
-            `;
+                <div class="text-gray-600">
+                    Select likelihood and impact to calculate risk score
+                </div>`;
         }
     }
 }
 
-// Enhanced risk form submission
+// Helper functions for risk score display
+function getRiskScoreColor(score) {
+    if (score >= 20) return '#dc2626'; // Red - Critical
+    if (score >= 15) return '#ea580c'; // Orange - High
+    if (score >= 10) return '#d97706'; // Amber - Medium-High
+    if (score >= 5) return '#eab308';  // Yellow - Medium
+    return '#16a34a'; // Green - Low
+}
+
+function getRiskLevel(score) {
+    if (score >= 20) return 'Critical';
+    if (score >= 15) return 'High';
+    if (score >= 10) return 'Medium-High';
+    if (score >= 5) return 'Medium';
+    return 'Low';
+}
+
+// Enhanced risk form submission using API
 async function handleEnhancedRiskSubmit(riskId = null) {
     const form = document.getElementById('enhancedRiskForm');
     if (!form) {
@@ -632,81 +725,89 @@ async function handleEnhancedRiskSubmit(riskId = null) {
         return;
     }
 
-    // Get form data
+    // Get form data and map to API format
     const formData = {
-        risk_id: document.getElementById('riskId').value,
         title: document.getElementById('riskTitle').value,
         description: document.getElementById('riskDescription').value,
-        category: document.getElementById('riskCategory').value,
-        threatSource: document.getElementById('threatSource').value,
-        likelihood: parseInt(document.getElementById('likelihood').value),
+        category_id: document.getElementById('riskCategory').value || null,
+        threat_source: document.getElementById('threatSource').value,
+        probability: parseInt(document.getElementById('likelihood').value),
         impact: parseInt(document.getElementById('impact').value),
-        treatmentStrategy: document.getElementById('treatmentStrategy').value,
-        owner: document.getElementById('riskOwner').value,
-        mitigationActions: document.getElementById('mitigationActions').value,
-        affectedAssets: Array.from(document.querySelectorAll('input[name="affectedAssets"]:checked'))
-            .map(cb => cb.value),
-        affectedServices: Array.from(document.querySelectorAll('input[name="affectedServices"]:checked'))
-            .map(cb => cb.value)
+        treatment_strategy: document.getElementById('treatmentStrategy').value,
+        mitigation_plan: document.getElementById('mitigationActions').value,
+        related_services: Array.from(document.querySelectorAll('input[name="affectedServices"]:checked'))
+            .map(cb => cb.value).join(','),
+        organization_id: 1, // Default organization
+        owner_id: 1 // Default owner - this should be dynamic in production
     };
 
-    // Validation
-    if (!formData.risk_id || !formData.title || !formData.category || !formData.threatSource ||
-        !formData.likelihood || !formData.impact || !formData.treatmentStrategy || !formData.owner) {
-        showNotification('Please fill in all required fields', 'error');
+    // Basic validation - only title is required now (category is optional)
+    if (!formData.title || !formData.probability || !formData.impact) {
+        showNotification('Please fill in title, probability, and impact', 'error');
         return;
     }
 
-    // Calculate enhanced risk score
-    const assets = JSON.parse(localStorage.getItem('assets') || '[]');
-    const services = JSON.parse(localStorage.getItem('services') || '[]');
-    const affectedAssets = assets.filter(asset => formData.affectedAssets.includes(asset.id));
-    const affectedServices = services.filter(service => formData.affectedServices.includes(service.id));
-    
-    const framework = new IntegratedRiskFramework();
-    const enhancedRiskScore = framework.calculateEnhancedRiskScore(formData, affectedAssets, affectedServices);
-    
-    let risks = JSON.parse(localStorage.getItem('risks') || '[]');
-    const now = new Date().toISOString();
-
-    if (riskId) {
-        // Update existing risk
-        const riskIndex = risks.findIndex(r => r.id === riskId);
-        if (riskIndex !== -1) {
-            risks[riskIndex] = {
-                ...risks[riskIndex],
-                ...formData,
-                riskScore: enhancedRiskScore,
-                risk_score: enhancedRiskScore,
-                updatedAt: now
-            };
-            showNotification('Risk updated successfully', 'success');
+    try {
+        // Try multiple token storage keys
+        const token = localStorage.getItem('dmt_token') ||           // Main app token
+                     localStorage.getItem('authToken') || 
+                     localStorage.getItem('token') || 
+                     localStorage.getItem('dmt_access_token') ||      // Keycloak token
+                     sessionStorage.getItem('authToken');
+                     
+        if (!token) {
+            showNotification('Authentication required - please log in', 'error');
+            return;
         }
-    } else {
-        // Create new risk
-        const newRisk = {
-            id: Date.now().toString(),
-            ...formData,
-            riskScore: enhancedRiskScore,
-            risk_score: enhancedRiskScore,
-            status: 'active',
-            createdAt: now,
-            updatedAt: now
-        };
-        
-        risks.push(newRisk);
-        showNotification('Risk created successfully', 'success');
-    }
 
-    localStorage.setItem('risks', JSON.stringify(risks));
-    closeModal();
-    
-    // Refresh displays if functions exist
-    if (typeof showRisks === 'function') {
-        showRisks();
-    }
-    if (typeof loadRisks === 'function') {
-        loadRisks();
+        let response;
+        if (riskId) {
+            // Update existing risk
+            response = await fetch(`/api/risks/${riskId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+            });
+        } else {
+            // Create new risk
+            response = await fetch('/api/risks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+            });
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification(
+                riskId ? 'Risk updated successfully' : 'Risk created successfully', 
+                'success'
+            );
+            closeModal();
+            
+            // Refresh the risk list display
+            if (typeof showRisks === 'function') {
+                showRisks();
+            }
+            if (typeof loadRisks === 'function') {
+                loadRisks();
+            }
+            
+            // Refresh completed - no additional module data loading needed
+        } else {
+            throw new Error(result.error || 'Operation failed');
+        }
+        
+    } catch (error) {
+        console.error('Risk submission error:', error);
+        showNotification('Failed to save risk. Please try again.', 'error');
     }
 }
 
@@ -723,6 +824,17 @@ function createEnhancedRisk() {
                 e.preventDefault();
                 await handleEnhancedRiskSubmit();
             });
+            
+            // Initialize risk score calculation
+            setTimeout(() => {
+                calculateRiskScore();
+                
+                // Add event listeners for service checkboxes to trigger recalculation
+                const serviceCheckboxes = document.querySelectorAll('input[name="affectedServices"]');
+                serviceCheckboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', () => setTimeout(calculateRiskScore, 50));
+                });
+            }, 200);
         } else {
             console.error('Enhanced risk form not found in modal');
         }
@@ -755,6 +867,162 @@ function editEnhancedRisk(riskId) {
     }, 100);
 }
 
+// AI Risk Assessment Functions
+async function performAIRiskAssessment() {
+    const button = document.getElementById('analyze-with-ai');
+    const suggestionsDiv = document.getElementById('ai-suggestions');
+    
+    // Get form data
+    const title = document.getElementById('riskTitle')?.value || '';
+    const description = document.getElementById('riskDescription')?.value || '';
+    const selectedServices = Array.from(document.querySelectorAll('input[name="affectedServices"]:checked'))
+        .map(cb => cb.value).join(',');
+    
+    if (!title.trim()) {
+        showNotification('Please enter a risk title before using AI analysis', 'warning');
+        return;
+    }
+    
+    // Show loading state
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analyzing...';
+    
+    try {
+        // Try multiple token storage keys (different parts of the app may use different keys)
+        const token = localStorage.getItem('dmt_token') ||           // Main app token
+                     localStorage.getItem('authToken') || 
+                     localStorage.getItem('token') || 
+                     localStorage.getItem('dmt_access_token') ||      // Keycloak token
+                     sessionStorage.getItem('authToken');
+                     
+        if (!token) {
+            throw new Error('Authentication token not found. Please log in again.');
+        }
+
+        const response = await fetch('/api/risks/ai-assessment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                title: title,
+                description: description,
+                related_services: selectedServices
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                displayAISuggestions(result.data);
+                suggestionsDiv.classList.remove('hidden');
+                showNotification('AI risk assessment completed successfully', 'success');
+            } else {
+                throw new Error(result.error || 'AI assessment failed');
+            }
+        } else {
+            throw new Error('Failed to get AI assessment');
+        }
+    } catch (error) {
+        console.error('AI Assessment error:', error);
+        showNotification('AI assessment failed. Please try again.', 'error');
+    } finally {
+        // Reset button
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-robot mr-2"></i>Analyze with AI';
+    }
+}
+
+function displayAISuggestions(aiData) {
+    // Display AI suggestions
+    document.getElementById('ai-likelihood').textContent = 
+        `${aiData.probability}/5 - ${aiData.probability_reasoning}`;
+    document.getElementById('ai-impact').textContent = 
+        `${aiData.impact}/5 - ${aiData.impact_reasoning}`;
+    document.getElementById('ai-risk-score').textContent = 
+        `${aiData.risk_score} (${getRiskLevelText(aiData.risk_score)})`;
+    
+    // Display recommendations
+    const recommendationsDiv = document.getElementById('ai-recommendations');
+    if (aiData.mitigation_recommendations && aiData.mitigation_recommendations.length > 0) {
+        recommendationsDiv.innerHTML = `
+            <ul class="list-disc list-inside space-y-1">
+                ${aiData.mitigation_recommendations.map(rec => `<li>${rec}</li>`).join('')}
+            </ul>
+        `;
+    } else {
+        recommendationsDiv.textContent = 'No specific recommendations provided';
+    }
+    
+    // Store AI data for potential application
+    window.currentAISuggestions = aiData;
+}
+
+function applyAISuggestions() {
+    if (!window.currentAISuggestions) return;
+    
+    const aiData = window.currentAISuggestions;
+    
+    // Apply likelihood and impact
+    const likelihoodSelect = document.getElementById('likelihood');
+    const impactSelect = document.getElementById('impact');
+    const threatSourceSelect = document.getElementById('threatSource');
+    
+    if (likelihoodSelect && aiData.probability) {
+        likelihoodSelect.value = aiData.probability;
+    }
+    if (impactSelect && aiData.impact) {
+        impactSelect.value = aiData.impact;
+    }
+    if (threatSourceSelect && aiData.threat_source) {
+        // Map AI threat source to form options
+        const threatMapping = {
+            'internal': 'insider',
+            'external': 'external',
+            'technical_failure': 'system',
+            'human_error': 'human',
+            'process_failure': 'process',
+            'natural_disaster': 'environmental',
+            'regulatory_change': 'regulatory'
+        };
+        const mappedThreat = threatMapping[aiData.threat_source];
+        if (mappedThreat) {
+            threatSourceSelect.value = mappedThreat;
+        }
+    }
+    
+    // Update mitigation actions if available
+    const mitigationTextarea = document.getElementById('mitigationActions');
+    if (mitigationTextarea && aiData.mitigation_recommendations) {
+        const currentText = mitigationTextarea.value.trim();
+        const aiRecommendations = aiData.mitigation_recommendations.join('\n• ');
+        const newText = currentText ? 
+            `${currentText}\n\nAI Recommendations:\n• ${aiRecommendations}` :
+            `AI Recommendations:\n• ${aiRecommendations}`;
+        mitigationTextarea.value = newText;
+    }
+    
+    // Recalculate risk score
+    calculateRiskScore();
+    
+    showNotification('AI suggestions applied successfully', 'success');
+    dismissAISuggestions();
+}
+
+function dismissAISuggestions() {
+    document.getElementById('ai-suggestions').classList.add('hidden');
+    window.currentAISuggestions = null;
+}
+
+function getRiskLevelText(score) {
+    if (score >= 20) return 'Very High';
+    if (score >= 15) return 'High';
+    if (score >= 10) return 'Medium';
+    if (score >= 5) return 'Low';
+    return 'Very Low';
+}
+
 // Make enhanced functions globally available
 window.IntegratedRiskFramework = IntegratedRiskFramework;
 window.getEnhancedRiskFormHTML = getEnhancedRiskFormHTML;
@@ -762,6 +1030,11 @@ window.handleEnhancedRiskSubmit = handleEnhancedRiskSubmit;
 window.calculateRiskScore = calculateRiskScore;
 window.createEnhancedRisk = createEnhancedRisk;
 window.editEnhancedRisk = editEnhancedRisk;
+window.performAIRiskAssessment = performAIRiskAssessment;
+window.applyAISuggestions = applyAISuggestions;
+window.dismissAISuggestions = dismissAISuggestions;
+window.getRiskScoreColor = getRiskScoreColor;
+window.getRiskLevel = getRiskLevel;
 
 // Initialize enhanced risk framework
 document.addEventListener('DOMContentLoaded', function() {

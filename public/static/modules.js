@@ -6388,16 +6388,48 @@ function getRiskFormHTML(risk = null) {
           <input type="text" id="risk-title" class="form-input" required>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Category *</label>
-          <select id="risk-category" class="form-select" required>
-            <option value="">Select Category</option>
+          <label class="block text-sm font-medium text-gray-700">Category</label>
+          <select id="risk-category" class="form-select">
+            <option value="">Select Category (Optional)</option>
           </select>
         </div>
       </div>
       
       <div>
         <label class="block text-sm font-medium text-gray-700">Description *</label>
-        <textarea id="risk-description" class="form-input" rows="3" required></textarea>
+        <textarea id="risk-description" class="form-input" rows="3" required placeholder="Describe the risk in detail..."></textarea>
+      </div>
+      
+      <!-- AI-Powered Risk Assessment Section -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-robot text-blue-600"></i>
+            <h4 class="font-medium text-blue-900">AI Risk Assessment Assistant</h4>
+          </div>
+          <button type="button" onclick="generateAIRiskAssessment()" class="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+            <i class="fas fa-magic mr-1"></i>Analyze with AI
+          </button>
+        </div>
+        <p class="text-sm text-blue-700 mb-3">Let AI help assess probability and impact based on risk details and associated services.</p>
+        <div id="ai-assessment-results" class="hidden">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white rounded p-3">
+              <label class="block text-xs font-medium text-gray-600 mb-1">AI Suggested Probability</label>
+              <div id="ai-probability-suggestion" class="text-lg font-semibold text-blue-900">-</div>
+              <button type="button" onclick="applyAIProbability()" class="text-xs text-blue-600 hover:text-blue-800">Apply Suggestion</button>
+            </div>
+            <div class="bg-white rounded p-3">
+              <label class="block text-xs font-medium text-gray-600 mb-1">AI Suggested Impact</label>
+              <div id="ai-impact-suggestion" class="text-lg font-semibold text-blue-900">-</div>
+              <button type="button" onclick="applyAIImpact()" class="text-xs text-blue-600 hover:text-blue-800">Apply Suggestion</button>
+            </div>
+          </div>
+          <div class="mt-3 p-2 bg-white rounded">
+            <label class="block text-xs font-medium text-gray-600 mb-1">AI Analysis</label>
+            <div id="ai-analysis-text" class="text-sm text-gray-700"></div>
+          </div>
+        </div>
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -6417,47 +6449,73 @@ function getRiskFormHTML(risk = null) {
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Related Services</label>
-          <select id="risk-services" class="form-select" multiple size="4">
+          <label class="block text-sm font-medium text-gray-700">Related Services *</label>
+          <select id="risk-services" class="form-select" multiple size="4" required>
             <option value="">Loading services...</option>
           </select>
-          <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple services</p>
+          <p class="text-xs text-gray-500 mt-1">Select services affected by this risk (Hold Ctrl/Cmd for multiple)</p>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Service Impact Factor</label>
-          <select id="risk-service-impact" class="form-select">
-            <option value="none">No Service Impact</option>
-            <option value="low">Low Impact on Services</option>
-            <option value="medium">Medium Impact on Services</option>
-            <option value="high">High Impact on Services</option>
-            <option value="critical">Critical Impact on Services</option>
+          <label class="block text-sm font-medium text-gray-700">Threat Source</label>
+          <select id="risk-threat-source" class="form-select">
+            <option value="">Select Threat Source</option>
+            <option value="external_threat_actor">External Threat Actor</option>
+            <option value="insider_threat">Insider Threat</option>
+            <option value="system_failure">System Failure</option>
+            <option value="natural_disaster">Natural Disaster</option>
+            <option value="cyber_attack">Cyber Attack</option>
+            <option value="human_error">Human Error</option>
+            <option value="third_party">Third Party</option>
+            <option value="regulatory_change">Regulatory Change</option>
+            <option value="unknown">Unknown</option>
           </select>
-          <p class="text-xs text-gray-500 mt-1">How this risk affects selected services</p>
+          <p class="text-xs text-gray-500 mt-1">Primary source of this risk</p>
         </div>
       </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700">Probability (1-5) *</label>
+          <label class="block text-sm font-medium text-gray-700 flex items-center justify-between">Probability (1-5) *
+            <button type="button" onclick="showRiskScoringGuide('probability')" class="text-xs text-blue-600 hover:text-blue-800">
+              <i class="fas fa-question-circle mr-1"></i>Scoring Guide
+            </button>
+          </label>
           <select id="risk-probability" class="form-select" required>
             <option value="">Select Probability</option>
-            <option value="1">1 - Very Low</option>
-            <option value="2">2 - Low</option>
-            <option value="3">3 - Medium</option>
-            <option value="4">4 - High</option>
-            <option value="5">5 - Very High</option>
+            <option value="1">1 - Very Low (0-5%)</option>
+            <option value="2">2 - Low (6-25%)</option>
+            <option value="3">3 - Medium (26-50%)</option>
+            <option value="4">4 - High (51-75%)</option>
+            <option value="5">5 - Very High (76-100%)</option>
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700">Impact (1-5) *</label>
+          <label class="block text-sm font-medium text-gray-700 flex items-center justify-between">Impact (1-5) *
+            <button type="button" onclick="showRiskScoringGuide('impact')" class="text-xs text-blue-600 hover:text-blue-800">
+              <i class="fas fa-question-circle mr-1"></i>Scoring Guide
+            </button>
+          </label>
           <select id="risk-impact" class="form-select" required>
             <option value="">Select Impact</option>
-            <option value="1">1 - Very Low</option>
-            <option value="2">2 - Low</option>
-            <option value="3">3 - Medium</option>
-            <option value="4">4 - High</option>
-            <option value="5">5 - Very High</option>
+            <option value="1">1 - Very Low (Minimal)</option>
+            <option value="2">2 - Low (Minor)</option>
+            <option value="3">3 - Medium (Moderate)</option>
+            <option value="4">4 - High (Major)</option>
+            <option value="5">5 - Very High (Severe)</option>
           </select>
+        </div>
+      </div>
+      
+      <!-- Risk Score Display -->
+      <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Calculated Risk Score</label>
+            <div id="calculated-risk-score" class="text-2xl font-bold text-gray-900">-</div>
+          </div>
+          <div id="risk-level-indicator" class="px-4 py-2 rounded-lg text-sm font-medium">
+            Select probability and impact
+          </div>
         </div>
       </div>
       

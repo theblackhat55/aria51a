@@ -2,9 +2,35 @@
 
 ## 🚀 Project Overview
 - **Name**: DMT Risk Assessment Platform
-- **Version**: 2.0 - Enhanced Edition
+- **Version**: 2.0.1 - Ubuntu Docker Edition
 - **Goal**: Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics
-- **Technology Stack**: Hono + TypeScript + Cloudflare Workers/Pages + D1 Database + TailwindCSS
+- **Technology Stack**: Hono + TypeScript + Node.js + SQLite + Docker + TailwindCSS
+
+## 🐧 Quick Start - Ubuntu Docker Deployment
+
+### Prerequisites
+- Ubuntu 20.04+ with Docker and Docker Compose installed
+- 4GB RAM minimum, 8GB recommended
+- 10GB free disk space
+
+### One-Command Deployment
+```bash
+# Clone and deploy
+git clone https://github.com/theblackhat55/GRC.git
+cd GRC
+mkdir -p database logs uploads
+docker-compose up -d
+
+# Access at: http://localhost:3000
+# Login: admin / demo123
+```
+
+### 🔗 Links After Deployment
+- **Application**: http://localhost:3000
+- **Health Check**: http://localhost:3000/health
+- **Login Page**: http://localhost:3000/login
+
+📖 **Full Ubuntu deployment guide**: [UBUNTU_DOCKER_DEPLOYMENT.md](UBUNTU_DOCKER_DEPLOYMENT.md)
 
 ## 🌟 New Features Implemented
 
@@ -494,7 +520,70 @@ curl -X POST http://localhost:3000/api/mcp/risk-assessment \
 3. **Compliance Mapping**: Framework alignment checking
 4. **Incident Response**: Automated workflow triggers
 
+## 🐧 Ubuntu Docker Deployment
+
+### Deployment Options
+
+#### Option 1: Docker Compose (Recommended)
+```bash
+# Clone repository
+git clone https://github.com/theblackhat55/GRC.git
+cd GRC
+
+# Create required directories  
+mkdir -p database logs uploads
+
+# Start with Docker Compose
+docker-compose up -d
+
+# Check status
+docker-compose ps
+```
+
+#### Option 2: Docker Only
+```bash
+# Build and run
+docker build -t dmt-risk-assessment .
+docker run -d -p 3000:3000 \
+  -v $(pwd)/database:/app/database \
+  -v $(pwd)/logs:/app/logs \
+  --name dmt-risk-app \
+  dmt-risk-assessment
+```
+
+### 🔑 Default Login Credentials
+| Username | Password | Role |
+|----------|----------|------|
+| `admin` | `demo123` | System Administrator |
+| `avi_security` | `demo123` | Risk Manager |
+| `sjohnson` | `demo123` | Risk Manager |
+| `mchen` | `demo123` | Compliance Officer |
+| `edavis` | `demo123` | Auditor |
+
+### 🔧 Management Commands
+```bash
+# View logs
+docker-compose logs -f
+
+# Restart application
+docker-compose restart
+
+# Stop application
+docker-compose down
+
+# Update application
+git pull && docker-compose build && docker-compose up -d
+
+# Backup database
+docker cp dmt-risk-app:/app/database/dmt.sqlite ./backup-$(date +%Y%m%d).sqlite
+```
+
+### 📖 Full Documentation
+- **Complete Ubuntu Guide**: [UBUNTU_DOCKER_DEPLOYMENT.md](UBUNTU_DOCKER_DEPLOYMENT.md)
+- **Troubleshooting**: Check the deployment guide for common issues
+- **Production Setup**: SSL/TLS configuration and security hardening
+
 ---
-**Latest Update**: August 15, 2025 - Added RAG system, MCP tools, and dynamic model discovery
-**Status**: ✅ All features implemented and fully functional
+**Latest Update**: August 17, 2025 - Added Ubuntu Docker deployment with complete local setup
+**Status**: ✅ All features implemented and fully functional - Docker ready
 **Next Phase**: Enhanced AI model training and multi-tenant support
