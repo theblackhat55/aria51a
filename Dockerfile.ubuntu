@@ -55,15 +55,18 @@ RUN useradd -m -u 1001 -s /bin/bash dmtuser \
     && mkdir -p /app/logs \
     && chown -R dmtuser:dmtuser /app
 
-# Copy package files first for better Docker layer caching
-COPY --chown=dmtuser:dmtuser package*.json ./
+# Copy Docker-specific package.json for production dependencies
+# Note: We use package.docker.json to avoid conflicts with Cloudflare Workers dependencies
 COPY --chown=dmtuser:dmtuser package.docker.json ./package.json
 
 # Switch to application user
 USER dmtuser
 
-# Install Node.js dependencies
-RUN npm ci --only=production --no-audit --no-fund
+# Install Node.js dependencies 
+# Using npm install (not npm ci) because we're using a fresh package.json
+# This will generate a new package-lock.json that matches package.docker.json dependencies
+RUN npm install --only=production --no-audit --no-fund \
+    && npm cache clean --force
 
 # Copy application source code
 COPY --chown=dmtuser:dmtuser . .

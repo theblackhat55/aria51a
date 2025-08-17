@@ -5,16 +5,23 @@ version: '3.8'
 
 services:
   dmt-risk-app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
       - DATABASE_PATH=/app/database/dmt.sqlite
-      - JWT_SECRET=secure-jwt-secret-change-in-production-$(openssl rand -hex 32)
+      - JWT_SECRET=secure-jwt-secret-change-in-production
       - API_RATE_LIMIT=100
       - SESSION_TIMEOUT=86400
+      # Keycloak configuration - update these values
+      - KEYCLOAK_URL=https://your-keycloak-server.com
+      - KEYCLOAK_REALM=your-realm
+      - KEYCLOAK_CLIENT_ID=dmt-risk-assessment
+      - KEYCLOAK_CLIENT_SECRET=your-client-secret
     volumes:
       - ./database:/app/database
       - ./logs:/app/logs
