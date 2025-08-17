@@ -1,13 +1,10 @@
-# DMT Risk Assessment System - Docker Configuration
-# Ubuntu-based Node.js deployment
+# DMT Risk Assessment System - Docker Configuration (Root User)
+# Alternative Dockerfile that runs as root to avoid permission issues
 
 FROM node:18-bullseye
 
 # Set working directory
 WORKDIR /app
-
-# Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -20,18 +17,14 @@ RUN apt-get update && apt-get install -y \
 COPY package.docker.json package.json
 
 # Install only production dependencies needed for Docker
-RUN npm install --production && npm cache clean --force
+RUN npm install --production --legacy-peer-deps && npm cache clean --force
 
 # Copy application source
 COPY . .
 
-# Create necessary directories with proper permissions
+# Create necessary directories
 RUN mkdir -p /app/logs /app/database /app/uploads && \
-    chown -R appuser:appuser /app && \
-    chmod -R 755 /app/database /app/logs /app/uploads
-
-# Switch to non-root user
-USER appuser
+    chmod 755 /app/logs /app/database /app/uploads
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -48,5 +41,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1
 
-# Start application
+# Start application (runs as root to avoid permission issues)
 CMD ["npm", "run", "start:docker"]

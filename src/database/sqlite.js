@@ -20,13 +20,24 @@ export async function initializeDatabase() {
   try {
     const dbPath = process.env.DATABASE_PATH || path.join(process.cwd(), 'database', 'dmt.sqlite');
     
-    // Ensure database directory exists
+    // Ensure database directory exists with proper permissions
     const dbDir = path.dirname(dbPath);
     if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+      fs.mkdirSync(dbDir, { recursive: true, mode: 0o755 });
     }
 
     console.log(`📁 Database path: ${dbPath}`);
+    
+    // Try to create a test file to check permissions
+    try {
+      const testFile = path.join(dbDir, '.test');
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      console.log('✅ Database directory permissions verified');
+    } catch (permError) {
+      console.error('❌ Database directory permission issue:', permError.message);
+      throw new Error(`Cannot write to database directory: ${dbDir}. Please check permissions.`);
+    }
     
     // Initialize SQLite database
     db = new Database(dbPath);
