@@ -8,6 +8,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   const token = localStorage.getItem('dmt_token');
   console.log('Auth.js: Checking existing token:', token ? 'Found' : 'Not found');
   
+  // Also check for Keycloak tokens and clear them to avoid conflicts
+  const keycloakToken = localStorage.getItem('dmt_access_token');
+  if (keycloakToken) {
+    localStorage.removeItem('dmt_access_token');
+    localStorage.removeItem('dmt_refresh_token');
+    localStorage.removeItem('dmt_token_expires');
+    console.log('Auth.js: Cleared Keycloak tokens for legacy auth');
+  }
+  
   if (token) {
     console.log('Auth.js: Validating existing token...');
     // Validate token before redirecting

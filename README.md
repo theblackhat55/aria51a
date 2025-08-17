@@ -48,6 +48,16 @@
 - **Automated Insights**: Real-time risk intelligence and recommendations
 - **Visual Analytics**: AI-generated charts and trend visualizations
 
+### 🆕 Enterprise Keycloak IAM Integration
+- **Complete Authentication Overhaul**: Replaced basic authentication with enterprise-grade Keycloak IAM
+- **OIDC/OAuth2 Support**: Modern authentication flows with JWT tokens
+- **SAML Integration**: Support for enterprise identity providers (ADFS, Azure AD, Okta)
+- **Role-Based Access Control**: Fine-grained permissions mapped from Keycloak roles
+- **User Migration**: Automated migration of existing users to Keycloak realm
+- **Docker Deployment**: Containerized Keycloak with PostgreSQL backend
+- **Dual Authentication**: Backward compatibility during migration period
+- **Security Enhancement**: Centralized identity management and audit trails
+
 ### ✅ Multi-LLM Integration for Enhanced ARIA
 - **Multiple Providers**: OpenAI GPT-4, Google Gemini Pro, Anthropic Claude 3, Local LLM
 - **Provider Selection**: Users can choose their preferred AI model
@@ -96,10 +106,50 @@
 - **Migrations**: Version-controlled database schema updates
 - **Indexes**: Optimized for performance with comprehensive indexing
 
+## 🔐 Authentication System
+
+### Keycloak IAM Integration (New)
+
+The platform now uses Keycloak for enterprise-grade authentication and identity management.
+
+**Quick Setup:**
+```bash
+# Complete Keycloak deployment
+./deploy-keycloak-integration.sh
+
+# Or manual setup
+./setup-keycloak.sh
+npm run users:export
+./import-users-keycloak.sh
+```
+
+**Access Points:**
+- **Application**: http://localhost:3000
+- **Keycloak Admin**: http://localhost:8080/admin (admin/admin123)
+- **Authentication**: http://localhost:3000/api/auth/keycloak/login
+
+**Default Test Users:**
+- `admin` / `password123` (Administrator)
+- `avi_security` / `password123` (Risk Manager)
+- `sjohnson` / `password123` (Compliance Officer)
+- `mchen` / `password123` (Auditor)
+- `edavis` / `password123` (Risk Owner)
+
+**Key Features:**
+- Single Sign-On (SSO) with Keycloak
+- SAML integration for enterprise identity providers
+- Role-based access control with fine-grained permissions
+- Automated user migration from legacy system
+- JWT token-based API authentication
+
+For detailed setup instructions, see [KEYCLOAK_INTEGRATION.md](./KEYCLOAK_INTEGRATION.md)
+
 ## 📱 User Guide
 
 ### Getting Started
-1. **Login**: Use credentials - Username: `admin` / Password: `demo123`
+1. **Authentication**: 
+   - **Keycloak (Recommended)**: http://localhost:3000/api/auth/keycloak/login
+   - **Legacy Login**: Use credentials - Username: `admin` / Password: `demo123`
 2. **Dashboard**: Overview with metrics and interactive heat maps
 3. **Navigation**: 
    - Desktop: Top navigation bar

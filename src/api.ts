@@ -2,10 +2,13 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { AuthService, authMiddleware, requireRole, ARIAAssistant, SecurityUtils, RiskScoring } from './auth';
+import { keycloakAuthMiddleware, requireKeycloakRole } from './keycloak-auth';
 import { CloudflareBindings, Risk, Control, ComplianceAssessment, Incident, DashboardData, ApiResponse, CreateRiskRequest, CreateControlRequest, User } from './types';
 import { createEnterpriseAPI } from './enterprise-api';
 import { createRAGAPI } from './api/rag';
 import { createARIAAPI } from './api/aria';
+import { createAIGRCAPI } from './ai-grc-api';
+import { createKeycloakAPI } from './keycloak-api';
 
 export function createAPI() {
   const api = new Hono<{ Bindings: CloudflareBindings }>();
@@ -22,11 +25,19 @@ export function createAPI() {
   const ariaAPI = createARIAAPI();
   api.route('/api/aria', ariaAPI);
 
+  // Mount AI GRC routes
+  const aiGrcAPI = createAIGRCAPI();
+  api.route('/api/ai-grc', aiGrcAPI);
+
+  // Mount Keycloak authentication routes
+  const keycloakAPI = createKeycloakAPI();
+  api.route('/api', keycloakAPI);
+
   // CORS middleware
   api.use('/api/*', cors({
-    origin: ['http://localhost:3000', 'https://dmt-risk-assessment.pages.dev', 'https://*.pages.dev'],
+    origin: ['http://localhost:3000', 'http://localhost:8080', 'https://dmt-risk-assessment.pages.dev', 'https://*.pages.dev'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     maxAge: 86400,
     credentials: true,
   }));
@@ -58,6 +69,81 @@ export function createAPI() {
 
     await next();
   });
+
+  // Smart authentication middleware (prioritizes legacy auth in sandbox environment)
+  const smartAuthMiddleware = async (c: any, next: () => Promise<void>) => {
+    const authHeader = c.req.header('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, error: 'No authorization header' }, 401);
+    }
+
+    const token = authHeader.substring(7);
+    
+    // Check if Keycloak is available (by checking for environment variables or service)
+    const isKeycloakAvailable = process.env.KEYCLOAK_BASE_URL && 
+                               process.env.KEYCLOAK_BASE_URL !== 'http://localhost:8080';
+    
+    // In sandbox/development without Keycloak, use legacy authentication first
+    if (!isKeycloakAvailable) {
+      try {
+        await authMiddleware(c, next);
+        return; // Legacy auth successful
+      } catch (legacyError) {
+        console.log('Legacy auth failed, trying Keycloak fallback:', legacyError);
+        
+        // Try Keycloak as fallback (might work if Docker is running)
+        try {
+          await keycloakAuthMiddleware(c, next);
+          return; // Keycloak auth successful
+        } catch (keycloakError) {
+          console.log('Both authentication methods failed');
+          return c.json({ 
+            success: false, 
+            error: 'Authentication failed' 
+          }, 401);
+        }
+      }
+    } else {
+      // In production with Keycloak, try Keycloak first
+      try {
+        await keycloakAuthMiddleware(c, next);
+        return; // Keycloak auth successful
+      } catch (keycloakError) {
+        console.log('Keycloak auth failed, trying legacy fallback:', keycloakError);
+        
+        // Fallback to legacy authentication
+        try {
+          await authMiddleware(c, next);
+          return; // Legacy auth successful
+        } catch (legacyError) {
+          console.log('Both authentication methods failed');
+          return c.json({ 
+            success: false, 
+            error: 'Authentication failed' 
+          }, 401);
+        }
+      }
+    }
+  };
+
+  // Smart role-based authorization middleware
+  const smartRequireRole = (allowedRoles: string[]) => {
+    return async (c: any, next: () => Promise<void>) => {
+      const user = c.get('user');
+      
+      if (!user || !allowedRoles.includes(user.role)) {
+        return c.json({ 
+          success: false, 
+          error: 'Insufficient permissions',
+          required_roles: allowedRoles,
+          user_role: user?.role
+        }, 403);
+      }
+      
+      await next();
+    };
+  };
 
   // Input validation helper
   function validateInput(schema: any, data: any): { valid: boolean; errors?: string[] } {
@@ -94,7 +180,8 @@ export function createAPI() {
     });
   });
 
-  // Authentication Routes
+  // LEGACY Authentication Routes (DEPRECATED - Use Keycloak /api/auth/keycloak/login instead)
+  // These routes will be removed once Keycloak migration is complete
   api.post('/api/auth/login', async (c) => {
     try {
       const { username, password } = await c.req.json();
@@ -135,7 +222,7 @@ export function createAPI() {
     }
   });
 
-  api.get('/api/auth/me', authMiddleware, async (c) => {
+  api.get('/api/auth/me', smartAuthMiddleware, async (c) => {
     try {
       const user = c.get('user');
       const authService = new AuthService(c.env.DB);
@@ -154,7 +241,7 @@ export function createAPI() {
   });
 
   // Dashboard Analytics
-  api.get('/api/dashboard', authMiddleware, async (c) => {
+  api.get('/api/dashboard', smartAuthMiddleware, async (c) => {
     try {
       const db = c.env.DB;
 
@@ -243,7 +330,7 @@ export function createAPI() {
   });
 
   // Risk Management API
-  api.get('/api/risks', authMiddleware, async (c) => {
+  api.get('/api/risks', smartAuthMiddleware, async (c) => {
     try {
       const page = Number(c.req.query('page')) || 1;
       const limit = Number(c.req.query('limit')) || 20;
@@ -277,7 +364,7 @@ export function createAPI() {
     }
   });
 
-  api.get('/api/risks/:id', authMiddleware, async (c) => {
+  api.get('/api/risks/:id', smartAuthMiddleware, async (c) => {
     try {
       const id = c.req.param('id');
       const risk = await c.env.DB.prepare(`
@@ -309,7 +396,7 @@ export function createAPI() {
     }
   });
 
-  api.post('/api/risks', authMiddleware, requireRole(['admin', 'risk_manager']), async (c) => {
+  api.post('/api/risks', smartAuthMiddleware, smartRequireRole(['admin', 'risk_manager']), async (c) => {
     try {
       const user = c.get('user');
       const riskData: CreateRiskRequest = await c.req.json();
@@ -384,7 +471,7 @@ export function createAPI() {
     }
   });
 
-  api.put('/api/risks/:id', authMiddleware, requireRole(['admin', 'risk_manager']), async (c) => {
+  api.put('/api/risks/:id', smartAuthMiddleware, smartRequireRole(['admin', 'risk_manager']), async (c) => {
     try {
       const id = c.req.param('id');
       const riskData = await c.req.json();
@@ -456,7 +543,7 @@ export function createAPI() {
     }
   });
 
-  api.delete('/api/risks/:id', authMiddleware, requireRole(['admin', 'risk_manager']), async (c) => {
+  api.delete('/api/risks/:id', smartAuthMiddleware, smartRequireRole(['admin', 'risk_manager']), async (c) => {
     try {
       const id = c.req.param('id');
       

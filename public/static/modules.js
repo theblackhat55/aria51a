@@ -1946,10 +1946,32 @@ async function loadReferenceData() {
   }
 }
 
+// Enhanced reference data loading with retry logic
+async function loadReferenceDataWithRetry(maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📊 Loading reference data (attempt ${attempt}/${maxRetries})...`);
+      await loadReferenceData();
+      console.log('✓ Reference data loaded successfully');
+      return true;
+    } catch (error) {
+      console.error(`❌ Reference data loading attempt ${attempt} failed:`, error);
+      if (attempt === maxRetries) {
+        console.error('💥 All reference data loading attempts failed');
+        return false;
+      }
+      // Wait before retry with exponential backoff
+      const delay = 1000 * Math.pow(2, attempt - 1);
+      console.log(`⏳ Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
 // Load reference data only when authenticated
 // This will be called after successful login
 if (localStorage.getItem('dmt_token')) {
-  loadReferenceData();
+  loadReferenceDataWithRetry();
 }
 
 // Risk Management CRUD Functions
@@ -1957,14 +1979,31 @@ async function showAddRiskModal() {
   const modal = createModal('Add New Risk', getRiskFormHTML());
   document.body.appendChild(modal);
   
-  // Populate dropdowns
-  await populateRiskFormDropdowns();
+  // Wait for modal to be fully rendered
+  await new Promise(resolve => setTimeout(resolve, 100));
   
-  // Handle form submission
-  document.getElementById('risk-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await handleRiskSubmit();
-  });
+  // Populate dropdowns with comprehensive error handling
+  try {
+    console.log('Starting dropdown population...');
+    await populateRiskFormDropdownsSafe();
+    console.log('Dynamic dropdowns populated successfully');
+  } catch (error) {
+    console.error('Error populating dropdowns, using static fallbacks:', error);
+    populateRiskFormStaticFallbacks();
+  }
+  
+  // Handle form submission with enhanced error handling
+  const form = document.getElementById('risk-form');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      console.log('Risk form submitted');
+      await handleRiskSubmit();
+    });
+    console.log('Form submission handler attached');
+  } else {
+    console.error('Risk form element not found!');
+  }
 }
 
 async function editRisk(id) {
@@ -6467,51 +6506,174 @@ function getRiskFormHTML(risk = null) {
   `;
 }
 
-async function populateRiskFormDropdowns() {
-  try {
-    // Populate categories (with null check)
-    const categorySelect = document.getElementById('risk-category');
-    if (categorySelect) {
+// Enhanced dropdown population with comprehensive error handling
+async function populateRiskFormDropdownsSafe() {
+  console.log('=== Starting Risk Form Dropdown Population ===');
+  console.log('Reference data state:', referenceData);
+  
+  // Ensure reference data is loaded
+  if (!referenceData || Object.keys(referenceData).length === 0 || !referenceData.categories) {
+    console.log('Reference data not loaded, attempting to load...');
+    await loadReferenceDataWithRetry();
+  }
+  
+  // Populate categories with enhanced error checking
+  const categorySelect = document.getElementById('risk-category');
+  console.log('Category select element:', categorySelect);
+  if (categorySelect) {
+    try {
       categorySelect.innerHTML = '<option value="">Select Category</option>';
-      if (referenceData?.categories) {
+      if (referenceData?.categories && Array.isArray(referenceData.categories)) {
         referenceData.categories.forEach(category => {
-          categorySelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+          if (category && category.id && category.name) {
+            categorySelect.innerHTML += `<option value="${escapeHtml(category.id)}">${escapeHtml(category.name)}</option>`;
+          }
         });
+        console.log(`✓ Populated ${referenceData.categories.length} categories`);
+      } else {
+        console.log('No categories in reference data, using defaults');
+        const defaultCategories = [
+          { id: 'operational', name: 'Operational Risk' },
+          { id: 'financial', name: 'Financial Risk' },
+          { id: 'strategic', name: 'Strategic Risk' },
+          { id: 'compliance', name: 'Compliance Risk' },
+          { id: 'cyber', name: 'Cybersecurity Risk' }
+        ];
+        defaultCategories.forEach(cat => {
+          categorySelect.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+        });
+        console.log('✓ Added default categories');
       }
+    } catch (error) {
+      console.error('Error populating categories:', error);
     }
-    
-    // Populate organizations (with null check)
-    const orgSelect = document.getElementById('risk-organization');
-    if (orgSelect) {
+  } else {
+    console.warn('⚠ Category select element not found in DOM');
+  }
+  
+  // Populate organizations
+  const orgSelect = document.getElementById('risk-organization');
+  console.log('Organization select element:', orgSelect);
+  if (orgSelect) {
+    try {
       orgSelect.innerHTML = '<option value="">Select Organization</option>';
-      if (referenceData?.organizations) {
+      if (referenceData?.organizations && Array.isArray(referenceData.organizations)) {
         referenceData.organizations.forEach(org => {
-          orgSelect.innerHTML += `<option value="${org.id}">${org.name}</option>`;
+          if (org && org.id && org.name) {
+            orgSelect.innerHTML += `<option value="${escapeHtml(org.id)}">${escapeHtml(org.name)}</option>`;
+          }
         });
+        console.log(`✓ Populated ${referenceData.organizations.length} organizations`);
       } else {
         orgSelect.innerHTML += '<option value="1">Default Organization</option>';
+        console.log('✓ Added default organization');
       }
+    } catch (error) {
+      console.error('Error populating organizations:', error);
     }
-    
-    // Populate users (with null check)
-    const ownerSelect = document.getElementById('risk-owner');
-    if (ownerSelect) {
+  } else {
+    console.warn('⚠ Organization select element not found in DOM');
+  }
+  
+  // Populate users/owners
+  const ownerSelect = document.getElementById('risk-owner');
+  console.log('Owner select element:', ownerSelect);
+  if (ownerSelect) {
+    try {
       ownerSelect.innerHTML = '<option value="">Select Owner</option>';
-      if (referenceData?.users) {
+      if (referenceData?.users && Array.isArray(referenceData.users)) {
         referenceData.users.forEach(user => {
-          ownerSelect.innerHTML += `<option value="${user.id}">${user.first_name} ${user.last_name}</option>`;
+          if (user && user.id) {
+            const userName = user.first_name && user.last_name 
+              ? `${user.first_name} ${user.last_name}` 
+              : (user.name || `User ${user.id}`);
+            ownerSelect.innerHTML += `<option value="${escapeHtml(user.id)}">${escapeHtml(userName)}</option>`;
+          }
         });
+        console.log(`✓ Populated ${referenceData.users.length} users`);
       } else {
         ownerSelect.innerHTML += '<option value="1">Admin User</option>';
         ownerSelect.innerHTML += '<option value="2">Avi Security</option>';
+        console.log('✓ Added default users');
       }
+    } catch (error) {
+      console.error('Error populating users:', error);
     }
-  } catch (error) {
-    console.error('Error in populateRiskFormDropdowns:', error);
+  } else {
+    console.warn('⚠ Owner select element not found in DOM');
   }
   
-  // Populate services
-  await loadServicesForRiskForm();
+  // Load services for the form
+  try {
+    await loadServicesForRiskForm();
+    console.log('✓ Services loaded for risk form');
+  } catch (error) {
+    console.error('Error loading services for risk form:', error);
+  }
+  
+  console.log('=== Risk Form Dropdown Population Complete ===');
+}
+
+// Static fallback when dynamic loading fails
+function populateRiskFormStaticFallbacks() {
+  console.log('🔄 Using static fallback options for risk form');
+  
+  const categorySelect = document.getElementById('risk-category');
+  if (categorySelect) {
+    categorySelect.innerHTML = `
+      <option value="">Select Category</option>
+      <option value="operational">Operational Risk</option>
+      <option value="financial">Financial Risk</option>
+      <option value="strategic">Strategic Risk</option>
+      <option value="compliance">Compliance Risk</option>
+      <option value="cyber">Cybersecurity Risk</option>
+      <option value="regulatory">Regulatory Risk</option>
+    `;
+    console.log('✓ Static categories populated');
+  }
+  
+  const orgSelect = document.getElementById('risk-organization');
+  if (orgSelect) {
+    orgSelect.innerHTML = `
+      <option value="">Select Organization</option>
+      <option value="1">Default Organization</option>
+      <option value="2">IT Department</option>
+      <option value="3">Finance Department</option>
+      <option value="4">Operations Department</option>
+    `;
+    console.log('✓ Static organizations populated');
+  }
+  
+  const ownerSelect = document.getElementById('risk-owner');
+  if (ownerSelect) {
+    ownerSelect.innerHTML = `
+      <option value="">Select Owner</option>
+      <option value="1">Admin User</option>
+      <option value="2">Avi Security</option>
+      <option value="3">Risk Manager</option>
+      <option value="4">IT Manager</option>
+    `;
+    console.log('✓ Static users populated');
+  }
+}
+
+// Utility function to escape HTML and prevent XSS
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== 'string') {
+    return String(unsafe || '');
+  }
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Legacy function for backwards compatibility
+async function populateRiskFormDropdowns() {
+  console.log('Legacy populateRiskFormDropdowns called, delegating to safe version...');
+  await populateRiskFormDropdownsSafe();
 }
 
 async function loadServicesForRiskForm() {

@@ -108,17 +108,9 @@ app.get('/', (c) => {
                       <i class="fas fa-exclamation-triangle text-red-600"></i>
                       <span>Risks</span>
                     </a>
-                    <a href="#" class="nav-menu-item" id="nav-ai-heatmap">
-                      <i class="fas fa-fire text-red-500"></i>
-                      <span>AI Heat Map</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-compliance-gaps">
-                      <i class="fas fa-shield-alt text-blue-500"></i>
-                      <span>Gap Analysis</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-executive-ai">
-                      <i class="fas fa-robot text-purple-600"></i>
-                      <span>AI Dashboard</span>
+                    <a href="#" class="nav-menu-item" id="nav-ai-assure">
+                      <i class="fas fa-brain text-purple-600"></i>
+                      <span>AI Assure</span>
                     </a>
                     <a href="#" class="nav-menu-item" id="nav-services">
                       <i class="fas fa-cogs text-purple-600"></i>
@@ -267,7 +259,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- JavaScript -->
-  <script src="/static/modules.js?v=10"></script>
+  <script src="/static/modules.js?v=12&t=1734469000"></script>
   <script src="/static/enterprise-modules.js?v=7"></script>
   <script src="/static/enhanced-settings.js?v=4"></script>
   <script src="/static/system-settings-integration.js?v=4"></script>
@@ -276,10 +268,43 @@ app.get('/', (c) => {
   <script src="/static/incident-management-enhanced.js?v=1"></script>
   <script src="/static/asset-service-management.js?v=1"></script>
   <script src="/static/integrated-risk-framework.js?v=1"></script>
+  <script src="/static/ai-grc-dashboard.js?v=1"></script>
+  <script src="/static/ai-assure-module.js?v=1"></script>
   <script src="/static/notifications.js?v=5"></script>
   <script src="/static/document-management.js?v=3"></script>
   <script src="/static/mobile-interface.js?v=3"></script>
   <script src="/static/app.js?v=14"></script>
+  
+  <!-- Conditional Authentication Loading -->
+  <script>
+    function loadAppAuthScript() {
+      const script = document.createElement('script');
+      
+      if (window.location.hostname.includes('e2b.dev') || 
+          window.location.hostname === 'localhost') {
+        // Sandbox environment - skip separate auth loading as app.js handles it
+        console.log('Sandbox environment detected - using legacy authentication in app.js');
+        return;
+      } else {
+        // Production environment - load Keycloak authentication
+        script.src = '/static/keycloak-auth.js?v=1';
+        console.log('Production environment - loading Keycloak authentication');
+        
+        script.onload = function() {
+          console.log('Keycloak authentication loaded successfully');
+        };
+        
+        document.head.appendChild(script);
+      }
+    }
+    
+    // Initialize authentication after all scripts are loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadAppAuthScript);
+    } else {
+      loadAppAuthScript();
+    }
+  </script>
 </body>
 </html>`);
 });
@@ -352,9 +377,21 @@ app.get('/login', (c) => {
         <p><strong>Risk Manager:</strong> avi_security / demo123</p>
       </div>
     </div>
+
+    <!-- Keycloak integration info (for production) -->
+    <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200" id="keycloak-info" style="display:none;">
+      <div class="text-center">
+        <h3 class="font-semibold text-green-900 mb-2">🔐 Enhanced Security Available</h3>
+        <p class="text-sm text-green-800 mb-3">This system supports Keycloak for enterprise-grade authentication</p>
+        <button onclick="window.location.href='/api/auth/keycloak/login'" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+          <i class="fas fa-shield-alt mr-2"></i>Login with Keycloak
+        </button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+  <!-- Always load legacy auth for login page - keeps it simple -->
   <script src="/static/auth.js"></script>
 </body>
 </html>`);
