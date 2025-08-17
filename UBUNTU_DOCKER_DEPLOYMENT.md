@@ -116,8 +116,11 @@ docker-compose logs -f dmt-risk-app
 git clone https://github.com/theblackhat55/GRC.git
 cd GRC
 
-# Build image
+# Build image (uses fixed Docker configuration)
 docker build -t dmt-risk-assessment .
+
+# If you encounter npm dependency conflicts, use:
+# docker build -f Dockerfile.simple -t dmt-risk-assessment .
 ```
 
 #### 2. Run Container
@@ -366,6 +369,18 @@ docker logs dmt-risk-app
 
 # Debug container
 docker run -it --rm dmt-risk-assessment sh
+```
+
+#### 5. Docker Build Fails (npm dependency conflicts)
+```bash
+# Use the simple Dockerfile alternative
+docker build -f Dockerfile.simple -t dmt-risk-assessment .
+
+# Or use legacy peer deps approach
+sed -i 's/npm install --production/npm install --production --legacy-peer-deps/' Dockerfile
+docker build -t dmt-risk-assessment .
+
+# See DOCKER_BUILD_FIXES.md for complete solutions
 ```
 
 ### Log Analysis

@@ -1,0 +1,42 @@
+{
+  "name": "dmt-risk-assessment-docker",
+  "version": "2.0.1",
+  "description": "DMT Risk Assessment System - Docker Production Build",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "start:docker": "node src/server.js",
+    "start:dev": "node --watch src/server.js",
+    "test:health": "curl http://localhost:3000/health",
+    "docker:build": "docker build -t dmt-risk-assessment .",
+    "docker:run": "docker run -p 3000:3000 -v $(pwd)/database:/app/database -v $(pwd)/logs:/app/logs dmt-risk-assessment",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart"
+  },
+  "dependencies": {
+    "hono": "^4.9.1",
+    "@hono/node-server": "^1.12.2",
+    "better-sqlite3": "^11.3.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "risk-management",
+    "grc",
+    "compliance",
+    "docker",
+    "ubuntu",
+    "enterprise",
+    "security",
+    "audit"
+  ],
+  "author": "DMT Corporation",
+  "license": "MIT"
+}
