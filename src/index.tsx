@@ -2,7 +2,7 @@
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 import { cors } from 'hono/cors';
-import { renderer } from './renderer';
+
 import { createAPI } from './api';
 import { CloudflareBindings } from './types';
 
@@ -10,193 +10,392 @@ const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 // Enable CORS for all routes
 app.use('*', cors({
-  origin: ['http://localhost:3000', 'https://*.pages.dev'],
+  origin: ['http://localhost:3000', 'https://dmt-risk-assessment.pages.dev', 'https://*.pages.dev'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400, // 24 hours
+  credentials: true,
 }));
 
 // Serve static files
 app.use('/static/*', serveStatic({ root: './public' }));
 
+// Security headers middleware
+app.use('*', async (c, next) => {
+  await next();
+  
+  // Security headers
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('X-XSS-Protection', '1; mode=block');
+  c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.groq.com");
+});
+
 // API routes
 const api = createAPI();
 app.route('/', api);
 
-// Renderer middleware for HTML pages
-app.use(renderer);
-
 // Main application route
 app.get('/', (c) => {
-  return c.render(
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>DMT Risk Assessment System v2.0</title>
-        <meta name="description" content="Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics" />
-        
-        {/* External CSS Libraries */}
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
-        
-        {/* Chart.js for Analytics */}
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        
-        {/* Additional Libraries */}
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
-        
-        {/* Custom Styles */}
-        <link href="/static/styles.css" rel="stylesheet" />
-      </head>
-      <body className="bg-gray-50 font-sans antialiased">
-        {/* Loading Spinner */}
-        <div id="loading-spinner" className="fixed inset-0 bg-white z-50 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-        </div>
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Risk Management Platform</title>
+  <meta name="description" content="Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Additional Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+  
+  <!-- Custom Styles -->
+  <link href="/static/styles.css?v=2" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+  <!-- Loading Spinner -->
+  <div id="loading-spinner" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+    <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+  </div>
 
-        {/* Main Application Container */}
-        <div id="app" className="min-h-screen">
-          {/* Navigation will be injected here */}
-          <nav id="navigation" className="bg-white shadow-lg"></nav>
-          
-          {/* Main Content Area */}
-          <main id="main-content" className="container mx-auto px-4 py-8">
-            <div id="dashboard-content">
-              {/* Dashboard content will be loaded here */}
+  <!-- Main Application Container -->
+  <div id="app" class="min-h-screen">
+    <!-- Modern Collapsible Navigation -->
+    <nav id="navigation" class="bg-white shadow-lg border-b border-gray-200">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-center h-16">
+          <!-- Logo and Brand -->
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="h-10 w-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-white"></i>
+              </div>
             </div>
-          </main>
-        </div>
-
-        {/* ARIA AI Assistant Modal */}
-        <div id="aria-modal" className="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-40">
-          <div className="flex items-center justify-center h-full p-4">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">ARIA - AI Risk Assistant</h3>
-                <button id="close-aria" className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                  <i className="fas fa-times"></i>
+            <div class="ml-4">
+              <h1 class="text-xl font-semibold text-gray-900">Risk Management Platform</h1>
+              <p class="text-xs text-gray-500">Enterprise GRC Platform v2.0</p>
+            </div>
+          </div>
+          
+          <!-- Navigation Menu -->
+          <div class="flex items-center space-x-6">
+            <!-- Collapsible Navigation (Hidden until login) -->
+            <div class="nav-container group hidden" id="internal-nav">
+              <div class="nav-trigger flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <i class="fas fa-bars text-gray-600"></i>
+                <span class="text-sm font-medium text-gray-700">Menu</span>
+                <i class="fas fa-chevron-down text-gray-400 text-xs transform group-hover:rotate-180 transition-transform duration-200"></i>
+              </div>
+              
+              <!-- Expanded Menu -->
+              <div class="nav-menu absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div class="p-4">
+                  <div class="grid grid-cols-2 gap-2">
+                    <a href="#" class="nav-menu-item active" id="nav-dashboard">
+                      <i class="fas fa-chart-pie text-blue-600"></i>
+                      <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-risks">
+                      <i class="fas fa-exclamation-triangle text-red-600"></i>
+                      <span>Risks</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-ai-assure">
+                      <i class="fas fa-brain text-purple-600"></i>
+                      <span>AI Assure</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-services">
+                      <i class="fas fa-cogs text-purple-600"></i>
+                      <span>Services</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-assets">
+                      <i class="fas fa-server text-green-600"></i>
+                      <span>Assets</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-incidents">
+                      <i class="fas fa-bell text-orange-600"></i>
+                      <span>Incidents</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-compliance">
+                      <i class="fas fa-clipboard-check text-indigo-600"></i>
+                      <span>Compliance</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-frameworks">
+                      <i class="fas fa-list-check text-cyan-600"></i>
+                      <span>Frameworks</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-documents">
+                      <i class="fas fa-file-alt text-yellow-600"></i>
+                      <span>Documents</span>
+                    </a>
+                    <a href="#" class="nav-menu-item" id="nav-settings">
+                      <i class="fas fa-cog text-gray-600"></i>
+                      <span>Settings</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- User Section -->
+            <div class="flex items-center space-x-4">
+              <!-- Notifications (Hidden until login) -->
+              <div class="relative hidden" id="notifications-container">
+                <button id="notifications-btn" class="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+                  <i class="fas fa-bell text-lg"></i>
+                  <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
                 </button>
               </div>
-              <div id="aria-chat" className="p-6 h-64 overflow-y-auto">
-                {/* Chat messages will appear here */}
-              </div>
-              <div className="px-6 py-4 border-t border-gray-200">
-                <div className="flex">
-                  <input 
-                    type="text" 
-                    id="aria-input" 
-                    placeholder="Ask ARIA about risks, compliance, or security..." 
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <button 
-                    id="send-aria" 
-                    className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <i className="fas fa-paper-plane"></i>
-                  </button>
-                </div>
+              
+              <!-- User Menu -->
+              <div class="flex items-center space-x-3">
+                <span class="text-sm text-gray-600" id="welcome-message">Welcome, Guest</span>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200" id="auth-button">
+                  <i class="fas fa-sign-in-alt mr-1"></i>Login
+                </button>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </nav>
+    
+    <!-- Main Content Area -->
+    <main id="main-content" class="container mx-auto px-4 py-8">
+      <div id="dashboard-content">
+        <!-- Content will be loaded here based on authentication status -->
+      </div>
+    </main>
+  </div>
 
-        {/* Floating ARIA Button */}
-        <button 
-          id="aria-button" 
-          className="fixed bottom-6 right-6 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-30"
-          title="Ask ARIA - AI Risk Assistant"
-        >
-          <i className="fas fa-robot text-xl"></i>
-        </button>
-
-        {/* Notification Toast Container */}
-        <div id="toast-container" className="fixed top-4 right-4 z-50 space-y-2">
-          {/* Toast notifications will appear here */}
+  <!-- ARIA AI Assistant Modal -->
+  <div id="aria-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-robot text-white text-lg"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">ARIA - AI Risk Assistant</h3>
+              <p class="text-sm text-gray-500">Powered by multiple AI providers</p>
+            </div>
+          </div>
+          <button id="close-aria" class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-colors duration-200">
+            <i class="fas fa-times text-lg"></i>
+          </button>
         </div>
+        
+        <!-- Chat Area -->
+        <div id="aria-chat" class="flex-1 p-6 overflow-y-auto bg-gray-50" style="min-height: 300px; max-height: 400px;">
+          <div class="text-center text-gray-500 mt-8">
+            <i class="fas fa-robot text-4xl text-gray-300 mb-4"></i>
+            <p class="text-lg font-medium">Hello! I'm ARIA, your AI Risk Assistant.</p>
+            <p class="text-sm mt-2">Ask me about risk analysis, compliance, security recommendations, or use the quick actions below.</p>
+          </div>
+        </div>
+        
+        <!-- Input Section -->
+        <div class="px-6 py-4 bg-white border-t border-gray-200 space-y-4">
+          <!-- Provider Selection (Simplified) -->
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600">AI Provider:</span>
+            <span id="current-provider" class="text-blue-600 font-medium">Configure in Settings</span>
+          </div>
+          
+          <!-- Chat Input -->
+          <div class="flex space-x-3">
+            <input type="text" id="aria-input" placeholder="Ask ARIA about risks, compliance, or security..." class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <button id="send-aria" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 flex items-center space-x-2">
+              <i class="fas fa-paper-plane"></i>
+              <span class="hidden sm:block">Send</span>
+            </button>
+          </div>
+          
+          <!-- Quick Action Buttons -->
+          <div class="flex flex-wrap gap-2">
+            <button onclick="quickARIAQuery('Analyze my top risks')" class="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-chart-line mr-1"></i>Analyze Risks
+            </button>
+            <button onclick="quickARIAQuery('Show me compliance insights')" class="px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-clipboard-check mr-1"></i>Compliance
+            </button>
+            <button onclick="quickARIAQuery('What are my risk predictions?')" class="px-3 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-crystal-ball mr-1"></i>Predictions
+            </button>
+            <button onclick="quickARIAQuery('Give me security recommendations')" class="px-3 py-2 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-shield-alt mr-1"></i>Security
+            </button>
+          </div>
+          
+          <!-- Note about configuration -->
+          <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+            <i class="fas fa-info-circle mr-1"></i>
+            Configure your AI providers in <strong>Settings</strong> to enable ARIA functionality.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        {/* JavaScript */}
-        <script src="/static/app.js"></script>
-      </body>
-    </html>
-  );
+  <!-- Floating ARIA Button (Hidden until login) -->
+  <button id="aria-button" class="hidden fixed bottom-6 right-6 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-30" title="Ask ARIA - AI Risk Assistant">
+    <i class="fas fa-robot text-xl"></i>
+  </button>
+
+  <!-- Notification Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+    <!-- Toast notifications will appear here -->
+  </div>
+
+  <!-- JavaScript -->
+  <script src="/static/modules.js?v=12&t=1734469000"></script>
+  <script src="/static/risk-enhancements.js?v=1"></script>
+  <script src="/static/enterprise-modules.js?v=7"></script>
+  <script src="/static/enhanced-settings.js?v=4"></script>
+  <script src="/static/system-settings-integration.js?v=4"></script>
+  <script src="/static/framework-management.js?v=1"></script>
+  <script src="/static/risk-management-enhanced.js?v=2"></script>
+  <script src="/static/incident-management-enhanced.js?v=1"></script>
+  <script src="/static/asset-service-management.js?v=1"></script>
+  <script src="/static/integrated-risk-framework.js?v=2"></script>
+  <script src="/static/ai-grc-dashboard.js?v=1"></script>
+  <script src="/static/ai-assure-module.js?v=1"></script>
+  <script src="/static/notifications.js?v=5"></script>
+  <script src="/static/document-management.js?v=3"></script>
+  <script src="/static/mobile-interface.js?v=3"></script>
+  <script src="/static/app.js?v=14"></script>
+  
+  <!-- Conditional Authentication Loading -->
+  <script>
+    function loadAppAuthScript() {
+      const script = document.createElement('script');
+      
+      if (window.location.hostname.includes('e2b.dev') || 
+          window.location.hostname === 'localhost') {
+        // Sandbox environment - skip separate auth loading as app.js handles it
+        console.log('Sandbox environment detected - using legacy authentication in app.js');
+        return;
+      } else {
+        // Production environment - load Keycloak authentication
+        script.src = '/static/keycloak-auth.js?v=1';
+        console.log('Production environment - loading Keycloak authentication');
+        
+        script.onload = function() {
+          console.log('Keycloak authentication loaded successfully');
+        };
+        
+        document.head.appendChild(script);
+      }
+    }
+    
+    // Initialize authentication after all scripts are loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadAppAuthScript);
+    } else {
+      loadAppAuthScript();
+    }
+  </script>
+</body>
+</html>`);
 });
 
 // Authentication routes (HTML pages)
 app.get('/login', (c) => {
-  return c.render(
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Login - DMT Risk Assessment System</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
-      </head>
-      <body className="bg-gradient-to-br from-blue-900 to-indigo-900 min-h-screen flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="mx-auto h-20 w-20 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-              <i className="fas fa-shield-alt text-white text-2xl"></i>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">DMT Risk Assessment</h1>
-            <p className="text-gray-600 mt-2">Enterprise GRC Platform v2.0</p>
-          </div>
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Risk Management Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-indigo-900 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="mx-auto h-20 w-20 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+        <i class="fas fa-shield-alt text-white text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">Risk Management Platform</h1>
+      <p class="text-gray-600 mt-2">Enterprise GRC Platform v2.0</p>
+    </div>
 
-          <form id="login-form">
-            <div className="mb-6">
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username or Email
-              </label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter your username or email"
-              />
-            </div>
+    <form id="login-form">
+      <div class="mb-6">
+        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+          Username or Email
+        </label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          required
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Enter your username or email"
+        >
+      </div>
 
-            <div className="mb-6">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter your password"
-              />
-            </div>
+      <div class="mb-6">
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+          Password
+        </label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          required
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Enter your password"
+        >
+      </div>
 
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150"
-            >
-              <i className="fas fa-sign-in-alt mr-2"></i>
-              Sign In
-            </button>
-          </form>
+      <button
+        type="submit"
+        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150"
+      >
+        <i class="fas fa-sign-in-alt mr-2"></i>
+        Sign In
+      </button>
+    </form>
 
-          <div id="login-error" className="mt-4 text-red-600 text-sm hidden"></div>
+    <div id="login-error" class="mt-4 text-red-600 text-sm hidden"></div>
 
-          <div className="mt-8 text-center text-sm text-gray-600">
-            <p>Demo Accounts:</p>
-            <div className="mt-2 space-y-1">
-              <p><strong>Admin:</strong> admin / demo123</p>
-              <p><strong>Risk Manager:</strong> avi_security / demo123</p>
-            </div>
-          </div>
-        </div>
+    <div class="mt-8 text-center text-sm text-gray-600">
+      <p>Demo Accounts:</p>
+      <div class="mt-2 space-y-1">
+        <p><strong>Admin:</strong> admin / demo123</p>
+        <p><strong>Risk Manager:</strong> avi_security / demo123</p>
+      </div>
+    </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/auth.js"></script>
-      </body>
-    </html>
-  );
+    <!-- Keycloak integration info (for production) -->
+    <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-200" id="keycloak-info" style="display:none;">
+      <div class="text-center">
+        <h3 class="font-semibold text-green-900 mb-2">🔐 Enhanced Security Available</h3>
+        <p class="text-sm text-green-800 mb-3">This system supports Keycloak for enterprise-grade authentication</p>
+        <button onclick="window.location.href='/api/auth/keycloak/login'" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+          <i class="fas fa-shield-alt mr-2"></i>Login with Keycloak
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+  <!-- Always load legacy auth for login page - keeps it simple -->
+  <script src="/static/auth.js"></script>
+</body>
+</html>`);
 });
 
 export default app;

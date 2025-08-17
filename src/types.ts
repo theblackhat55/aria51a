@@ -265,26 +265,7 @@ export interface Incident {
   updated_at: string;
 }
 
-// ESG Management
-export interface ESGMetric {
-  id: number;
-  metric_id: string;
-  metric_name: string;
-  metric_type: 'environmental' | 'social' | 'governance';
-  category: string;
-  description?: string;
-  unit_of_measure?: string;
-  target_value?: number;
-  current_value?: number;
-  data_source?: string;
-  collection_frequency?: string;
-  last_updated?: string;
-  next_update_due?: string;
-  owner_id: number;
-  organization_id: number;
-  created_at: string;
-  updated_at: string;
-}
+// ESG Management removed as per user request
 
 // Workflow Management
 export interface Workflow {

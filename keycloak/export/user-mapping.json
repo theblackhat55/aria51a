@@ -1,0 +1,37 @@
+[
+  {
+    "originalId": 1,
+    "username": "admin",
+    "email": "admin@dmt-corp.com",
+    "role": "admin",
+    "department": "IT"
+  },
+  {
+    "originalId": 2,
+    "username": "avi_security",
+    "email": "avi@dmt-corp.com",
+    "role": "risk_manager",
+    "department": "IT"
+  },
+  {
+    "originalId": 3,
+    "username": "sjohnson",
+    "email": "sarah.johnson@dmt-corp.com",
+    "role": "risk_manager",
+    "department": "Finance"
+  },
+  {
+    "originalId": 4,
+    "username": "mchen",
+    "email": "mike.chen@dmt-corp.com",
+    "role": "compliance_officer",
+    "department": "Operations"
+  },
+  {
+    "originalId": 5,
+    "username": "edavis",
+    "email": "emma.davis@dmt-corp.com",
+    "role": "auditor",
+    "department": "HR"
+  }
+]

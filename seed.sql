@@ -11,11 +11,11 @@ INSERT OR IGNORE INTO organizations (id, name, description, org_type, contact_em
 
 -- Insert sample users (password: demo123)
 INSERT OR IGNORE INTO users (id, email, username, password_hash, first_name, last_name, department, job_title, role) VALUES
-(1, 'admin@dmt-corp.com', 'admin', 'ZGVtbzEyM3NhbHQ=', 'System', 'Administrator', 'IT', 'System Administrator', 'admin'),
-(2, 'avi@dmt-corp.com', 'avi_security', 'ZGVtbzEyM3NhbHQ=', 'Avi', 'Security', 'IT', 'Security Specialist', 'risk_manager'),
-(3, 'sarah.johnson@dmt-corp.com', 'sjohnson', 'ZGVtbzEyM3NhbHQ=', 'Sarah', 'Johnson', 'Finance', 'Risk Manager', 'risk_manager'),
-(4, 'mike.chen@dmt-corp.com', 'mchen', 'ZGVtbzEyM3NhbHQ=', 'Mike', 'Chen', 'Operations', 'Compliance Officer', 'compliance_officer'),
-(5, 'emma.davis@dmt-corp.com', 'edavis', 'ZGVtbzEyM3NhbHQ=', 'Emma', 'Davis', 'HR', 'Internal Auditor', 'auditor');
+(1, 'admin@dmt-corp.com', 'admin', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'System', 'Administrator', 'IT', 'System Administrator', 'admin'),
+(2, 'avi@dmt-corp.com', 'avi_security', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'Avi', 'Security', 'IT', 'Security Specialist', 'risk_manager'),
+(3, 'sarah.johnson@dmt-corp.com', 'sjohnson', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'Sarah', 'Johnson', 'Finance', 'Risk Manager', 'risk_manager'),
+(4, 'mike.chen@dmt-corp.com', 'mchen', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'Mike', 'Chen', 'Operations', 'Compliance Officer', 'compliance_officer'),
+(5, 'emma.davis@dmt-corp.com', 'edavis', 'd3ad9315b7be5dd53b31a273b3b3aba5defe700808305aa16a3062b76658a791', 'Emma', 'Davis', 'HR', 'Internal Auditor', 'auditor');
 
 -- Insert risk categories
 INSERT OR IGNORE INTO risk_categories (id, name, description, category_type, risk_appetite) VALUES
@@ -25,7 +25,7 @@ INSERT OR IGNORE INTO risk_categories (id, name, description, category_type, ris
 (4, 'Financial Risk', 'Credit, market, and liquidity risks', 'financial', 'low'),
 (5, 'Regulatory Compliance', 'Regulatory and legal compliance risks', 'compliance', 'low'),
 (6, 'Third-Party Risk', 'Vendor and supplier risks', 'operational', 'medium'),
-(7, 'ESG Risk', 'Environmental, Social, and Governance risks', 'esg', 'medium'),
+
 (8, 'Business Continuity', 'Disaster recovery and business continuity', 'operational', 'low');
 
 -- Insert sample risks
@@ -75,11 +75,7 @@ INSERT OR IGNORE INTO incidents (id, incident_id, title, description, incident_t
 (1, 'DMT-INC-2024-001', 'Phishing Email Campaign', 'Employees received sophisticated phishing emails targeting credentials', 'security', 'medium', 'p2', 'Email system, potential user accounts', 'Potential credential compromise, productivity impact', 'closed', 2, '2024-06-15 09:30:00', '2024-06-15 10:15:00', 2),
 (2, 'DMT-INC-2024-002', 'Server Outage', 'Critical application server experienced unexpected downtime', 'operational', 'high', 'p1', 'Customer portal, internal applications', 'Service disruption for 2 hours, customer complaints', 'resolved', 2, '2024-07-02 14:20:00', '2024-07-02 14:25:00', 4);
 
--- Insert sample ESG metrics
-INSERT OR IGNORE INTO esg_metrics (id, metric_id, metric_name, metric_type, category, description, unit_of_measure, target_value, current_value, data_source, collection_frequency, owner_id, organization_id) VALUES
-(1, 'DMT-ESG-ENV-001', 'Carbon Emissions', 'environmental', 'carbon_emissions', 'Total CO2 equivalent emissions from operations', 'tons_co2', 1000.0, 1200.0, 'Facilities management system', 'quarterly', 4, 1),
-(2, 'DMT-ESG-SOC-001', 'Employee Diversity', 'social', 'diversity', 'Percentage of women in leadership positions', 'percentage', 40.0, 35.0, 'HR management system', 'quarterly', 5, 4),
-(3, 'DMT-ESG-GOV-001', 'Board Independence', 'governance', 'board_composition', 'Percentage of independent board members', 'percentage', 75.0, 80.0, 'Corporate governance records', 'annually', 1, 1);
+-- ESG metrics section removed as per user request
 
 -- Insert sample workflows
 INSERT OR IGNORE INTO workflows (id, workflow_id, name, description, trigger_type, trigger_config, workflow_steps, created_by, organization_id) VALUES

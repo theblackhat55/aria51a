@@ -1,0 +1,108 @@
+# =============================================================================
+# DMT Risk Assessment Platform - Production Dockerfile
+# Optimized for Ubuntu/Docker deployment with enterprise features
+# =============================================================================
+
+# =============================================================================
+# STAGE 1: Dependencies and Build
+# =============================================================================
+FROM node:18-alpine AS dependencies
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libc6-compat
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci --include=dev
+
+# =============================================================================
+# STAGE 2: Build Application
+# =============================================================================
+FROM dependencies AS builder
+
+# Copy source code
+COPY src/ ./src/
+COPY public/ ./public/
+COPY vite.config.ts ./
+
+# Build the application
+RUN npm run build
+
+# Remove dev dependencies to reduce size
+RUN npm prune --production
+
+# =============================================================================
+# STAGE 3: Production Runtime
+# =============================================================================
+FROM node:18-alpine AS production
+
+# Install production system dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    wget \
+    ca-certificates \
+    tzdata
+
+# Create application user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S dmt -u 1001 -G nodejs
+
+# Set working directory
+WORKDIR /app
+
+# Copy built application from builder stage
+COPY --from=builder --chown=dmt:nodejs /app/dist ./dist
+COPY --from=builder --chown=dmt:nodejs /app/public ./public
+COPY --from=builder --chown=dmt:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=dmt:nodejs /app/package*.json ./
+
+# Create required directories with proper permissions
+RUN mkdir -p /app/logs /app/uploads /app/temp /app/cache && \
+    chown -R dmt:nodejs /app && \
+    chmod 755 /app/logs /app/uploads /app/temp /app/cache
+
+# Copy production configuration files
+COPY --chown=dmt:nodejs docker/production/entrypoint.sh /app/entrypoint.sh
+COPY --chown=dmt:nodejs docker/production/healthcheck.js /app/healthcheck.js
+
+# Make entrypoint executable
+RUN chmod +x /app/entrypoint.sh
+
+# Switch to non-root user
+USER dmt
+
+# Set environment variables
+ENV NODE_ENV=production \
+    NPM_CONFIG_CACHE=/tmp/.npm \
+    NODE_OPTIONS="--max-old-space-size=1024" \
+    TZ=UTC
+
+# Expose application port
+EXPOSE 3000
+
+# Health check configuration
+HEALTHCHECK --interval=30s \
+            --timeout=10s \
+            --start-period=60s \
+            --retries=3 \
+            CMD node /app/healthcheck.js
+
+# Volume for persistent data
+VOLUME ["/app/logs", "/app/uploads"]
+
+# Use dumb-init as PID 1 for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start application
+CMD ["/app/entrypoint.sh"]

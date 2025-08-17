@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frontend Debug Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body>
+  <h1>Frontend Debug Test</h1>
+  <div id="output"></div>
+  <div id="tests">
+    <button onclick="testLogin()">1. Test Login</button>
+    <button onclick="testDashboardAfterLogin()">2. Test Dashboard After Login</button>
+    <button onclick="testNavigation()">3. Test Navigation</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+  </div>
+
+  <script>
+    function log(message) {
+      const output = document.getElementById('output');
+      output.innerHTML += '<p>' + new Date().toISOString() + ': ' + message + '</p>';
+      console.log(message);
+    }
+
+    function clearStorage() {
+      localStorage.clear();
+      log('Storage cleared');
+    }
+
+    async function testLogin() {
+      try {
+        log('Testing login process...');
+        
+        // Step 1: Login API call
+        const loginResponse = await axios.post('/api/auth/login', {
+          username: 'admin',
+          password: 'demo123'
+        });
+        
+        if (loginResponse.data.success) {
+          log('✅ Login API successful');
+          
+          // Step 2: Store token like real app does
+          const token = loginResponse.data.data.token;
+          const expiresAt = loginResponse.data.data.expires_at;
+          const user = loginResponse.data.data.user;
+          
+          localStorage.setItem('dmt_token', token);
+          localStorage.setItem('dmt_expires_at', expiresAt);
+          localStorage.setItem('dmt_user', JSON.stringify(user));
+          
+          log('✅ Token stored: ' + token.substring(0, 20) + '...');
+          log('✅ User: ' + user.first_name + ' ' + user.last_name + ' (' + user.role + ')');
+          
+        } else {
+          log('❌ Login failed: ' + loginResponse.data.error);
+        }
+      } catch (error) {
+        log('❌ Login error: ' + error.message);
+      }
+    }
+
+    async function testDashboardAfterLogin() {
+      try {
+        log('Testing dashboard after login...');
+        
+        const token = localStorage.getItem('dmt_token');
+        if (!token) {
+          log('❌ No token found - please login first');
+          return;
+        }
+        
+        log('Token found: ' + token.substring(0, 20) + '...');
+        
+        // Test auth validation
+        const authResponse = await axios.get('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (authResponse.data.success) {
+          log('✅ Auth validation successful');
+          
+          // Test dashboard API
+          const dashboardResponse = await axios.get('/api/dashboard', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (dashboardResponse.data.success) {
+            log('✅ Dashboard API successful');
+            log('  - Total risks: ' + dashboardResponse.data.data.total_risks);
+            log('  - High risks: ' + dashboardResponse.data.data.high_risks);
+            log('  - Compliance score: ' + dashboardResponse.data.data.compliance_score + '%');
+          } else {
+            log('❌ Dashboard API failed: ' + dashboardResponse.data.error);
+          }
+        } else {
+          log('❌ Auth validation failed: ' + authResponse.data.error);
+        }
+      } catch (error) {
+        log('❌ Dashboard test error: ' + error.message);
+      }
+    }
+
+    async function testNavigation() {
+      try {
+        log('Testing navigation functions...');
+        
+        // Check if functions exist
+        const functions = [
+          'showDashboard', 'showRisks', 'showControls', 
+          'showCompliance', 'showIncidents', 'navigateTo'
+        ];
+        
+        functions.forEach(func => {
+          if (typeof window[func] === 'function') {
+            log('✅ ' + func + ' function exists');
+          } else {
+            log('❌ ' + func + ' function missing');
+          }
+        });
+        
+        // Test navigation elements
+        const navElements = [
+          'nav-dashboard', 'nav-risks', 'nav-compliance', 
+          'nav-frameworks', 'nav-incidents'
+        ];
+        
+        navElements.forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            log('✅ Navigation element ' + id + ' exists');
+          } else {
+            log('❌ Navigation element ' + id + ' missing');
+          }
+        });
+        
+      } catch (error) {
+        log('❌ Navigation test error: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

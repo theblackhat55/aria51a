@@ -1,302 +1,589 @@
-# DMT Risk Assessment System v2.0
+# DMT Risk Assessment Platform v2.0
 
-**Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics**
+## 🚀 Project Overview
+- **Name**: DMT Risk Assessment Platform
+- **Version**: 2.0.1 - Ubuntu Docker Edition
+- **Goal**: Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics
+- **Technology Stack**: Hono + TypeScript + Node.js + SQLite + Docker + TailwindCSS
 
-## 🛡️ Project Overview
+## 🐧 Quick Start - Ubuntu Docker Deployment
 
-The DMT Risk Assessment System v2.0 is a comprehensive, AI-powered Enterprise Governance, Risk, and Compliance (GRC) platform designed for modern organizations. Built on cutting-edge technologies including Hono framework, Cloudflare Workers, and advanced AI capabilities, this system provides real-time risk monitoring, compliance tracking, and intelligent analytics.
+### Prerequisites
+- Ubuntu 20.04+ with Docker and Docker Compose installed
+- 4GB RAM minimum, 8GB recommended
+- 10GB free disk space
 
-### Key Features
+### One-Command Deployment
+```bash
+# Clone and deploy
+git clone https://github.com/theblackhat55/GRC.git
+cd GRC
+mkdir -p database logs uploads
+docker-compose up -d
 
-- **🤖 AI-Powered Intelligence**: Advanced risk scoring, predictive analytics, and automated anomaly detection
-- **📊 Real-Time Dashboard**: Interactive analytics with risk heatmaps, trend analysis, and KPI monitoring  
-- **🔒 Zero Trust Security**: Multi-factor authentication, role-based access control, and encrypted data storage
-- **🏢 Enterprise Scale**: Multi-tenant architecture supporting complex organizational structures
-- **📱 Mobile-First Design**: Responsive interface optimized for all devices
-- **🔧 No-Code Workflows**: Visual workflow builder for automated risk management processes
-- **🌍 ESG Management**: Comprehensive Environmental, Social, and Governance tracking
-- **🎯 ARIA AI Assistant**: Intelligent chatbot for GRC guidance and support
+# Access at: http://localhost:3000
+# Login: admin / demo123
+```
 
-## 🚀 Currently Implemented Features
+### 🔗 Links After Deployment
+- **Application**: http://localhost:3000
+- **Health Check**: http://localhost:3000/health
+- **Login Page**: http://localhost:3000/login
 
-### ✅ Core System Architecture
-- Hono framework with TypeScript for robust backend API
-- Cloudflare Workers edge deployment for global performance
-- Cloudflare D1 database for scalable data storage
-- Modern responsive UI with Tailwind CSS
+📖 **Full Ubuntu deployment guide**: [UBUNTU_DOCKER_DEPLOYMENT.md](UBUNTU_DOCKER_DEPLOYMENT.md)
 
-### ✅ Authentication & Authorization
-- JWT-based authentication system
-- Role-based access control (Admin, Risk Manager, Compliance Officer, Auditor, User)
-- Session management and token validation
-- Secure password handling
+## 🌟 New Features Implemented
 
-### ✅ Risk Management Module
-- Comprehensive risk register with detailed risk profiles
-- Risk scoring and classification (1-25 scale with AI enhancement)
-- Risk categories and taxonomy management
-- Risk treatment strategies and mitigation planning
-- Automated risk review scheduling
+### ✅ Advanced Risk Heat Maps
+- **Interactive Visualizations**: Multiple view modes for comprehensive risk analysis
+  - Probability vs Impact heat map with bubble sizing
+  - Organizational risk matrix by department
+  - Temporal risk evolution over time
+  - Risk distribution by category with radar charts
+- **Features**: Full-screen mode, real-time data updates, color-coded severity levels
+- **Location**: Dashboard → Advanced Risk Heat Maps section
 
-### ✅ Control Framework
-- Control library with multiple frameworks (ISO27001, NIST, SOX, COBIT)
-- Control effectiveness monitoring and testing
-- Risk-control mapping and gap analysis
-- Automated control testing workflows
+### ✅ Automated Workflow Notifications
+- **In-App Notification System**: Real-time notifications with badge counts
+- **Workflow Automation**: Rule-based triggers for risk events
+  - High-risk auto-alerts to management
+  - Critical risk escalation workflows  
+  - Incident response team notifications
+  - Risk review reminders
+- **Database Schema**: Complete notification and workflow tables
+- **UI Components**: Notification bell, dropdown, full notifications page
 
-### ✅ Compliance Management
-- Multi-framework compliance tracking (GDPR, HIPAA, PCI-DSS, SOX)
-- Assessment planning and execution
-- Finding management and remediation tracking
-- Regulatory requirement mapping
+### ✅ Document Management System
+- **File Management**: Upload, organize, and manage risk-related documents
+- **Access Control**: Private, public, and restricted visibility levels
+- **Document Types**: Policies, procedures, reports, evidence, certificates, contracts, training, audits
+- **Features**: File versioning, access logging, search and filtering, document preview
+- **Security**: Role-based access control and audit trails
 
-### ✅ Incident Management
-- Incident reporting and classification
-- Automated escalation and notification
-- Root cause analysis and lessons learned
-- Regulatory notification tracking
+### ✅ Mobile-Responsive Interface
+- **Mobile-First Design**: Optimized for smartphones and tablets
+- **Touch-Friendly UI**: 44px minimum touch targets, swipe gestures
+- **Bottom Navigation**: Easy thumb navigation on mobile devices
+- **Pull-to-Refresh**: Intuitive refresh mechanism
+- **Responsive Components**: All forms, tables, and modals optimized for mobile
 
-### ✅ Analytics Dashboard
-- Real-time risk metrics and KPIs
-- Interactive charts and visualizations
-- Risk trend analysis
-- Compliance scoring and reporting
-- Executive-level reporting
+### ✅ AI-Powered Risk Insights
+- **Trend Analysis**: Predictive analytics for risk evolution
+- **Anomaly Detection**: Identification of unusual risk patterns
+- **Risk Predictions**: Scenario-based forecasting with confidence scores
+- **Automated Insights**: Real-time risk intelligence and recommendations
+- **Visual Analytics**: AI-generated charts and trend visualizations
 
-### ✅ ARIA AI Assistant
-- Natural language query processing
-- GRC guidance and recommendations
-- Context-aware responses based on user role
-- Integration with Cloudflare AI models
+### 🆕 Enterprise Keycloak IAM Integration
+- **Complete Authentication Overhaul**: Replaced basic authentication with enterprise-grade Keycloak IAM
+- **OIDC/OAuth2 Support**: Modern authentication flows with JWT tokens
+- **SAML Integration**: Support for enterprise identity providers (ADFS, Azure AD, Okta)
+- **Role-Based Access Control**: Fine-grained permissions mapped from Keycloak roles
+- **User Migration**: Automated migration of existing users to Keycloak realm
+- **Docker Deployment**: Containerized Keycloak with PostgreSQL backend
+- **Dual Authentication**: Backward compatibility during migration period
+- **Security Enhancement**: Centralized identity management and audit trails
 
-### ✅ ESG Management
-- Environmental, Social, and Governance metrics tracking
-- Sustainability reporting capabilities
-- ESG performance monitoring
-- Climate risk assessment framework
+### ✅ Multi-LLM Integration for Enhanced ARIA
+- **Multiple Providers**: OpenAI GPT-4, Google Gemini Pro, Anthropic Claude 3, Local LLM
+- **Provider Selection**: Users can choose their preferred AI model
+- **Enhanced Capabilities**: 
+  - Risk analysis and recommendations
+  - Compliance guidance
+  - Predictive insights
+  - Security assessments
+- **Conversation History**: Full chat history with performance metrics
+- **Quick Actions**: Pre-built prompts for common queries
 
-## 🌐 Live URLs
+## 🌐 URLs
+- **Live Application**: https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev/
+- **GitHub Repository**: https://github.com/theblackhat55/GRC
+- **Version 3.0 Branch**: https://github.com/theblackhat55/GRC/tree/v3.0
+- **Version 3.0 Release**: https://github.com/theblackhat55/GRC/releases/tag/v3.0
+- **Project Backup**: https://page.gensparksite.com/project_backups/tooluse_j6ZW1KLFQLWkHADklHq47A.tar.gz
 
-- **Development**: `https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev` (sandbox environment)
-- **Local Access**: `http://localhost:3000` (when running locally)
-- **Login Page**: `https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev/login`
-- **Production**: *Ready for Cloudflare Pages deployment*
-- **GitHub Repository**: *Ready for repository setup*
+## 🔧 Latest Updates (v2.0.1)
+- **Status**: ✅ All critical bugs fixed and deployed
+- **Last Updated**: August 16, 2025
+- **Bug Fixes**: Services API creation, AI dashboard navigation, modal close functionality
+- **Test Credentials**: admin / demo123
 
-## 📊 Data Architecture
+## 🗄️ Data Architecture
 
-### Database Design
-- **Cloudflare D1 Database**: SQLite-based globally distributed database
-- **Comprehensive Schema**: 15+ interconnected tables covering all GRC domains
-- **Optimized Indexing**: Performance-optimized for complex queries
-- **Audit Trails**: Complete activity logging for compliance requirements
+### Core Data Models
+- **Users & Authentication**: Role-based access with MFA support
+- **Organizations**: Hierarchical organization structure with risk tolerance
+- **Risks**: Comprehensive risk data with scoring algorithms
+- **Controls**: Risk controls with effectiveness ratings
+- **Incidents**: Security incident tracking and response
+- **Assets & Services**: IT asset inventory with risk correlations
 
-### Key Data Models
-- **Users & Organizations**: Multi-tenant user management with organizational hierarchy
-- **Risk Register**: Complete risk lifecycle management with AI scoring
-- **Control Library**: Framework-agnostic control management
-- **Compliance Requirements**: Multi-regulatory framework support
-- **Assessment & Findings**: Structured assessment methodology
-- **Incident Records**: Complete incident response lifecycle
-- **ESG Metrics**: Sustainability and governance tracking
-- **AI Insights**: Machine learning-powered analytics
+### New Data Models
+- **Notifications**: In-app notification system with workflow automation
+- **Documents**: File management with access control and versioning
+- **AI Insights**: Cached AI analysis results and predictions
+- **LLM Provider Configs**: Multiple AI provider configurations
+- **Conversation History**: ARIA chat history with performance metrics
+- **Workflow Rules**: Automated business process definitions
 
 ### Storage Services
-- **D1 Database**: Relational data for GRC records
-- **AI Models**: Integrated Cloudflare Workers AI for intelligent features
-- **Static Assets**: Optimized delivery through Cloudflare Pages
+- **Cloudflare D1**: Primary SQLite database for all structured data
+- **Local Development**: Automatic local SQLite databases with `--local` flag
+- **Migrations**: Version-controlled database schema updates
+- **Indexes**: Optimized for performance with comprehensive indexing
 
-## 👤 User Guide
+## 🔐 Authentication System
+
+### Keycloak IAM Integration (New)
+
+The platform now uses Keycloak for enterprise-grade authentication and identity management.
+
+**Quick Setup:**
+```bash
+# Complete Keycloak deployment
+./deploy-keycloak-integration.sh
+
+# Or manual setup
+./setup-keycloak.sh
+npm run users:export
+./import-users-keycloak.sh
+```
+
+**Access Points:**
+- **Application**: http://localhost:3000
+- **Keycloak Admin**: http://localhost:8080/admin (admin/admin123)
+- **Authentication**: http://localhost:3000/api/auth/keycloak/login
+
+**Default Test Users:**
+- `admin` / `password123` (Administrator)
+- `avi_security` / `password123` (Risk Manager)
+- `sjohnson` / `password123` (Compliance Officer)
+- `mchen` / `password123` (Auditor)
+- `edavis` / `password123` (Risk Owner)
+
+**Key Features:**
+- Single Sign-On (SSO) with Keycloak
+- SAML integration for enterprise identity providers
+- Role-based access control with fine-grained permissions
+- Automated user migration from legacy system
+- JWT token-based API authentication
+
+For detailed setup instructions, see [KEYCLOAK_INTEGRATION.md](./KEYCLOAK_INTEGRATION.md)
+
+## 📱 User Guide
 
 ### Getting Started
-1. **Login**: Access the system using your credentials at `/login`
-   - Demo Admin: `admin` / `demo123`
-   - Demo Security Specialist: `avi_security` / `demo123`
-   - Demo Risk Manager: `sjohnson` / `demo123`
-   - Demo Compliance Officer: `mchen` / `demo123`
-   - Demo Auditor: `edavis` / `demo123`
+1. **Authentication**: 
+   - **Keycloak (Recommended)**: http://localhost:3000/api/auth/keycloak/login
+   - **Legacy Login**: Use credentials - Username: `admin` / Password: `demo123`
+2. **Dashboard**: Overview with metrics and interactive heat maps
+3. **Navigation**: 
+   - Desktop: Top navigation bar
+   - Mobile: Bottom navigation with swipe gestures
 
-2. **Dashboard**: View real-time risk metrics and analytics
-   - Risk trends and distribution
-   - Compliance scoring
-   - Key performance indicators
+### Key Features Usage
 
-3. **Risk Management**: Create, assess, and monitor organizational risks
-   - Use the risk register to document new risks
-   - Apply treatment strategies and mitigation plans
-   - Schedule regular risk reviews
+#### Risk Heat Maps
+- Navigate to Dashboard
+- View "Advanced Risk Heat Maps" section
+- Select visualization type (Probability/Impact, Organizational, Temporal, Category)
+- Click fullscreen icon for detailed analysis
+- Hover over data points for detailed information
 
-4. **Compliance Tracking**: Monitor regulatory compliance status
-   - Track multiple frameworks simultaneously
-   - Manage assessment findings and remediation
-   - Generate compliance reports
+#### Notifications
+- Click notification bell (top-right on desktop, header on mobile)
+- View recent notifications in dropdown
+- Click "View All Notifications" for complete list
+- Mark individual or all notifications as read
 
-5. **ARIA Assistant**: Access AI-powered GRC guidance
-   - Click the floating robot button for assistance
-   - Ask questions about risk management, compliance, or security
-   - Get contextual recommendations based on your role
+#### ARIA AI Assistant
+- Click floating robot icon (bottom-right)
+- Select AI provider (GPT-4, Gemini Pro, Claude 3, Local LLM)
+- Use quick action buttons or type custom queries
+- Ask about risk analysis, compliance, predictions, security
 
-### User Roles & Permissions
-- **Admin**: Full system access and configuration
-- **Risk Manager**: Risk assessment and mitigation planning
-- **Compliance Officer**: Compliance monitoring and reporting
-- **Auditor**: Assessment execution and finding management
-- **User**: Basic access to assigned tasks and reports
+#### Document Management
+- Navigate to Documents section
+- Upload files with metadata (title, type, description, tags)
+- Set visibility levels (private, public, restricted)
+- Search and filter documents
+- View, download, edit, or share documents
 
-## 🚀 Deployment Status
+#### Mobile Interface
+- Automatic detection for mobile devices
+- Bottom navigation for easy thumb access
+- Pull down to refresh any screen
+- Swipe left/right for page navigation
+- Touch-optimized forms and buttons
 
-### ✅ Development Environment
+## 🚀 Deployment
+
+### Current Status
+- **Platform**: Cloudflare Pages with Hono framework
 - **Status**: ✅ Active and fully functional
-- **Platform**: Sandbox environment with PM2 process management
-- **Public URL**: https://3000-ibz2syvp5pyfue1ktwmlj-6532622b.e2b.dev
-- **Features**: All core modules implemented and tested
-- **Database**: Local D1 database with comprehensive seed data
-- **Authentication**: ✅ Working perfectly with all demo accounts
-- **API Endpoints**: ✅ All REST API endpoints tested and functional
+- **Environment**: Development with local D1 database
+- **Performance**: Fast edge deployment with global CDN
 
-### ✅ Production Ready
-- **Status**: ✅ Ready for immediate Cloudflare Pages deployment
-- **Platform**: Cloudflare Workers + Pages
-- **Architecture**: Edge-optimized with global D1 database
-- **Next Steps**: 
-  1. Set up Cloudflare API authentication
-  2. Create production D1 database  
-  3. Deploy to Cloudflare Pages
-  4. Configure custom domain (optional)
-
-## 🛠️ Technical Stack
-
-### Backend
-- **Framework**: Hono v4.9+ (lightweight, fast web framework)
-- **Runtime**: Cloudflare Workers (edge computing)
-- **Language**: TypeScript for type safety
-- **Database**: Cloudflare D1 (globally distributed SQLite)
-- **AI/ML**: Cloudflare Workers AI integration
-
-### Frontend
-- **Styling**: Tailwind CSS for responsive design
-- **JavaScript**: Vanilla JS with modern ES6+ features
-- **Charts**: Chart.js for data visualization
+### Tech Stack Details
+- **Backend**: Hono TypeScript framework on Cloudflare Workers
+- **Frontend**: Vanilla JavaScript with TailwindCSS
+- **Database**: Cloudflare D1 (SQLite) with local development support
+- **Charts**: Chart.js for all visualizations and heat maps
 - **Icons**: Font Awesome for consistent iconography
-- **HTTP Client**: Axios for API communication
+- **Mobile**: Progressive Web App features with responsive design
 
-### Infrastructure
-- **Deployment**: Cloudflare Pages (static + serverless)
-- **CDN**: Cloudflare global network
-- **Security**: Zero Trust architecture, JWT authentication
-- **Monitoring**: Built-in logging and analytics
+### API Endpoints
 
-### Development Tools
-- **Build System**: Vite for fast development builds
-- **Process Management**: PM2 for development server
-- **Version Control**: Git with comprehensive .gitignore
-- **Package Management**: npm with lock file
+#### Core APIs
+- `GET /api/dashboard` - Dashboard data and metrics
+- `GET /api/risks` - Risk management CRUD operations
+- `GET /api/organizations` - Organization management
+- `GET /api/users` - User management and authentication
 
-## 📈 Features Not Yet Implemented
+#### New Enhanced APIs
+- `POST /api/aria/query` - Enhanced AI assistant with multiple LLM providers
+- `GET /api/ai/insights` - AI-powered risk insights and predictions
+- `POST /api/ai/analyze-risk` - Comprehensive AI risk analysis
+- `GET/POST /api/notifications` - Notification system with workflow automation
+- `GET/POST /api/documents` - Document management with access control
+- `GET/POST/PUT/DELETE /api/workflow-rules` - Automated workflow management
 
-### 🔄 Advanced Workflow Builder
-- Visual drag-and-drop workflow designer
-- Complex conditional logic and automation rules
-- Integration with external systems
-- Custom approval processes
+## 🔧 Development Setup
 
-### 🔄 Advanced Reporting Engine
-- Custom report builder
-- Scheduled report generation
-- Multi-format export (PDF, Excel, CSV)
-- Executive dashboards
+### Prerequisites
+- Node.js 18+ with npm
+- Wrangler CLI for Cloudflare development
+- PM2 for process management (pre-installed in sandbox)
 
-### 🔄 Third-Party Integrations
-- SIEM system integration
-- Identity provider (SSO) integration
-- Ticketing system integration
-- Email notification system
+### Installation
+```bash
+# Clone the repository
+git clone https://github.com/theblackhat55/GRC.git
+cd GRC
 
-### 🔄 Mobile Application
-- Native mobile app for iOS/Android
-- Offline capability for field assessments
-- Push notifications for critical risks
-- Mobile-optimized workflows
+# Install dependencies
+npm install
 
-## 🎯 Recommended Next Steps
+# Apply database migrations
+npx wrangler d1 migrations apply dmt-production --local
 
-### Immediate (1-2 weeks)
-1. **Complete Production Deployment**
-   - Set up Cloudflare authentication
-   - Deploy to production environment
-   - Configure monitoring and alerts
+# Build the project
+npm run build
 
-2. **Enhanced Security Features**
-   - Implement multi-factor authentication
-   - Add biometric authentication support
-   - Enhance audit logging
+# Start development server
+pm2 start ecosystem.config.cjs
+```
 
-3. **User Experience Improvements**
-   - Add data export capabilities
-   - Implement advanced search and filtering
-   - Enhance mobile responsiveness
+### Database Commands
+```bash
+# Apply new migrations
+npm run db:migrate:local
 
-### Short-term (1-2 months)
-1. **Advanced Analytics**
-   - Implement risk correlation analysis
-   - Add predictive risk modeling
-   - Create industry benchmarking
+# Reset local database
+npm run db:reset
 
-2. **Integration Capabilities**
-   - Build REST API documentation
-   - Implement webhook support
-   - Add third-party system connectors
+# Access database console
+npm run db:console:local
+```
 
-3. **Workflow Automation**
-   - Complete no-code workflow builder
-   - Add automated notification system
-   - Implement approval workflows
+## 🔄 Recent Updates (Version 2.0)
 
-### Long-term (3-6 months)
-1. **AI/ML Enhancements**
-   - Advanced natural language processing
-   - Automated risk assessment
-   - Intelligent control recommendations
+### Performance Improvements
+- Enhanced Chart.js integration for real-time heat maps
+- Optimized mobile rendering with touch-first design
+- Improved API response times with efficient queries
+- Advanced caching for AI insights and predictions
 
-2. **Enterprise Features**
-   - Multi-tenant architecture
-   - Advanced reporting engine
-   - Enterprise SSO integration
+### Security Enhancements
+- Role-based access control for all new features
+- Document access logging and audit trails
+- Encrypted API keys for LLM providers
+- Secure conversation history storage
 
-3. **Compliance Expansion**
-   - Additional regulatory frameworks
-   - Automated compliance scoring
-   - Regulatory change monitoring
+### User Experience
+- Intuitive mobile navigation with bottom bar
+- Real-time notifications with workflow automation
+- AI-powered insights with multiple provider options
+- Comprehensive document management system
+- Interactive heat maps with multiple visualization modes
 
-## 📊 System Performance
+### Developer Experience
+- Comprehensive TypeScript interfaces
+- Database migrations with version control
+- API endpoint documentation and testing
+- Mobile-responsive component library
+- AI integration framework for future enhancements
 
-### Current Metrics
-- **Response Time**: < 200ms for API calls
-- **Database Queries**: Optimized for <50ms execution
-- **Page Load Time**: < 2 seconds initial load
-- **Concurrent Users**: Supports 100+ simultaneous users
+## 📊 System Metrics
+- **Database Tables**: 15+ comprehensive data models
+- **API Endpoints**: 25+ RESTful endpoints
+- **Frontend Components**: 10+ reusable JavaScript modules
+- **Mobile Optimization**: 100% responsive design
+- **AI Integration**: 4 LLM providers supported
+- **Visualization Types**: 4 interactive heat map modes
 
-### Scalability Features
-- **Edge Computing**: Global distribution via Cloudflare
-- **Auto-scaling**: Serverless architecture scales automatically
-- **Caching**: Intelligent caching for optimal performance
-- **CDN**: Static assets delivered via global CDN
+## 🛡️ Comprehensive Risk Management Framework (August 17, 2025)
+
+### ✅ NIST 800-37 RMF & ISO 27001:2022 Compliant Framework
+- **Complete Asset Management**: CIA triad assessment with dynamic risk scoring
+- **Service Dependency Mapping**: Service-to-asset relationships with cascading risk calculation
+- **Enhanced Risk Assessment**: NIST 800-30 methodology with threat source analysis
+- **Integrated Risk Calculation**: Dynamic risk propagation from assets → services → risks
+- **Compliance Mapping**: Full alignment to ISO 27001:2022, NIST CSF, and SOC 2
+
+### ✅ Advanced Incident Management with Workflows
+- **SLA-Based Escalation**: Automatic escalation based on severity and time
+- **Workflow Automation**: Status-based incident lifecycle management
+- **Real-Time Metrics**: Incident response time, SLA breach tracking
+- **Integration**: Full integration with risk and asset management systems
+
+### ✅ Dynamic Risk Scoring Engine
+- **Asset Risk Formula**: `(MaxCIA * 0.6 + AvgCIA * 0.4) * Criticality`
+- **Service Risk Formula**: `AssetRisk * ServiceTypeMultiplier * DependencyMultiplier`
+- **Enhanced Risk Formula**: `BaseRisk * AssetMultiplier * ServiceMultiplier * ThreatMultiplier - ControlEffectiveness`
+- **Real-Time Updates**: Automatic recalculation when dependencies change
+
+### ✅ Industry Standards Compliance
+- **NIST 800-37**: Complete Risk Management Framework implementation
+- **ISO 27001:2022**: All 14 Annex A control categories mapped
+- **NIST CSF**: Full Cybersecurity Framework integration
+- **SOC 2**: Trust Service Criteria alignment
+- **NIST 800-30**: Threat source and risk assessment methodology
+
+## 📊 Risk Framework Architecture
+
+### Asset Management (ISO 27001:2022)
+- **6 Asset Types**: Information, Software, Physical, Personnel, Service, Intangible
+- **CIA Triad Assessment**: Low/Moderate/High impact levels per NIST 800-60
+- **4 Criticality Levels**: Mission Critical, Business Critical, Important, Non-Critical
+- **Dynamic Risk Scoring**: Real-time calculation based on CIA and criticality
+
+### Service Management with Dependencies
+- **5 Service Tiers**: Presentation, Application, Data, Infrastructure, Security
+- **4 Service Types**: Business Critical (99.9% SLA), Important (99.5%), Support (99.0%), Development (95.0%)
+- **Dependency Mapping**: Complete service-to-asset and service-to-service relationships
+- **Risk Propagation**: Automatic risk inheritance from dependent assets
+
+### Enhanced Risk Assessment (NIST 800-37)
+- **14 Risk Categories**: Complete ISO 27001:2022 Annex A mapping
+- **4 Threat Sources**: Adversarial, Accidental, Structural, Environmental
+- **5x5 Risk Matrix**: NIST 800-30 likelihood and impact levels
+- **Control Effectiveness**: Integrated control maturity and implementation tracking
+
+### Incident Management with SLA Tracking
+- **4 Severity Levels**: Critical (30min SLA), High (2hr), Medium (8hr), Low (24hr)
+- **9 Status Workflow**: Complete incident lifecycle management
+- **3 Escalation Rules**: Automatic escalation based on time, severity, and SLA
+- **Metrics Dashboard**: MTTR, SLA compliance, escalation tracking
+
+## 🔧 Framework Benefits
+
+### Standards Compliance
+- **Audit Ready**: Complete traceability from assets to risks to controls
+- **Certification Support**: ISO 27001:2022, SOC 2, NIST compliance
+- **Regulatory Alignment**: Automated compliance framework mapping
+- **Control Effectiveness**: Quantitative control assessment and reporting
+
+### Dynamic Risk Management
+- **Real-Time Updates**: Automatic risk recalculation on dependency changes
+- **Impact Analysis**: Full asset-service-risk relationship tracking
+- **Threat Intelligence**: NIST 800-30 threat source integration
+- **Predictive Analytics**: Risk trend analysis and forecasting
+
+### Operational Excellence
+- **Automated Workflows**: Incident escalation and risk treatment processes
+- **Comprehensive Reporting**: Executive dashboards and detailed risk registers
+- **Integration Ready**: API-first design for external tool integration
+- **Performance Monitoring**: SLA tracking and compliance metrics
+
+## 🔮 Future Enhancements
+- Real-time collaboration features with WebSocket integration
+- Advanced reporting and dashboard customization
+- Integration with external security tools (SIEM, SOAR)
+- Machine learning model training on user data
+- Advanced document OCR and content analysis
+- Multi-tenant organization support
+- Service dependency mapping visualization
+- Automated risk assessment triggers
 
 ---
+**Last Updated**: August 17, 2025
+**Version**: 3.0 - Comprehensive Risk Management Framework
+**GitHub Branch**: v3.0 
+**Release**: https://github.com/theblackhat55/GRC/releases/tag/v3.0
+**Maintenance Status**: Production Ready with Enterprise-Grade GRC Capabilities
+## 🚀 Latest Features Added (August 15, 2025)
 
-## 🏆 Summary
+### ✅ RAG (Retrieval-Augmented Generation) System
+- **Vector Database**: Local SQLite-based vector storage with cosine similarity search
+- **Document Processing**: Automatic text extraction and embedding generation
+- **Smart Context Retrieval**: Relevant document chunks for AI queries
+- **Knowledge Base**: Upload and query organizational documents
+- **Multi-Provider Embeddings**: Support for OpenAI and local embedding models
+- **Performance**: Fast in-memory vector operations without external dependencies
 
-The DMT Risk Assessment System v2.0 represents a modern, comprehensive approach to enterprise risk management. Built with cutting-edge technologies and designed for security professionals like Avi, this platform provides the tools needed to effectively manage organizational risks in today's complex threat landscape.
+### ✅ MCP (Model Context Protocol) Tools
+- **6 Specialized GRC Tools**: Purpose-built for risk and compliance workflows
+- **Risk Assessment Tool**: Automated risk scoring and analysis
+- **Compliance Framework Tool**: Standards mapping and gap analysis
+- **Vulnerability Scanner Tool**: Security assessment integration
+- **Control Effectiveness Tool**: Control testing and validation
+- **Incident Response Tool**: Automated incident management workflows
+- **Audit Trail Tool**: Comprehensive activity logging and reporting
 
-**Key Strengths:**
-- ✅ Comprehensive GRC functionality
-- ✅ Modern, responsive user interface
-- ✅ AI-powered intelligence and automation
-- ✅ Scalable, secure architecture
-- ✅ Ready for enterprise deployment
+### ✅ Dynamic AI Model Discovery
+- **Real-Time Model Fetching**: Automatically discover latest AI models from providers
+- **OpenAI Integration**: Fetch current GPT models including GPT-4o, GPT-5 (when available)
+- **Gemini Integration**: Discover latest Google AI models and versions  
+- **Anthropic Integration**: Access to Claude 3.5 and newest model releases
+- **One-Click Updates**: Refresh model lists with a single button click in LLM settings
+- **Smart UI Updates**: Automatically populate dropdown menus with latest models
 
-The system is production-ready and can be immediately deployed to serve organizations requiring robust risk management capabilities. With its extensible architecture and modern technology stack, it provides a solid foundation for future enhancements and customizations.
+### ✅ Enhanced Authentication & Dashboard
+- **Fixed Authentication Flow**: Resolved persistent dashboard loading issues
+- **Enhanced UI Visibility**: Authentication-based progressive feature disclosure
+- **Improved Error Handling**: Comprehensive debugging and error reporting
+- **Performance Optimization**: Faster dashboard loading and data retrieval
+
+## 🎯 Technical Implementation Highlights
+
+### Frontend Enhancements
+- **Dynamic Model Fetching UI**: Refresh buttons next to each AI provider's model dropdown
+- **Enhanced Authentication**: Progressive UI disclosure based on login status
+- **Improved Error Handling**: Comprehensive console logging and user feedback
+- **Mobile Optimization**: Touch-friendly interfaces for all new features
+
+### Backend API Additions
+- **POST /api/ai/fetch-models**: Dynamic model discovery from AI providers
+- **RAG System APIs**: Complete vector storage and retrieval endpoints
+- **MCP Tool Integration**: 6 specialized GRC workflow tools
+- **Enhanced Error Handling**: Better API responses and error management
+
+### Database Enhancements
+- **Vector Storage Tables**: SQLite-based vector database for RAG system
+- **Document Processing**: Automated text extraction and chunking
+- **Performance Optimization**: Indexed searches and efficient queries
+
+## 🔧 Developer Setup Updates
+
+### New Environment Variables
+```bash
+# AI Provider API Keys (configured in LLM settings)
+OPENAI_API_KEY=your_openai_key
+GEMINI_API_KEY=your_gemini_key
+ANTHROPIC_API_KEY=your_anthropic_key
+
+# Vector Database Settings
+VECTOR_DIMENSION=1536
+SIMILARITY_THRESHOLD=0.7
+```
+
+### Updated Development Commands
+```bash
+# Test dynamic model fetching
+curl -X POST http://localhost:3000/api/ai/fetch-models \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "openai", "apiKey": "YOUR_API_KEY"}'
+
+# Test RAG system
+curl -X POST http://localhost:3000/api/rag/upload \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@document.pdf"
+
+# Test MCP tools
+curl -X POST http://localhost:3000/api/mcp/risk-assessment \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"riskData": {...}}'
+```
+
+## 📋 User Guide Updates
+
+### Using Dynamic Model Discovery
+1. **Login** to the platform with admin credentials
+2. **Navigate to Settings** → LLM Integration
+3. **Enter API Key** for your preferred AI provider
+4. **Click Refresh Button** (🔄) next to the model dropdown
+5. **Select Latest Model** from automatically updated list
+6. **Save Configuration** to apply changes
+
+### Using RAG System
+1. **Upload Documents** via Settings → Document Management
+2. **Wait for Processing** (automatic text extraction and vectorization)
+3. **Query ARIA Assistant** with questions about your documents
+4. **Get Contextual Answers** based on your uploaded content
+
+### Using MCP Tools
+1. **Access via ARIA** assistant or direct API calls
+2. **Risk Assessment**: Automated scoring and analysis
+3. **Compliance Mapping**: Framework alignment checking
+4. **Incident Response**: Automated workflow triggers
+
+## 🐧 Ubuntu Docker Deployment
+
+### Deployment Options
+
+#### Option 1: Docker Compose (Recommended)
+```bash
+# Clone repository
+git clone https://github.com/theblackhat55/GRC.git
+cd GRC
+
+# Create required directories  
+mkdir -p database logs uploads
+
+# Start with Docker Compose
+docker-compose up -d
+
+# Check status
+docker-compose ps
+```
+
+#### Option 2: Docker Only
+```bash
+# Build and run
+docker build -t dmt-risk-assessment .
+docker run -d -p 3000:3000 \
+  -v $(pwd)/database:/app/database \
+  -v $(pwd)/logs:/app/logs \
+  --name dmt-risk-app \
+  dmt-risk-assessment
+```
+
+### 🔑 Default Login Credentials
+| Username | Password | Role |
+|----------|----------|------|
+| `admin` | `demo123` | System Administrator |
+| `avi_security` | `demo123` | Risk Manager |
+| `sjohnson` | `demo123` | Risk Manager |
+| `mchen` | `demo123` | Compliance Officer |
+| `edavis` | `demo123` | Auditor |
+
+### 🔧 Management Commands
+```bash
+# View logs
+docker-compose logs -f
+
+# Restart application
+docker-compose restart
+
+# Stop application
+docker-compose down
+
+# Update application
+git pull && docker-compose build && docker-compose up -d
+
+# Backup database
+docker cp dmt-risk-app:/app/database/dmt.sqlite ./backup-$(date +%Y%m%d).sqlite
+```
+
+### 📖 Full Documentation
+- **Complete Ubuntu Guide**: [UBUNTU_DOCKER_DEPLOYMENT.md](UBUNTU_DOCKER_DEPLOYMENT.md)
+- **Troubleshooting**: Check the deployment guide for common issues
+- **Production Setup**: SSL/TLS configuration and security hardening
 
 ---
-
-*DMT Risk Assessment System v2.0 - Empowering Security Professionals with Intelligent Risk Management*
+**Latest Update**: August 17, 2025 - Added Ubuntu Docker deployment with complete local setup
+**Status**: ✅ All features implemented and fully functional - Docker ready
+**Next Phase**: Enhanced AI model training and multi-tenant support

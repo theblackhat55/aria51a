@@ -1,0 +1,564 @@
+[
+  {
+    "Section": "Organizational Controls",
+    "Clause": " A 5.1",
+    "Control": "Policies for Information Security",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 5.1.1"
+  },
+  {
+    "Clause": " A 5.2",
+    "Control": "Information Security Roles and Responsibilities",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 5.1.2"
+  },
+  {
+    "Clause": " A 5.3",
+    "Control": "Segregation of Duties",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 6.1.1"
+  },
+  {
+    "Clause": " A 5.4",
+    "Control": "Management Responsibilities",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 6.1.2"
+  },
+  {
+    "Clause": " A 5.5",
+    "Control": "Contact With Authorities",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 7.2.1"
+  },
+  {
+    "Clause": " A 5.6",
+    "Control": "Contact With Special Interest Groups",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 6.1.3"
+  },
+  {
+    "Clause": " A 5.7",
+    "Control": "Threat Intelligence",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 6.1.4"
+  },
+  {
+    "Clause": " A 5.8",
+    "Control": "Information Security in Project Management",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 5.9",
+    "Control": "Inventory of Information and Other Associated Assets",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 6.1.5,  A 14.1.1"
+  },
+  {
+    "Clause": " A 5.10",
+    "Control": "Acceptable Use of Information and Other Associated Assets",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 8.1.1,  A 8.1.2"
+  },
+  {
+    "Clause": " A 5.11",
+    "Control": "Return of Assets",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 8.1.4"
+  },
+  {
+    "Clause": " A 5.12",
+    "Control": "Classification of Information",
+    "Applicable": "Progress",
+    "Status in ISO 27001:2013": " A 8.2.1"
+  },
+  {
+    "Clause": " A 5.13",
+    "Control": "Labelling of Information",
+    "Applicable": "Progress",
+    "Status in ISO 27001:2013": " A 8.2.2"
+  },
+  {
+    "Clause": " A 5.14",
+    "Control": "Information Transfer",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 13.2.1,  A 13.2.2,  A 13.2.3"
+  },
+  {
+    "Clause": " A 5.15",
+    "Control": "Access Control",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.1.1,  A 9.1.2"
+  },
+  {
+    "Clause": " A 5.16",
+    "Control": "Identity Management",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.2.1"
+  },
+  {
+    "Clause": " A 5.17",
+    "Control": "Authentication Information",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.2.4,  A 9.3.1,  A 9.4.3"
+  },
+  {
+    "Clause": " A 5.18",
+    "Control": "Access Rights",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.2.2,  A 9.2.5,  A 9.2.6"
+  },
+  {
+    "Clause": " A 5.19",
+    "Control": "Information Security in Supplier Relationships",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 15.1.1"
+  },
+  {
+    "Clause": " A 5.20",
+    "Control": "Addressing Information Security Within Supplier Agreements",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 15.1.2"
+  },
+  {
+    "Clause": " A 5.21",
+    "Control": "Managing Information Security in the ICT Supply Chain",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 15.1.3"
+  },
+  {
+    "Clause": " A 5.22",
+    "Control": "Monitoring, Review and Change Management of Supplier Services",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 15.2.1"
+  },
+  {
+    "Clause": " A 5.23",
+    "Control": "Information Security for Use of Cloud Services",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 15.2.2"
+  },
+  {
+    "Clause": " A 5.24",
+    "Control": "Information Security Incident Management Planning and Preparation",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 5.25",
+    "Control": "Assessment and Decision on Information Security Events",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 16.1.1"
+  },
+  {
+    "Clause": " A 5.26",
+    "Control": "Response to Information Security Incidents",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 16.1.4"
+  },
+  {
+    "Clause": " A 5.27",
+    "Control": "Learning From Information Security Incidents",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 16.1.5"
+  },
+  {
+    "Clause": " A 5.28",
+    "Control": "Collection of Evidence",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 16.1.6"
+  },
+  {
+    "Clause": " A 5.29",
+    "Control": "Information Security During Disruption",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 16.1.7"
+  },
+  {
+    "Clause": " A 5.30",
+    "Control": "ICT Readiness for Business Continuity",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 5.31",
+    "Control": "Legal, Statutory, Regulatory and Contractual Requirements",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 18.1.1,  A 18.1.5"
+  },
+  {
+    "Clause": " A 5.32",
+    "Control": "Intellectual Property Rights",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 18.1.2"
+  },
+  {
+    "Clause": " A 5.33",
+    "Control": "Protection of Records",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 18.1.3"
+  },
+  {
+    "Clause": " A 5.34",
+    "Control": "Privacy and Protection of PII",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 18.1.4"
+  },
+  {
+    "Clause": " A 5.35",
+    "Control": "Independent Review of Information Security",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 18.2.1"
+  },
+  {
+    "Clause": " A 5.36",
+    "Control": "Compliance With Policies, Rules and Standards for Information Security",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 18.2.2,  A 18.2.3"
+  },
+  {
+    "Clause": " A 5.37",
+    "Control": "Documented Operating Procedures",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.1.1"
+  },
+  {
+    "Section": "People Controls",
+    "Clause": " A 6.1",
+    "Control": "Screening",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 7.1.1"
+  },
+  {
+    "Clause": " A 6.2",
+    "Control": "Terms and Conditions of Employment",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 7.1.2"
+  },
+  {
+    "Clause": " A 6.3",
+    "Control": "Information Security Awareness, Education and Training",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 7.2.2"
+  },
+  {
+    "Clause": " A 6.4",
+    "Control": "Disciplinary Process",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 7.2.3"
+  },
+  {
+    "Clause": " A 6.5",
+    "Control": "Responsibilities After Termination or Change of Employment",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 7.3.1"
+  },
+  {
+    "Clause": " A 6.6",
+    "Control": "Confidentiality or Non-Disclosure Agreements",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 13.2.4"
+  },
+  {
+    "Clause": " A 6.7",
+    "Control": "Remote Working",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 6.2.2"
+  },
+  {
+    "Clause": " A 6.8",
+    "Control": "Information Security Event Reporting",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 16.1.2,  A 16.1.3"
+  },
+  {
+    "Section": "Physical Controls",
+    "Clause": " A 7.1",
+    "Control": "Physical Security Perimeters",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.1.1"
+  },
+  {
+    "Clause": " A 7.2",
+    "Control": "Physical Entry",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.1.2,  A 11.1.6"
+  },
+  {
+    "Clause": " A 7.3",
+    "Control": "Securing Offices, Rooms and Facilities",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.1.3"
+  },
+  {
+    "Clause": " A 7.4",
+    "Control": "Physical Security Monitoring",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 7.5",
+    "Control": "Protecting Against Physical and Environmental Threats",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.1.4"
+  },
+  {
+    "Clause": " A 7.6",
+    "Control": "Working In Secure Areas",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.1.5"
+  },
+  {
+    "Clause": " A 7.7",
+    "Control": "Clear Desk and Clear Screen",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.2.9"
+  },
+  {
+    "Clause": " A 7.8",
+    "Control": "Equipment Siting and Protection",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.2.1"
+  },
+  {
+    "Clause": " A 7.9",
+    "Control": "Security of Assets Off-Premises",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.2.6"
+  },
+  {
+    "Clause": " A 7.10",
+    "Control": "Storage Media",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 8.3.1,  A 8.3.2,  A 8.3.3,  A 11.2.5"
+  },
+  {
+    "Clause": " A 7.11",
+    "Control": "Supporting Utilities",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.2.2"
+  },
+  {
+    "Clause": " A 7.12",
+    "Control": "Cabling Security",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.2.3"
+  },
+  {
+    "Clause": " A 7.13",
+    "Control": "Equipment Maintenance",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.2.4"
+  },
+  {
+    "Clause": " A 7.14",
+    "Control": "Secure Disposal or Re-Use of Equipment",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 11.2.7"
+  },
+  {
+    "Section": "Technological Controls",
+    "Clause": " A 8.1",
+    "Control": "User Endpoint Devices",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 6.2.1,  A 11.2.8"
+  },
+  {
+    "Clause": " A 8.2",
+    "Control": "Privileged Access Rights",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.2.3"
+  },
+  {
+    "Clause": " A 8.3",
+    "Control": "Information Access Restriction",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.4.1"
+  },
+  {
+    "Clause": " A 8.4",
+    "Control": "Access to Source Code",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.4.5"
+  },
+  {
+    "Clause": " A 8.5",
+    "Control": "Secure Authentication",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.4.2"
+  },
+  {
+    "Clause": " A 8.6",
+    "Control": "Capacity Management",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.1.3"
+  },
+  {
+    "Clause": " A 8.7",
+    "Control": "Protection Against Malware",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.2.1"
+  },
+  {
+    "Clause": " A 8.8",
+    "Control": "Management of Technical Vulnerabilities",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.6.1,  A 18.2.3"
+  },
+  {
+    "Clause": " A 8.9",
+    "Control": "Configuration Management",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 8.10",
+    "Control": "Information Deletion",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 8.11",
+    "Control": "Data Masking",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 8.12",
+    "Control": "Data Leakage Prevention",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 8.13",
+    "Control": "Information Backup",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.3.1"
+  },
+  {
+    "Clause": " A 8.14",
+    "Control": "Redundancy of Information Processing Facilities",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 17.2.1"
+  },
+  {
+    "Clause": " A 8.15",
+    "Control": "Logging",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.4.1,  A 12.4.2,  A 12.4.3"
+  },
+  {
+    "Clause": " A 8.16",
+    "Control": "Monitoring Activities",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 8.17",
+    "Control": "Clock Synchronization",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.4.4"
+  },
+  {
+    "Clause": " A 8.18",
+    "Control": "Use of Privileged Utility Programs",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 9.4.4"
+  },
+  {
+    "Clause": " A 8.19",
+    "Control": "Installation of Software on Operational Systems",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.5.1,  A 12.6.2"
+  },
+  {
+    "Clause": " A 8.20",
+    "Control": "Networks Security",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 13.1.1"
+  },
+  {
+    "Clause": " A 8.21",
+    "Control": "Security of Network Services",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 13.1.2"
+  },
+  {
+    "Clause": " A 8.22",
+    "Control": "Segregation of Networks",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 13.1.3"
+  },
+  {
+    "Clause": " A 8.23",
+    "Control": "Web filtering",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 8.24",
+    "Control": "Use of Cryptography",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 10.1.1,  A 10.1.2"
+  },
+  {
+    "Clause": " A 8.25",
+    "Control": "Secure Development Life Cycle",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 14.2.1"
+  },
+  {
+    "Clause": " A 8.26",
+    "Control": "Application Security Requirements",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 14.1.2,  A 14.1.3"
+  },
+  {
+    "Clause": " A 8.27",
+    "Control": "Secure System Architecture and Engineering Principles",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 14.2.5"
+  },
+  {
+    "Clause": " A 8.28",
+    "Control": "Secure Coding",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": "NEW"
+  },
+  {
+    "Clause": " A 8.29",
+    "Control": "Security Testing in Development and Acceptance",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 14.2.8,  A 14.2.9"
+  },
+  {
+    "Clause": " A 8.30",
+    "Control": "Outsourced Development",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 14.2.7"
+  },
+  {
+    "Clause": " A 8.31",
+    "Control": "Separation of Development, Test and Production Environments",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.1.4,  A 14.2.6"
+  },
+  {
+    "Clause": " A 8.32",
+    "Control": "Change Management",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.1.2,  A 14.2.2,  A 14.2.3,  A 14.2.4"
+  },
+  {
+    "Clause": " A 8.33",
+    "Control": "Test Information",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 14.3.1"
+  },
+  {
+    "Clause": " A 8.34",
+    "Control": "Protection of Information Systems During Audit Testing",
+    "Applicable": "Yes",
+    "Status in ISO 27001:2013": " A 12.7.1"
+  }
+]
