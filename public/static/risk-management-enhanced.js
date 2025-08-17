@@ -57,6 +57,24 @@ function getRiskFormHTML(risk = null) {
           </div>
         </div>
         
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Organization *</label>
+            <select id="risk-organization" class="form-select" required>
+              <option value="">Select Organization</option>
+              <option value="1" ${risk?.organization_id === 1 ? 'selected' : ''}>Default Organization</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Risk Owner *</label>
+            <select id="risk-owner" class="form-select" required>
+              <option value="">Select Owner</option>
+              <option value="1" ${risk?.owner_id === 1 ? 'selected' : ''}>Admin User</option>
+              <option value="2" ${risk?.owner_id === 2 ? 'selected' : ''}>Avi Security</option>
+            </select>
+          </div>
+        </div>
+        
         <div>
           <label class="form-label">Risk Title *</label>
           <input type="text" id="risk-title" class="form-input" value="${risk?.title || ''}" required>
@@ -167,12 +185,12 @@ function getRiskFormHTML(risk = null) {
             </select>
           </div>
           <div>
-            <label class="form-label">Risk Owner *</label>
-            <select id="risk-owner" class="form-select" required>
-              <option value="">Select Owner</option>
-              <option value="1" ${risk?.owner_id === 1 ? 'selected' : ''}>Admin User</option>
-              <option value="2" ${risk?.owner_id === 2 ? 'selected' : ''}>Avi Security</option>
-              <!-- Additional users will be loaded from API -->
+            <label class="form-label">Risk Priority</label>
+            <select id="risk-priority" class="form-select">
+              <option value="low" ${risk?.priority === 'low' ? 'selected' : ''}>Low Priority</option>
+              <option value="medium" ${risk?.priority === 'medium' ? 'selected' : ''}>Medium Priority</option>
+              <option value="high" ${risk?.priority === 'high' ? 'selected' : ''}>High Priority</option>
+              <option value="critical" ${risk?.priority === 'critical' ? 'selected' : ''}>Critical Priority</option>
             </select>
           </div>
         </div>
@@ -890,6 +908,53 @@ function getEnhancedRiskFormHTML(risk = null) {
     return getRiskFormHTML(risk);
 }
 
+// Safe dropdown population for enhanced risk form
+async function populateEnhancedRiskFormDropdowns() {
+    try {
+        // Populate categories (if element exists)
+        const categorySelect = document.getElementById('risk-category');
+        if (categorySelect && referenceData?.categories) {
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+            referenceData.categories.forEach(category => {
+                categorySelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+            });
+        }
+        
+        // Populate organizations (if element exists)
+        const orgSelect = document.getElementById('risk-organization');
+        if (orgSelect) {
+            orgSelect.innerHTML = '<option value="">Select Organization</option>';
+            if (referenceData?.organizations) {
+                referenceData.organizations.forEach(org => {
+                    orgSelect.innerHTML += `<option value="${org.id}">${org.name}</option>`;
+                });
+            } else {
+                // Fallback options
+                orgSelect.innerHTML += '<option value="1">Default Organization</option>';
+            }
+        }
+        
+        // Populate users (if element exists)
+        const ownerSelect = document.getElementById('risk-owner');
+        if (ownerSelect) {
+            ownerSelect.innerHTML = '<option value="">Select Owner</option>';
+            if (referenceData?.users) {
+                referenceData.users.forEach(user => {
+                    ownerSelect.innerHTML += `<option value="${user.id}">${user.first_name} ${user.last_name}</option>`;
+                });
+            } else {
+                // Fallback options
+                ownerSelect.innerHTML += '<option value="1">Admin User</option>';
+                ownerSelect.innerHTML += '<option value="2">Avi Security</option>';
+            }
+        }
+        
+        console.log('Enhanced risk form dropdowns populated successfully');
+    } catch (error) {
+        console.error('Error populating enhanced risk form dropdowns:', error);
+    }
+}
+
 // Submit risk form function
 function submitRiskForm() {
     const form = document.getElementById('risk-form');
@@ -930,6 +995,7 @@ async function handleEnhancedRiskSubmit(riskId = null) {
         title: document.getElementById('risk-title')?.value,
         description: document.getElementById('risk-description')?.value,
         category_id: parseInt(document.getElementById('risk-category')?.value),
+        organization_id: parseInt(document.getElementById('risk-organization')?.value),
         probability: parseInt(document.getElementById('risk-probability')?.value),
         impact: parseInt(document.getElementById('risk-impact')?.value),
         status: document.getElementById('risk-status')?.value || 'active',
@@ -939,7 +1005,8 @@ async function handleEnhancedRiskSubmit(riskId = null) {
         asset_type: document.getElementById('asset-type')?.value,
         service_type: document.getElementById('service-type')?.value,
         treatment_type: document.getElementById('treatment-type')?.value,
-        priority_level: document.getElementById('priority-level')?.value
+        priority_level: document.getElementById('priority-level')?.value,
+        priority: document.getElementById('risk-priority')?.value
     };
     
     // Calculate enhanced risk score
@@ -983,6 +1050,7 @@ async function handleEnhancedRiskSubmit(riskId = null) {
 window.getRiskFormHTML = getRiskFormHTML;
 window.getEnhancedRiskFormHTML = getEnhancedRiskFormHTML;
 window.handleEnhancedRiskSubmit = handleEnhancedRiskSubmit;
+window.populateEnhancedRiskFormDropdowns = populateEnhancedRiskFormDropdowns;
 window.submitRiskForm = submitRiskForm;
 window.submitRiskFormEdit = submitRiskFormEdit;
 window.getRiskViewHTML = getRiskViewHTML;
@@ -1011,8 +1079,11 @@ function createEnhancedRisk() {
         const modal = createModal('Create Enhanced Risk Assessment', content, buttons);
         document.body.appendChild(modal);
         
-        // Wait for modal to be added to DOM
-        setTimeout(() => {
+        // Wait for modal to be added to DOM, then populate dropdowns
+        setTimeout(async () => {
+            // Use safe dropdown population
+            await populateEnhancedRiskFormDropdowns();
+            
             // Handle form submission with enhanced framework
             const form = document.getElementById('risk-form');
             if (form) {
@@ -1033,7 +1104,10 @@ function createEnhancedRisk() {
         const modal = createModal('Create Risk Assessment', content, buttons);
         document.body.appendChild(modal);
         
-        setTimeout(() => {
+        setTimeout(async () => {
+            // Use safe dropdown population
+            await populateEnhancedRiskFormDropdowns();
+            
             const form = document.getElementById('risk-form');
             if (form) {
                 form.addEventListener('submit', async (e) => {
@@ -1063,7 +1137,10 @@ function editEnhancedRisk(riskId) {
         const modal = createModal('Edit Enhanced Risk Assessment', content, buttons);
         document.body.appendChild(modal);
         
-        setTimeout(() => {
+        setTimeout(async () => {
+            // Use safe dropdown population
+            await populateEnhancedRiskFormDropdowns();
+            
             // Handle form submission with enhanced framework
             const form = document.getElementById('risk-form');
             if (form) {
