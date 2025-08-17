@@ -29,8 +29,9 @@ function getRiskFormHTML(risk = null) {
   const isEdit = risk !== null;
   
   return `
-    <form id="risk-form" class="space-y-6">
-      <!-- Basic Risk Information -->
+    <div class="modal-form-container">
+      <form id="risk-form" class="space-y-6" data-risk-id="${risk?.id || ''}">
+        <!-- Basic Risk Information -->
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 class="text-lg font-medium text-blue-900 mb-4 flex items-center">
           <i class="fas fa-info-circle mr-2"></i>
@@ -280,18 +281,19 @@ function getRiskFormHTML(risk = null) {
             </select>
           </div>
         </div>
-      </div>
-      
-      <!-- Form Actions -->
-      <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
-        <button type="button" onclick="closeModal(this)" class="btn-secondary">
-          <i class="fas fa-times mr-2"></i>Cancel
-        </button>
-        <button type="submit" class="btn-primary">
-          <i class="fas fa-save mr-2"></i>${isEdit ? 'Update Risk' : 'Create Risk'}
-        </button>
-      </div>
-    </form>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Form Actions - Fixed at bottom -->
+    <div class="modal-form-buttons flex justify-end space-x-3">
+      <button type="button" onclick="closeModal(this)" class="btn-secondary">
+        <i class="fas fa-times mr-2"></i>Cancel
+      </button>
+      <button type="button" onclick="submitRiskForm()" class="btn-primary">
+        <i class="fas fa-save mr-2"></i>${isEdit ? 'Update Risk' : 'Create Risk'}
+      </button>
+    </div>
     
     <script>
       // Initialize form behavior
@@ -898,6 +900,21 @@ function getEnhancedRiskFormHTML(risk = null) {
     return getRiskFormHTML(risk);
 }
 
+// Submit risk form function
+function submitRiskForm() {
+    const form = document.getElementById('risk-form');
+    if (form) {
+        // Trigger form validation and submission
+        if (form.checkValidity()) {
+            // Get the current risk ID for editing (if exists)
+            const riskId = form.dataset.riskId || null;
+            handleEnhancedRiskSubmit(riskId);
+        } else {
+            form.reportValidity();
+        }
+    }
+}
+
 async function handleEnhancedRiskSubmit(riskId = null) {
     const form = document.getElementById('risk-form');
     if (!form.checkValidity()) {
@@ -964,6 +981,7 @@ async function handleEnhancedRiskSubmit(riskId = null) {
 window.getRiskFormHTML = getRiskFormHTML;
 window.getEnhancedRiskFormHTML = getEnhancedRiskFormHTML;
 window.handleEnhancedRiskSubmit = handleEnhancedRiskSubmit;
+window.submitRiskForm = submitRiskForm;
 window.getRiskViewHTML = getRiskViewHTML;
 window.changeRiskStatus = changeRiskStatus;
 window.analyzeRiskWithAI = analyzeRiskWithAI;
