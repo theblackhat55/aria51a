@@ -267,7 +267,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- JavaScript -->
-  <script src="/static/modules.js?v=9"></script>
+  <script src="/static/modules.js?v=10"></script>
   <script src="/static/enterprise-modules.js?v=7"></script>
   <script src="/static/enhanced-settings.js?v=4"></script>
   <script src="/static/system-settings-integration.js?v=4"></script>
