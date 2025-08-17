@@ -1,83 +1,128 @@
 # Dependencies
 node_modules/
-.pnp
-.pnp.js
+.pnpm-store/
 
-# Testing
-/coverage
+# Build outputs
+dist/
+.output/
+.vercel/
+.netlify/
+build/
 
-# Production builds
-/build
-/dist
-.vercel
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# dotenv environment variables file
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Environment files
+.env*
+!.env.example
 
 # Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
+coverage/
 *.lcov
 
-# nyc test coverage
-.nyc_output
+# Dependency directories
+jspm_packages/
 
-# PM2
-.pm2/
-pids/
-logs/
-*.log
+# Optional npm cache directory
+.npm
 
-# Backup files
-*.backup
-*.bak
-*.tar.gz
-*.zip
+# Optional eslint cache
+.eslintcache
 
-# Cloudflare
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Wrangler
 .wrangler/
-wrangler.toml.local
+wrangler.toml.bak
 
-# IDE and editors
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Editor directories and files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Uploads and user data
+uploads/
+backups/
+tmp/
+
+# PM2
+.pm2/
+ecosystem.config.js.bak
+
+# Docker
+.docker/
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
 
 # Temporary files
 *.tmp
 *.temp
-/tmp
-temp/
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+
+# Large data files
+*.xlsx
+*.xls
+*.csv
+*.json
+!package*.json
+!tsconfig.json
+!wrangler.jsonc
+
+# Backup files
+*.bak
+*.backup
+*.orig
