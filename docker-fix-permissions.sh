@@ -17,6 +17,6 @@ echo "📂 Logs directory: $(ls -la ./logs)"
 
 # Stop any running containers
 echo "🛑 Stopping existing containers..."
-docker-compose down 2>/dev/null || true
+docker compose down 2>/dev/null || true
 
-echo "🚀 Ready to start with: docker-compose up -d"
+echo "🚀 Ready to start with: docker compose up -d"
