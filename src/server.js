@@ -307,6 +307,7 @@ app.get('/', (c) => {
   <script src="/static/ai-assure-module.js"></script>
   <script src="/static/mobile-interface.js"></script>
   <script src="/static/risk-enhancements.js"></script>
+  <script src="/static/aria-chat.js"></script>
 </body>
 </html>
   `);

@@ -48,8 +48,26 @@ export function createAPI() {
   // const keycloakAPI = createKeycloakAPI();
   // app.route('/api', keycloakAPI);
 
+  // Simple rate limiter for auth endpoints
+  const __rate = new Map();
+  function rateLimited(key, limit = 8, windowMs = 60_000) {
+    const now = Date.now();
+    const entry = __rate.get(key) || { count: 0, reset: now + windowMs };
+    if (now > entry.reset) {
+      entry.count = 0;
+      entry.reset = now + windowMs;
+    }
+    entry.count += 1;
+    __rate.set(key, entry);
+    return entry.count > limit;
+  }
+
   // Legacy authentication routes (deprecated - use Keycloak instead)
   app.post('/api/auth/login', async (c) => {
+    const ip = c.req.header('x-forwarded-for') || c.req.header('cf-connecting-ip') || c.req.header('x-real-ip') || 'local';
+    if (rateLimited(`login:${ip}`, 8, 60_000)) {
+      return c.json({ success: false, error: 'Too many attempts, please try again later' }, 429);
+    }
     try {
       const { username, password } = await c.req.json();
 
@@ -484,6 +502,269 @@ export function createAPI() {
       SELECT * FROM evidence ORDER BY created_at DESC LIMIT 100
     `).all();
     return c.json({ success: true, data: rows.results || [] });
+  });
+
+  // --- Helper: Audit log ---
+  function logAudit(c, entity, entity_id, action, beforeObj, afterObj, user_id) {
+    try {
+      c.env.DB.prepare(
+        'INSERT INTO audit_log (entity, entity_id, action, user_id, before_json, after_json) VALUES (?, ?, ?, ?, ?, ?)'
+      ).run(entity, entity_id ?? null, action, user_id ?? null, JSON.stringify(beforeObj ?? null), JSON.stringify(afterObj ?? null));
+    } catch (e) {
+      console.error('Audit log failed:', e);
+    }
+  }
+
+  // --- Treatments CRUD ---
+  app.post('/api/treatments', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const b = await c.req.json();
+      const allowedStrategies = new Set(['accept','avoid','mitigate','transfer']);
+      if (!b.risk_id || !allowedStrategies.has(b.strategy)) {
+        return c.json({ success: false, error: 'risk_id and valid strategy are required' }, 400);
+      }
+      const res = c.env.DB.prepare(`
+        INSERT INTO risk_treatments (risk_id, strategy, actions, owner_id, budget, start_date, due_date, status, approval_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, 'planning'), COALESCE(?, 'pending'))
+      `).run(b.risk_id, b.strategy, b.actions ?? null, b.owner_id ?? null, b.budget ?? null, b.start_date ?? null, b.due_date ?? null, b.status, b.approval_status);
+      const created = c.env.DB.prepare('SELECT * FROM risk_treatments WHERE id = ?').first(res.meta.last_row_id);
+      logAudit(c, 'risk_treatments', res.meta.last_row_id, 'create', null, created.result, user.id);
+      return c.json({ success: true, data: created.result });
+    } catch (e) {
+      console.error('Create treatment error:', e);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  app.put('/api/treatments/:id', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const id = parseInt(c.req.param('id'));
+      const before = c.env.DB.prepare('SELECT * FROM risk_treatments WHERE id = ?').first(id);
+      if (!before.success || !before.result) return c.json({ success: false, error: 'Not found' }, 404);
+      const b = await c.req.json();
+      const fields = [];
+      const params = [];
+      const allowed = ['strategy','actions','owner_id','budget','start_date','due_date','status','approval_status','acceptance_justification','acceptance_expiry'];
+      for (const k of allowed) {
+        if (k in b) { fields.push(`${k} = ?`); params.push(b[k]); }
+      }
+      fields.push('updated_at = CURRENT_TIMESTAMP');
+      const sql = `UPDATE risk_treatments SET ${fields.join(', ')} WHERE id = ?`;
+      params.push(id);
+      const res = c.env.DB.prepare(sql).run(...params);
+      if (!res.success) return c.json({ success: false, error: 'Update failed' }, 400);
+      const after = c.env.DB.prepare('SELECT * FROM risk_treatments WHERE id = ?').first(id);
+      logAudit(c, 'risk_treatments', id, 'update', before.result, after.result, user.id);
+      return c.json({ success: true, data: after.result });
+    } catch (e) {
+      console.error('Update treatment error:', e);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  app.delete('/api/treatments/:id', (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    const id = parseInt(c.req.param('id'));
+    const before = c.env.DB.prepare('SELECT * FROM risk_treatments WHERE id = ?').first(id);
+    const res = c.env.DB.prepare('DELETE FROM risk_treatments WHERE id = ?').run(id);
+    if (!res.success || res.meta.changes === 0) return c.json({ success: false, error: 'Not found' }, 404);
+    logAudit(c, 'risk_treatments', id, 'delete', before.result, null, user.id);
+    return c.json({ success: true });
+  });
+
+  // --- Exceptions CRUD ---
+  app.post('/api/exceptions', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const b = await c.req.json();
+      if (!b.control_id || !b.justification) {
+        return c.json({ success: false, error: 'control_id and justification required' }, 400);
+      }
+      const res = c.env.DB.prepare(`
+        INSERT INTO risk_exceptions (control_id, risk_id, justification, approver_id, expiry_date, status, created_by)
+        VALUES (?, ?, ?, ?, ?, COALESCE(?, 'active'), ?)
+      `).run(b.control_id, b.risk_id ?? null, b.justification, b.approver_id ?? null, b.expiry_date ?? null, b.status, user.id);
+      const created = c.env.DB.prepare('SELECT * FROM risk_exceptions WHERE id = ?').first(res.meta.last_row_id);
+      logAudit(c, 'risk_exceptions', res.meta.last_row_id, 'create', null, created.result, user.id);
+      return c.json({ success: true, data: created.result });
+    } catch (e) {
+      console.error('Create exception error:', e);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  app.put('/api/exceptions/:id', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const id = parseInt(c.req.param('id'));
+      const before = c.env.DB.prepare('SELECT * FROM risk_exceptions WHERE id = ?').first(id);
+      if (!before.success || !before.result) return c.json({ success: false, error: 'Not found' }, 404);
+      const b = await c.req.json();
+      const fields = [];
+      const params = [];
+      const allowed = ['control_id','risk_id','justification','approver_id','expiry_date','status'];
+      for (const k of allowed) if (k in b) { fields.push(`${k} = ?`); params.push(b[k]); }
+      const sql = `UPDATE risk_exceptions SET ${fields.join(', ')} WHERE id = ?`;
+      params.push(id);
+      const res = c.env.DB.prepare(sql).run(...params);
+      if (!res.success) return c.json({ success: false, error: 'Update failed' }, 400);
+      const after = c.env.DB.prepare('SELECT * FROM risk_exceptions WHERE id = ?').first(id);
+      logAudit(c, 'risk_exceptions', id, 'update', before.result, after.result, user.id);
+      return c.json({ success: true, data: after.result });
+    } catch (e) {
+      console.error('Update exception error:', e);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  app.delete('/api/exceptions/:id', (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    const id = parseInt(c.req.param('id'));
+    const before = c.env.DB.prepare('SELECT * FROM risk_exceptions WHERE id = ?').first(id);
+    const res = c.env.DB.prepare('DELETE FROM risk_exceptions WHERE id = ?').run(id);
+    if (!res.success || res.meta.changes === 0) return c.json({ success: false, error: 'Not found' }, 404);
+    logAudit(c, 'risk_exceptions', id, 'delete', before.result, null, user.id);
+    return c.json({ success: true });
+  });
+
+  // --- KRIs CRUD ---
+  app.post('/api/kris', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const b = await c.req.json();
+      if (!b.name || typeof b.threshold === 'undefined' || !b.direction) {
+        return c.json({ success: false, error: 'name, threshold, direction required' }, 400);
+      }
+      const res = c.env.DB.prepare(`
+        INSERT INTO kris (name, description, data_source, threshold, direction, frequency, unit, owner_id, calculation_method, alerting_policy, breach_workflow_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(b.name, b.description ?? null, b.data_source ?? null, b.threshold, b.direction, b.frequency ?? null, b.unit ?? null, b.owner_id ?? null, b.calculation_method ?? null, b.alerting_policy ?? null, b.breach_workflow_id ?? null);
+      const created = c.env.DB.prepare('SELECT * FROM kris WHERE id = ?').first(res.meta.last_row_id);
+      logAudit(c, 'kris', res.meta.last_row_id, 'create', null, created.result, user.id);
+      return c.json({ success: true, data: created.result });
+    } catch (e) {
+      console.error('Create KRI error:', e);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  app.put('/api/kris/:id', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const id = parseInt(c.req.param('id'));
+      const before = c.env.DB.prepare('SELECT * FROM kris WHERE id = ?').first(id);
+      if (!before.success || !before.result) return c.json({ success: false, error: 'Not found' }, 404);
+      const b = await c.req.json();
+      const fields = [];
+      const params = [];
+      const allowed = ['name','description','data_source','threshold','direction','frequency','unit','owner_id','calculation_method','alerting_policy','breach_workflow_id'];
+      for (const k of allowed) if (k in b) { fields.push(`${k} = ?`); params.push(b[k]); }
+      const sql = `UPDATE kris SET ${fields.join(', ')} WHERE id = ?`;
+      params.push(id);
+      const res = c.env.DB.prepare(sql).run(...params);
+      if (!res.success) return c.json({ success: false, error: 'Update failed' }, 400);
+      const after = c.env.DB.prepare('SELECT * FROM kris WHERE id = ?').first(id);
+      logAudit(c, 'kris', id, 'update', before.result, after.result, user.id);
+      return c.json({ success: true, data: after.result });
+    } catch (e) {
+      console.error('Update KRI error:', e);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  app.delete('/api/kris/:id', (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    const id = parseInt(c.req.param('id'));
+    const before = c.env.DB.prepare('SELECT * FROM kris WHERE id = ?').first(id);
+    const res = c.env.DB.prepare('DELETE FROM kris WHERE id = ?').run(id);
+    if (!res.success || res.meta.changes === 0) return c.json({ success: false, error: 'Not found' }, 404);
+    logAudit(c, 'kris', id, 'delete', before.result, null, user.id);
+    return c.json({ success: true });
+  });
+
+  // Add KRI reading
+  app.post('/api/kris/:id/readings', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const id = parseInt(c.req.param('id'));
+      const b = await c.req.json();
+      const kriRes = c.env.DB.prepare('SELECT * FROM kris WHERE id = ?').first(id);
+      if (!kriRes.success || !kriRes.result) return c.json({ success: false, error: 'KRI not found' }, 404);
+      const kri = kriRes.result;
+      const value = Number(b.value);
+      if (Number.isNaN(value)) return c.json({ success: false, error: 'Numeric value required' }, 400);
+      const breached = (kri.direction === 'above_is_bad' && value > kri.threshold) || (kri.direction === 'below_is_bad' && value < kri.threshold);
+      const status = breached ? 'breached' : 'ok';
+      const res = c.env.DB.prepare('INSERT INTO kri_readings (kri_id, timestamp, value, status) VALUES (?, COALESCE(?, CURRENT_TIMESTAMP), ?, ?)').run(id, b.timestamp ?? null, value, status);
+      const created = c.env.DB.prepare('SELECT * FROM kri_readings WHERE id = ?').first(res.meta.last_row_id);
+      logAudit(c, 'kri_readings', res.meta.last_row_id, 'create', null, created.result, user.id);
+      return c.json({ success: true, data: created.result });
+    } catch (e) {
+      console.error('Add KRI reading error:', e);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  // --- Basic search endpoint (used by ARIA) ---
+  app.get('/api/search', (c) => {
+    const q = (c.req.query('q') || '').trim();
+    if (!q) return c.json({ success: true, data: { risks: [], incidents: [], documents: [] } });
+    const term = `%${q}%`;
+    const risks = c.env.DB.prepare("SELECT id, risk_id, title, risk_score, created_at FROM risks WHERE title LIKE ? OR description LIKE ? ORDER BY created_at DESC LIMIT 10").all(term, term);
+    const incidents = c.env.DB.prepare("SELECT id, incident_id, title, severity, COALESCE(reported_at, created_at) AS created_at FROM incidents WHERE title LIKE ? OR description LIKE ? ORDER BY created_at DESC LIMIT 10").all(term, term);
+    const documents = c.env.DB.prepare("SELECT id, title, file_url, created_at FROM documents WHERE title LIKE ? OR description LIKE ? ORDER BY created_at DESC LIMIT 10").all(term, term);
+    return c.json({ success: true, data: { risks: risks.results || [], incidents: incidents.results || [], documents: documents.results || [] }});
+  });
+
+  // --- Simple AI chat endpoint (local, no external calls) ---
+  app.post('/api/ai/chat', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const body = await c.req.json();
+      const message = (body.message || '').toString().trim();
+      if (!message) return c.json({ success: false, error: 'Message is required' }, 400);
+      const term = `%${message}%`;
+      const risks = c.env.DB.prepare("SELECT title AS name, risk_id AS id, risk_score FROM risks WHERE title LIKE ? OR description LIKE ? ORDER BY created_at DESC LIMIT 3").all(term, term);
+      const incidents = c.env.DB.prepare("SELECT title AS name, incident_id AS id, severity FROM incidents WHERE title LIKE ? OR description LIKE ? ORDER BY COALESCE(reported_at, created_at) DESC LIMIT 3").all(term, term);
+      const documents = c.env.DB.prepare("SELECT title AS name, file_url AS id FROM documents WHERE title LIKE ? OR description LIKE ? ORDER BY created_at DESC LIMIT 3").all(term, term);
+      const sources = [
+        ...(risks.results || []).map(x => ({ type: 'risk', id: x.id, title: x.name })),
+        ...(incidents.results || []).map(x => ({ type: 'incident', id: x.id, title: x.name })),
+        ...(documents.results || []).map(x => ({ type: 'document', id: x.id, title: x.name }))
+      ];
+      const reply = sources.length
+        ? `Here are the most relevant references I found based on your question:\n` +
+          sources.map((s, i) => `${i+1}. [${s.type}] ${s.title} (${s.id})`).join('\n') +
+          `\n\nYou can refine your query or open the related module for details.`
+        : `I couldn't find direct matches. Try rephrasing or select a specific module (Risks, Incidents, Documents).`;
+      return c.json({ success: true, data: { reply, sources } });
+    } catch (e) {
+      console.error('AI chat error:', e);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  // --- RAG admin endpoints (placeholders) ---
+  app.get('/api/rag/stats', (c) => {
+    // Placeholder stats until full RAG wiring
+    return c.json({ success: true, data: { vectorStore: { totalDocuments: 0 }, embeddings: { cacheSize: 0 }}});
+  });
+  app.post('/api/rag/reindex', (c) => {
+    // Placeholder: trigger background reindex in full implementation
+    return c.json({ success: true, message: 'Re-index started (placeholder)' });
   });
 
   return app;
