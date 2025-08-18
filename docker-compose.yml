@@ -39,7 +39,7 @@ services:
       - "5432:5432"
     # Using default Docker Compose network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U grctier"]
+      test: ["CMD-SHELL", "pg_isready -U grctier && psql -U grctier -d kong -c 'SELECT 1'"]
       interval: 30s
       timeout: 10s
       retries: 5
