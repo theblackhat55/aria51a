@@ -6,7 +6,7 @@ class DMTKeycloakAuth {
     this.baseUrl = window.location.origin;
     this.storagePrefix = 'dmt_kc_';
     this.initialized = false;
-    this.init();
+    // Don't auto-init - let DOM load event control timing
   }
 
   async init() {
@@ -27,6 +27,8 @@ class DMTKeycloakAuth {
       const expiresAt = parseInt(tokenExpires);
       
       console.log('🔐 Found stored tokens, checking validity...');
+      console.log('🔐 Token expires at:', new Date(expiresAt).toISOString());
+      console.log('🔐 Current time:', new Date(now).toISOString());
       
       if (now < expiresAt - 60000) { // 1 minute buffer
         console.log('🔐 Token still valid, validating with server...');
@@ -36,6 +38,14 @@ class DMTKeycloakAuth {
           this.handleAuthenticated();
           this.initialized = true;
           return;
+        } else {
+          console.log('🔐 Token validation failed, trying refresh...');
+          if (refreshToken && await this.refreshToken(refreshToken)) {
+            console.log('🔐 Token refreshed successfully');
+            this.handleAuthenticated();
+            this.initialized = true;
+            return;
+          }
         }
       } else if (refreshToken) {
         console.log('🔐 Token expired, attempting refresh...');
@@ -102,24 +112,31 @@ class DMTKeycloakAuth {
   // Validate token with server
   async validateToken(accessToken) {
     try {
+      console.log('🔐 Validating token with server...');
       const response = await fetch(`${this.baseUrl}/api/auth/user`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
       });
       
+      console.log('🔐 Token validation response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('🔐 Token validation response:', data);
         if (data.success) {
           this.storeUser(data.data.user);
           return true;
         }
       }
       
+      console.log('🔐 Token validation failed - server rejected token');
       return false;
     } catch (error) {
-      console.error('🔐 Token validation failed:', error);
-      return false;
+      console.error('🔐 Token validation network error:', error);
+      // For network errors, assume token might still be valid
+      // This prevents logout on temporary network issues
+      return true;
     }
   }
 
@@ -177,8 +194,16 @@ class DMTKeycloakAuth {
   handleUnauthenticated() {
     console.log('🔐 User is not authenticated');
     
+    // Double-check authentication status before redirecting
+    if (this.isAuthenticated()) {
+      console.log('🔐 Actually user IS authenticated, calling handleAuthenticated instead');
+      this.handleAuthenticated();
+      return;
+    }
+    
     // If on protected page, redirect to login
     if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+      console.log('🔐 Redirecting protected page to login:', window.location.pathname);
       sessionStorage.setItem('dmt_return_url', window.location.pathname);
       window.location.href = '/login';
       return;
@@ -412,6 +437,11 @@ window.logout = function() {
 // Initialize on DOM load
 document.addEventListener('DOMContentLoaded', function() {
   console.log('🔐 DMT Keycloak-Only Auth: DOM loaded, initializing...');
+  
+  // Give a small delay to allow OAuth callback to complete token storage
+  setTimeout(() => {
+    window.dmtAuth.init();
+  }, 100);
   
   // Setup login buttons
   document.querySelectorAll('.keycloak-login-btn, [data-keycloak-login]').forEach(btn => {
