@@ -227,7 +227,7 @@ pull_images() {
     IMAGES=(
         "postgres:15-alpine"
         "redis:7-alpine"
-        "kong:3.6-alpine"
+        "kong:3.9.1-ubuntu"
         "quay.io/keycloak/keycloak:23.0"
         "nginx:1.24-alpine"
         "prom/prometheus:v2.45.0"
