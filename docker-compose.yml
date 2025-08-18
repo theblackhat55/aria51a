@@ -69,7 +69,7 @@ services:
   # Kong Database Migration
   kong-migration:
     image: kong:3.9.1-ubuntu
-    command: kong migrations bootstrap
+    command: sh -c "sleep 10 && kong migrations bootstrap"
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,6 +80,7 @@ services:
       KONG_PG_DATABASE: kong
       KONG_PG_USER: grctier
       KONG_PG_PASSWORD: grctier_secure_password_2024
+      KONG_LOG_LEVEL: debug
     networks:
       - grctier
     restart: "no"
@@ -122,6 +123,9 @@ services:
       # Performance Tuning
       KONG_WORKER_PROCESSES: "2"
       KONG_WORKER_CONNECTIONS: "1024"
+      
+      # Debug Configuration
+      KONG_LOG_LEVEL: info
       
     ports:
       - "8000:8000"   # Kong Proxy HTTP
