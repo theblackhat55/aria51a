@@ -318,8 +318,7 @@ app.get('/', (c) => {
                 <a href="#" data-page="ai-providers" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Providers</a>
                 <a href="#" data-page="rag-knowledge" class="block px-4 py-2 text-sm hover:bg-gray-50">RAG & Knowledge</a>
                 <a href="#" data-page="search" class="block px-4 py-2 text-sm hover:bg-gray-50">Search</a>
-                <a href="#" data-page="ai-heatmap" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Heat Map</a>
-                <a href="#" data-page="ai-gap" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Gap Analysis</a>
+                <a href="#" data-page="ai-analytics" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Analytics</a>
               </div>
             </div>
 

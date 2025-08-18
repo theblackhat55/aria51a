@@ -155,8 +155,26 @@
   position: relative;
 }
 
+/* Hover bridge below trigger to eliminate hover gap */
+.nav-container::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+
 .nav-menu {
   z-index: 1000;
+  pointer-events: none; /* disabled when hidden */
+}
+
+/* Keep menu open while hovered */
+.nav-menu:hover {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto;
 }
 
 .nav-menu-item {
@@ -174,6 +192,11 @@
 .nav-menu-item:hover {
   background-color: #f3f4f6;
   color: #111827;
+}
+
+/* Ensure no ancestor clips dropdowns */
+#navigation, #navigation * {
+  overflow: visible !important;
 }
 
 .nav-menu-item.active {

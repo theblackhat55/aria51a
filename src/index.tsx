@@ -99,7 +99,7 @@ app.get('/', (c) => {
               </div>
               
               <!-- Expanded Menu -->
-              <div class="nav-menu absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <div class="nav-menu absolute top-full right-0 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible hover:opacity-100 hover:visible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div class="p-4">
                   <div class="grid grid-cols-2 gap-2">
                     <a href="#" class="nav-menu-item active" id="nav-dashboard">
