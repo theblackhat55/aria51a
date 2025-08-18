@@ -698,8 +698,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   try {
     console.log('Initializing navigation...');
     await initializeNavigation();
-    // Initialize robust topnav hover with small close delay
-    setupTopNavHover();
     console.log('Navigation initialized successfully');
   } catch (navError) {
     console.error('Navigation initialization error:', navError);
@@ -821,31 +819,6 @@ function showBasicDashboard() {
 // Initialize navigation
 // Flag to prevent duplicate initialization
 let navigationInitialized = false;
-
-function setupTopNavHover() {
-  const NAV_CLOSE_DELAY = 180;
-  document.querySelectorAll('nav li').forEach((li) => {
-    const submenu = li.querySelector(':scope > ul');
-    if (!submenu) return;
-    let closeTimer;
-    // Mark as has-submenu for CSS bridge
-    li.classList.add('has-submenu');
-    li.addEventListener('pointerenter', () => {
-      clearTimeout(closeTimer);
-      li.classList.add('open');
-    });
-    li.addEventListener('pointerleave', () => {
-      closeTimer = setTimeout(() => li.classList.remove('open'), NAV_CLOSE_DELAY);
-    });
-    submenu.addEventListener('pointerenter', () => {
-      clearTimeout(closeTimer);
-      li.classList.add('open');
-    });
-    submenu.addEventListener('pointerleave', () => {
-      closeTimer = setTimeout(() => li.classList.remove('open'), NAV_CLOSE_DELAY);
-    });
-  });
-}
 
 async function initializeNavigation() {
   if (navigationInitialized) {

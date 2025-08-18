@@ -90,61 +90,20 @@ app.get('/', (c) => {
           
           <!-- Navigation Menu -->
           <div class="flex items-center space-x-6">
-            <!-- Collapsible Navigation (Hidden until login) -->
-            <div class="nav-container group hidden" id="internal-nav">
-              <div class="nav-trigger flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <i class="fas fa-bars text-gray-600"></i>
-                <span class="text-sm font-medium text-gray-700">Menu</span>
-                <i class="fas fa-chevron-down text-gray-400 text-xs transform group-hover:rotate-180 transition-transform duration-200"></i>
-              </div>
-              
-              <!-- Expanded Menu -->
-              <div class="nav-menu absolute top-full right-0 w-80 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible hover:opacity-100 hover:visible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div class="p-4">
-                  <div class="grid grid-cols-2 gap-2">
-                    <a href="#" class="nav-menu-item active" id="nav-dashboard">
-                      <i class="fas fa-chart-pie text-blue-600"></i>
-                      <span>Dashboard</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-risks">
-                      <i class="fas fa-exclamation-triangle text-red-600"></i>
-                      <span>Risks</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-ai-assure">
-                      <i class="fas fa-brain text-purple-600"></i>
-                      <span>AI Assure</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-services">
-                      <i class="fas fa-cogs text-purple-600"></i>
-                      <span>Services</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-assets">
-                      <i class="fas fa-server text-green-600"></i>
-                      <span>Assets</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-incidents">
-                      <i class="fas fa-bell text-orange-600"></i>
-                      <span>Incidents</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-compliance">
-                      <i class="fas fa-clipboard-check text-indigo-600"></i>
-                      <span>Compliance</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-frameworks">
-                      <i class="fas fa-list-check text-cyan-600"></i>
-                      <span>Frameworks</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-documents">
-                      <i class="fas fa-file-alt text-yellow-600"></i>
-                      <span>Documents</span>
-                    </a>
-                    <a href="#" class="nav-menu-item" id="nav-settings">
-                      <i class="fas fa-cog text-gray-600"></i>
-                      <span>Settings</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
+            <!-- Simple flat navigation (Hidden until login) -->
+            <div class="hidden" id="internal-nav">
+              <ul class="flex items-center gap-2">
+                <li><a href="#" class="nav-item" id="nav-dashboard" data-page="dashboard"><i class="fas fa-chart-pie mr-2"></i>Dashboard</a></li>
+                <li><a href="#" class="nav-item" id="nav-risks" data-page="risks"><i class="fas fa-exclamation-triangle mr-2"></i>Risks</a></li>
+                <li><a href="#" class="nav-item" id="nav-ai-assure" data-page="ai-assure"><i class="fas fa-brain mr-2"></i>AI Assure</a></li>
+                <li><a href="#" class="nav-item" id="nav-services" data-page="services"><i class="fas fa-cogs mr-2"></i>Services</a></li>
+                <li><a href="#" class="nav-item" id="nav-assets" data-page="assets"><i class="fas fa-server mr-2"></i>Assets</a></li>
+                <li><a href="#" class="nav-item" id="nav-incidents" data-page="incidents"><i class="fas fa-bell mr-2"></i>Incidents</a></li>
+                <li><a href="#" class="nav-item" id="nav-compliance" data-page="compliance"><i class="fas fa-clipboard-check mr-2"></i>Compliance</a></li>
+                <li><a href="#" class="nav-item" id="nav-frameworks" data-page="frameworks"><i class="fas fa-list-check mr-2"></i>Frameworks</a></li>
+                <li><a href="#" class="nav-item" id="nav-documents" data-page="documents"><i class="fas fa-file-alt mr-2"></i>Documents</a></li>
+                <li><a href="#" class="nav-item" id="nav-settings" data-page="settings"><i class="fas fa-cog mr-2"></i>Settings</a></li>
+              </ul>
             </div>
             
             <!-- User Section -->

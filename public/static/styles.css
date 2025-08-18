@@ -207,32 +207,7 @@
   overflow: visible !important;
 }
 
-/* Generic top navigation dropdown stability */
-nav { overflow: visible !important; }
-nav li { position: relative; }
-nav li.has-submenu::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 10px; /* hover bridge to eliminate gaps */
-}
-nav ul ul {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  display: none;
-  z-index: 1000;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  pointer-events: auto;
-}
-nav li.open > ul {
-  display: block;
-}
+/* (reverted) generic dropdown helpers removed to restore simple nav */
 
 .nav-menu-item.active {
   background-color: #eff6ff;
