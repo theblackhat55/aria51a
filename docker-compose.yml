@@ -68,7 +68,7 @@ services:
 
   # Kong Database Migration
   kong-migration:
-    image: kong:3.6-alpine
+    image: kong:3.7-ubuntu
     command: kong migrations bootstrap
     depends_on:
       postgres:
@@ -86,7 +86,7 @@ services:
 
   # Kong Gateway - API Management
   kong:
-    image: kong:3.6-alpine
+    image: kong:3.7-ubuntu
     depends_on:
       postgres:
         condition: service_healthy
