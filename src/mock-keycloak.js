@@ -7,11 +7,11 @@ import crypto from 'crypto';
 export class MockKeycloakService {
   constructor() {
     this.config = {
-      baseUrl: process.env.KEYCLOAK_BASE_URL || 'http://localhost:3000/mock-keycloak',
+      baseUrl: process.env.KEYCLOAK_BASE_URL,
       realm: process.env.KEYCLOAK_REALM || 'dmt-risk-platform',
       clientId: process.env.KEYCLOAK_CLIENT_ID || 'dmt-webapp',
       clientSecret: process.env.KEYCLOAK_CLIENT_SECRET || 'dmt-webapp-secret-key-2024',
-      redirectUri: process.env.REDIRECT_URI || 'http://localhost:3000/api/auth/callback'
+      redirectUri: process.env.REDIRECT_URI
     };
     
     // JWT secret for signing tokens

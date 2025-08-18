@@ -10,11 +10,14 @@ export function createKeycloakAPI() {
   // Get Mock Keycloak login URL
   app.get('/auth/keycloak/login', async (c) => {
     try {
-      const redirectUri = c.req.query('redirect_uri') || mockKeycloak.config.redirectUri;
+      // Get the current origin dynamically
+      const origin = c.req.header('origin') || `${c.req.header('x-forwarded-proto') || 'http'}://${c.req.header('host')}`;
+      
+      const redirectUri = c.req.query('redirect_uri') || `${origin}/api/auth/callback`;
       const state = c.req.query('state') || mockKeycloak.generateState();
       
       // For native deployment, redirect to our mock auth page
-      const authUrl = `${mockKeycloak.config.baseUrl}/auth?client_id=${mockKeycloak.config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&response_type=code&scope=openid profile email roles`;
+      const authUrl = `${origin}/mock-keycloak/auth?client_id=${mockKeycloak.config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&response_type=code&scope=openid profile email roles`;
       
       return c.json({
         success: true,
