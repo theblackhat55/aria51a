@@ -266,6 +266,11 @@ app.get('/', (c) => {
             <a href="#" id="nav-soa" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">SoA</a>
             <a href="#" id="nav-treatments" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Treatments</a>
             <a href="#" id="nav-kris" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">KRIs</a>
+            <a href="#" id="nav-assets" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Assets</a>
+            <a href="#" id="nav-services" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Services</a>
+            <a href="#" id="nav-documents" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Documents</a>
+            <a href="#" id="nav-ai-assure" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">AI/ARIA</a>
+            <a href="#" id="nav-settings" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Settings</a>
             <button id="auth-button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">Login</button>
           </div>
 
