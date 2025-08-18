@@ -61,7 +61,7 @@ app.get('/', (c) => {
   <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
   
   <!-- Custom Styles -->
-  <link href="/static/styles.css?v=2" rel="stylesheet">
+  <link href="/static/styles.css?v=3" rel="stylesheet">
 </head>
 <body class="bg-gray-50 font-sans antialiased">
   <!-- Loading Spinner -->
@@ -277,7 +277,7 @@ app.get('/', (c) => {
   <script src="/static/notifications.js?v=5"></script>
   <script src="/static/document-management.js?v=3"></script>
   <script src="/static/mobile-interface.js?v=3"></script>
-  <script src="/static/app.js?v=14"></script>
+  <script src="/static/app.js?v=15"></script>
   
   <!-- Load Keycloak Authentication -->
   <script src="/static/keycloak-auth.js?v=1"></script>
