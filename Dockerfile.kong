@@ -2,14 +2,21 @@
 # Multi-stage build for production deployment
 FROM node:20-alpine AS builder
 
+# Install build dependencies for native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git
+
 # Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --omit=dev && npm cache clean --force
+# Install dependencies with build tools available
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Copy source code
 COPY . .
