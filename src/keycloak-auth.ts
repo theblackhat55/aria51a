@@ -51,7 +51,7 @@ export class KeycloakAuthService {
   }
 
   // Generate authorization URL for OIDC login
-  getAuthorizationUrl(redirectUri: string, state?: string): string {
+  getAuthorizationUrl(redirectUri: string, state?: string): string { // redirectUri must match callback exactly
     const params = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: redirectUri,

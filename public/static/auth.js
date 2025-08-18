@@ -8,12 +8,16 @@ document.addEventListener('DOMContentLoaded', async function() {
   const token = localStorage.getItem('dmt_token');
   console.log('Auth.js: Checking existing token:', token ? 'Found' : 'Not found');
   
-  // Also check for Keycloak tokens and clear them to avoid conflicts
-  const keycloakToken = localStorage.getItem('dmt_access_token');
-  if (keycloakToken) {
+  // Only clear Keycloak tokens if user explicitly chooses legacy auth
+  const keycloakToken = localStorage.getItem('dmt_access_token') || localStorage.getItem('dmt_kc_access_token');
+  const usingLegacy = new URLSearchParams(window.location.search).get('legacy') === '1';
+  if (usingLegacy && keycloakToken) {
     localStorage.removeItem('dmt_access_token');
     localStorage.removeItem('dmt_refresh_token');
     localStorage.removeItem('dmt_token_expires');
+    localStorage.removeItem('dmt_kc_access_token');
+    localStorage.removeItem('dmt_kc_refresh_token');
+    localStorage.removeItem('dmt_kc_token_expires');
     console.log('Auth.js: Cleared Keycloak tokens for legacy auth');
   }
   

@@ -2,8 +2,9 @@
 
 class KeycloakAuth {
   constructor() {
-    this.baseUrl = 'http://localhost:3000';
-    this.storagePrefix = 'dmt_kc_';
+    this.baseUrl = window.location.origin;
+    // Unify storage with backend callback keys
+    this.storagePrefix = 'dmt_';
     this.init();
   }
 
@@ -51,7 +52,8 @@ class KeycloakAuth {
   // Get login URL from backend
   async getKeycloakLoginUrl() {
     try {
-      const response = await fetch(`${this.baseUrl}/api/auth/keycloak/login`);
+      const dynamicRedirect = encodeURIComponent(`${window.location.origin}/api/auth/callback`);
+      const response = await fetch(`${this.baseUrl}/api/auth/keycloak/login?redirect_uri=${dynamicRedirect}`);
       const data = await response.json();
       
       if (data.success) {
@@ -201,9 +203,15 @@ class KeycloakAuth {
 
   // Token storage methods
   storeTokens(tokens) {
+    const expiresAt = (Date.now() + (tokens.expires_in * 1000)).toString();
+    // Write unified keys
     localStorage.setItem(this.storagePrefix + 'access_token', tokens.access_token);
     localStorage.setItem(this.storagePrefix + 'refresh_token', tokens.refresh_token);
-    localStorage.setItem(this.storagePrefix + 'token_expires', (Date.now() + (tokens.expires_in * 1000)).toString());
+    localStorage.setItem(this.storagePrefix + 'token_expires', expiresAt);
+    // Backward compatibility: also write previous dmt_kc_ keys
+    localStorage.setItem('dmt_kc_access_token', tokens.access_token);
+    localStorage.setItem('dmt_kc_refresh_token', tokens.refresh_token);
+    localStorage.setItem('dmt_kc_token_expires', expiresAt);
     console.log('Keycloak Auth: Tokens stored');
   }
 
@@ -213,7 +221,13 @@ class KeycloakAuth {
   }
 
   getStoredToken(type) {
-    return localStorage.getItem(this.storagePrefix + type);
+    // Prefer unified keys
+    let val = localStorage.getItem(this.storagePrefix + type);
+    if (!val) {
+      // Fallback to old keys if present
+      val = localStorage.getItem('dmt_kc_' + type) || localStorage.getItem('dmt_' + type);
+    }
+    return val;
   }
 
   getStoredUser() {
@@ -222,10 +236,15 @@ class KeycloakAuth {
   }
 
   clearStoredTokens() {
+    // Remove unified keys
     localStorage.removeItem(this.storagePrefix + 'access_token');
     localStorage.removeItem(this.storagePrefix + 'refresh_token');
     localStorage.removeItem(this.storagePrefix + 'token_expires');
     localStorage.removeItem(this.storagePrefix + 'user');
+    // Remove legacy KC keys if present
+    localStorage.removeItem('dmt_kc_access_token');
+    localStorage.removeItem('dmt_kc_refresh_token');
+    localStorage.removeItem('dmt_kc_token_expires');
     console.log('Keycloak Auth: All tokens cleared');
   }
 

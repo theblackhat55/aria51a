@@ -69,8 +69,9 @@ export function createKeycloakAPI() {
         return c.json({ success: false, error: 'No authorization code received' }, 400);
       }
 
-      // Exchange code for tokens
-      const redirectUri = KEYCLOAK_CONFIG.redirectUri;
+      // Exchange code for tokens - must use EXACT same redirect_uri as in the auth request
+      const url = new URL(c.req.url);
+      const redirectUri = `${url.origin}/api/auth/callback`;
       const tokens = await keycloak.exchangeCodeForTokens(code, redirectUri);
       
       // Get user information
