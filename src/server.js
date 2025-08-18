@@ -216,6 +216,7 @@ app.get('/', (c) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DMT Risk Assessment Platform</title>
   <meta name="description" content="Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -252,17 +253,26 @@ app.get('/', (c) => {
             </div>
             <div class="ml-4">
               <h1 class="text-xl font-semibold text-gray-900">Risk Management Platform</h1>
-              <p class="text-xs text-gray-500">Enterprise GRC Platform v2.0 - Docker Edition</p>
+              <p class="text-xs text-gray-500">Enterprise GRC Platform v2.0 - Native</p>
             </div>
           </div>
           
-          <!-- Navigation Menu -->
-          <div class="flex items-center space-x-6">
-            <!-- Status Indicator -->
-            <div class="flex items-center space-x-2">
-              <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span class="text-xs text-gray-600">Docker Ready</span>
-            </div>
+          <!-- Main Navigation -->
+          <div class="hidden md:flex items-center space-x-4" id="internal-nav">
+            <a href="#" id="nav-dashboard" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Dashboard</a>
+            <a href="#" id="nav-risks" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Risks</a>
+            <a href="#" id="nav-incidents" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Incidents</a>
+            <a href="#" id="nav-frameworks" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Frameworks</a>
+            <a href="#" id="nav-soa" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">SoA</a>
+            <a href="#" id="nav-treatments" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Treatments</a>
+            <a href="#" id="nav-kris" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">KRIs</a>
+            <button id="auth-button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">Login</button>
+          </div>
+
+          <!-- Status Indicator -->
+          <div class="flex items-center space-x-2">
+            <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span class="text-xs text-gray-600">Online</span>
           </div>
         </div>
       </div>

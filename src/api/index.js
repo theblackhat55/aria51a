@@ -15,6 +15,23 @@ export function createAPI() {
     await next();
   });
 
+  // Helper: get authenticated user from Bearer token (basic mode)
+  function getAuthUser(c) {
+    try {
+      const auth = c.req.header('Authorization');
+      if (!auth || !auth.startsWith('Bearer ')) return null;
+      const token = auth.substring(7);
+      const payload = JSON.parse(Buffer.from(token, 'base64').toString());
+      if (!payload?.id || payload.exp < Date.now()) return null;
+      const result = c.env.DB.prepare(
+        'SELECT id, username, email, first_name, last_name, role FROM users WHERE id = ? AND is_active = TRUE'
+      ).first(payload.id);
+      return result.success ? result.result : null;
+    } catch (_e) {
+      return null;
+    }
+  }
+
   // Health check
   app.get('/api/health', (c) => {
     return c.json({
@@ -22,7 +39,7 @@ export function createAPI() {
       timestamp: new Date().toISOString(),
       version: '2.0.1',
       database: 'connected',
-      keycloak: 'configured'
+      keycloak: 'disabled'
     });
   });
 
@@ -173,12 +190,14 @@ export function createAPI() {
   // Get notifications count
   app.get('/api/notifications/count', async (c) => {
     try {
-      // For now, return static count since we don't have user context
+      // Basic placeholder using findings/incidents as sources for demo
+      const openFindings = c.env.DB.prepare("SELECT COUNT(*) as count FROM assessment_findings WHERE status IN ('open','in_progress')").first();
+      const recentHighIncidents = c.env.DB.prepare("SELECT COUNT(*) as count FROM incidents WHERE severity IN ('high','critical') AND date(reported_at) >= date('now','-30 days')").first();
       return c.json({
         success: true,
         data: {
-          total: 0,
-          unread: 0
+          total: (openFindings.result?.count || 0) + (recentHighIncidents.result?.count || 0),
+          unread: openFindings.result?.count || 0
         }
       });
     } catch (error) {
@@ -243,7 +262,7 @@ export function createAPI() {
     }
   });
 
-  // Dashboard stats
+  // Dashboard stats (legacy minimal endpoint kept for compatibility)
   app.get('/api/dashboard/stats', async (c) => {
     try {
       const totalRisks = c.env.DB.prepare('SELECT COUNT(*) as count FROM risks').first();
@@ -264,6 +283,207 @@ export function createAPI() {
       console.error('Dashboard stats error:', error);
       return c.json({ success: false, error: 'Internal server error' }, 500);
     }
+  });
+
+  // Full dashboard endpoint expected by frontend (/public/static/app.js)
+  app.get('/api/dashboard', async (c) => {
+    try {
+      // Key metrics
+      const totalRisks = c.env.DB.prepare('SELECT COUNT(*) AS count FROM risks').first();
+      const highRisks = c.env.DB.prepare('SELECT COUNT(*) AS count FROM risks WHERE risk_score >= 15').first();
+      const openFindings = c.env.DB.prepare("SELECT COUNT(*) AS count FROM assessment_findings WHERE status IN ('open','in_progress')").first();
+
+      // Compliance score: percentage of completed assessments marked compliant
+      const assessmentsTotal = c.env.DB.prepare("SELECT COUNT(*) AS count FROM compliance_assessments WHERE status = 'completed'").first();
+      const assessmentsCompliant = c.env.DB.prepare("SELECT COUNT(*) AS count FROM compliance_assessments WHERE status = 'completed' AND (lower(overall_rating) = 'compliant')").first();
+      let complianceScore = 0;
+      if ((assessmentsTotal.result?.count || 0) > 0) {
+        complianceScore = Math.round((assessmentsCompliant.result?.count || 0) * 100 / assessmentsTotal.result.count);
+      } else {
+        // Fallback sensible default for demo if no data
+        complianceScore = 85;
+      }
+
+      // Top risks
+      const topRisksRes = c.env.DB.prepare(
+        `SELECT title, risk_id, COALESCE(risk_score, probability * impact, 0) AS risk_score
+         FROM risks
+         ORDER BY risk_score DESC, created_at DESC
+         LIMIT 5`
+      ).all();
+      const topRisks = (topRisksRes.results || []).map(r => ({
+        title: r.title,
+        risk_id: r.risk_id,
+        risk_score: Number(r.risk_score || 0)
+      }));
+
+      // Recent incidents
+      const recentIncRes = c.env.DB.prepare(
+        `SELECT title, incident_id, severity, COALESCE(reported_at, created_at) AS created_at
+         FROM incidents
+         ORDER BY COALESCE(reported_at, created_at) DESC
+         LIMIT 5`
+      ).all();
+      const recentIncidents = (recentIncRes.results || []).map(i => ({
+        title: i.title,
+        incident_id: i.incident_id,
+        severity: i.severity,
+        created_at: i.created_at
+      }));
+
+      // Organizations summary
+      const orgRes = c.env.DB.prepare(
+        `SELECT o.name, COUNT(r.id) AS risks, COALESCE(ROUND(AVG(r.risk_score), 1), 0) AS avgScore
+         FROM organizations o
+         LEFT JOIN risks r ON r.organization_id = o.id
+         GROUP BY o.id
+         ORDER BY risks DESC, o.name ASC
+         LIMIT 6`
+      ).all();
+      const organizations = (orgRes.results || []).map(o => ({
+        name: o.name,
+        risks: Number(o.risks || 0),
+        avgScore: Number(o.avgScore || 0)
+      }));
+
+      // Risk trend for last 7 days (average score per day)
+      const trendRes = c.env.DB.prepare(
+        `SELECT date(created_at) AS d, ROUND(AVG(COALESCE(risk_score, probability * impact, 0)), 1) AS s
+         FROM risks
+         WHERE date(created_at) >= date('now', '-6 days')
+         GROUP BY date(created_at)
+         ORDER BY d`
+      ).all();
+      const trendMap = new Map((trendRes.results || []).map(row => [row.d, Number(row.s || 0)]));
+      const risk_trend = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const day = d.toISOString().slice(0, 10);
+        risk_trend.push({ date: day, score: trendMap.get(day) ?? 0 });
+      }
+
+      return c.json({
+        success: true,
+        data: {
+          total_risks: totalRisks.result?.count || 0,
+          high_risks: highRisks.result?.count || 0,
+          open_findings: openFindings.result?.count || 0,
+          compliance_score: complianceScore,
+          top_risks: topRisks,
+          recent_incidents: recentIncidents,
+          risk_trend,
+          organizations
+        }
+      });
+    } catch (error) {
+      console.error('Dashboard endpoint error:', error);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  // KRIs API
+  app.get('/api/kris', (c) => {
+    const kris = c.env.DB.prepare('SELECT * FROM kris ORDER BY id').all();
+    return c.json({ success: true, data: kris.results || [] });
+  });
+
+  app.get('/api/kris/:id/readings', (c) => {
+    const id = parseInt(c.req.param('id'));
+    const readings = c.env.DB.prepare('SELECT * FROM kri_readings WHERE kri_id = ? ORDER BY timestamp DESC LIMIT 50').all(id);
+    return c.json({ success: true, data: readings.results || [] });
+  });
+
+  // SoA API
+  app.get('/api/soa', (c) => {
+    const rows = c.env.DB.prepare(`
+      SELECT soa.id, cc.framework, cc.external_id, cc.title, soa.included, soa.implementation_status, soa.effectiveness, soa.justification, soa.evidence_refs
+      FROM statement_of_applicability soa
+      JOIN control_catalog cc ON cc.id = soa.catalog_id
+      ORDER BY cc.framework, cc.external_id
+    `).all();
+    return c.json({ success: true, data: rows.results || [] });
+  });
+
+  // Update SoA entry (basic editor)
+  app.put('/api/soa/:id', async (c) => {
+    const user = getAuthUser(c);
+    if (!user) return c.json({ success: false, error: 'Unauthorized' }, 401);
+    try {
+      const id = parseInt(c.req.param('id'));
+      const body = await c.req.json();
+      const allowedImpl = new Set(['planned','in_progress','implemented','not_applicable', null, undefined, '']);
+      const allowedEff = new Set(['effective','partially_effective','ineffective','not_tested', null, undefined, '']);
+
+      const included = body.included === true || body.included === 1 ? 1 : (body.included === false ? 0 : undefined);
+      const implementation_status = allowedImpl.has(body.implementation_status) ? (body.implementation_status || null) : null;
+      const effectiveness = allowedEff.has(body.effectiveness) ? (body.effectiveness || null) : null;
+      const justification = typeof body.justification === 'string' ? body.justification : null;
+      const evidence_refs = typeof body.evidence_refs === 'string' ? body.evidence_refs : null;
+
+      // Build dynamic update
+      const fields = [];
+      const params = [];
+      if (included !== undefined) { fields.push('included = ?'); params.push(included); }
+      if (implementation_status !== undefined) { fields.push('implementation_status = ?'); params.push(implementation_status); }
+      if (effectiveness !== undefined) { fields.push('effectiveness = ?'); params.push(effectiveness); }
+      if (justification !== null) { fields.push('justification = ?'); params.push(justification); }
+      if (evidence_refs !== null) { fields.push('evidence_refs = ?'); params.push(evidence_refs); }
+      fields.push('last_updated = CURRENT_TIMESTAMP');
+
+      if (fields.length === 0) {
+        return c.json({ success: false, error: 'No valid fields provided' }, 400);
+      }
+
+      const sql = `UPDATE statement_of_applicability SET ${fields.join(', ')} WHERE id = ?`;
+      params.push(id);
+      const res = c.env.DB.prepare(sql).run(...params);
+      if (!res.success || res.meta.changes === 0) {
+        return c.json({ success: false, error: 'SoA entry not found or not updated' }, 404);
+      }
+      const row = c.env.DB.prepare(`
+        SELECT soa.id, cc.framework, cc.external_id, cc.title, soa.included, soa.implementation_status, soa.effectiveness, soa.justification, soa.evidence_refs
+        FROM statement_of_applicability soa
+        JOIN control_catalog cc ON cc.id = soa.catalog_id
+        WHERE soa.id = ?
+      `).first(id);
+      return c.json({ success: true, data: row.result });
+    } catch (error) {
+      console.error('SoA update error:', error);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  // Treatments API (read-only for now)
+  app.get('/api/treatments', (c) => {
+    const rows = c.env.DB.prepare(`
+      SELECT t.*, r.title as risk_title, r.risk_id, u.username as owner_username
+      FROM risk_treatments t
+      LEFT JOIN risks r ON r.id = t.risk_id
+      LEFT JOIN users u ON u.id = t.owner_id
+      ORDER BY COALESCE(t.updated_at, t.created_at) DESC
+    `).all();
+    return c.json({ success: true, data: rows.results || [] });
+  });
+
+  // Exceptions API (read-only for now)
+  app.get('/api/exceptions', (c) => {
+    const rows = c.env.DB.prepare(`
+      SELECT e.*, r.title as risk_title, r.risk_id, c.name as control_name
+      FROM risk_exceptions e
+      LEFT JOIN risks r ON r.id = e.risk_id
+      LEFT JOIN controls c ON c.id = e.control_id
+      ORDER BY e.created_at DESC
+    `).all();
+    return c.json({ success: true, data: rows.results || [] });
+  });
+
+  // Evidence API (read-only for now)
+  app.get('/api/evidence', (c) => {
+    const rows = c.env.DB.prepare(`
+      SELECT * FROM evidence ORDER BY created_at DESC LIMIT 100
+    `).all();
+    return c.json({ success: true, data: rows.results || [] });
   });
 
   return app;

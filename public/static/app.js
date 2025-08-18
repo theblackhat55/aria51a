@@ -759,7 +759,7 @@ async function checkAuthentication() {
     });
     
     if (response.data.success) {
-      currentUser = response.data.data;
+      currentUser = response.data.data.user;
       console.log('Authentication successful:', currentUser);
       return true;
     } else {
@@ -832,10 +832,13 @@ async function initializeNavigation() {
   const navLinks = [
     { id: 'nav-dashboard', page: 'dashboard' },
     { id: 'nav-risks', page: 'risks' },
+    { id: 'nav-incidents', page: 'incidents' },
+    { id: 'nav-frameworks', page: 'frameworks' },
+    { id: 'nav-soa', page: 'soa' },
+    { id: 'nav-treatments', page: 'treatments' },
+    { id: 'nav-kris', page: 'kris' },
     { id: 'nav-ai-assure', page: 'ai-assure' },
     { id: 'nav-compliance', page: 'compliance' },
-    { id: 'nav-frameworks', page: 'frameworks' },
-    { id: 'nav-incidents', page: 'incidents' },
     { id: 'nav-assets', page: 'assets' },
     { id: 'nav-services', page: 'services' },
     { id: 'nav-documents', page: 'documents' },
@@ -1021,7 +1024,7 @@ async function loadCurrentUser() {
     });
     
     if (response.data.success) {
-      currentUser = response.data.data;
+      currentUser = response.data.data.user;
       // Note: Don't call updateAuthUI here to avoid recursion
     }
   } catch (error) {
@@ -1132,6 +1135,27 @@ function navigateTo(page) {
           showAIAssure();
         } else {
           showPlaceholder('AI Assure', 'AI Assure module loading...', 'brain');
+        }
+        break;
+      case 'soa':
+        if (typeof showSoA === 'function') {
+          showSoA();
+        } else {
+          showPlaceholder('Statement of Applicability', 'SoA module loading...', 'list-check');
+        }
+        break;
+      case 'treatments':
+        if (typeof showTreatments === 'function') {
+          showTreatments();
+        } else {
+          showPlaceholder('Risk Treatments', 'Treatments module loading...', 'prescription-bottle');
+        }
+        break;
+      case 'kris':
+        if (typeof showKRIs === 'function') {
+          showKRIs();
+        } else {
+          showPlaceholder('Key Risk Indicators', 'KRI module loading...', 'wave-square');
         }
         break;
       default:
@@ -1429,6 +1453,273 @@ function showDashboard() {
   // Initialize charts and heat maps
   initializeCharts();
 }
+
+// SoA UI
+async function showSoA() {
+  updateActiveNavigation && updateActiveNavigation('soa');
+  const main = document.getElementById('main-content');
+  showLoading('main-content');
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const res = await axios.get('/api/soa', { headers: { Authorization: `Bearer ${token}` } });
+    const rows = res.data.data || [];
+    main.innerHTML = `
+      <div class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-gray-900">Statement of Applicability</h2>
+          <div class="text-sm text-gray-500">Read/write (basic)</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Framework</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Control</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Included</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Implementation</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effectiveness</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Justification</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${rows.map(r => `
+                <tr>
+                  <td class="px-4 py-3 text-sm text-gray-900">${r.framework}</td>
+                  <td class="px-4 py-3 text-sm text-gray-700"><span class="font-mono">${r.external_id}</span> - ${r.title}</td>
+                  <td class="px-4 py-3 text-sm">${r.included ? '<span class="badge badge-sm bg-green-100 text-green-700">Included</span>' : '<span class="badge badge-sm bg-gray-100 text-gray-700">Excluded</span>'}</td>
+                  <td class="px-4 py-3 text-sm">${r.implementation_status || '-'}</td>
+                  <td class="px-4 py-3 text-sm">${r.effectiveness || '-'}</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">${r.justification || '-'}</td>
+                  <td class="px-4 py-3 text-right">
+                    <button class="px-3 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100" onclick="editSoA(${r.id})"><i class="fas fa-edit mr-1"></i>Edit</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    showError('Failed to load SoA');
+  }
+}
+
+window.editSoA = function(id) {
+  const token = localStorage.getItem('dmt_token');
+  const modal = document.createElement('div');
+  modal.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+          <h3 class="font-semibold">Edit SoA Entry</h3>
+          <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="soa-included" class="form-checkbox">
+            <label for="soa-included" class="text-sm text-gray-700">Included</label>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Implementation Status</label>
+            <select id="soa-impl" class="w-full border rounded px-3 py-2">
+              <option value="">-</option>
+              <option value="planned">planned</option>
+              <option value="in_progress">in_progress</option>
+              <option value="implemented">implemented</option>
+              <option value="not_applicable">not_applicable</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Effectiveness</label>
+            <select id="soa-eff" class="w-full border rounded px-3 py-2">
+              <option value="">-</option>
+              <option value="effective">effective</option>
+              <option value="partially_effective">partially_effective</option>
+              <option value="ineffective">ineffective</option>
+              <option value="not_tested">not_tested</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Justification</label>
+            <textarea id="soa-just" rows="3" class="w-full border rounded px-3 py-2"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">Evidence Refs (URLs, comma-separated)</label>
+            <input id="soa-evidence" class="w-full border rounded px-3 py-2" placeholder="https://... , https://...">
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t flex justify-end space-x-2">
+          <button class="px-4 py-2 border rounded" onclick="this.closest('.fixed').remove()">Cancel</button>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded" onclick="saveSoA(${id})"><i class="fas fa-save mr-1"></i>Save</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+window.saveSoA = async function(id) {
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const body = {
+      included: document.getElementById('soa-included').checked,
+      implementation_status: document.getElementById('soa-impl').value || null,
+      effectiveness: document.getElementById('soa-eff').value || null,
+      justification: document.getElementById('soa-just').value || null,
+      evidence_refs: document.getElementById('soa-evidence').value || null
+    };
+    await axios.put(`/api/soa/${id}`, body, { headers: { Authorization: `Bearer ${token}` }});
+    document.querySelector('.fixed.inset-0')?.remove();
+    showToast('SoA updated', 'success');
+    showSoA();
+  } catch (e) {
+    showError('Failed to update SoA');
+  }
+}
+
+// Treatments UI (includes Acceptances/Exceptions)
+async function showTreatments() {
+  updateActiveNavigation && updateActiveNavigation('treatments');
+  showLoading('main-content');
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const [treatRes, excRes] = await Promise.all([
+      axios.get('/api/treatments', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/exceptions', { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+    const treatments = treatRes.data.data || [];
+    const exceptions = excRes.data.data || [];
+    const main = document.getElementById('main-content');
+    main.innerHTML = `
+      <div class="space-y-8">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-gray-900">Risk Treatments</h2>
+          <div class="text-sm text-gray-500">Read-only (write coming soon)</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Risk</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Strategy</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Owner</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Due</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${treatments.map(t => `
+                <tr>
+                  <td class="px-4 py-3 text-sm"><div class="font-medium">${t.risk_title || '-'}</div><div class="text-xs text-gray-500">${t.risk_id || ''}</div></td>
+                  <td class="px-4 py-3 text-sm">${t.strategy}</td>
+                  <td class="px-4 py-3 text-sm">${t.owner_username || '-'}</td>
+                  <td class="px-4 py-3 text-sm">${t.status}</td>
+                  <td class="px-4 py-3 text-sm">${t.due_date || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex items-center justify-between mt-8">
+          <h2 class="text-2xl font-bold text-gray-900">Risk Acceptances / Exceptions</h2>
+          <div class="text-sm text-gray-500">Read-only (write coming soon)</div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Control</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Risk</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Expiry</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Justification</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${exceptions.map(e => `
+                <tr>
+                  <td class="px-4 py-3 text-sm">${e.control_name || '-'} <span class="text-xs text-gray-500">(ID: ${e.control_id})</span></td>
+                  <td class="px-4 py-3 text-sm">${e.risk_title || '-'} <span class="text-xs text-gray-500">${e.risk_id || ''}</span></td>
+                  <td class="px-4 py-3 text-sm">${e.status}</td>
+                  <td class="px-4 py-3 text-sm">${e.expiry_date || '-'}</td>
+                  <td class="px-4 py-3 text-sm text-gray-600">${e.justification || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    showError('Failed to load treatments/acceptances');
+  }
+}
+
+// KRIs UI
+async function showKRIs() {
+  updateActiveNavigation && updateActiveNavigation('kris');
+  showLoading('main-content');
+  try {
+    const token = localStorage.getItem('dmt_token');
+    const res = await axios.get('/api/kris', { headers: { Authorization: `Bearer ${token}` } });
+    const kris = res.data.data || [];
+    const main = document.getElementById('main-content');
+    main.innerHTML = `
+      <div class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-gray-900">Key Risk Indicators</h2>
+          <div class="text-sm text-gray-500">Read-only dashboard</div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-1 space-y-2">
+            ${kris.map(k => `
+              <div class="p-3 bg-white rounded-lg shadow-sm border hover:border-blue-300 cursor-pointer" onclick="selectKRI(${k.id}, '${k.name.replace(/'/g, "&#39;")}')">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <div class="font-medium text-gray-900">${k.name}</div>
+                    <div class="text-xs text-gray-500">Threshold: ${k.threshold} (${k.direction})</div>
+                  </div>
+                  <div class="text-xs text-gray-500">${k.frequency || ''}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="lg:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border p-4">
+              <h3 id="kri-title" class="text-lg font-semibold mb-2">Select a KRI</h3>
+              <canvas id="kriChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    showError('Failed to load KRIs');
+  }
+}
+
+window.selectKRI = async function(id, name) {
+  try {
+    document.getElementById('kri-title').textContent = name;
+    const token = localStorage.getItem('dmt_token');
+    const res = await axios.get(`/api/kris/${id}/readings`, { headers: { Authorization: `Bearer ${token}` } });
+    const readings = res.data.data || [];
+    const labels = readings.map(r => new Date(r.timestamp).toLocaleString());
+    const data = readings.map(r => r.value);
+    const ctx = document.getElementById('kriChart').getContext('2d');
+    if (window.kriChart) window.kriChart.destroy();
+    window.kriChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: name, data, borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true }] },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  } catch (e) {
+    showError('Failed to load KRI readings');
+  }
+}
+
 
 // Initialize charts
 function initializeCharts() {
