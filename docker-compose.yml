@@ -32,9 +32,13 @@ services:
       POSTGRES_USER: grctier
       POSTGRES_PASSWORD: grctier_secure_password_2024
       POSTGRES_MULTIPLE_DATABASES: kong,keycloak,riskmanagement
+      # Ensure PostgreSQL listens on all interfaces
+      POSTGRES_HOST_AUTH_METHOD: md5
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    command: postgres -c listen_addresses='*' -c max_connections=200
     ports:
       - "5432:5432"
     networks:
