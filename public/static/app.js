@@ -4,6 +4,33 @@
 let currentUser = null;
 let dashboardData = null;
 
+// API configuration - Use Kong Gateway when available
+const API_BASE = window.KongConfig ? window.KongConfig.baseURL : (
+  window.location.hostname === 'localhost' || window.location.hostname.includes('e2b.dev') 
+    ? 'http://localhost:3000' 
+    : window.location.origin
+);
+
+// Kong-aware API helper
+const apiRequest = window.KongAPI ? window.KongAPI.request.bind(window.KongAPI) : async (endpoint, options = {}) => {
+  const url = `${API_BASE}${endpoint}`;
+  const config = {
+    headers: { 'Content-Type': 'application/json' },
+    ...options
+  };
+  
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
+  }
+  
+  const response = await fetch(url, config);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  return { data: await response.json() };
+};
+
 // Reports functionality
 function showReports() {
   showModal('Risk Reports & Analytics', `

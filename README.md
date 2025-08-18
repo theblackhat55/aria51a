@@ -1,439 +1,293 @@
-# DMT Risk Assessment Platform v2.0.1
+# GRC Tier 3.1 - Enterprise Risk Management Platform
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
-[![Docker](https://img.shields.io/badge/Docker-supported-blue.svg)](https://docker.com/)
+## 🚀 Kong Gateway + Keycloak + Risk Management Platform
 
-## 🚀 Enterprise GRC Platform with AI-Powered Intelligence
+A comprehensive, enterprise-grade risk management platform built with modern technologies and production-ready infrastructure.
 
-DMT Risk Assessment Platform is a next-generation Enterprise Governance, Risk, and Compliance (GRC) platform featuring AI-powered risk intelligence, comprehensive framework support, and enterprise-grade Keycloak SSO authentication.
+### 🏗️ Architecture
 
-### ✨ Key Features
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     Nginx       │────│  Kong Gateway   │────│ Risk Management │
+│  Load Balancer  │    │  API Management │    │   Application   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │              ┌─────────────────┐    ┌─────────────────┐
+         │              │    Keycloak     │    │   PostgreSQL    │
+         │              │      IAM        │    │    Database     │
+         └──────────────┴─────────────────┘    └─────────────────┘
+                                 │                       │
+                        ┌─────────────────┐    ┌─────────────────┐
+                        │     Redis       │    │   Monitoring    │
+                        │     Cache       │    │ Prom + Grafana  │
+                        └─────────────────┘    └─────────────────┘
+```
 
-- **🔐 Enterprise SSO Authentication** - Keycloak-based authentication with role-based access control
-- **🤖 AI-Powered Risk Intelligence** - Advanced risk analysis and insights
-- **📊 Comprehensive GRC Framework Support** - ISO 27001, NIST, SOC 2, and custom frameworks
-- **🏗️ Modern Architecture** - Built with Hono framework and TypeScript
-- **🐳 Docker Support** - Easy deployment with Docker and Docker Compose
-- **📈 Real-time Analytics** - Advanced reporting and dashboard capabilities
-- **🔄 Audit Trail** - Complete audit logging and compliance tracking
-- **🌐 Multi-tenant Support** - Enterprise-ready multi-organization support
+### ✨ Features
 
-## 📋 Table of Contents
+#### 🔐 Enterprise Security
+- **Kong Gateway**: API management, rate limiting, CORS, JWT validation
+- **Keycloak**: Identity and Access Management with OIDC/SAML support
+- **Multi-layer Authentication**: JWT + OAuth2 + RBAC
+- **Security Headers**: Automatic security header injection
+- **SSL/TLS**: Production-ready certificate management
 
-- [Quick Start](#-quick-start)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage](#-usage)
-- [Architecture](#-architecture)
-- [API Documentation](#-api-documentation)
-- [Development](#-development)
-- [Contributing](#-contributing)
-- [Support](#-support)
+#### 📊 Risk Management
+- **AI-Powered Risk Assessment**: Automated likelihood and impact analysis
+- **Service-Risk Mapping**: Link risks to services (not assets)
+- **Real-time Risk Scoring**: Dynamic calculation with visual indicators
+- **Enhanced Threat Sources**: Comprehensive threat categorization
+- **Optional Risk Categories**: Flexible risk classification
 
-## 🚀 Quick Start
+#### 🛠️ Production Ready
+- **Docker Compose**: Complete stack deployment
+- **Health Checks**: Comprehensive service monitoring
+- **Logging**: Centralized logging with structured format
+- **Monitoring**: Prometheus + Grafana dashboards
+- **Backup**: Automated database and configuration backups
+- **Load Balancing**: Nginx with upstream health checks
 
-### Option 1: Automated Installation (Recommended)
+#### 🔧 Development Experience
+- **Hot Reload**: Development mode with automatic rebuilds
+- **API Documentation**: Interactive API exploration
+- **Debug Mode**: Comprehensive debugging tools
+- **TypeScript**: Full type safety throughout the stack
 
-Run the comprehensive install script that handles everything including Keycloak setup:
+### 🚀 Quick Start
 
+#### Prerequisites
+- Ubuntu 18.04+ (or compatible Linux)
+- Docker 20.10+
+- Docker Compose 1.29+
+- 4GB+ RAM recommended
+- 10GB+ disk space
+
+#### One-Command Installation
 ```bash
 # Clone the repository
-git clone https://github.com/theblackhat55/GRC.git
-cd GRC
+git clone <repository-url>
+cd webapp
 
 # Run the automated installer
-sudo ./install.sh
+./install-grctier.sh
 ```
 
-This will install and configure:
-- ✅ Docker and Docker Compose
-- ✅ Node.js 20 LTS and PM2
-- ✅ PostgreSQL 15
-- ✅ Keycloak 25.0 with pre-configured realm
-- ✅ DMT application with all dependencies
-- ✅ Systemd services for automatic startup
-- ✅ Database initialization with sample data
+The installer will:
+1. ✅ Check system requirements
+2. ✅ Install Docker/Docker Compose (if needed)
+3. ✅ Create SSL certificates
+4. ✅ Pull all Docker images
+5. ✅ Start all services
+6. ✅ Configure Kong Gateway
+7. ✅ Set up Keycloak realm
+8. ✅ Test service health
+9. ✅ Display access information
 
-### Option 2: Docker Deployment
-
+#### Manual Installation
 ```bash
-# Quick Docker setup
+# 1. Copy environment configuration
+cp .env.example .env
+
+# 2. Start all services
 docker compose up -d
 
-# Or using the build script with cleanup and testing
-./build-docker.sh --clean --test
+# 3. Wait for services to be healthy
+docker compose ps
+
+# 4. Configure Kong Gateway
+./scripts/configure-kong.sh
+
+# 5. Access the application
+open http://localhost
 ```
 
-### Option 3: Manual Installation
+### 🌐 Access Points
 
-See [Installation Guide](docs/QUICK_START_IMPLEMENTATION_GUIDE.md) for detailed manual setup instructions.
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Main Application** | http://localhost | Full risk management platform |
+| **Kong Gateway** | http://localhost:8000 | API gateway (direct access) |
+| **Kong Admin** | http://localhost:8001 | Kong management API |
+| **Kong Manager** | http://localhost:8002 | Kong web interface |
+| **Keycloak** | http://localhost:8080 | Identity management |
+| **Prometheus** | http://localhost:9090 | Metrics collection |
+| **Grafana** | http://localhost:3001 | Monitoring dashboards |
 
-## 🔧 Installation
+### 🔑 Default Credentials
 
-### System Requirements
+#### Risk Management Application
+- **Admin**: `admin` / `admin_secure_password_2024`
+- **Risk Manager**: `avi_security` / `demo123`
 
-- **OS**: Ubuntu 20.04+, Debian 11+, CentOS 8+, or RHEL 8+
-- **Memory**: 4GB RAM minimum, 8GB recommended
-- **Storage**: 10GB available disk space
-- **Network**: Internet connection for dependencies
+#### Keycloak Admin
+- **Username**: `admin`
+- **Password**: `admin_secure_password_2024`
 
-### Dependencies
+#### Grafana
+- **Username**: `admin`
+- **Password**: `admin_secure_password_2024`
 
-The install script automatically installs:
+> ⚠️ **Security Warning**: Change all default passwords before production deployment!
 
-- **Docker** & **Docker Compose** - Container orchestration
-- **Node.js 20 LTS** - JavaScript runtime
-- **PostgreSQL 15** - Database for Keycloak
-- **PM2** - Process manager for Node.js
-- **Keycloak 25.0** - Enterprise authentication server
-
-### Installation Steps
-
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/theblackhat55/GRC.git
-   cd GRC
-   ```
-
-2. **Run Installer**
-   ```bash
-   chmod +x install.sh
-   sudo ./install.sh
-   ```
-
-3. **Access Platform**
-   - **DMT Platform**: http://localhost:3000
-   - **Keycloak Admin**: http://localhost:8080/admin
-   - **Health Check**: http://localhost:3000/health
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-The installer creates these configuration files:
-
-- **`.env.production`** - Main application configuration
-- **`config/keycloak-credentials.env`** - Keycloak database credentials
-- **`config/keycloak-client.env`** - Keycloak client configuration
-
-### Default User Accounts
-
-| Role | Username | Password | Description |
-|------|----------|----------|-------------|
-| Super Admin | `admin` | `admin123` | Full system access |
-| Risk Manager | `riskmanager` | `risk123` | Risk management access |
-| Auditor | `auditor` | `audit123` | Read-only audit access |
-
-> ⚠️ **Security**: Change default passwords immediately after first login!
-
-### Service Configuration
+### 🛠️ Management Commands
 
 ```bash
-# DMT Application Service
-sudo systemctl start dmt-webapp
-sudo systemctl enable dmt-webapp
+# Service Management
+docker compose up -d              # Start all services
+docker compose down               # Stop all services
+docker compose restart            # Restart all services
+docker compose ps                 # Check service status
 
-# Keycloak Service (Docker)
-docker compose -f docker-compose.keycloak.yml up -d
+# Logs and Debugging
+docker compose logs -f            # Follow all logs
+docker compose logs -f kong       # Kong Gateway logs
+docker compose logs -f keycloak   # Keycloak logs
+docker compose logs -f risk-app   # Application logs
+
+# Maintenance
+docker compose pull               # Update images
+docker system prune -f            # Clean up Docker
+./scripts/backup.sh               # Create backup
+./scripts/restore.sh backup.tar   # Restore from backup
+
+# Kong Management
+curl http://localhost:8001/status          # Kong status
+curl http://localhost:8001/services        # List services
+curl http://localhost:8001/routes          # List routes
+curl http://localhost:8001/plugins         # List plugins
+
+# Database Access
+docker compose exec postgres psql -U grctier -d riskmanagement
 ```
 
-## 🏗️ Architecture
+### 📈 Monitoring
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        DMT Platform                        │
-│  ┌─────────────────┐  ┌─────────────────────────────────┐  │
-│  │   Frontend      │  │         Backend API             │  │
-│  │   (Static)      │  │        (Hono + Node.js)        │  │
-│  │                 │  │                                 │  │
-│  │ • Dashboard     │  │ • Authentication Routes         │  │
-│  │ • Risk Forms    │  │ • Risk Assessment API           │  │
-│  │ • Reports       │  │ • Framework Management          │  │
-│  │ • Settings      │  │ • User Management               │  │
-│  └─────────────────┘  └─────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Authentication Layer                    │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │                  Keycloak SSO                       │  │
-│  │                                                     │  │
-│  │ • OIDC/OAuth2 Provider                              │  │
-│  │ • User & Role Management                            │  │
-│  │ • Multi-Factor Authentication                       │  │
-│  │ • Session Management                                │  │
-│  └─────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Data Layer                            │
-│  ┌─────────────────┐  ┌─────────────────────────────────┐  │
-│  │    SQLite       │  │           PostgreSQL            │  │
-│  │ (Application)   │  │          (Keycloak)             │  │
-│  │                 │  │                                 │  │
-│  │ • Risk Data     │  │ • User Accounts                 │  │
-│  │ • Frameworks    │  │ • Roles & Permissions           │  │
-│  │ • Assessments   │  │ • Sessions                      │  │
-│  │ • Audit Logs    │  │ • Authentication Logs           │  │
-│  └─────────────────┘  └─────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
+#### Prometheus Metrics
+- Kong Gateway performance
+- Application response times
+- Database connections
+- System resources
 
-### Tech Stack
+#### Grafana Dashboards
+- API Gateway metrics
+- Risk management KPIs
+- System health overview
+- Security monitoring
 
-- **Backend**: Hono Framework, Node.js, TypeScript
-- **Frontend**: Vanilla JavaScript, TailwindCSS, Chart.js
-- **Authentication**: Keycloak (OIDC/OAuth2)
-- **Database**: SQLite (Application), PostgreSQL (Keycloak)
-- **Deployment**: Docker, Docker Compose, Systemd
-- **Process Management**: PM2, Supervisor
+#### Health Endpoints
+- Application: `http://localhost/api/health`
+- Kong: `http://localhost:8001/status`
+- Keycloak: `http://localhost:8080/health`
 
-## 🛠️ Development
+### 🔧 Configuration
 
-### Development Setup
+#### Environment Variables
+Copy `.env.example` to `.env` and customize:
+- Database credentials
+- JWT secrets
+- Keycloak configuration
+- Kong settings
+- Monitoring URLs
 
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/theblackhat55/GRC.git
-   cd GRC
-   ```
+#### Kong Gateway
+Kong is configured via:
+- `kong/kong.conf` - Main configuration
+- `docker-compose.yml` - Environment variables
+- API calls to Kong Admin API
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+#### Keycloak
+Keycloak realm is configured via:
+- `keycloak/realm-export.json` - Realm definition
+- Automatic import on startup
+- Web UI for additional configuration
 
-3. **Start Development Services**
-   ```bash
-   # Start Keycloak
-   docker compose -f docker-compose.keycloak.yml up -d
-   
-   # Start development server
-   npm run dev
-   ```
+### 🚢 Production Deployment
 
-4. **Build for Production**
-   ```bash
-   npm run build
-   ```
+#### Security Checklist
+- [ ] Change all default passwords
+- [ ] Configure SSL certificates
+- [ ] Set up firewall rules
+- [ ] Enable audit logging
+- [ ] Configure backup strategy
+- [ ] Update CORS origins
+- [ ] Set proper JWT secrets
 
-### Project Structure
-
-```
-DMT-GRC/
-├── src/                    # Source code
-│   ├── api/               # API route handlers
-│   ├── database/          # Database utilities
-│   ├── auth-keycloak.js   # Keycloak authentication
-│   └── index.tsx          # Main application entry
-├── public/                # Static assets
-│   └── static/           # JS, CSS, images
-├── docs/                  # Documentation
-├── scripts/               # Utility scripts
-├── config/                # Configuration files
-├── database/              # SQL files and database
-├── keycloak/              # Keycloak configuration
-├── Dockerfile.ubuntu      # Docker configuration
-├── docker-compose.yml     # Docker services
-├── install.sh            # Automated installer
-└── package.json          # Dependencies
-```
-
-### API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Main dashboard |
-| `/api/auth/login` | GET | Initiate Keycloak login |
-| `/api/auth/callback` | GET | Handle Keycloak callback |
-| `/api/auth/logout` | POST | Logout user |
-| `/api/risks` | GET/POST | Risk management |
-| `/api/frameworks` | GET | Compliance frameworks |
-| `/api/assessments` | GET/POST | Risk assessments |
-| `/api/users` | GET | User management |
-| `/health` | GET | Health check |
-
-### Database Schema
-
-- **Users**: User profiles and preferences
-- **Risks**: Risk assessments and data
-- **Frameworks**: Compliance frameworks (ISO 27001, NIST, etc.)
-- **Controls**: Security controls and mappings
-- **Assessments**: Risk assessment results
-- **Audit_Logs**: System audit trail
-
-## 🔧 Service Management
-
-### DMT Application
-
+#### Performance Tuning
 ```bash
-# Service control
-sudo systemctl start dmt-webapp
-sudo systemctl stop dmt-webapp  
-sudo systemctl restart dmt-webapp
-sudo systemctl status dmt-webapp
+# Kong Gateway
+KONG_WORKER_PROCESSES=4
+KONG_WORKER_CONNECTIONS=2048
 
-# View logs
-sudo journalctl -u dmt-webapp -f
+# PostgreSQL
+POSTGRES_SHARED_BUFFERS=256MB
+POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
 
-# Direct management (alternative)
-pm2 start ecosystem.config.cjs
-pm2 stop dmt-webapp
-pm2 restart dmt-webapp
-pm2 logs dmt-webapp --nostream
+# Redis
+REDIS_MAXMEMORY=512mb
+REDIS_MAXMEMORY_POLICY=allkeys-lru
 ```
 
-### Keycloak Service
+#### High Availability
+- Deploy multiple Kong instances
+- Use PostgreSQL clustering
+- Set up Redis cluster
+- Configure load balancer health checks
 
+### 🐛 Troubleshooting
+
+#### Common Issues
+
+**Services not starting**
 ```bash
-# Service control
-docker compose -f docker-compose.keycloak.yml up -d
-docker compose -f docker-compose.keycloak.yml down
-docker compose -f docker-compose.keycloak.yml restart
-
-# View logs
-docker compose -f docker-compose.keycloak.yml logs -f
-
-# Service health
-curl http://localhost:8080/health/ready
+docker compose logs postgres  # Check database logs
+docker compose down && docker compose up -d
 ```
 
-### Database Management
-
+**Kong configuration issues**
 ```bash
-# SQLite (Application Database)
-sqlite3 database/dmt-production.sqlite
-.tables
-.schema users
-
-# PostgreSQL (Keycloak Database)
-sudo -u postgres psql keycloak
-\\dt
-\\q
+curl http://localhost:8001/status
+./scripts/configure-kong.sh  # Reconfigure Kong
 ```
 
-## 🔒 Security
+**Authentication problems**
+```bash
+# Reset Keycloak
+docker compose restart keycloak
+# Check logs
+docker compose logs keycloak
+```
 
-### Authentication Flow
+**Performance issues**
+```bash
+docker stats                  # Check resource usage
+curl http://localhost:9090    # Check Prometheus
+```
 
-1. User accesses DMT platform
-2. Redirected to Keycloak login
-3. Keycloak authenticates user
-4. Returns JWT tokens to DMT
-5. DMT validates tokens and creates session
-6. User gains access based on roles
+#### Support
+- Check logs: `docker compose logs -f [service]`
+- Verify configuration: `docker compose config`
+- Test connectivity: `curl http://localhost/api/health`
+- Monitor resources: `docker stats`
 
-### Role-Based Access Control (RBAC)
-
-- **super_admin**: Full system access, user management
-- **admin**: Organization management, user creation
-- **risk_manager**: Risk assessments, framework management
-- **auditor**: Read-only access to all data
-- **user**: Basic platform access
-
-### Security Best Practices
-
-- ✅ Change default passwords
-- ✅ Enable HTTPS in production
-- ✅ Configure firewall rules
-- ✅ Regular security updates
-- ✅ Backup encryption
-- ✅ Audit log monitoring
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-1. **Keycloak not accessible**
-   ```bash
-   # Check if PostgreSQL is running
-   sudo systemctl status postgresql
-   
-   # Check Keycloak container
-   docker compose -f docker-compose.keycloak.yml ps
-   docker compose -f docker-compose.keycloak.yml logs
-   ```
-
-2. **DMT application not starting**
-   ```bash
-   # Check service status
-   sudo systemctl status dmt-webapp
-   
-   # Check logs
-   sudo journalctl -u dmt-webapp -f
-   
-   # Check database permissions
-   ls -la database/
-   ```
-
-3. **Authentication failures**
-   ```bash
-   # Verify Keycloak realm
-   curl http://localhost:8080/realms/dmt-risk-platform
-   
-   # Check client configuration
-   cat config/keycloak-client.env
-   ```
-
-### Log Locations
-
-- **DMT Application**: `sudo journalctl -u dmt-webapp -f`
-- **Keycloak**: `docker compose -f docker-compose.keycloak.yml logs -f`
-- **PostgreSQL**: `sudo journalctl -u postgresql -f`
-- **System**: `/var/log/syslog`
-
-## 📚 Documentation
-
-- [Quick Start Guide](docs/QUICK_START_IMPLEMENTATION_GUIDE.md)
-- [Docker Deployment](docs/DOCKER-DEPLOYMENT.md)
-- [Keycloak Integration](docs/KEYCLOAK_INTEGRATION.md)
-- [Security Guide](docs/SECURITY.md)
-- [Risk Framework Documentation](docs/RISK_FRAMEWORK_DOCUMENTATION.md)
-
-## 🤝 Contributing
+### 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-## 📄 License
+### 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+### 🙏 Acknowledgments
 
-### Community Support
-
-- **Issues**: [GitHub Issues](https://github.com/theblackhat55/GRC/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/theblackhat55/GRC/discussions)
-
-### Professional Support
-
-For enterprise support, custom development, or professional services, please contact the development team.
-
-## 🔄 Version History
-
-- **v2.0.1** - Current version with Keycloak SSO integration
-- **v2.0.0** - Major release with enterprise features
-- **v1.x** - Legacy versions
-
-## 🏆 Acknowledgments
-
-- Keycloak team for the excellent authentication platform
-- Hono framework contributors
-- The open-source community
+- **Kong Inc.** for the amazing API gateway
+- **Keycloak/Red Hat** for enterprise IAM
+- **Cloudflare** for Workers platform inspiration
+- **Hono** for the lightweight web framework
 
 ---
 
-**⚡ Ready to secure your enterprise? Get started with DMT Risk Assessment Platform today!**
-
-```bash
-git clone https://github.com/theblackhat55/GRC.git
-cd GRC
-sudo ./install.sh
-```
+**Built with ❤️ for enterprise security and risk management**
