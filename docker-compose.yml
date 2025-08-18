@@ -129,7 +129,8 @@ services:
       - "8002:8002"   # Kong Manager
     # Using default Docker Compose network
     volumes:
-      - ./kong/kong.conf:/etc/kong/kong.conf:ro
+      # Temporarily disabled kong.conf to use environment variables only
+      # - ./kong/kong.conf:/etc/kong/kong.conf:ro
       - ./logs:/var/log/kong
     healthcheck:
       test: ["CMD", "kong", "health"]
