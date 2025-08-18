@@ -60,7 +60,7 @@ services:
       grctier:
         ipv4_address: 172.20.0.11
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -69,7 +69,7 @@ services:
   # Kong Database Migration
   kong-migration:
     image: kong:3.9.1-ubuntu
-    command: sh -c "sleep 10 && kong migrations bootstrap"
+    command: >\n      sh -c "kong migrations bootstrap || kong migrations up && kong migrations finish"
     depends_on:
       postgres:
         condition: service_healthy
@@ -173,8 +173,9 @@ services:
       KC_PROXY_ADDRESS_FORWARDING: true
       
     command:
-      - start-dev
+      - start
       - --import-realm
+      - --spi-connections-http-client-default-connection-pool-size=50
     ports:
       - "8080:8080"
     volumes:
