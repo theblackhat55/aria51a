@@ -2,7 +2,7 @@
 # Kong Gateway + Keycloak + Risk Management Platform
 # Ubuntu/Docker Production-Ready Setup
 
-version: '3.8'
+# Docker Compose for GRC 3.1 - Kong Gateway + Keycloak + Risk Management Platform
 
 networks:
   grctier:
@@ -117,12 +117,12 @@ services:
       KONG_REAL_IP_HEADER: X-Forwarded-For
       KONG_TRUSTED_IPS: "0.0.0.0/0,::/0"
       
-      # Plugin Configuration
-      KONG_PLUGINS: "bundled,cors,jwt,rate-limiting,request-transformer,response-transformer,basic-auth,key-auth,oauth2,acl,file-log,prometheus"
+      # Plugin Configuration - Simplified for Kong 3.9.1
+      KONG_PLUGINS: "bundled"
       
-      # Performance Tuning
-      KONG_WORKER_PROCESSES: "2"
-      KONG_WORKER_CONNECTIONS: "1024"
+      # Performance Tuning (Kong 3.9.1 Compatible)
+      KONG_NGINX_WORKER_PROCESSES: "2"
+      KONG_NGINX_WORKER_CONNECTIONS: "1024"
       
       # Debug Configuration
       KONG_LOG_LEVEL: info
