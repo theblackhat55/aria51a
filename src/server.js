@@ -120,7 +120,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- Scripts -->
-  <script src="/static/keycloak-only-auth.js"></script>
+  <script src="/static/native-auth.js"></script>
   <script src="/static/app.js"></script>
   <script src="/static/modules.js"></script>
   <script src="/static/notifications.js"></script>
@@ -177,10 +177,24 @@ app.get('/login', (c) => {
           <h3 class="text-xl font-bold text-gray-900 mb-2">Enterprise Single Sign-On</h3>
           <p class="text-gray-600 mb-6">Secure authentication with Keycloak</p>
           
-          <button onclick="window.dmtAuth.login()" data-keycloak-login class="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105">
-            <i class="fas fa-sign-in-alt mr-3 text-lg"></i>
-            Login with Keycloak SSO
-          </button>
+          <form id="native-login-form" class="space-y-4">
+            <div>
+              <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input type="text" id="username" name="username" required 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" 
+                     placeholder="Enter your username">
+            </div>
+            <div>
+              <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input type="password" id="password" name="password" required 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" 
+                     placeholder="Enter your password">
+            </div>
+            <button type="submit" id="login-btn" class="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200">
+              <i class="fas fa-sign-in-alt mr-3 text-lg"></i>
+              <span id="login-text">Login</span>
+            </button>
+          </form>
         </div>
         
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
@@ -210,7 +224,7 @@ app.get('/login', (c) => {
         </div>
         
         <!-- Error display -->
-        <div id="keycloak-error" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm hidden">
+        <div id="login-error" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm hidden">
           <i class="fas fa-exclamation-triangle mr-2"></i>
           <span id="error-message"></span>
         </div>
@@ -219,7 +233,7 @@ app.get('/login', (c) => {
         <div class="text-center">
           <div class="inline-flex items-center text-xs text-gray-500">
             <div class="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-            Keycloak SSO Ready
+            Native Authentication Ready
           </div>
         </div>
       </div>
@@ -227,19 +241,68 @@ app.get('/login', (c) => {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-  <script src="/static/keycloak-only-auth.js"></script>
+  <script src="/static/native-auth.js"></script>
   <script>
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('🔐 DMT Login Page: Initializing Keycloak-only authentication');
+      console.log('🔐 DMT Login Page: Initializing native authentication');
       
-      // Auto-focus the login button after a short delay
-      setTimeout(() => {
-        const loginBtn = document.querySelector('[data-keycloak-login]');
-        if (loginBtn) {
-          loginBtn.focus();
+      const loginForm = document.getElementById('native-login-form');
+      const loginBtn = document.getElementById('login-btn');
+      const loginText = document.getElementById('login-text');
+      const errorDiv = document.getElementById('login-error');
+      const errorMessage = document.getElementById('error-message');
+      
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorDiv.classList.remove('hidden');
+      }
+      
+      function hideError() {
+        errorDiv.classList.add('hidden');
+      }
+      
+      function setLoading(loading) {
+        loginBtn.disabled = loading;
+        loginText.textContent = loading ? 'Logging in...' : 'Login';
+        loginBtn.classList.toggle('opacity-50', loading);
+      }
+      
+      loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        hideError();
+        setLoading(true);
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        try {
+          const result = await window.dmtAuth.login({ username, password });
+          
+          if (result.success) {
+            console.log('Login successful, redirecting...');
+            window.location.href = '/';
+          } else {
+            showError(result.error || 'Login failed');
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          showError('An error occurred during login');
         }
+        
+        setLoading(false);
+      });
+      
+      // Auto-focus username field
+      setTimeout(() => {
+        document.getElementById('username').focus();
       }, 500);
+      
+      // Check if already authenticated
+      if (window.dmtAuth && window.dmtAuth.isAuthenticated()) {
+        console.log('Already authenticated, redirecting...');
+        window.location.href = '/';
+      }
     });
   </script>
 </body>
