@@ -170,6 +170,14 @@
   pointer-events: none; /* disabled when hidden */
 }
 
+/* Ensure hidden dropdowns don't steal clicks */
+.nav-menu[style*="display: none"],
+.nav-menu[style*="visibility: hidden"],
+.nav-menu.invisible,
+.nav-menu.opacity-0 {
+  pointer-events: none;
+}
+
 /* Keep menu open while hovered */
 .nav-menu:hover {
   opacity: 1 !important;
@@ -197,6 +205,33 @@
 /* Ensure no ancestor clips dropdowns */
 #navigation, #navigation * {
   overflow: visible !important;
+}
+
+/* Generic top navigation dropdown stability */
+nav { overflow: visible !important; }
+nav li { position: relative; }
+nav li.has-submenu::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 10px; /* hover bridge to eliminate gaps */
+}
+nav ul ul {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: none;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  pointer-events: auto;
+}
+nav li.open > ul {
+  display: block;
 }
 
 .nav-menu-item.active {
