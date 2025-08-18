@@ -132,7 +132,11 @@ async function applySeedData() {
   
   console.log('🌱 Applying seed data...');
   
-  const seedPath = path.join(process.cwd(), 'seed.sql');
+  // Prefer database/seed.sql, fall back to project root seed.sql
+  let seedPath = path.join(process.cwd(), 'database', 'seed.sql');
+  if (!fs.existsSync(seedPath)) {
+    seedPath = path.join(process.cwd(), 'seed.sql');
+  }
   
   if (!fs.existsSync(seedPath)) {
     console.log('⚠️ Seed file not found, skipping seed data');

@@ -1,7 +1,7 @@
 // API module for Node.js/Docker deployment with Keycloak integration
 import { Hono } from 'hono';
 import { getDatabase, createQueryHelpers } from '../database/sqlite.js';
-import { createKeycloakAPI } from './keycloak.js';
+// import { createKeycloakAPI } from './keycloak.js';
 
 export function createAPI() {
   const app = new Hono();
@@ -27,8 +27,9 @@ export function createAPI() {
   });
 
   // Mount Keycloak Authentication API
-  const keycloakAPI = createKeycloakAPI();
-  app.route('/api', keycloakAPI);
+  // Keycloak API disabled for basic auth mode
+  // const keycloakAPI = createKeycloakAPI();
+  // app.route('/api', keycloakAPI);
 
   // Legacy authentication routes (deprecated - use Keycloak instead)
   app.post('/api/auth/login', async (c) => {

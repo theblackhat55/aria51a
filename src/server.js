@@ -49,9 +49,9 @@ app.get('/health', (c) => {
 });
 
 // Mock Keycloak endpoints for native deployment
-import { mockKeycloak } from './mock-keycloak.js';
+// import { mockKeycloak } from './mock-keycloak.js';
 
-// Mock Keycloak auth page
+/* // Mock Keycloak auth page
 app.get('/mock-keycloak/auth', (c) => {
   const clientId = c.req.query('client_id');
   const redirectUri = c.req.query('redirect_uri');
@@ -180,8 +180,9 @@ app.get('/mock-keycloak/auth', (c) => {
 </html>`);
 });
 
+*/
 // Mock Keycloak authentication handler
-app.post('/mock-keycloak/authenticate', async (c) => {
+/* app.post('/mock-keycloak/authenticate', async (c) => {
   try {
     const { username, password, client_id, redirect_uri, state } = await c.req.json();
     
@@ -200,6 +201,7 @@ app.post('/mock-keycloak/authenticate', async (c) => {
     }, 400);
   }
 });
+*/
 
 // API routes
 const api = createAPI();
@@ -273,7 +275,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- Scripts -->
-  <script src="/static/keycloak-only-auth.js"></script>
+  <!-- Keycloak auth disabled -->
   <script src="/static/app.js"></script>
   <script src="/static/modules.js"></script>
   <script src="/static/notifications.js"></script>
@@ -321,19 +323,23 @@ app.get('/login', (c) => {
     </div>
     
     <div id="login-container" class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-      <!-- Keycloak-Only SSO Authentication -->
+      <!-- Basic Authentication Form -->
       <div class="space-y-6">
-        <div class="text-center">
-          <div class="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <i class="fas fa-shield-alt text-blue-600 text-2xl"></i>
-          </div>
-          <h3 class="text-xl font-bold text-gray-900 mb-2">Enterprise Single Sign-On</h3>
-          <p class="text-gray-600 mb-6">Secure authentication with Keycloak</p>
-          
-          <button onclick="window.dmtAuth.login()" data-keycloak-login class="w-full flex justify-center items-center py-4 px-6 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105">
-            <i class="fas fa-sign-in-alt mr-3 text-lg"></i>
-            Login with Keycloak SSO
-          </button>
+        <div class="space-y-6">
+          <form id="login-form" class="space-y-6">
+            <div>
+              <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+              <input type="text" id="username" name="username" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Enter username" />
+            </div>
+            <div>
+              <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+              <input type="password" id="password" name="password" required class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="Enter password" />
+            </div>
+            <div id="login-error" class="hidden p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm"></div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md">
+              <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+            </button>
+          </form>
         </div>
         
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
@@ -356,23 +362,20 @@ app.get('/login', (c) => {
             <div class="mt-4 p-3 bg-blue-100 rounded-lg">
               <p class="text-sm text-blue-900">
                 <i class="fas fa-key mr-2"></i>
-                Password for all users: <code class="bg-white px-2 py-1 rounded font-mono text-blue-700">password123</code>
+                Password for all users: <code class="bg-white px-2 py-1 rounded font-mono text-blue-700">demo123</code>
               </p>
             </div>
           </div>
         </div>
         
         <!-- Error display -->
-        <div id="keycloak-error" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm hidden">
-          <i class="fas fa-exclamation-triangle mr-2"></i>
-          <span id="error-message"></span>
-        </div>
+        <div id="login-error" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm hidden"></div>
         
         <!-- Status display -->
         <div class="text-center">
           <div class="inline-flex items-center text-xs text-gray-500">
             <div class="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-            Keycloak SSO Ready
+            Basic authentication active
           </div>
         </div>
       </div>
@@ -380,19 +383,10 @@ app.get('/login', (c) => {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-  <script src="/static/keycloak-only-auth.js"></script>
+  <script src="/static/auth.js"></script>
   <script>
-    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('🔐 DMT Login Page: Initializing Keycloak-only authentication');
-      
-      // Auto-focus the login button after a short delay
-      setTimeout(() => {
-        const loginBtn = document.querySelector('[data-keycloak-login]');
-        if (loginBtn) {
-          loginBtn.focus();
-        }
-      }, 500);
+      document.getElementById('username')?.focus();
     });
   </script>
 </body>
