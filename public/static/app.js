@@ -828,40 +828,15 @@ async function initializeNavigation() {
   
   console.log('initializeNavigation called');
   
-  // Since navigation is now in static HTML, just add event handlers
-  const navLinks = [
-    { id: 'nav-dashboard', page: 'dashboard' },
-    { id: 'nav-risks', page: 'risks' },
-    { id: 'nav-incidents', page: 'incidents' },
-    { id: 'nav-frameworks', page: 'frameworks' },
-    { id: 'nav-soa', page: 'soa' },
-    { id: 'nav-treatments', page: 'treatments' },
-    { id: 'nav-kris', page: 'kris' },
-    { id: 'nav-ai-assure', page: 'ai-assure' },
-    { id: 'nav-compliance', page: 'compliance' },
-    { id: 'nav-assets', page: 'assets' },
-    { id: 'nav-services', page: 'services' },
-    { id: 'nav-documents', page: 'documents' },
-    { id: 'nav-settings', page: 'settings' }
-  ];
-  
-  console.log('Setting up navigation event handlers...');
-  
-
-  
-  // Add click handlers to navigation links
-  navLinks.forEach(nav => {
-    const element = document.getElementById(nav.id);
-    if (element) {
-      element.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('Navigation click:', nav.page);
-        navigateTo(nav.page);
-      });
-      console.log('Added event handler for:', nav.id);
-    } else {
-      console.warn('Navigation element not found:', nav.id);
-    }
+  // Grouped navigation: bind generic handlers to dropdown items
+  console.log('Setting up grouped navigation event handlers...');
+  document.querySelectorAll('[data-page]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const page = el.getAttribute('data-page');
+      console.log('Navigation click:', page);
+      navigateTo(page);
+    });
   });
   
   // Setup auth button
@@ -918,6 +893,16 @@ async function updateAuthUI() {
     } else {
       authButton.innerHTML = '<i class="fas fa-sign-in-alt mr-1"></i>Login';
       authButton.className = 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
+    }
+  }
+
+  // Role-based Admin visibility
+  const adminGroup = document.getElementById('menu-admin');
+  if (adminGroup) {
+    if (isAuthenticated && (currentUser?.role === 'admin')) {
+      adminGroup.classList.remove('hidden');
+    } else {
+      adminGroup.classList.add('hidden');
     }
   }
   

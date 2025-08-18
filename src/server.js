@@ -257,20 +257,82 @@ app.get('/', (c) => {
             </div>
           </div>
           
-          <!-- Main Navigation -->
+          <!-- Main Navigation (grouped) -->
           <div class="hidden md:flex items-center space-x-4" id="internal-nav">
-            <a href="#" id="nav-dashboard" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Dashboard</a>
-            <a href="#" id="nav-risks" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Risks</a>
-            <a href="#" id="nav-incidents" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Incidents</a>
-            <a href="#" id="nav-frameworks" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Frameworks</a>
-            <a href="#" id="nav-soa" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">SoA</a>
-            <a href="#" id="nav-treatments" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Treatments</a>
-            <a href="#" id="nav-kris" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">KRIs</a>
-            <a href="#" id="nav-assets" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Assets</a>
-            <a href="#" id="nav-services" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Services</a>
-            <a href="#" id="nav-documents" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Documents</a>
-            <a href="#" id="nav-ai-assure" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">AI/ARIA</a>
-            <a href="#" id="nav-settings" class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">Settings</a>
+            <!-- Overview -->
+            <div class="relative group">
+              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
+                Overview <i class="fas fa-chevron-down ml-1 text-xs"></i>
+              </button>
+              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
+                <a href="#" data-page="dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">Dashboard</a>
+                <a href="#" data-page="reports" class="block px-4 py-2 text-sm hover:bg-gray-50">Reports</a>
+              </div>
+            </div>
+
+            <!-- Risk -->
+            <div class="relative group">
+              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
+                Risk <i class="fas fa-chevron-down ml-1 text-xs"></i>
+              </button>
+              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
+                <a href="#" data-page="risks" class="block px-4 py-2 text-sm hover:bg-gray-50">Risks</a>
+                <a href="#" data-page="treatments" class="block px-4 py-2 text-sm hover:bg-gray-50">Treatments</a>
+                <a href="#" data-page="kris" class="block px-4 py-2 text-sm hover:bg-gray-50">KRIs</a>
+                <a href="#" data-page="incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">Incidents</a>
+              </div>
+            </div>
+
+            <!-- Compliance -->
+            <div class="relative group">
+              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
+                Compliance <i class="fas fa-chevron-down ml-1 text-xs"></i>
+              </button>
+              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
+                <a href="#" data-page="frameworks" class="block px-4 py-2 text-sm hover:bg-gray-50">Frameworks</a>
+                <a href="#" data-page="soa" class="block px-4 py-2 text-sm hover:bg-gray-50">SoA</a>
+                <a href="#" data-page="evidence" class="block px-4 py-2 text-sm hover:bg-gray-50">Evidence</a>
+                <a href="#" data-page="assessments" class="block px-4 py-2 text-sm hover:bg-gray-50">Assessments</a>
+              </div>
+            </div>
+
+            <!-- Operations -->
+            <div class="relative group">
+              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
+                Operations <i class="fas fa-chevron-down ml-1 text-xs"></i>
+              </button>
+              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
+                <a href="#" data-page="assets" class="block px-4 py-2 text-sm hover:bg-gray-50">Assets</a>
+                <a href="#" data-page="services" class="block px-4 py-2 text-sm hover:bg-gray-50">Services</a>
+                <a href="#" data-page="documents" class="block px-4 py-2 text-sm hover:bg-gray-50">Documents</a>
+              </div>
+            </div>
+
+            <!-- Intelligence -->
+            <div class="relative group">
+              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
+                Intelligence <i class="fas fa-chevron-down ml-1 text-xs"></i>
+              </button>
+              <div class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
+                <a href="#" data-page="ai-assure" class="block px-4 py-2 text-sm hover:bg-gray-50">AI/ARIA</a>
+                <a href="#" data-page="ai-providers" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Providers</a>
+                <a href="#" data-page="rag-knowledge" class="block px-4 py-2 text-sm hover:bg-gray-50">RAG & Knowledge</a>
+                <a href="#" data-page="search" class="block px-4 py-2 text-sm hover:bg-gray-50">Search</a>
+                <a href="#" data-page="ai-heatmap" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Heat Map</a>
+                <a href="#" data-page="ai-gap" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Gap Analysis</a>
+              </div>
+            </div>
+
+            <!-- Admin -->
+            <div id="menu-admin" class="relative group">
+              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
+                Admin <i class="fas fa-chevron-down ml-1 text-xs"></i>
+              </button>
+              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
+                <a href="#" data-page="settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
+              </div>
+            </div>
+
             <button id="auth-button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">Login</button>
           </div>
 
@@ -303,7 +365,7 @@ app.get('/', (c) => {
   <script src="/static/enterprise-modules.js"></script>
   <script src="/static/integrated-risk-framework.js"></script>
   <script src="/static/system-settings-integration.js"></script>
-  <script src="/static/ai-grc-dashboard.js"></script>
+  <!-- <script src="/static/ai-grc-dashboard.js"></script> -->
   <script src="/static/ai-assure-module.js"></script>
   <script src="/static/mobile-interface.js"></script>
   <script src="/static/risk-enhancements.js"></script>
