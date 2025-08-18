@@ -1,6 +1,7 @@
 // API module for Node.js/Docker deployment with Keycloak integration
 import { Hono } from 'hono';
 import { getDatabase, createQueryHelpers } from '../database/sqlite.js';
+import { createKeycloakAPI } from './keycloak.js';
 
 export function createAPI() {
   const app = new Hono();
@@ -26,7 +27,6 @@ export function createAPI() {
   });
 
   // Mount Keycloak Authentication API
-  const { createKeycloakAPI } = await import('./keycloak.js');
   const keycloakAPI = createKeycloakAPI();
   app.route('/api', keycloakAPI);
 
@@ -247,8 +247,8 @@ export function createAPI() {
     try {
       const totalRisks = c.env.DB.prepare('SELECT COUNT(*) as count FROM risks').first();
       const highRisks = c.env.DB.prepare('SELECT COUNT(*) as count FROM risks WHERE risk_score >= 15').first();
-      const activeIncidents = c.env.DB.prepare('SELECT COUNT(*) as count FROM incidents WHERE status = ?').first('open');
-      const recentRisks = c.env.DB.prepare('SELECT COUNT(*) as count FROM risks WHERE created_at >= datetime("now", "-30 days")').first();
+      const activeIncidents = c.env.DB.prepare("SELECT COUNT(*) as count FROM incidents WHERE status IN ('new', 'investigating', 'containment', 'recovery')").first();
+      const recentRisks = c.env.DB.prepare("SELECT COUNT(*) as count FROM risks WHERE created_at >= datetime('now', '-30 days')").first();
 
       return c.json({
         success: true,
