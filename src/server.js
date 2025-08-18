@@ -257,82 +257,21 @@ app.get('/', (c) => {
             </div>
           </div>
           
-          <!-- Main Navigation (grouped) -->
+          <!-- Simple flat navigation (reverted, no dropdowns) -->
           <div class="hidden md:flex items-center space-x-4" id="internal-nav">
-            <!-- Overview -->
-            <div class="relative group">
-              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
-                Overview <i class="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
-                <a href="#" data-page="dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">Dashboard</a>
-                <a href="#" data-page="reports" class="block px-4 py-2 text-sm hover:bg-gray-50">Reports</a>
-              </div>
-            </div>
-
-            <!-- Risk -->
-            <div class="relative group">
-              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
-                Risk <i class="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
-                <a href="#" data-page="risks" class="block px-4 py-2 text-sm hover:bg-gray-50">Risks</a>
-                <a href="#" data-page="treatments" class="block px-4 py-2 text-sm hover:bg-gray-50">Treatments</a>
-                <a href="#" data-page="kris" class="block px-4 py-2 text-sm hover:bg-gray-50">KRIs</a>
-                <a href="#" data-page="incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">Incidents</a>
-              </div>
-            </div>
-
-            <!-- Compliance -->
-            <div class="relative group">
-              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
-                Compliance <i class="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
-                <a href="#" data-page="frameworks" class="block px-4 py-2 text-sm hover:bg-gray-50">Frameworks</a>
-                <a href="#" data-page="soa" class="block px-4 py-2 text-sm hover:bg-gray-50">SoA</a>
-                <a href="#" data-page="evidence" class="block px-4 py-2 text-sm hover:bg-gray-50">Evidence</a>
-                <a href="#" data-page="assessments" class="block px-4 py-2 text-sm hover:bg-gray-50">Assessments</a>
-              </div>
-            </div>
-
-            <!-- Operations -->
-            <div class="relative group">
-              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
-                Operations <i class="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
-                <a href="#" data-page="assets" class="block px-4 py-2 text-sm hover:bg-gray-50">Assets</a>
-                <a href="#" data-page="services" class="block px-4 py-2 text-sm hover:bg-gray-50">Services</a>
-                <a href="#" data-page="documents" class="block px-4 py-2 text-sm hover:bg-gray-50">Documents</a>
-              </div>
-            </div>
-
-            <!-- Intelligence -->
-            <div class="relative group">
-              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
-                Intelligence <i class="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <div class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
-                <a href="#" data-page="ai-assure" class="block px-4 py-2 text-sm hover:bg-gray-50">AI/ARIA</a>
-                <a href="#" data-page="ai-providers" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Providers</a>
-                <a href="#" data-page="rag-knowledge" class="block px-4 py-2 text-sm hover:bg-gray-50">RAG & Knowledge</a>
-                <a href="#" data-page="search" class="block px-4 py-2 text-sm hover:bg-gray-50">Search</a>
-                <a href="#" data-page="ai-analytics" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Analytics</a>
-              </div>
-            </div>
-
-            <!-- Admin -->
-            <div id="menu-admin" class="relative group">
-              <button class="nav-menu-item text-sm text-gray-700 hover:text-blue-600">
-                Admin <i class="fas fa-chevron-down ml-1 text-xs"></i>
-              </button>
-              <div class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block">
-                <a href="#" data-page="settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
-              </div>
-            </div>
-
-            <button id="auth-button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">Login</button>
+            <ul class="flex items-center gap-2">
+              <li><a href="#" class="nav-item" id="nav-dashboard" data-page="dashboard"><i class="fas fa-chart-pie mr-2"></i>Dashboard</a></li>
+              <li><a href="#" class="nav-item" id="nav-risks" data-page="risks"><i class="fas fa-exclamation-triangle mr-2"></i>Risks</a></li>
+              <li><a href="#" class="nav-item" id="nav-ai-assure" data-page="ai-assure"><i class="fas fa-brain mr-2"></i>AI Assure</a></li>
+              <li><a href="#" class="nav-item" id="nav-services" data-page="services"><i class="fas fa-cogs mr-2"></i>Services</a></li>
+              <li><a href="#" class="nav-item" id="nav-assets" data-page="assets"><i class="fas fa-server mr-2"></i>Assets</a></li>
+              <li><a href="#" class="nav-item" id="nav-incidents" data-page="incidents"><i class="fas fa-bell mr-2"></i>Incidents</a></li>
+              <li><a href="#" class="nav-item" id="nav-compliance" data-page="compliance"><i class="fas fa-clipboard-check mr-2"></i>Compliance</a></li>
+              <li><a href="#" class="nav-item" id="nav-frameworks" data-page="frameworks"><i class="fas fa-list-check mr-2"></i>Frameworks</a></li>
+              <li><a href="#" class="nav-item" id="nav-documents" data-page="documents"><i class="fas fa-file-alt mr-2"></i>Documents</a></li>
+              <li><a href="#" class="nav-item" id="nav-settings" data-page="settings"><i class="fas fa-cog mr-2"></i>Settings</a></li>
+            </ul>
+            <button id="auth-button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ml-4">Login</button>
           </div>
 
           <!-- Status Indicator -->
