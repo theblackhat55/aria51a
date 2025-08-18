@@ -42,8 +42,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      grctier:
-        ipv4_address: 172.20.0.10
+      - grctier
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U grctier"]
       interval: 30s
@@ -61,8 +60,7 @@ services:
     ports:
       - "6379:6379"
     networks:
-      grctier:
-        ipv4_address: 172.20.0.11
+      - grctier
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -137,8 +135,7 @@ services:
       - "8001:8001"   # Kong Admin API
       - "8002:8002"   # Kong Manager
     networks:
-      grctier:
-        ipv4_address: 172.20.0.20
+      - grctier
     volumes:
       - ./kong/kong.conf:/etc/kong/kong.conf:ro
       - ./logs:/var/log/kong
@@ -186,8 +183,7 @@ services:
       - keycloak_data:/opt/keycloak/data
       - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     networks:
-      grctier:
-        ipv4_address: 172.20.0.30
+      - grctier
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
       interval: 30s
@@ -246,8 +242,7 @@ services:
       - app_data:/app/data
       - ./logs:/app/logs
     networks:
-      grctier:
-        ipv4_address: 172.20.0.40
+      - grctier
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
@@ -264,8 +259,7 @@ services:
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
-      grctier:
-        ipv4_address: 172.20.0.50
+      - grctier
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -286,8 +280,7 @@ services:
       - ./monitoring/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
       - ./monitoring/dashboards:/var/lib/grafana/dashboards:ro
     networks:
-      grctier:
-        ipv4_address: 172.20.0.51
+      - grctier
     restart: unless-stopped
 
   # Nginx - Load Balancer and SSL Termination
@@ -301,8 +294,7 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./logs:/var/log/nginx
     networks:
-      grctier:
-        ipv4_address: 172.20.0.60
+      - grctier
     depends_on:
       - kong
       - keycloak
