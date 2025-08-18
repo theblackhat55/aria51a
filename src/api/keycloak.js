@@ -1,20 +1,20 @@
-// DMT Risk Assessment Platform - Keycloak Authentication API (Node.js)
-// Complete replacement for basic authentication
+// DMT Risk Assessment Platform - Mock Keycloak Authentication API (Node.js)
+// Complete replacement for basic authentication with mock Keycloak for native deployment
 
 import { Hono } from 'hono';
-import { KeycloakAuthService, keycloakAuthMiddleware, requireRole } from '../auth-keycloak.js';
+import { mockKeycloak, mockKeycloakAuthMiddleware, requireRole } from '../mock-keycloak.js';
 
 export function createKeycloakAPI() {
   const app = new Hono();
-  const keycloak = new KeycloakAuthService();
 
-  // Get Keycloak login URL
+  // Get Mock Keycloak login URL
   app.get('/auth/keycloak/login', async (c) => {
     try {
-      const redirectUri = c.req.query('redirect_uri') || keycloak.config.redirectUri;
-      const state = c.req.query('state') || keycloak.generateState();
+      const redirectUri = c.req.query('redirect_uri') || mockKeycloak.config.redirectUri;
+      const state = c.req.query('state') || mockKeycloak.generateState();
       
-      const authUrl = keycloak.getAuthorizationUrl(state);
+      // For native deployment, redirect to our mock auth page
+      const authUrl = `${mockKeycloak.config.baseUrl}/auth?client_id=${mockKeycloak.config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&response_type=code&scope=openid profile email roles`;
       
       return c.json({
         success: true,
@@ -25,7 +25,7 @@ export function createKeycloakAPI() {
         }
       });
     } catch (error) {
-      console.error('Failed to generate Keycloak auth URL:', error);
+      console.error('Failed to generate Mock Keycloak auth URL:', error);
       return c.json({
         success: false,
         error: 'Failed to generate authentication URL'
@@ -33,7 +33,7 @@ export function createKeycloakAPI() {
     }
   });
 
-  // Handle OAuth callback from Keycloak
+  // Handle OAuth callback from Mock Keycloak
   app.get('/auth/callback', async (c) => {
     try {
       const code = c.req.query('code');
@@ -79,17 +79,26 @@ export function createKeycloakAPI() {
         return c.json({ success: false, error: 'No authorization code received' }, 400);
       }
 
-      // Exchange code for tokens
-      const tokens = await keycloak.exchangeCodeForTokens(code);
+      // Exchange code for tokens using mock Keycloak
+      const tokens = await mockKeycloak.exchangeCodeForTokens(code);
       
-      // Get user information
-      const userInfo = await keycloak.getUserInfo(tokens.access_token);
+      // Get user information using mock Keycloak
+      const userInfo = await mockKeycloak.getUserInfo(tokens.access_token);
       
       // Map to application user format
-      const appUser = keycloak.mapKeycloakUserToAppUser(userInfo);
+      const appUser = {
+        id: userInfo.sub,
+        username: userInfo.preferred_username,
+        email: userInfo.email,
+        first_name: userInfo.given_name,
+        last_name: userInfo.family_name,
+        role: userInfo.roles[0] || 'risk_owner', // Use first role as primary role
+        roles: userInfo.roles,
+        auth_provider: 'keycloak'
+      };
       
-      // Store or update user in database (if needed)
-      await upsertKeycloakUser(c, appUser, userInfo);
+      // Store or update user in database (if needed) - Skip for mock Keycloak
+      // await upsertKeycloakUser(c, appUser, userInfo);
 
       // Return success page with auto-redirect
       return c.html(`
@@ -180,9 +189,26 @@ export function createKeycloakAPI() {
         return c.json({ success: false, error: 'Refresh token required' }, 400);
       }
 
-      const tokens = await keycloak.refreshToken(refresh_token);
-      const userInfo = await keycloak.getUserInfo(tokens.access_token);
-      const appUser = keycloak.mapKeycloakUserToAppUser(userInfo);
+      // For mock Keycloak, refresh tokens are simpler
+      const userInfo = await mockKeycloak.getUserInfo(refresh_token); // Use refresh token as access token for simplicity
+      const appUser = {
+        id: userInfo.sub,
+        username: userInfo.preferred_username,
+        email: userInfo.email,
+        first_name: userInfo.given_name,
+        last_name: userInfo.family_name,
+        role: userInfo.roles[0] || 'risk_owner',
+        roles: userInfo.roles,
+        auth_provider: 'keycloak'
+      };
+      
+      // Generate new tokens
+      const tokens = {
+        access_token: mockKeycloak.generateAccessToken({ id: userInfo.sub, username: userInfo.preferred_username, email: userInfo.email, firstName: userInfo.given_name, lastName: userInfo.family_name, roles: userInfo.roles, active: true }),
+        refresh_token: mockKeycloak.generateRefreshToken({ id: userInfo.sub, username: userInfo.preferred_username }),
+        expires_in: 3600,
+        token_type: 'Bearer'
+      };
 
       return c.json({
         success: true,
@@ -210,8 +236,9 @@ export function createKeycloakAPI() {
     try {
       const { refresh_token } = await c.req.json();
       
+      // For mock Keycloak, logout is simple - just acknowledge
       if (refresh_token) {
-        await keycloak.logout(refresh_token);
+        console.log('Mock Keycloak logout for token:', refresh_token.substring(0, 10) + '...');
       }
       
       return c.json({
@@ -228,7 +255,7 @@ export function createKeycloakAPI() {
   });
 
   // Get current user info (replaces /api/auth/me)
-  app.get('/auth/user', keycloakAuthMiddleware, async (c) => {
+  app.get('/auth/user', mockKeycloakAuthMiddleware(), async (c) => {
     try {
       const user = c.get('user');
       
@@ -246,7 +273,7 @@ export function createKeycloakAPI() {
   });
 
   // Admin-only endpoint example
-  app.get('/auth/admin/users', keycloakAuthMiddleware, requireRole(['admin']), async (c) => {
+  app.get('/auth/admin/users', mockKeycloakAuthMiddleware(), requireRole(['admin']), async (c) => {
     try {
       // This endpoint is only accessible by admin users
       return c.json({

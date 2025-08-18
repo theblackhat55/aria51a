@@ -48,6 +48,159 @@ app.get('/health', (c) => {
   });
 });
 
+// Mock Keycloak endpoints for native deployment
+import { mockKeycloak } from './mock-keycloak.js';
+
+// Mock Keycloak auth page
+app.get('/mock-keycloak/auth', (c) => {
+  const clientId = c.req.query('client_id');
+  const redirectUri = c.req.query('redirect_uri');
+  const state = c.req.query('state');
+  const scope = c.req.query('scope');
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DMT Keycloak - Sign In</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center">
+  <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+    <div class="text-center">
+      <div class="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center">
+        <i class="fas fa-shield-alt text-white text-2xl"></i>
+      </div>
+      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        DMT Keycloak SSO
+      </h2>
+      <p class="mt-2 text-center text-sm text-gray-600">
+        Enterprise Single Sign-On
+      </p>
+    </div>
+    
+    <form id="mock-keycloak-form" class="mt-8 space-y-6">
+      <input type="hidden" name="client_id" value="${clientId}">
+      <input type="hidden" name="redirect_uri" value="${redirectUri}">
+      <input type="hidden" name="state" value="${state}">
+      <input type="hidden" name="scope" value="${scope}">
+      
+      <div class="space-y-4">
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+          <input type="text" id="username" name="username" required 
+                 class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                 placeholder="Enter your username">
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+          <input type="password" id="password" name="password" required 
+                 class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                 placeholder="Enter your password">
+        </div>
+      </div>
+
+      <div class="bg-blue-50 p-4 rounded-lg">
+        <h4 class="font-medium text-blue-900 mb-2">Test Accounts:</h4>
+        <div class="text-sm text-blue-800 space-y-1">
+          <div><strong>admin</strong> / password123 (Administrator)</div>
+          <div><strong>avi_security</strong> / password123 (Risk Manager)</div>
+          <div><strong>sjohnson</strong> / password123 (Compliance Officer)</div>
+        </div>
+      </div>
+
+      <div id="error-message" class="hidden p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+      </div>
+
+      <button type="submit" id="login-btn" 
+              class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+        <span id="login-text">Sign In</span>
+        <div id="login-spinner" class="hidden ml-3">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+        </div>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('mock-keycloak-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const loginBtn = document.getElementById('login-btn');
+      const loginText = document.getElementById('login-text');
+      const loginSpinner = document.getElementById('login-spinner');
+      const errorMessage = document.getElementById('error-message');
+      
+      // Show loading state
+      loginBtn.disabled = true;
+      loginText.textContent = 'Signing in...';
+      loginSpinner.classList.remove('hidden');
+      errorMessage.classList.add('hidden');
+      
+      const formData = new FormData(e.target);
+      
+      try {
+        const response = await fetch('/mock-keycloak/authenticate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: formData.get('username'),
+            password: formData.get('password'),
+            client_id: formData.get('client_id'),
+            redirect_uri: formData.get('redirect_uri'),
+            state: formData.get('state')
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          window.location.href = data.redirectUrl;
+        } else {
+          errorMessage.textContent = data.error || 'Authentication failed';
+          errorMessage.classList.remove('hidden');
+        }
+      } catch (error) {
+        errorMessage.textContent = 'Network error occurred';
+        errorMessage.classList.remove('hidden');
+      }
+      
+      // Reset loading state
+      loginBtn.disabled = false;
+      loginText.textContent = 'Sign In';
+      loginSpinner.classList.add('hidden');
+    });
+    
+    // Auto-focus username field
+    document.getElementById('username').focus();
+  </script>
+</body>
+</html>`);
+});
+
+// Mock Keycloak authentication handler
+app.post('/mock-keycloak/authenticate', async (c) => {
+  try {
+    const { username, password, client_id, redirect_uri, state } = await c.req.json();
+    
+    const authCode = await mockKeycloak.handleAuth(username, password, state);
+    
+    const redirectUrl = `${redirect_uri}?code=${authCode}&state=${state}`;
+    
+    return c.json({
+      success: true,
+      redirectUrl: redirectUrl
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message
+    }, 400);
+  }
+});
+
 // API routes
 const api = createAPI();
 app.route('/', api);
