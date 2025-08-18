@@ -29,7 +29,7 @@ services:
       POSTGRES_PASSWORD: grctier_secure_password_2024
       POSTGRES_MULTIPLE_DATABASES: kong,keycloak,riskmanagement
       # Ensure PostgreSQL listens on all interfaces
-      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_HOST_AUTH_METHOD: trust
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -65,7 +65,7 @@ services:
   # Kong Database Migration
   kong-migration:
     image: kong:3.9.1-ubuntu
-    command: >\n      sh -c "kong migrations bootstrap || kong migrations up && kong migrations finish"
+    command: >\n      sh -c "sleep 15 && kong migrations bootstrap || kong migrations up && kong migrations finish"
     depends_on:
       postgres:
         condition: service_healthy
