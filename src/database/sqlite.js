@@ -48,11 +48,14 @@ export async function initializeDatabase() {
     // Set journal mode to WAL for better concurrency
     db.pragma('journal_mode = WAL');
     
-    // Apply migrations
-    await applyMigrations();
+    // Apply migrations (pre-seed)
+    await applyMigrations('pre');
     
     // Apply seed data if database is empty
     await applySeedData();
+
+    // Apply migrations that depend on seed (post-seed)
+    await applyMigrations('post');
     
     console.log('✅ SQLite database initialized successfully');
     
@@ -63,7 +66,7 @@ export async function initializeDatabase() {
   }
 }
 
-async function applyMigrations() {
+async function applyMigrations(phase = 'pre') {
   console.log('🔧 Applying database migrations...');
   
   const migrationsDir = path.join(process.cwd(), 'migrations');
@@ -87,9 +90,17 @@ async function applyMigrations() {
   const appliedSet = new Set(appliedMigrations.map(m => m.filename));
   
   // Read migration files
-  const migrationFiles = fs.readdirSync(migrationsDir)
+  let migrationFiles = fs.readdirSync(migrationsDir)
     .filter(file => file.endsWith('.sql') && !file.endsWith('.skip'))
     .sort();
+
+  // Split migrations: some require seeded data
+  const postSeedSet = new Set(['0012_quick_wins.sql', '0013_recommendations.sql']);
+  if (phase === 'pre') {
+    migrationFiles = migrationFiles.filter(f => !postSeedSet.has(f));
+  } else {
+    migrationFiles = migrationFiles.filter(f => postSeedSet.has(f));
+  }
   
   for (const filename of migrationFiles) {
     if (appliedSet.has(filename)) {
