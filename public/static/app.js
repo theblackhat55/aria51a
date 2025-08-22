@@ -943,8 +943,10 @@ async function updateAuthUI() {
   // Show/hide internal features based on authentication
   if (isAuthenticated) {
     console.log('✅ User authenticated, showing internal features');
-    // Show internal features after login
-    if (internalNav) internalNav.classList.remove('hidden');
+    // Show internal features after login with responsive classes
+    if (internalNav) {
+      internalNav.className = 'hidden md:flex items-center space-x-4';
+    }
     if (notificationsContainer) notificationsContainer.classList.remove('hidden');
     if (ariaButton) ariaButton.classList.remove('hidden');
     
@@ -963,7 +965,7 @@ async function updateAuthUI() {
   } else {
     console.log('❌ User not authenticated, hiding internal features');
     // Hide internal features when not logged in
-    if (internalNav) internalNav.classList.add('hidden');
+    if (internalNav) internalNav.className = 'hidden';
     if (notificationsContainer) notificationsContainer.classList.add('hidden');
     if (ariaButton) ariaButton.classList.add('hidden');
     
@@ -1084,6 +1086,13 @@ function navigateTo(page) {
           showDashboard();
         } else {
           showBasicDashboard();
+        }
+        break;
+      case 'reports':
+        if (typeof showReports === 'function') {
+          showReports();
+        } else {
+          showPlaceholder('Reports', 'Reports module loading...', 'chart-bar');
         }
         break;
       case 'risks':

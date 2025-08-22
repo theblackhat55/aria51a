@@ -91,7 +91,7 @@ app.get('/', (c) => {
           <!-- Navigation and User Section -->
           <div class="flex items-center space-x-6">
             <!-- Grouped navigation with click-to-open dropdowns -->
-            <div class="hidden md:flex items-center space-x-4" id="internal-nav">
+            <div class="hidden" id="internal-nav">
               <!-- Overview -->
               <div class="relative dropdown">
                 <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="overview-menu">
