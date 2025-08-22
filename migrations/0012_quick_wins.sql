@@ -142,17 +142,20 @@ INSERT OR IGNORE INTO control_catalog (framework, external_id, title, descriptio
 
 -- Map a few internal controls (IDs 1..5 exist from seed)
 INSERT OR IGNORE INTO control_mappings (internal_control_id, catalog_id)
-  SELECT 1, cc.id FROM control_catalog cc WHERE (cc.framework='ISO27001:2022' AND cc.external_id='A.5.17');
+  SELECT c.id, cc.id FROM control_catalog cc JOIN controls c ON c.id = 1 WHERE (cc.framework='ISO27001:2022' AND cc.external_id='A.5.17');
 INSERT OR IGNORE INTO control_mappings (internal_control_id, catalog_id)
-  SELECT 3, cc.id FROM control_catalog cc WHERE (cc.framework='NIST800-53' AND cc.external_id='IR-4');
+  SELECT c.id, cc.id FROM control_catalog cc JOIN controls c ON c.id = 3 WHERE (cc.framework='NIST800-53' AND cc.external_id='IR-4');
 INSERT OR IGNORE INTO control_mappings (internal_control_id, catalog_id)
-  SELECT 2, cc.id FROM control_catalog cc WHERE (cc.framework='ISO27001:2022' AND cc.external_id='A.5.1');
+  SELECT c.id, cc.id FROM control_catalog cc JOIN controls c ON c.id = 2 WHERE (cc.framework='ISO27001:2022' AND cc.external_id='A.5.1');
 INSERT OR IGNORE INTO control_mappings (internal_control_id, catalog_id)
-  SELECT 4, cc.id FROM control_catalog cc WHERE (cc.framework='ISO27001:2022' AND cc.external_id='A.8.23');
+  SELECT c.id, cc.id FROM control_catalog cc JOIN controls c ON c.id = 4 WHERE (cc.framework='ISO27001:2022' AND cc.external_id='A.8.23');
 
 -- Initial SoA entries for organization 1
 INSERT OR IGNORE INTO statement_of_applicability (catalog_id, organization_id, included, implementation_status, effectiveness, justification)
-  SELECT cc.id, 1, 1, 'implemented', 'effective', 'Applicable to scope and implemented' FROM control_catalog cc WHERE cc.external_id IN ('A.5.1','A.5.17','IR-4');
+  SELECT cc.id, o.id, 1, 'implemented', 'effective', 'Applicable to scope and implemented'
+  FROM control_catalog cc
+  JOIN organizations o ON o.id = 1
+  WHERE cc.external_id IN ('A.5.1','A.5.17','IR-4');
 
 -- KRIs and sample readings
 INSERT OR IGNORE INTO kris (id, name, description, data_source, threshold, direction, frequency, unit) VALUES
@@ -167,7 +170,8 @@ INSERT OR IGNORE INTO kri_readings (kri_id, timestamp, value, status) VALUES
 
 -- Evidence example
 INSERT OR IGNORE INTO evidence (type, description, file_url, related_control_id, collected_at)
-  VALUES ('policy', 'Information Security Policy v1.2', 'https://example.com/policy/infosec-v1.2.pdf', 2, datetime('now','-15 days'));
+  SELECT 'policy', 'Information Security Policy v1.2', 'https://example.com/policy/infosec-v1.2.pdf', c.id, datetime('now','-15 days')
+  FROM controls c WHERE c.id = 2;
 
 -- Initialize residual_score where null to current risk_score
 UPDATE risks SET residual_score = COALESCE(residual_score, risk_score);
