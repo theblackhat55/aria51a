@@ -211,7 +211,7 @@ export function createAPI() {
           name.split(' ')[1] || 'User',
           'admin',
           1,
-          'demo'
+          'local'
         ).run();
         
         // Get the created user
