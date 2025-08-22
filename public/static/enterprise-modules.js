@@ -3117,25 +3117,38 @@ function downloadSAMLMetadata() {
 }
 
 async function showAISettings() {
+  // Redirect to secure enhanced settings implementation
+  if (typeof enhancedSettings !== 'undefined' && enhancedSettings.showAISettings) {
+    console.log('🔒 Redirecting to secure AI settings implementation');
+    enhancedSettings.showAISettings();
+    return;
+  }
+  
+  // Fallback: Show secure message
   const content = document.getElementById('settings-content');
-  
-  // Load existing AI settings
-  const aiSettings = await loadAISettings();
-  
   content.innerHTML = `
-    <div class="space-y-6">
-      <!-- AI Configuration Header -->
-      <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6">
-        <div class="flex items-center space-x-3">
-          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <i class="fas fa-robot text-white text-xl"></i>
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-8">
+        <h3 class="text-2xl font-bold text-gray-900">AI Provider Configuration</h3>
+        <p class="text-gray-600 mt-2">This system has been upgraded to use secure server-side AI proxy.</p>
+        <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-shield-alt text-red-600 mr-2"></i>
+            <span class="text-red-800 font-medium">Legacy Interface Disabled</span>
           </div>
-          <div>
-            <h3 class="text-xl font-semibold text-gray-900">AI & LLM Configuration</h3>
-            <p class="text-gray-600 mt-1">Configure AI providers for ARIA assistant with fallback priority</p>
-          </div>
+          <p class="text-red-700 text-sm mt-1">This interface has been disabled for security reasons. Please use the enhanced secure settings.</p>
         </div>
       </div>
+      
+      <div class="bg-white rounded-lg p-8 text-center">
+        <i class="fas fa-lock text-4xl text-gray-400 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Secure AI Configuration</h3>
+        <p class="text-gray-600 mb-4">API keys are now managed securely on the server. This legacy interface has been disabled.</p>
+        <button onclick="location.reload()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          Refresh Page
+        </button>
+      </div>
+    </div>`;
       
       <!-- Priority System Info -->
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -3389,25 +3402,12 @@ async function showAISettings() {
 }
 
 async function loadAISettings() {
-  try {
-    // First try the current key, then fallback to the old key
-    let settings = localStorage.getItem('ai_settings');
-    if (!settings) {
-      settings = localStorage.getItem('dmt_ai_settings');
-    }
-    if (settings) {
-      return JSON.parse(settings);
-    }
-  } catch (error) {
-    console.error('Error loading AI settings:', error);
-  }
-  
-  // Return default settings
+  // Legacy function disabled - redirect to secure API
+  console.log('🔒 Legacy loadAISettings disabled for security');
   return {
-    openai: { priority: 1, apiKey: '', model: 'gpt-4' },
-    gemini: { priority: 2, apiKey: '', model: 'gemini-pro' },
-    anthropic: { priority: 3, apiKey: '', model: 'claude-3-sonnet-20240229' },
-    local: { priority: 0, endpoint: '', model: '', apiKey: '' }
+    openai: { enabled: false, priority: 1, model: 'gpt-4o' },
+    gemini: { enabled: false, priority: 2, model: 'gemini-pro' },
+    anthropic: { enabled: false, priority: 3, model: 'claude-3-5-sonnet-20241022' }
   };
 }
 
@@ -3437,10 +3437,9 @@ async function saveAISettings() {
       }
     };
     
-    localStorage.setItem('ai_settings', JSON.stringify(settings));
-    // Also save to the key that ARIA display function expects
-    localStorage.setItem('dmt_ai_settings', JSON.stringify(settings));
-    showToast('AI settings saved successfully!', 'success');
+    // Legacy localStorage save disabled for security
+    console.log('🔒 Legacy localStorage save blocked for security');
+    showToast('Please use the secure AI settings interface', 'warning');
     
     // Update ARIA interface to show configured provider
     if (typeof updateARIAProviderDisplay === 'function') {
@@ -3454,8 +3453,8 @@ async function saveAISettings() {
 }
 
 async function testAIConnections() {
-  showToast('Testing AI connections...', 'info');
-  const settings = await loadAISettings();
+  showToast('Please use the secure AI settings interface to test connections', 'info');
+  return;
   
   // Test each enabled provider
   const providers = ['openai', 'gemini', 'anthropic', 'local'].filter(p => settings[p].priority > 0);
@@ -3499,11 +3498,7 @@ async function testAIProvider(provider, config) {
 }
 
 function resetAISettings() {
-  if (confirm('Are you sure you want to reset all AI settings to defaults? This cannot be undone.')) {
-    localStorage.removeItem('ai_settings');
-    showAISettings(); // Reload the interface
-    showToast('AI settings reset to defaults', 'info');
-  }
+  showToast('Legacy AI settings have been disabled for security. Please refresh the page.', 'info');
 }
 
 function showSystemSettings() {

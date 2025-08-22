@@ -261,10 +261,13 @@ class EnhancedSettingsManager {
             icon: 'fas fa-openai',
             iconColor: 'text-green-600',
             bgColor: 'bg-green-100',
-            settings: aiSettings.openai,
+            enabled: aiSettings.openai?.enabled || false,
+            priority: aiSettings.openai?.priority || 1,
+            model: aiSettings.openai?.model || 'gpt-4o',
+            maxTokens: aiSettings.openai?.maxTokens || 1500,
+            temperature: aiSettings.openai?.temperature || 0.7,
             models: ['gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
-            helpUrl: 'https://platform.openai.com/api-keys',
-            keyPlaceholder: 'sk-proj-...'
+            helpUrl: 'https://platform.openai.com/api-keys'
           })}
 
           <!-- Gemini Configuration -->
@@ -274,10 +277,13 @@ class EnhancedSettingsManager {
             icon: 'fab fa-google',
             iconColor: 'text-blue-600',
             bgColor: 'bg-blue-100',
-            settings: aiSettings.gemini,
+            enabled: aiSettings.gemini?.enabled || false,
+            priority: aiSettings.gemini?.priority || 2,
+            model: aiSettings.gemini?.model || 'gemini-pro',
+            maxTokens: aiSettings.gemini?.maxTokens || 1500,
+            temperature: aiSettings.gemini?.temperature || 0.7,
             models: ['gemini-pro', 'gemini-pro-vision', 'gemini-1.5-pro', 'gemini-1.5-flash'],
-            helpUrl: 'https://aistudio.google.com/app/apikey',
-            keyPlaceholder: 'AIza...'
+            helpUrl: 'https://aistudio.google.com/app/apikey'
           })}
 
           <!-- Anthropic Configuration -->
@@ -287,14 +293,16 @@ class EnhancedSettingsManager {
             icon: 'fas fa-microchip',
             iconColor: 'text-purple-600',
             bgColor: 'bg-purple-100',
-            settings: aiSettings.anthropic,
+            enabled: aiSettings.anthropic?.enabled || false,
+            priority: aiSettings.anthropic?.priority || 3,
+            model: aiSettings.anthropic?.model || 'claude-3-5-sonnet-20241022',
+            maxTokens: aiSettings.anthropic?.maxTokens || 1500,
+            temperature: aiSettings.anthropic?.temperature || 0.7,
             models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
-            helpUrl: 'https://console.anthropic.com/settings/keys',
-            keyPlaceholder: 'sk-ant-...'
+            helpUrl: 'https://console.anthropic.com/settings/keys'
           })}
 
-          <!-- Local/Custom LLM Configuration -->
-          ${this.renderLocalLLMCard(aiSettings.local)}
+          <!-- Local/Custom LLM removed for security -->
         </div>
 
         <!-- Action Buttons -->
@@ -316,8 +324,8 @@ class EnhancedSettingsManager {
   }
 
   renderAIProviderCard(provider, config) {
-    const settings = config.settings || {};
-    const isEnabled = settings.priority > 0;
+    const settings = config.settings || config; // Use config directly for new secure format
+    const isEnabled = settings.enabled || false;
     
     return `
       <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -342,12 +350,12 @@ class EnhancedSettingsManager {
                 <option value="2" ${settings.priority === 2 ? 'selected' : ''}>2nd</option>
                 <option value="3" ${settings.priority === 3 ? 'selected' : ''}>3rd</option>
                 <option value="4" ${settings.priority === 4 ? 'selected' : ''}>4th</option>
-                <option value="0" ${settings.priority === 0 ? 'selected' : ''}>Disabled</option>
+                <option value="0" ${settings.priority === 0 || !settings.enabled ? 'selected' : ''}>Disabled</option>
               </select>
             </div>
             <div class="flex items-center">
               <div class="w-3 h-3 rounded-full ${isEnabled ? 'bg-green-400' : 'bg-red-400'} mr-2"></div>
-              <span class="text-sm text-gray-600">${isEnabled ? 'Enabled' : 'Disabled'}</span>
+              <span class="text-sm text-gray-600">${isEnabled ? 'Available' : 'Not Configured'}</span>
             </div>
           </div>
         </div>
@@ -378,13 +386,13 @@ class EnhancedSettingsManager {
               <select id="${provider}-model" 
                 class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent auto-save-field"
                 data-provider="${provider}">
-                ${config.models.map(model => 
+                ${config.models?.map(model => 
                   `<option value="${model}" ${settings.model === model ? 'selected' : ''}>${model}</option>`
-                ).join('')}
+                ).join('') || ''}
               </select>
               <button onclick="enhancedSettings.fetchModels('${provider}')" 
                 class="px-4 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 focus:ring-2 focus:ring-blue-500 transition-colors duration-200" 
-                title="Fetch latest models">
+                title="Refresh models">
                 <i class="fas fa-sync-alt"></i>
               </button>
             </div>
@@ -421,6 +429,14 @@ class EnhancedSettingsManager {
                   <span>Focused</span>
                   <span id="${provider}-temp-value">${settings.temperature || 0.7}</span>
                   <span>Creative</span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                  <span class="text-blue-800 text-sm">These settings control your preferences only. API keys are managed securely by administrators.</span>
                 </div>
               </div>
             </div>
