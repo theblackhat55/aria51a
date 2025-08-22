@@ -232,12 +232,7 @@ class SecureKeyManager {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Quick Actions</label>
             <div class="flex space-x-2">
-              ${!localStorage.getItem('dmt_token') ? 
-                `<button onclick="closeUniversalModal(); document.getElementById('auth-button').click();" 
-                   class="w-full px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 text-sm font-medium transition-colors duration-200">
-                   <i class="fas fa-sign-in-alt mr-1"></i>Login Required
-                 </button>` :
-                hasKey ? 
+              ${hasKey ? 
                 `<button onclick="secureKeyManager.showUpdateDialog('${provider}')" 
                    class="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium transition-colors duration-200">
                    <i class="fas fa-edit mr-1"></i>Update
@@ -467,11 +462,7 @@ class SecureKeyManager {
 
   async showKeyManagementDialog() {
     try {
-      // Check authentication first
-      const token = localStorage.getItem('dmt_token');
-      const isAuthenticated = !!token;
-      
-      // Load current key status (will handle authentication gracefully)
+      // Load current key status
       await this.loadKeyStatus();
       
       showModal('Secure API Key Management', `
@@ -483,50 +474,26 @@ class SecureKeyManager {
               <span class="text-blue-800 font-medium">Secure Key Management</span>
             </div>
             <p class="text-blue-700 text-sm mt-1">
-              ${isAuthenticated ? 
-                'Manage your AI provider API keys securely. Keys are encrypted and stored server-side.' :
-                'Please log in to manage your API keys securely. Keys are encrypted and stored server-side.'
-              }
+              Manage your AI provider API keys securely. Keys are encrypted and stored server-side.
             </p>
           </div>
-
-          ${!isAuthenticated ? `
-            <!-- Authentication Required -->
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div class="flex items-center">
-                <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
-                <span class="text-yellow-800 font-medium">Authentication Required</span>
-              </div>
-              <p class="text-yellow-700 text-sm mt-2">
-                You need to log in to access secure API key management. Please log in to your account first.
-              </p>
-              <div class="mt-3">
-                <button onclick="closeUniversalModal(); document.getElementById('auth-button').click();" 
-                  class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium">
-                  <i class="fas fa-sign-in-alt mr-1"></i>Log In Now
-                </button>
-              </div>
-            </div>
-          ` : ''}
 
           <!-- Key Management Cards -->
           <div id="key-management-cards" class="space-y-4">
             <!-- Cards will be populated here -->
           </div>
 
-          ${isAuthenticated ? `
-            <!-- Actions -->
-            <div class="flex flex-col sm:flex-row gap-3">
-              <button onclick="secureKeyManager.refreshStatus()" 
-                class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                <i class="fas fa-sync-alt mr-2"></i>Refresh Status
-              </button>
-              <button onclick="secureKeyManager.testAllKeys()" 
-                class="flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
-                <i class="fas fa-vial mr-2"></i>Test All Keys
-              </button>
-            </div>
-          ` : ''}
+          <!-- Actions -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button onclick="secureKeyManager.refreshStatus()" 
+              class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+              <i class="fas fa-sync-alt mr-2"></i>Refresh Status
+            </button>
+            <button onclick="secureKeyManager.testAllKeys()" 
+              class="flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+              <i class="fas fa-vial mr-2"></i>Test All Keys
+            </button>
+          </div>
         </div>
       `, [
         { text: 'Close', class: 'btn-secondary', onclick: 'closeUniversalModal()' }
