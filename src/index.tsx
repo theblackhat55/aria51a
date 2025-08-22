@@ -46,7 +46,7 @@ app.get('/', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Risk Management Platform</title>
+  <title>Risk Optiks</title>
   <meta name="description" content="Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics">
   
   <!-- Tailwind CSS -->
@@ -83,8 +83,8 @@ app.get('/', (c) => {
               </div>
             </div>
             <div class="ml-4">
-              <h1 class="text-xl font-semibold text-gray-900">Risk Management Platform</h1>
-              <p class="text-xs text-gray-500">Enterprise GRC Platform v2.0</p>
+              <h1 class="text-xl font-semibold text-gray-900">Risk Optiks</h1>
+              <p class="text-xs text-gray-500">Your trusted Risk Analyst</p>
             </div>
           </div>
           
@@ -353,7 +353,7 @@ app.get('/login', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Risk Management Platform</title>
+  <title>Login - Risk Optiks</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -363,8 +363,8 @@ app.get('/login', (c) => {
       <div class="mx-auto h-20 w-20 bg-blue-600 rounded-full flex items-center justify-center mb-4">
         <i class="fas fa-shield-alt text-white text-2xl"></i>
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">Risk Management Platform</h1>
-      <p class="text-gray-600 mt-2">Enterprise GRC Platform v2.0</p>
+      <h1 class="text-2xl font-bold text-gray-900">Risk Optiks</h1>
+      <p class="text-gray-600 mt-2">Your trusted Risk Analyst</p>
     </div>
 
     <div id="legacy-auth" style="display:none;">
