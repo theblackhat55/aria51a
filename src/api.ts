@@ -2,13 +2,13 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { AuthService, authMiddleware, requireRole, ARIAAssistant, SecurityUtils, RiskScoring } from './auth';
-import { keycloakAuthMiddleware, requireKeycloakRole } from './keycloak-auth';
+// Keycloak removed
 import { CloudflareBindings, Risk, Control, ComplianceAssessment, Incident, DashboardData, ApiResponse, CreateRiskRequest, CreateControlRequest, User } from './types';
 import { createEnterpriseAPI } from './enterprise-api';
 import { createRAGAPI } from './api/rag';
 import { createARIAAPI } from './api/aria';
 import { createAIGRCAPI } from './ai-grc-api';
-import { createKeycloakAPI } from './keycloak-api';
+// Keycloak removed
 
 export function createAPI() {
   const api = new Hono<{ Bindings: CloudflareBindings }>();
@@ -29,9 +29,7 @@ export function createAPI() {
   const aiGrcAPI = createAIGRCAPI();
   api.route('/api/ai-grc', aiGrcAPI);
 
-  // Mount Keycloak authentication routes
-  const keycloakAPI = createKeycloakAPI();
-  api.route('/api', keycloakAPI);
+  // Keycloak routes removed
 
   // CORS middleware
   api.use('/api/*', cors({
@@ -129,8 +127,7 @@ export function createAPI() {
     });
   });
 
-  // LEGACY Authentication Routes (DEPRECATED - Use Keycloak /api/auth/keycloak/login instead)
-  // These routes will be removed once Keycloak migration is complete
+  // Authentication Routes (using legacy local auth)
   api.post('/api/auth/login', async (c) => {
     try {
       const { username, password } = await c.req.json();

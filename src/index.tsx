@@ -299,22 +299,15 @@ app.get('/', (c) => {
   <script src="/static/app.js?v=15"></script>
   
   <!-- Load Keycloak Authentication -->
-  <script src="/static/keycloak-auth.js?v=1"></script>
+
   
   <!-- Initialize Authentication -->
   <script>
     // Initialize Keycloak authentication for main app
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('Main app: Initializing Keycloak authentication...');
-      
-      // Check if user is authenticated with Keycloak
-      if (window.keycloakAuth && window.keycloakAuth.isAuthenticated()) {
-        console.log('Main app: User is authenticated with Keycloak');
-        window.keycloakAuth.handleAuthenticated();
-      } else {
-        console.log('Main app: User not authenticated, showing login prompt');
-        showLoginPrompt();
-      }
+      console.log('Main app: Initializing legacy authentication...');
+      // Always show login prompt; legacy auth handles session
+      showLoginPrompt();
     });
     
     function showLoginPrompt() {
@@ -333,7 +326,7 @@ app.get('/', (c) => {
               '<p class="text-gray-600 mb-6">Please login to access the Risk Management Platform</p>' +
               '<button onclick="window.location.href=\\'/login\\'" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200">' +
                 '<i class="fas fa-sign-in-alt mr-2"></i>' +
-                'Login with Keycloak' +
+                'Login' +
               '</button>' +
             '</div>' +
           '</div>';
@@ -416,42 +409,19 @@ app.get('/login', (c) => {
       </div>
     </div>
 
-    <!-- Keycloak SSO Authentication -->
-    <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200" id="keycloak-info">
-      <div class="text-center">
-        <h3 class="font-semibold text-blue-900 mb-2">🔐 Enterprise SSO Authentication</h3>
-        <p class="text-sm text-blue-800 mb-3">Login with Keycloak for enhanced security and role-based access</p>
-        <button onclick="window.location.href='/api/auth/keycloak/login'" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 mb-3">
-          <i class="fas fa-shield-alt mr-2"></i>Login with Keycloak SSO
-        </button>
-        <div class="text-xs text-blue-700">
-          <p><strong>Available Users:</strong></p>
-          <div class="mt-1 space-y-1">
-            <p>admin • avi_security • sjohnson • mchen • edavis</p>
-            <p class="text-blue-600">Password: <code>password123</code></p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Error display for Keycloak -->
-    <div id="keycloak-error" class="mt-4 text-red-600 text-sm hidden"></div>
-
-    <!-- Legacy Authentication (Fallback) -->
+    <!-- Legacy Authentication -->
     <div class="mt-4 pt-4 border-t border-gray-200">
       <div class="text-center">
-        <p class="text-xs text-gray-500 mb-2">Legacy Authentication (for testing)</p>
+        <p class="text-xs text-gray-500 mb-2">Authentication</p>
         <button onclick="document.getElementById('legacy-auth').style.display='block'; this.style.display='none';" class="text-gray-400 hover:text-gray-600 text-xs underline">
-          Use Legacy Login
+          Use Login Form
         </button>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-  <!-- Load Keycloak authentication -->
-  <script src="/static/keycloak-auth.js"></script>
-  <!-- Load legacy auth for fallback -->
+  <!-- Load legacy auth only -->
   <script src="/static/auth.js"></script>
 </body>
 </html>`);
