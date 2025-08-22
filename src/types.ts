@@ -4,6 +4,10 @@
 export interface CloudflareBindings {
   DB: D1Database;
   AI: Ai;
+  // Secure AI API keys (server-side only)
+  OPENAI_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string;  
+  GEMINI_API_KEY?: string;
 }
 
 // User Management

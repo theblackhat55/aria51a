@@ -242,7 +242,14 @@ class EnhancedSettingsManager {
       <div class="max-w-4xl mx-auto">
         <div class="mb-8">
           <h3 class="text-2xl font-bold text-gray-900">AI Provider Configuration</h3>
-          <p class="text-gray-600 mt-2">Configure your AI providers for ARIA assistant and risk analysis</p>
+          <p class="text-gray-600 mt-2">Configure your AI provider preferences. API keys are managed securely by administrators.</p>
+          <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-shield-alt text-green-600 mr-2"></i>
+              <span class="text-green-800 font-medium">Secure Configuration</span>
+            </div>
+            <p class="text-green-700 text-sm mt-1">API keys are stored securely on the server. You can only configure provider preferences and model settings.</p>
+          </div>
         </div>
 
         <!-- AI Provider Cards -->
@@ -347,31 +354,21 @@ class EnhancedSettingsManager {
 
         <!-- Configuration Fields -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- API Key -->
+          <!-- Server Status -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
-            <div class="relative">
-              <input type="password" 
-                id="${provider}-api-key" 
-                placeholder="${config.keyPlaceholder}" 
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 auto-save-field pr-10" 
-                value="${settings.apiKey || ''}"
-                data-provider="${provider}">
-              <button type="button" 
-                onclick="enhancedSettings.togglePasswordVisibility('${provider}-api-key')"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <i class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
-              </button>
-            </div>
-            <div class="mt-2 flex items-start space-x-2">
-              <div id="${provider}-api-key-validation" class="hidden flex items-center space-x-1">
-                <i class="fas fa-exclamation-triangle text-red-500 text-sm"></i>
-                <span class="text-sm text-red-600"></span>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Server Configuration</label>
+            <div class="px-4 py-3 border border-gray-200 rounded-lg bg-gray-50">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <div class="w-3 h-3 rounded-full ${isEnabled ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}"></div>
+                  <span class="text-sm font-medium">${isEnabled ? 'Available' : 'Not Configured'}</span>
+                </div>
+                <i class="fas fa-server text-gray-400"></i>
               </div>
+              <p class="text-xs text-gray-500 mt-2">
+                ${isEnabled ? 'API key configured by administrator' : 'Contact administrator to configure API key'}
+              </p>
             </div>
-            <p class="text-xs text-gray-500 mt-1">
-              Get your API key from <a href="${config.helpUrl}" target="_blank" class="text-blue-600 hover:underline">${config.name} Console</a>
-            </p>
           </div>
 
           <!-- Model Selection -->
@@ -509,20 +506,38 @@ class EnhancedSettingsManager {
 
   async loadAISettings() {
     try {
-      let settings = localStorage.getItem('dmt_ai_settings');
-      if (!settings) {
-        settings = localStorage.getItem('ai_settings');
+      const token = localStorage.getItem('dmt_token');
+      if (!token) {
+        console.log('No auth token, using default settings');
+        return this.getDefaultAISettings();
       }
-      return settings ? JSON.parse(settings) : {
-        openai: { priority: 1, apiKey: '', model: 'gpt-4o', maxTokens: 1500, temperature: 0.7 },
-        gemini: { priority: 2, apiKey: '', model: 'gemini-pro', maxTokens: 1500, temperature: 0.7 },
-        anthropic: { priority: 3, apiKey: '', model: 'claude-3-5-sonnet-20241022', maxTokens: 1500, temperature: 0.7 },
-        local: { priority: 0, endpoint: '', model: '', apiKey: '', maxTokens: 1500, temperature: 0.7 }
-      };
+
+      const response = await fetch('/api/ai/config', {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to load AI settings from server');
+        return this.getDefaultAISettings();
+      }
+
+      const result = await response.json();
+      return result.success ? result.data : this.getDefaultAISettings();
     } catch (error) {
       console.error('Error loading AI settings:', error);
-      return {};
+      return this.getDefaultAISettings();
     }
+  }
+
+  getDefaultAISettings() {
+    return {
+      openai: { enabled: false, priority: 1, model: 'gpt-4o', maxTokens: 1500, temperature: 0.7 },
+      gemini: { enabled: false, priority: 2, model: 'gemini-pro', maxTokens: 1500, temperature: 0.7 },
+      anthropic: { enabled: false, priority: 3, model: 'claude-3-5-sonnet-20241022', maxTokens: 1500, temperature: 0.7 }
+    };
   }
 
   setupAutoSave() {
@@ -588,44 +603,60 @@ class EnhancedSettingsManager {
   }
 
   async saveAISettings() {
-    const settings = {
-      openai: {
-        priority: parseInt(document.getElementById('openai-priority')?.value || 0),
-        apiKey: document.getElementById('openai-api-key')?.value || '',
-        model: document.getElementById('openai-model')?.value || 'gpt-4o',
-        maxTokens: parseInt(document.getElementById('openai-max-tokens')?.value || 1500),
-        temperature: parseFloat(document.getElementById('openai-temperature')?.value || 0.7)
-      },
-      gemini: {
-        priority: parseInt(document.getElementById('gemini-priority')?.value || 0),
-        apiKey: document.getElementById('gemini-api-key')?.value || '',
-        model: document.getElementById('gemini-model')?.value || 'gemini-pro',
-        maxTokens: parseInt(document.getElementById('gemini-max-tokens')?.value || 1500),
-        temperature: parseFloat(document.getElementById('gemini-temperature')?.value || 0.7)
-      },
-      anthropic: {
-        priority: parseInt(document.getElementById('anthropic-priority')?.value || 0),
-        apiKey: document.getElementById('anthropic-api-key')?.value || '',
-        model: document.getElementById('anthropic-model')?.value || 'claude-3-5-sonnet-20241022',
-        maxTokens: parseInt(document.getElementById('anthropic-max-tokens')?.value || 1500),
-        temperature: parseFloat(document.getElementById('anthropic-temperature')?.value || 0.7)
-      },
-      local: {
-        priority: parseInt(document.getElementById('local-priority')?.value || 0),
-        endpoint: document.getElementById('local-endpoint')?.value || '',
-        model: document.getElementById('local-model')?.value || '',
-        apiKey: document.getElementById('local-api-key')?.value || '',
-        maxTokens: parseInt(document.getElementById('local-max-tokens')?.value || 1500),
-        temperature: parseFloat(document.getElementById('local-temperature')?.value || 0.7)
+    try {
+      const providerConfigs = {
+        openai: {
+          priority: parseInt(document.getElementById('openai-priority')?.value || 0),
+          model: document.getElementById('openai-model')?.value || 'gpt-4o',
+          maxTokens: parseInt(document.getElementById('openai-max-tokens')?.value || 1500),
+          temperature: parseFloat(document.getElementById('openai-temperature')?.value || 0.7)
+        },
+        gemini: {
+          priority: parseInt(document.getElementById('gemini-priority')?.value || 0),
+          model: document.getElementById('gemini-model')?.value || 'gemini-pro',
+          maxTokens: parseInt(document.getElementById('gemini-max-tokens')?.value || 1500),
+          temperature: parseFloat(document.getElementById('gemini-temperature')?.value || 0.7)
+        },
+        anthropic: {
+          priority: parseInt(document.getElementById('anthropic-priority')?.value || 0),
+          model: document.getElementById('anthropic-model')?.value || 'claude-3-5-sonnet-20241022',
+          maxTokens: parseInt(document.getElementById('anthropic-max-tokens')?.value || 1500),
+          temperature: parseFloat(document.getElementById('anthropic-temperature')?.value || 0.7)
+        }
+      };
+
+      const token = localStorage.getItem('dmt_token');
+      if (!token) {
+        throw new Error('Authentication required');
       }
-    };
-    
-    localStorage.setItem('dmt_ai_settings', JSON.stringify(settings));
-    localStorage.setItem('ai_settings', JSON.stringify(settings));
-    
-    // Update ARIA provider display
-    if (typeof updateARIAProviderDisplay === 'function') {
-      updateARIAProviderDisplay();
+
+      const response = await fetch('/api/ai/config', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ providerConfigs })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save AI settings');
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Save failed');
+      }
+
+      // Update ARIA provider display
+      if (typeof updateARIAProviderDisplay === 'function') {
+        updateARIAProviderDisplay();
+      }
+
+      console.log('AI settings saved successfully');
+    } catch (error) {
+      console.error('Error saving AI settings:', error);
+      throw error;
     }
   }
 
@@ -751,8 +782,45 @@ class EnhancedSettingsManager {
   }
 
   async testAIConnections() {
-    showToast('Testing AI connections...', 'info');
-    // TODO: Implement connection testing
+    try {
+      showToast('Testing AI connections...', 'info');
+      
+      const token = localStorage.getItem('dmt_token');
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await fetch('/api/ai/test-connections', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to test connections');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        const results = result.data;
+        let message = 'Connection Test Results:\n';
+        
+        Object.entries(results).forEach(([provider, status]) => {
+          const statusText = status.status === 'connected' ? '✅' : 
+                           status.status === 'not_configured' ? '⚠️' : '❌';
+          message += `${statusText} ${provider.toUpperCase()}: ${status.status}${status.error ? ` (${status.error})` : ''}\n`;
+        });
+
+        showToast(message, 'success');
+      } else {
+        throw new Error(result.error || 'Test failed');
+      }
+    } catch (error) {
+      console.error('Connection test error:', error);
+      showToast(`Connection test failed: ${error.message}`, 'error');
+    }
   }
 
   async refreshAllModels() {

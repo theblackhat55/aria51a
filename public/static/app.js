@@ -2325,36 +2325,18 @@ function initializeARIAAssistant() {
 }
 
 // Update ARIA provider display
+// Legacy function - replaced by secure version in secure-aria.js
 function updateARIAProviderDisplay() {
-  const providerDisplay = document.getElementById('current-provider');
-  if (!providerDisplay) return;
-  
-  const aiSettings = JSON.parse(localStorage.getItem('dmt_ai_settings') || '{}');
-  
-  // Get enabled and configured providers (priority > 0 means enabled)
-  const enabledProviders = [];
-  if (aiSettings.openai?.priority > 0 && aiSettings.openai?.apiKey) {
-    enabledProviders.push('OpenAI GPT-4');
-  }
-  if (aiSettings.gemini?.priority > 0 && aiSettings.gemini?.apiKey) {
-    enabledProviders.push('Google Gemini');
-  }
-  if (aiSettings.anthropic?.priority > 0 && aiSettings.anthropic?.apiKey) {
-    enabledProviders.push('Anthropic Claude');
-  }
-  if (aiSettings.local?.priority > 0 && aiSettings.local?.endpoint) {
-    enabledProviders.push('Local/Custom');
-  }
-  
-  if (enabledProviders.length === 0) {
-    providerDisplay.innerHTML = '<span class="text-red-600"><i class="fas fa-exclamation-triangle mr-1"></i>Not Configured</span>';
-    providerDisplay.title = 'No AI providers configured. Go to Settings to configure.';
-  } else if (enabledProviders.length === 1) {
-    providerDisplay.innerHTML = `<span class="text-green-600"><i class="fas fa-check-circle mr-1"></i>${enabledProviders[0]}</span>`;
-    providerDisplay.title = `Using: ${enabledProviders[0]}`;
+  // This function is now handled by updateARIAProviderDisplaySecure()
+  if (typeof updateARIAProviderDisplaySecure === 'function') {
+    updateARIAProviderDisplaySecure();
   } else {
-    providerDisplay.innerHTML = `<span class="text-blue-600"><i class="fas fa-layer-group mr-1"></i>${enabledProviders.length} Providers</span>`;
-    providerDisplay.title = `Priority fallback: ${enabledProviders.join(' → ')}`;
+    console.log('Secure ARIA not loaded yet, using fallback');
+    const providerDisplay = document.getElementById('current-provider');
+    if (providerDisplay) {
+      providerDisplay.innerHTML = '<span class="text-blue-600"><i class="fas fa-shield-alt mr-1"></i>Secure Mode</span>';
+      providerDisplay.title = 'Using secure server-side AI proxy';
+    }
   }
 }
 
@@ -2365,18 +2347,11 @@ async function sendARIAMessage() {
   
   if (!query) return;
   
-  // Load AI settings from localStorage (with fallback logic matching the settings save)
-  let aiSettings;
-  try {
-    // Try dmt_ai_settings first, then fallback to ai_settings (same as loadAISettings function)
-    let settings = localStorage.getItem('dmt_ai_settings');
-    if (!settings) {
-      settings = localStorage.getItem('ai_settings');
-    }
-    aiSettings = settings ? JSON.parse(settings) : {};
-  } catch (error) {
-    console.error('Error loading AI settings for ARIA:', error);
-    aiSettings = {};
+  // Check authentication
+  const token = localStorage.getItem('dmt_token');
+  if (!token) {
+    appendARIAMessage('system', 'Please log in to use ARIA assistant.');
+    return;
   }
   console.log('🔍 Frontend Debug - aiSettings keys:', Object.keys(aiSettings));
   console.log('🔍 Frontend Debug - aiSettings.openai exists:', !!aiSettings.openai);
