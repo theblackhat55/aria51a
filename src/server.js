@@ -233,6 +233,9 @@ app.get('/', (c) => {
   <link href="/static/styles.css?v=2" rel="stylesheet">
 </head>
 <body class="bg-gray-50 font-sans antialiased">
+  <!-- Helpers to avoid ReferenceErrors must be loaded first -->
+  <script src="/static/helpers.js"></script>
+  
   <!-- Loading Spinner -->
   <div id="loading-spinner" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
     <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
