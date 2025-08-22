@@ -178,6 +178,180 @@ export function createAPI() {
     }
   });
 
+  // Demo authentication endpoint
+  api.post('/api/auth/demo-login', async (c) => {
+    try {
+      const { email = 'demo@example.com', name = 'Demo User' } = await c.req.json();
+      
+      const authService = new AuthService(c.env.DB);
+      
+      // Check if user exists
+      let user = await c.env.DB.prepare(`
+        SELECT * FROM users WHERE email = ?
+      `).bind(email).first();
+      
+      if (!user) {
+        // Create demo user if none exist
+        const hashedPassword = SecurityUtils.hashPassword('demo123');
+        
+        const result = await c.env.DB.prepare(`
+          INSERT INTO users (
+            email, username, password_hash, first_name, last_name, 
+            role, is_active, auth_provider, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        `).bind(
+          email,
+          email.split('@')[0],
+          hashedPassword,
+          name.split(' ')[0] || 'Demo',
+          name.split(' ')[1] || 'User',
+          'admin',
+          1,
+          'demo'
+        ).run();
+        
+        // Get the created user
+        user = await c.env.DB.prepare(`
+          SELECT * FROM users WHERE id = ?
+        `).bind(result.meta.last_row_id).first();
+      }
+      
+      if (!user) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Failed to create demo user' 
+        }, 500);
+      }
+      
+      // Generate token
+      const token = await authService.generateToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        username: user.username
+      }, c.env);
+      
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: {
+          token,
+          user: {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            role: user.role,
+            username: user.username
+          }
+        },
+        message: 'Demo login successful'
+      });
+    } catch (error) {
+      console.error('Demo login error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Demo login failed' 
+      }, 500);
+    }
+  });
+
+  // User registration endpoint
+  api.post('/api/auth/register', async (c) => {
+    try {
+      const { email, password, firstName, lastName } = await c.req.json();
+      
+      // Input validation
+      const validation = validateInput({
+        email: { required: true, type: 'email' },
+        password: { required: true, minLength: 6 },
+        firstName: { required: true, minLength: 1 },
+        lastName: { required: true, minLength: 1 }
+      }, { email, password, firstName, lastName });
+
+      if (!validation.valid) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: validation.errors?.join(', ') || 'Invalid input' 
+        }, 400);
+      }
+
+      // Check if user already exists
+      const existingUser = await c.env.DB.prepare(`
+        SELECT id FROM users WHERE email = ?
+      `).bind(email).first();
+      
+      if (existingUser) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'User already exists with this email' 
+        }, 400);
+      }
+      
+      // Create new user
+      const hashedPassword = SecurityUtils.hashPassword(password);
+      const username = email.split('@')[0];
+      
+      const result = await c.env.DB.prepare(`
+        INSERT INTO users (
+          email, username, password_hash, first_name, last_name, 
+          role, is_active, auth_provider, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).bind(
+        email,
+        username,
+        hashedPassword,
+        firstName,
+        lastName,
+        'user',
+        1,
+        'local'
+      ).run();
+      
+      // Get the created user
+      const user = await c.env.DB.prepare(`
+        SELECT * FROM users WHERE id = ?
+      `).bind(result.meta.last_row_id).first();
+      
+      if (!user) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Failed to create user' 
+        }, 500);
+      }
+      
+      // Generate token
+      const authService = new AuthService(c.env.DB);
+      const token = await authService.generateToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        username: user.username
+      }, c.env);
+      
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: {
+          token,
+          user: {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            role: user.role,
+            username: user.username
+          }
+        },
+        message: 'Registration successful'
+      }, 201);
+    } catch (error) {
+      console.error('Registration error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Registration failed' 
+      }, 500);
+    }
+  });
+
   api.get('/api/auth/me', smartAuthMiddleware, async (c) => {
     try {
       const user = c.get('user');
