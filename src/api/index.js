@@ -129,6 +129,133 @@ export function createAPI() {
     }
   });
 
+  // Demo login - creates demo user if none exist
+  app.post('/api/auth/demo-login', async (c) => {
+    try {
+      // Check if any users exist
+      const userCount = c.env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
+      
+      if (!userCount.success || userCount.result.count === 0) {
+        // Create demo user
+        const crypto = await import('crypto');
+        const hashedPassword = crypto.createHash('sha256').update('demo123').digest('hex');
+        
+        const result = c.env.DB.prepare(`
+          INSERT INTO users (username, email, password_hash, first_name, last_name, role, is_active, created_at)
+          VALUES ('demo', 'demo@example.com', ?, 'Demo', 'User', 'admin', TRUE, datetime('now'))
+        `).run(hashedPassword);
+
+        if (!result.success) {
+          return c.json({ success: false, error: 'Failed to create demo user' }, 500);
+        }
+      }
+
+      // Login as demo user
+      const user = c.env.DB.prepare(
+        'SELECT * FROM users WHERE username = ? AND is_active = TRUE'
+      ).first('demo');
+
+      if (!user.success || !user.result) {
+        return c.json({ success: false, error: 'Demo user not found' }, 500);
+      }
+
+      // Generate token
+      const token = Buffer.from(JSON.stringify({
+        id: user.result.id,
+        username: user.result.username,
+        email: user.result.email,
+        role: user.result.role,
+        exp: Date.now() + 86400000 // 24 hours
+      })).toString('base64');
+
+      // Update last login
+      c.env.DB.prepare(
+        'UPDATE users SET last_login = datetime(\'now\') WHERE id = ?'
+      ).run(user.result.id);
+
+      const userData = { ...user.result };
+      delete userData.password_hash;
+
+      return c.json({
+        success: true,
+        data: {
+          user: userData,
+          token,
+          expires_at: new Date(Date.now() + 86400000).toISOString()
+        },
+        message: 'Demo login successful'
+      });
+
+    } catch (error) {
+      console.error('Demo login error:', error);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
+  // Demo registration endpoint for testing
+  app.post('/api/auth/register', async (c) => {
+    try {
+      const { username, email, password, firstName, lastName } = await c.req.json();
+
+      if (!username || !email || !password) {
+        return c.json({ success: false, error: 'Username, email, and password are required' }, 400);
+      }
+
+      // Check if user already exists
+      const existingUser = c.env.DB.prepare(
+        'SELECT id FROM users WHERE username = ? OR email = ?'
+      ).first(username, email);
+
+      if (existingUser.success && existingUser.result) {
+        return c.json({ success: false, error: 'User already exists' }, 409);
+      }
+
+      // Hash password
+      const crypto = await import('crypto');
+      const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+
+      // Create user
+      const result = c.env.DB.prepare(`
+        INSERT INTO users (username, email, password_hash, first_name, last_name, role, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, 'admin', TRUE, datetime('now'))
+      `).run(username, email, hashedPassword, firstName || username, lastName || '');
+
+      if (!result.success) {
+        return c.json({ success: false, error: 'Failed to create user' }, 500);
+      }
+
+      // Generate token for immediate login
+      const token = Buffer.from(JSON.stringify({
+        id: result.meta.last_row_id,
+        username,
+        email,
+        role: 'admin',
+        exp: Date.now() + 86400000 // 24 hours
+      })).toString('base64');
+
+      return c.json({
+        success: true,
+        data: {
+          user: {
+            id: result.meta.last_row_id,
+            username,
+            email,
+            first_name: firstName || username,
+            last_name: lastName || '',
+            role: 'admin'
+          },
+          token,
+          expires_at: new Date(Date.now() + 86400000).toISOString()
+        },
+        message: 'Registration successful'
+      });
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      return c.json({ success: false, error: 'Internal server error' }, 500);
+    }
+  });
+
   // Get current user
   app.get('/api/auth/me', async (c) => {
     try {

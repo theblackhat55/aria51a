@@ -882,7 +882,7 @@ async function initializeNavigation() {
       if (token) {
         logout();
       } else {
-        window.location.href = '/login';
+        showDemoLoginModal();
       }
     });
     console.log('Added event handler for auth button');
@@ -2887,4 +2887,131 @@ async function refreshDashboard() {
   await loadDashboardData();
   showDashboard();
   showToast('Dashboard refreshed successfully', 'success');
+}
+
+// Demo login modal for testing
+function showDemoLoginModal() {
+  showModal('Demo Login', `
+    <div class="space-y-6">
+      <!-- Demo Info -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+          <span class="text-blue-800 font-medium">Demo Environment</span>
+        </div>
+        <p class="text-blue-700 text-sm mt-1">
+          This is a demonstration environment. Click "Demo Login" to access the platform with demo credentials.
+        </p>
+      </div>
+
+      <!-- Login Options -->
+      <div class="space-y-4">
+        <div>
+          <h4 class="text-lg font-medium text-gray-900 mb-3">Quick Demo Access</h4>
+          <button onclick="performDemoLogin()" 
+            class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
+            <i class="fas fa-rocket mr-2"></i>Demo Login
+          </button>
+          <p class="text-xs text-gray-500 mt-2">
+            Creates a demo user automatically and logs you in to explore the platform features.
+          </p>
+        </div>
+
+        <div class="border-t border-gray-200 pt-4">
+          <h4 class="text-sm font-medium text-gray-700 mb-2">Manual Login</h4>
+          <div class="space-y-3">
+            <input type="text" id="demo-username" placeholder="Username" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <input type="password" id="demo-password" placeholder="Password" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <button onclick="performManualLogin()" 
+              class="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+              Login
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' }
+  ]);
+}
+
+async function performDemoLogin() {
+  try {
+    showToast('Logging in with demo credentials...', 'info');
+    
+    const response = await fetch('/api/auth/demo-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      // Store token and user data
+      localStorage.setItem('dmt_token', result.data.token);
+      currentUser = result.data.user;
+      
+      // Close modal and update UI
+      closeUniversalModal();
+      await updateAuthUI();
+      
+      showToast(`Welcome ${result.data.user.first_name}! Demo login successful.`, 'success');
+      
+      // Refresh the page or redirect to dashboard
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } else {
+      throw new Error(result.error || 'Demo login failed');
+    }
+  } catch (error) {
+    console.error('Demo login error:', error);
+    showToast(`Demo login failed: ${error.message}`, 'error');
+  }
+}
+
+async function performManualLogin() {
+  try {
+    const username = document.getElementById('demo-username').value.trim();
+    const password = document.getElementById('demo-password').value.trim();
+    
+    if (!username || !password) {
+      showToast('Please enter username and password', 'error');
+      return;
+    }
+    
+    showToast('Logging in...', 'info');
+    
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      // Store token and user data
+      localStorage.setItem('dmt_token', result.data.token);
+      currentUser = result.data.user;
+      
+      // Close modal and update UI
+      closeUniversalModal();
+      await updateAuthUI();
+      
+      showToast(`Welcome ${result.data.user.first_name}!`, 'success');
+      
+      // Refresh the page
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } else {
+      throw new Error(result.error || 'Login failed');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    showToast(`Login failed: ${error.message}`, 'error');
+  }
 }
