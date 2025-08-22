@@ -979,7 +979,7 @@ function showPublicLandingPage() {
   const mainContent = document.getElementById('main-content');
   if (mainContent) {
     mainContent.innerHTML = `
-      <div class="max-w-4xl mx-auto text-center py-16">
+      <div class="max-w-4xl mx-auto text-center pt-8 pb-12">
         <div class="mb-8">
           <div class="mx-auto h-24 w-24 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mb-6">
             <i class="fas fa-shield-alt text-white text-3xl"></i>

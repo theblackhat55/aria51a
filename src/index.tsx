@@ -192,7 +192,7 @@ app.get('/', (c) => {
     
     <!-- Main Content Area -->
     <main id="main-content" class="min-h-screen bg-gray-50">
-      <div class="container mx-auto px-4 pt-4 pb-8">
+      <div class="container mx-auto px-4 pt-2 pb-8">
         <!-- Content will be loaded here based on authentication status -->
       </div>
     </main>
