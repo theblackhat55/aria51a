@@ -11,7 +11,13 @@ class SecureKeyManager {
     try {
       const token = localStorage.getItem('dmt_token');
       if (!token) {
-        throw new Error('Authentication required');
+        // Return default status for unauthenticated users
+        this.apiKeyStatus = {
+          openai: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
+          gemini: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
+          anthropic: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null }
+        };
+        return this.apiKeyStatus;
       }
 
       const response = await fetch('/api/keys/status', {
@@ -22,7 +28,17 @@ class SecureKeyManager {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load API key status');
+        if (response.status === 401) {
+          // Token is invalid or expired, clear it and return default status
+          localStorage.removeItem('dmt_token');
+          this.apiKeyStatus = {
+            openai: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
+            gemini: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
+            anthropic: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null }
+          };
+          return this.apiKeyStatus;
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -34,7 +50,13 @@ class SecureKeyManager {
       }
     } catch (error) {
       console.error('Error loading API key status:', error);
-      throw error;
+      // Return default status if there's any error
+      this.apiKeyStatus = {
+        openai: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
+        gemini: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
+        anthropic: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null }
+      };
+      return this.apiKeyStatus;
     }
   }
 
@@ -59,26 +81,54 @@ class SecureKeyManager {
       this.isLoading = true;
       const token = localStorage.getItem('dmt_token');
       if (!token) {
-        throw new Error('Authentication required');
+        throw new Error('Please log in to manage API keys');
       }
 
-      const requestBody = { provider, action };
-      if (apiKey) {
-        requestBody.apiKey = apiKey;
+      let endpoint, method, body;
+      
+      switch (action) {
+        case 'set':
+        case 'update':
+          endpoint = '/api/keys/set';
+          method = 'POST';
+          body = JSON.stringify({ provider, apiKey });
+          break;
+        case 'delete':
+          endpoint = `/api/keys/${provider}`;
+          method = 'DELETE';
+          body = undefined;
+          break;
+        case 'test':
+          endpoint = '/api/keys/test';
+          method = 'POST';
+          body = JSON.stringify({ provider });
+          break;
+        default:
+          throw new Error(`Unknown action: ${action}`);
       }
 
-      const response = await fetch('/api/keys/manage', {
-        method: 'POST',
+      const response = await fetch(endpoint, {
+        method,
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `Failed to ${action} API key`);
+        if (response.status === 401) {
+          localStorage.removeItem('dmt_token');
+          throw new Error('Session expired. Please log in again');
+        }
+        let errorMessage;
+        try {
+          const error = await response.json();
+          errorMessage = error.error || `Failed to ${action} API key`;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -182,7 +232,12 @@ class SecureKeyManager {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Quick Actions</label>
             <div class="flex space-x-2">
-              ${hasKey ? 
+              ${!localStorage.getItem('dmt_token') ? 
+                `<button onclick="closeUniversalModal(); document.getElementById('auth-button').click();" 
+                   class="w-full px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 text-sm font-medium transition-colors duration-200">
+                   <i class="fas fa-sign-in-alt mr-1"></i>Login Required
+                 </button>` :
+                hasKey ? 
                 `<button onclick="secureKeyManager.showUpdateDialog('${provider}')" 
                    class="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm font-medium transition-colors duration-200">
                    <i class="fas fa-edit mr-1"></i>Update
@@ -412,7 +467,11 @@ class SecureKeyManager {
 
   async showKeyManagementDialog() {
     try {
-      // Load current key status
+      // Check authentication first
+      const token = localStorage.getItem('dmt_token');
+      const isAuthenticated = !!token;
+      
+      // Load current key status (will handle authentication gracefully)
       await this.loadKeyStatus();
       
       showModal('Secure API Key Management', `
@@ -424,26 +483,50 @@ class SecureKeyManager {
               <span class="text-blue-800 font-medium">Secure Key Management</span>
             </div>
             <p class="text-blue-700 text-sm mt-1">
-              Manage your AI provider API keys securely. Keys are encrypted and stored server-side.
+              ${isAuthenticated ? 
+                'Manage your AI provider API keys securely. Keys are encrypted and stored server-side.' :
+                'Please log in to manage your API keys securely. Keys are encrypted and stored server-side.'
+              }
             </p>
           </div>
+
+          ${!isAuthenticated ? `
+            <!-- Authentication Required -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                <span class="text-yellow-800 font-medium">Authentication Required</span>
+              </div>
+              <p class="text-yellow-700 text-sm mt-2">
+                You need to log in to access secure API key management. Please log in to your account first.
+              </p>
+              <div class="mt-3">
+                <button onclick="closeUniversalModal(); document.getElementById('auth-button').click();" 
+                  class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium">
+                  <i class="fas fa-sign-in-alt mr-1"></i>Log In Now
+                </button>
+              </div>
+            </div>
+          ` : ''}
 
           <!-- Key Management Cards -->
           <div id="key-management-cards" class="space-y-4">
             <!-- Cards will be populated here -->
           </div>
 
-          <!-- Actions -->
-          <div class="flex flex-col sm:flex-row gap-3">
-            <button onclick="secureKeyManager.refreshStatus()" 
-              class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-              <i class="fas fa-sync-alt mr-2"></i>Refresh Status
-            </button>
-            <button onclick="secureKeyManager.testAllKeys()" 
-              class="flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
-              <i class="fas fa-vial mr-2"></i>Test All Keys
-            </button>
-          </div>
+          ${isAuthenticated ? `
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button onclick="secureKeyManager.refreshStatus()" 
+                class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh Status
+              </button>
+              <button onclick="secureKeyManager.testAllKeys()" 
+                class="flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+                <i class="fas fa-vial mr-2"></i>Test All Keys
+              </button>
+            </div>
+          ` : ''}
         </div>
       `, [
         { text: 'Close', class: 'btn-secondary', onclick: 'closeUniversalModal()' }
@@ -456,7 +539,7 @@ class SecureKeyManager {
       
     } catch (error) {
       console.error('Error showing key management dialog:', error);
-      showToast(`Failed to load key management: ${error.message}`, 'error');
+      showToast(`Failed to load key management interface`, 'error');
     }
   }
 
