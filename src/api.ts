@@ -174,9 +174,10 @@ export function createAPI() {
       const authService = new AuthService(c.env.DB);
       const userData = await authService.getUserById(user.id);
       
-      return c.json<ApiResponse<typeof userData>>({ 
+      // Ensure consistent response shape for frontend: { success, data: { user } }
+      return c.json<ApiResponse<{ user: typeof userData }>>({ 
         success: true, 
-        data: userData 
+        data: { user: userData }
       });
     } catch (error) {
       return c.json<ApiResponse<null>>({ 
@@ -186,6 +187,7 @@ export function createAPI() {
     }
   });
 
+  // Dashboard Analytics
   // Dashboard Analytics
   api.get('/api/dashboard', smartAuthMiddleware, async (c) => {
     try {

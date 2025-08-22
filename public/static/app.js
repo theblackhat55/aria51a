@@ -19,7 +19,7 @@ const apiRequest = window.KongAPI ? window.KongAPI.request.bind(window.KongAPI) 
     ...options
   };
   
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('dmt_token') || localStorage.getItem('authToken');
   if (token) {
     config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
   }
@@ -1037,8 +1037,8 @@ function navigateTo(page) {
   // Check if user needs to be authenticated for this page
   const token = localStorage.getItem('dmt_token');
   if (!token) {
-    // Redirect to login for any navigation attempt when not authenticated
-    window.location.href = '/login';
+    // If not authenticated, show inline login prompt instead of hard redirect
+    showLoginPrompt();
     return;
   }
   
