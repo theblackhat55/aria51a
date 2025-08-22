@@ -70,7 +70,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- Main Application Container -->
-  <div id="app" class="min-h-screen">
+  <div id="app">
     <!-- Modern Collapsible Navigation -->
     <nav id="navigation" class="bg-white shadow-lg border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4">
@@ -191,8 +191,8 @@ app.get('/', (c) => {
     </nav>
     
     <!-- Main Content Area -->
-    <main id="main-content" class="min-h-screen bg-gray-50">
-      <div class="container mx-auto px-4 pt-2 pb-8">
+    <main id="main-content" class="bg-gray-50">
+      <div class="container mx-auto px-4 py-6">
         <!-- Content will be loaded here based on authentication status -->
       </div>
     </main>
