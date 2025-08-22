@@ -27,10 +27,7 @@ class SecureKeyManager {
 
       const result = await response.json();
       if (result.success) {
-        this.apiKeyStatus = {};
-        result.data.forEach(status => {
-          this.apiKeyStatus[status.provider] = status;
-        });
+        this.apiKeyStatus = result.data; // API returns object directly
         return this.apiKeyStatus;
       } else {
         throw new Error(result.error || 'Load failed');
@@ -136,10 +133,10 @@ class SecureKeyManager {
   }
 
   renderProviderCard(provider, config) {
-    const status = this.apiKeyStatus[provider] || { hasKey: false, isValid: false };
-    const hasKey = status.hasKey;
-    const isValid = status.isValid;
-    const lastUpdated = status.lastUpdated;
+    const status = this.apiKeyStatus[provider] || { configured: false, valid: false, prefix: null };
+    const hasKey = status.configured;
+    const isValid = status.valid;
+    const lastUpdated = status.lastTested;
 
     return `
       <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -172,7 +169,7 @@ class SecureKeyManager {
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
                   ${hasKey ? 
-                    `<span class="text-sm font-medium">Key: ${status.keyPrefix || '***'}</span>` : 
+                    `<span class="text-sm font-medium">Key: ${status.prefix || '***'}</span>` : 
                     `<span class="text-sm text-gray-500">No API key set</span>`
                   }
                 </div>
@@ -231,7 +228,7 @@ class SecureKeyManager {
   async testAllKeys() {
     try {
       showToast('Testing all API keys...', 'info');
-      const providers = Object.keys(this.apiKeyStatus).filter(p => this.apiKeyStatus[p].hasKey);
+      const providers = Object.keys(this.apiKeyStatus).filter(p => this.apiKeyStatus[p].configured);
       
       if (providers.length === 0) {
         showToast('No API keys to test', 'warning');
@@ -334,7 +331,7 @@ class SecureKeyManager {
       showToast('Setting API key...', 'info');
       const result = await this.setAPIKey(provider, apiKey);
       closeUniversalModal();
-      showToast(result.message, result.data.isValid ? 'success' : 'warning');
+      showToast(`API key set for ${provider}`, result.data.valid ? 'success' : 'warning');
       this.updateDisplay();
     } catch (error) {
       showToast(`Failed to set API key: ${error.message}`, 'error');
@@ -352,7 +349,7 @@ class SecureKeyManager {
       showToast('Updating API key...', 'info');
       const result = await this.updateAPIKey(provider, apiKey);
       closeUniversalModal();
-      showToast(result.message, result.data.isValid ? 'success' : 'warning');
+      showToast(`API key updated for ${provider}`, result.data.valid ? 'success' : 'warning');
       this.updateDisplay();
     } catch (error) {
       showToast(`Failed to update API key: ${error.message}`, 'error');
@@ -364,7 +361,7 @@ class SecureKeyManager {
       showToast('Deleting API key...', 'info');
       const result = await this.deleteAPIKey(provider);
       closeUniversalModal();
-      showToast(result.message, 'success');
+      showToast(`API key deleted for ${provider}`, 'success');
       this.updateDisplay();
     } catch (error) {
       showToast(`Failed to delete API key: ${error.message}`, 'error');
@@ -411,6 +408,56 @@ class SecureKeyManager {
     container.innerHTML = providers.map(provider => 
       this.renderProviderCard(provider.id, provider)
     ).join('');
+  }
+
+  async showKeyManagementDialog() {
+    try {
+      // Load current key status
+      await this.loadKeyStatus();
+      
+      showModal('Secure API Key Management', `
+        <div class="space-y-6">
+          <!-- Header Info -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-shield-alt text-blue-600 mr-2"></i>
+              <span class="text-blue-800 font-medium">Secure Key Management</span>
+            </div>
+            <p class="text-blue-700 text-sm mt-1">
+              Manage your AI provider API keys securely. Keys are encrypted and stored server-side.
+            </p>
+          </div>
+
+          <!-- Key Management Cards -->
+          <div id="key-management-cards" class="space-y-4">
+            <!-- Cards will be populated here -->
+          </div>
+
+          <!-- Actions -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button onclick="secureKeyManager.refreshStatus()" 
+              class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+              <i class="fas fa-sync-alt mr-2"></i>Refresh Status
+            </button>
+            <button onclick="secureKeyManager.testAllKeys()" 
+              class="flex-1 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
+              <i class="fas fa-vial mr-2"></i>Test All Keys
+            </button>
+          </div>
+        </div>
+      `, [
+        { text: 'Close', class: 'btn-secondary', onclick: 'closeUniversalModal()' }
+      ], 'max-w-4xl');
+
+      // Update the display after modal is shown
+      setTimeout(() => {
+        this.updateDisplay();
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error showing key management dialog:', error);
+      showToast(`Failed to load key management: ${error.message}`, 'error');
+    }
   }
 
   getProviderConfig(provider) {
