@@ -2063,16 +2063,16 @@ function viewRisk(id) {
 
 // Control Management CRUD Functions
 function showAddControlModal() {
-  const modal = createModal('Add New Control', getControlFormHTML());
+  const modal = createModal('Add New Control', getControlFormHTML_v2());
   document.body.appendChild(modal);
   
   // Populate dropdowns
-  populateControlFormDropdowns();
+  populateControlFormDropdowns_v2();
   
   // Handle form submission
   document.getElementById('control-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    await handleControlSubmit();
+    await handleControlSubmit_v2();
   });
 }
 
@@ -2083,17 +2083,17 @@ function editControl(id) {
     return;
   }
   
-  const modal = createModal('Edit Control', getControlFormHTML(control));
+  const modal = createModal('Edit Control', getControlFormHTML_v2(control));
   document.body.appendChild(modal);
   
   // Populate dropdowns and form data
-  populateControlFormDropdowns();
-  populateControlForm(control);
+  populateControlFormDropdowns_v2();
+  populateControlForm_v2(control);
   
   // Handle form submission
   document.getElementById('control-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    await handleControlSubmit(id);
+    await handleControlSubmit_v2(id);
   });
 }
 
@@ -2127,7 +2127,7 @@ function viewControl(id) {
     return;
   }
   
-  const modal = createModal('Control Details', getControlViewHTML(control));
+  const modal = createModal('Control Details', getControlViewHTML_v2(control));
   document.body.appendChild(modal);
 }
 
@@ -2973,68 +2973,33 @@ function createModal(title, content, buttons = []) {
 }
 
 function closeModal(element) {
-  const modal = element.closest('.fixed') || element;
+  let modal;
+  if (element && element.closest) {
+    // If an element (like a button) is provided, find the nearest modal container
+    modal = element.closest('.fixed') ||
+            element.closest('.modal-overlay') ||
+            element.closest('[class*="modal"]') ||
+            element;
+  } else {
+    // Fallback: find any open modal on the page
+    modal = document.querySelector('.modal-overlay') ||
+            document.querySelector('#universal-modal') ||
+            document.querySelector('.fixed[class*="modal"]') ||
+            document.querySelector('[class*="modal-overlay"]');
+  }
   if (modal && modal.parentNode) {
     modal.parentNode.removeChild(modal);
   }
 }
 
 // Risk form functions that were referenced but missing
-async function populateRiskFormDropdowns() {
-  // This would populate dropdowns with users, categories, etc.
-  console.log('Populating risk form dropdowns');
-}
+// NOTE: The legacy alias populateRiskFormDropdowns() is defined later and delegates to
+// populateRiskFormDropdownsSafe(). We intentionally avoid redefining it here to prevent
+// duplicate identifier errors that break initialization.
 
-function populateRiskForm(risk) {
-  // This would populate form fields with risk data for editing
-  console.log('Populating risk form with data:', risk);
-}
+// Note: populateRiskForm() is implemented later with full logic. Avoid duplicate stub here to prevent identifier clashes.
 
-async function handleRiskSubmit(riskId = null) {
-  const form = document.getElementById('risk-form');
-  if (!form.checkValidity()) {
-    form.reportValidity();
-    return;
-  }
-  
-  const formData = {
-    risk_id: document.getElementById('risk-id')?.value,
-    title: document.getElementById('risk-title')?.value,
-    description: document.getElementById('risk-description')?.value,
-    category_id: document.getElementById('risk-category')?.value,
-    probability: document.getElementById('risk-probability')?.value,
-    impact: document.getElementById('risk-impact')?.value,
-    status: document.getElementById('risk-status')?.value,
-    owner_id: document.getElementById('risk-owner')?.value,
-    next_review_date: document.getElementById('next-review-date')?.value,
-    mitigation_strategy: document.getElementById('mitigation-strategy')?.value
-  };
-  
-  // Calculate risk score
-  formData.risk_score = parseInt(formData.probability) * parseInt(formData.impact);
-  
-  try {
-    const token = localStorage.getItem('dmt_token');
-    const url = riskId ? `/api/risks/${riskId}` : '/api/risks';
-    const method = riskId ? 'PUT' : 'POST';
-    
-    // For demo purposes, simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    showToast(`Risk ${riskId ? 'updated' : 'created'} successfully`, 'success');
-    closeModal(form);
-    
-    // Refresh risks table if currently viewing risks
-    if (currentModule === 'risks') {
-      await loadRisks();
-    }
-    
-  } catch (error) {
-    console.error('Error saving risk:', error);
-    showToast(`Failed to ${riskId ? 'update' : 'create'} risk`, 'error');
-  }
-}
-
+// Note: handleRiskSubmit() is implemented later with full Axios integration. Avoid defining a stub here to prevent duplicate identifier errors.
 // Control form functions
 function getControlFormHTML(control = null) {
   const isEdit = control !== null;
@@ -3210,19 +3175,11 @@ async function saveControlTest(controlId) {
 // Utility function for HTML escaping
 function escapeHtml(text) {
   const div = document.createElement('div');
-  div.textContent = text;
+  div.textContent = text == null ? '' : String(text);
   return div.innerHTML;
 }
 
-// Dashboard refresh function to update statistics after service changes
-async function refreshDashboardData() {
-  try {
-    // This would refresh dashboard statistics
-    console.log('Refreshing dashboard data...');
-  } catch (error) {
-    console.error('Error refreshing dashboard:', error);
-  }
-}
+// Dashboard refresh function to update statistics after service changes (consolidated)
 async function refreshDashboardData() {
   try {
     // Check if we're on the dashboard page or if dashboard elements exist
@@ -6309,7 +6266,7 @@ async function exportIncidents() {
 }
 
 // Modal and Form Helper Functions
-function createModal(title, content) {
+function createModalSimple(title, content) {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `
@@ -6338,24 +6295,12 @@ function createModal(title, content) {
   return modal;
 }
 
-function closeModal(button) {
-  let modal;
-  
-  if (button && button.closest) {
-    // If button is provided, find the modal using it
-    modal = button.closest('.fixed') || button.closest('.modal-overlay') || button.closest('[class*="modal"]');
-  } else {
-    // Fallback: find any open modal
-    modal = document.querySelector('.modal-overlay') || 
-            document.querySelector('#universal-modal') || 
-            document.querySelector('.fixed[class*="modal"]') ||
-            document.querySelector('[class*="modal-overlay"]');
-  }
-  
-  if (modal) {
-    modal.remove();
-  }
+// Backward compatibility: if no global createModal is defined, expose this simple one
+if (typeof window !== 'undefined' && !window.createModal) {
+  window.createModal = createModalSimple;
 }
+
+// NOTE: Duplicate closeModal definition removed. Unified into single robust closeModal(element) above to avoid parse-time errors.
 
 // Universal function to handle X button clicks and other close actions
 function setupModalCloseHandlers(modal) {
@@ -6716,17 +6661,7 @@ function populateRiskFormStaticFallbacks() {
 }
 
 // Utility function to escape HTML and prevent XSS
-function escapeHtml(unsafe) {
-  if (typeof unsafe !== 'string') {
-    return String(unsafe || '');
-  }
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+// Duplicate escapeHtml removed to avoid identifier clashes. Using the primary escapeHtml(text) defined earlier.
 
 // Legacy function for backwards compatibility
 async function populateRiskFormDropdowns() {
@@ -6902,7 +6837,7 @@ function getRiskViewHTML(risk) {
 }
 
 // Control Form Functions
-function getControlFormHTML(control = null) {
+function getControlFormHTML_v2(control = null) {
   return `
     <form id="control-form" class="space-y-4">
       <div>
@@ -7011,7 +6946,7 @@ function getControlFormHTML(control = null) {
   `;
 }
 
-function populateControlFormDropdowns() {
+function populateControlFormDropdowns_v2() {
   // Populate organizations
   const orgSelect = document.getElementById('control-organization');
   orgSelect.innerHTML = '<option value="">Select Organization</option>';
@@ -7027,7 +6962,7 @@ function populateControlFormDropdowns() {
   });
 }
 
-function populateControlForm(control) {
+function populateControlForm_v2(control) {
   document.getElementById('control-name').value = control.name || '';
   document.getElementById('control-description').value = control.description || '';
   document.getElementById('control-type').value = control.control_type || '';
@@ -7041,7 +6976,7 @@ function populateControlForm(control) {
   document.getElementById('control-owner').value = control.owner_id || '';
 }
 
-async function handleControlSubmit(id = null) {
+async function handleControlSubmit_v2(id = null) {
   try {
     const formData = {
       name: document.getElementById('control-name').value,
@@ -7078,7 +7013,7 @@ async function handleControlSubmit(id = null) {
   }
 }
 
-function getControlViewHTML(control) {
+function getControlViewHTML_v2(control) {
   return `
     <div class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -7144,15 +7079,7 @@ function getControlViewHTML(control) {
 // =============================================================================
 
 // HTML escaping utility function
-function escapeHtml(unsafe) {
-  if (typeof unsafe !== 'string') return unsafe;
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+// Duplicate escapeHtml removed to avoid identifier clashes. Using the primary escapeHtml(text) defined earlier.
 
 // AI Risk Heat Map Visualization
 // Add debounce mechanism to prevent duplicate calls

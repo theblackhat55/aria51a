@@ -2117,13 +2117,13 @@ function generateClientPassword() {
 }
 
 // Placeholder: Organizations modal (to avoid undefined onclick)
-function showAddOrganizationModal() {
+function showAddOrganizationModal_Placeholder() {
   const html = `
     <div id="add-organization-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display:block;">
       <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
         <div class="flex justify-between items-center pb-4 border-b">
           <h3 class="text-lg font-medium text-gray-900">Add Organization</h3>
-          <button onclick="closeAddOrganizationModal()" class="text-gray-400 hover:text-gray-600" aria-label="Close add organization form">
+          <button onclick="closeAddOrganizationModal_Placeholder()" class="text-gray-400 hover:text-gray-600" aria-label="Close add organization form">
             <i class="fas fa-times text-xl"></i>
           </button>
         </div>
@@ -2131,7 +2131,7 @@ function showAddOrganizationModal() {
           This form is coming soon. Please use API or seed data for now.
         </div>
         <div class="flex justify-end space-x-3 pt-4 border-t">
-          <button type="button" onclick="closeAddOrganizationModal()" class="btn-secondary">Close</button>
+          <button type="button" onclick="closeAddOrganizationModal_Placeholder()" class="btn-secondary">Close</button>
         </div>
       </div>
     </div>
@@ -2139,7 +2139,7 @@ function showAddOrganizationModal() {
   document.body.insertAdjacentHTML('beforeend', html);
   attachModalCommonHandlers('add-organization-modal', closeAddOrganizationModal);
 }
-function closeAddOrganizationModal() {
+function closeAddOrganizationModal_Placeholder() {
   const modal = document.getElementById('add-organization-modal');
   if (modal) {
     if (modal._escKeyHandler) document.removeEventListener('keydown', modal._escKeyHandler);
@@ -2149,13 +2149,13 @@ function closeAddOrganizationModal() {
 }
 
 // Placeholder: Risk Owners modal (to avoid undefined onclick)
-function showAddRiskOwnerModal() {
+function showAddRiskOwnerModal_Placeholder() {
   const html = `
     <div id="add-risk-owner-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display:block;">
       <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
         <div class="flex justify-between items-center pb-4 border-b">
           <h3 class="text-lg font-medium text-gray-900">Add Risk Owner</h3>
-          <button onclick="closeAddRiskOwnerModal()" class="text-gray-400 hover:text-gray-600" aria-label="Close add risk owner form">
+          <button onclick="closeAddRiskOwnerModal_Placeholder()" class="text-gray-400 hover:text-gray-600" aria-label="Close add risk owner form">
             <i class="fas fa-times text-xl"></i>
           </button>
         </div>
@@ -2163,7 +2163,7 @@ function showAddRiskOwnerModal() {
           This form is coming soon. Please use Users to create a user and assign as risk owner.
         </div>
         <div class="flex justify-end space-x-3 pt-4 border-t">
-          <button type="button" onclick="closeAddRiskOwnerModal()" class="btn-secondary">Close</button>
+          <button type="button" onclick="closeAddRiskOwnerModal_Placeholder()" class="btn-secondary">Close</button>
         </div>
       </div>
     </div>
@@ -2171,7 +2171,7 @@ function showAddRiskOwnerModal() {
   document.body.insertAdjacentHTML('beforeend', html);
   attachModalCommonHandlers('add-risk-owner-modal', closeAddRiskOwnerModal);
 }
-function closeAddRiskOwnerModal() {
+function closeAddRiskOwnerModal_Placeholder() {
   const modal = document.getElementById('add-risk-owner-modal');
   if (modal) {
     if (modal._escKeyHandler) document.removeEventListener('keydown', modal._escKeyHandler);
@@ -3103,8 +3103,8 @@ async function loadMicrosoftConfig() {
   showToast('Loading Microsoft configuration...', 'info');
 }
 
-async function loadSAMLConfig() {
-  // Implementation for loading SAML configuration
+// Renamed to avoid duplicate identifier with the main implementation above
+async function loadSAMLConfigStub() {
   showToast('Loading SAML configuration...', 'info');
 }
 
@@ -3589,7 +3589,7 @@ function updateOrganizationsStatistics(organizations) {
   document.getElementById('assigned-assets').textContent = totalAssets;
 }
 
-function showAddOrganizationModal() {
+function showAddOrganizationModal_OrgMgmt() {
   showModal('Add Organization', `
     <form id="organization-form" class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3755,7 +3755,7 @@ function updateRiskOwnersStatistics(owners) {
   document.getElementById('high-risk-items').textContent = highRiskItems;
 }
 
-function showAddRiskOwnerModal() {
+function showAddRiskOwnerModal_Main() {
   showModal('Add Risk Owner', `
     <form id="risk-owner-form" class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1504,10 +1504,7 @@ function logIncidentActivity(activity) {
     localStorage.setItem('incidentActivities', JSON.stringify(activities));
 }
 
-function formatDateTime(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
+// Removed duplicate simple formatDateTime; keeping the robust version below
 
 // Auto-run escalation check every 10 minutes (reduced from 5 minutes to avoid rate limiting)
 setInterval(checkEscalationRules, 10 * 60 * 1000);
@@ -1652,52 +1649,8 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-function createModal(title, content, buttons = []) {
-    // Remove existing modal if any
-    const existingModal = document.getElementById('dynamic-modal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Create modal
-    const modal = document.createElement('div');
-    modal.id = 'dynamic-modal';
-    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
-    
-    const modalContent = document.createElement('div');
-    modalContent.className = 'bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto';
-    
-    modalContent.innerHTML = `
-        <div class="flex justify-between items-center p-6 border-b">
-            <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
-            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times text-lg"></i>
-            </button>
-        </div>
-        <div class="p-6">
-            ${content}
-        </div>
-    `;
-    
-    modal.appendChild(modalContent);
-    document.body.appendChild(modal);
-    
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeModal();
-        }
-    });
-    
-    return modal;
-}
-
-function closeModal() {
-    const modal = document.getElementById('dynamic-modal');
-    if (modal) {
-        modal.remove();
-    }
-}
+// Use global modal helpers from modules.js to avoid duplicate identifiers
+// function createModal(...) and function closeModal() are intentionally omitted here to prevent collisions.
 
 function updateActiveNavigation(page) {
     // Remove active class from all nav items
