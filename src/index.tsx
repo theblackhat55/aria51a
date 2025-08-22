@@ -162,6 +162,7 @@ app.get('/', (c) => {
                 </button>
                 <div id="admin-menu" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
                   <a href="#" data-page="settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
+                  <a href="#" data-page="integrations" class="block px-4 py-2 text-sm hover:bg-gray-50">Integrations</a>
                 </div>
               </div>
             </div>

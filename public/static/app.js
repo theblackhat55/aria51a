@@ -1188,12 +1188,122 @@ function navigateTo(page) {
           showPlaceholder('Key Risk Indicators', 'KRI module loading...', 'wave-square');
         }
         break;
+      case 'ai-providers':
+        if (typeof showAISettings === 'function') {
+          showAISettings();
+        } else {
+          showPlaceholder('AI Providers', 'AI Providers module loading...', 'robot');
+        }
+        break;
+      case 'rag-knowledge':
+        if (typeof showRAGSettings === 'function') {
+          showRAGSettings();
+        } else {
+          showPlaceholder('RAG & Knowledge', 'RAG & Knowledge module loading...', 'database');
+        }
+        break;
+      case 'integrations':
+        if (typeof showIntegrations === 'function') {
+          showIntegrations();
+        } else {
+          showPlaceholder('Integrations', 'Integrations module loading...', 'plug');
+        }
+        break;
       default:
         showBasicDashboard();
     }
   } catch (error) {
     console.error('Navigation error:', error);
     showError('Navigation error: ' + error.message);
+  }
+}
+
+// Show integrations page (moved from settings)
+function showIntegrations() {
+  updateActiveNavigation && updateActiveNavigation('integrations');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">Integrations</h1>
+              <p class="text-gray-600">Configure external system integrations and authentication providers</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Integration Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Microsoft Integration -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <i class="fab fa-microsoft text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">Microsoft Integration</h3>
+                  <p class="text-sm text-gray-500">Microsoft Defender, Azure AD, and Office 365</p>
+                </div>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">Configure Microsoft Defender for Endpoint integration to sync assets, vulnerabilities, and security incidents.</p>
+            <button onclick="if(typeof showMicrosoftSettings === 'function') showMicrosoftSettings();" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-cog mr-2"></i>Configure Microsoft
+            </button>
+          </div>
+          
+          <!-- SAML Authentication -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-shield-alt text-green-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">SAML Authentication</h3>
+                  <p class="text-sm text-gray-500">Single Sign-On (SSO) Integration</p>
+                </div>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">Configure SAML 2.0 integration for single sign-on with your identity provider.</p>
+            <button onclick="if(typeof showSAMLSettings === 'function') showSAMLSettings();" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-key mr-2"></i>Configure SAML
+            </button>
+          </div>
+        </div>
+        
+        <!-- Integration Status -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Integration Status</h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                <span class="text-sm font-medium text-gray-900">Microsoft Defender</span>
+              </div>
+              <span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">Configuration Required</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-red-400 rounded-full"></div>
+                <span class="text-sm font-medium text-gray-900">SAML SSO</span>
+              </div>
+              <span class="text-xs text-red-600 bg-red-100 px-2 py-1 rounded-full">Not Configured</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 }
 
