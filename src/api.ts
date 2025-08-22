@@ -9,6 +9,7 @@ import { createRAGAPI } from './api/rag';
 import { createARIAAPI } from './api/aria';
 import { createAIGRCAPI } from './ai-grc-api';
 import { createAIProxyAPI } from './ai-proxy';
+import { createSecureKeyManagementAPI } from './secure-key-management';
 // Keycloak removed
 
 export function createAPI() {
@@ -33,6 +34,10 @@ export function createAPI() {
   // Mount Secure AI Proxy routes
   const aiProxyAPI = createAIProxyAPI();
   api.route('/api/ai', aiProxyAPI);
+
+  // Mount Secure Key Management routes
+  const keyManagementAPI = createSecureKeyManagementAPI();
+  api.route('/api/keys', keyManagementAPI);
 
   // Keycloak routes removed
 

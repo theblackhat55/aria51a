@@ -164,12 +164,12 @@ export function createAIProxyAPI() {
       }
 
       // Determine which provider to use
-      const selectedProvider = await selectOptimalProvider(c.env, provider, providerConfigs);
+      const selectedProvider = await selectOptimalProvider(c.env, provider, providerConfigs, userId);
       
       if (!selectedProvider) {
         return c.json({
           success: false,
-          error: 'No AI providers are configured. Please contact your administrator to set up API keys.'
+          error: 'No AI providers are configured. Please set up your API keys in Settings or contact your administrator.'
         }, 503);
       }
 
@@ -270,23 +270,26 @@ export function createAIProxyAPI() {
 }
 
 // Helper function to select optimal provider based on priority and availability
-async function selectOptimalProvider(env: CloudflareBindings, requestedProvider: string | undefined, userConfigs: any) {
+async function selectOptimalProvider(env: CloudflareBindings, requestedProvider: string | undefined, userConfigs: any, userId: string) {
+  // Get user's API keys from secure storage
+  const userKeys = await getUserAPIKeys(env, userId);
+  
   const providers = [
     {
       name: 'openai',
-      apiKey: env.OPENAI_API_KEY,
+      apiKey: userKeys.openai || env.OPENAI_API_KEY, // Fallback to global key if admin set
       priority: userConfigs.openai?.priority || 1,
       defaultModel: 'gpt-4o'
     },
     {
       name: 'anthropic',
-      apiKey: env.ANTHROPIC_API_KEY,
+      apiKey: userKeys.anthropic || env.ANTHROPIC_API_KEY,
       priority: userConfigs.anthropic?.priority || 2,
       defaultModel: 'claude-3-5-sonnet-20241022'
     },
     {
       name: 'gemini',
-      apiKey: env.GEMINI_API_KEY,
+      apiKey: userKeys.gemini || env.GEMINI_API_KEY,
       priority: userConfigs.gemini?.priority || 3,
       defaultModel: 'gemini-pro'
     }
@@ -497,4 +500,39 @@ async function logAIUsage(env: CloudflareBindings, userId: string, provider: str
     console.error('Failed to log AI usage:', error);
     // Don't throw - usage logging failure shouldn't break the main functionality
   }
+}
+
+// Get user's decrypted API keys for AI requests
+async function getUserAPIKeys(env: CloudflareBindings, userId: string): Promise<Record<string, string | null>> {
+  try {
+    const keys = await env.DB.prepare(`
+      SELECT provider, encrypted_key
+      FROM user_api_keys 
+      WHERE user_id = ? AND deleted_at IS NULL AND is_valid = 1
+    `).bind(userId).all();
+
+    const userKeys: Record<string, string | null> = {
+      openai: null,
+      anthropic: null,
+      gemini: null
+    };
+
+    // Decrypt each key
+    for (const key of keys.results) {
+      const decryptedKey = await decryptAPIKey(key.encrypted_key as string);
+      userKeys[key.provider as string] = decryptedKey;
+    }
+
+    return userKeys;
+  } catch (error) {
+    console.error('Error retrieving user API keys:', error);
+    return { openai: null, anthropic: null, gemini: null };
+  }
+}
+
+// Simple decryption function (placeholder - use proper encryption in production)
+async function decryptAPIKey(encryptedKey: string): Promise<string> {
+  // In production, use proper decryption with Cloudflare's crypto APIs
+  // For now, using base64 decoding as a placeholder
+  return atob(encryptedKey);
 }

@@ -297,6 +297,7 @@ app.get('/', (c) => {
   <script src="/static/document-management.js?v=3"></script>
   <script src="/static/mobile-interface.js?v=3"></script>
   <script src="/static/secure-aria.js?v=1"></script>
+  <script src="/static/secure-key-manager.js?v=1"></script>
   <script src="/static/app.js?v=15"></script>
   
   <!-- Load Keycloak Authentication -->

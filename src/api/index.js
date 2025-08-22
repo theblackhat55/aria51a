@@ -2,6 +2,7 @@
 import { Hono } from 'hono';
 import { getDatabase, createQueryHelpers } from '../database/sqlite.js';
 // import { createKeycloakAPI } from './keycloak.js';
+import { createSecureKeyManagementAPI } from '../secure-key-management.js';
 
 export function createAPI() {
   const app = new Hono();
@@ -756,6 +757,10 @@ export function createAPI() {
       return c.json({ success: false, error: 'Internal server error' }, 500);
     }
   });
+
+  // --- Secure API Key Management endpoints ---
+  const keyManagementAPI = createSecureKeyManagementAPI();
+  app.route('/api/keys', keyManagementAPI);
 
   // --- RAG admin endpoints (placeholders) ---
   app.get('/api/rag/stats', (c) => {

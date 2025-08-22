@@ -254,6 +254,54 @@ class EnhancedSettingsManager {
 
         <!-- AI Provider Cards -->
         <div class="space-y-6">
+          <!-- API Key Management Section -->
+          <div class="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <i class="fas fa-key text-blue-600 text-xl"></i>
+                </div>
+                <div>
+                  <h4 class="text-lg font-semibold text-gray-900">Personal API Key Management</h4>
+                  <p class="text-sm text-gray-600">Manage your personal AI provider API keys securely</p>
+                </div>
+              </div>
+              <button onclick="secureKeyManager.showKeyManagementDialog()" 
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                <i class="fas fa-cog mr-2"></i>Manage Keys
+              </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div id="openai-key-status" class="p-3 bg-white rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-gray-700">OpenAI</span>
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+                    <span class="text-xs text-gray-500">Not Set</span>
+                  </div>
+                </div>
+              </div>
+              <div id="gemini-key-status" class="p-3 bg-white rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-gray-700">Gemini</span>
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+                    <span class="text-xs text-gray-500">Not Set</span>
+                  </div>
+                </div>
+              </div>
+              <div id="anthropic-key-status" class="p-3 bg-white rounded-lg border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-gray-700">Anthropic</span>
+                  <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+                    <span class="text-xs text-gray-500">Not Set</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- OpenAI Configuration -->
           ${this.renderAIProviderCard('openai', {
             name: 'OpenAI GPT-4',
@@ -321,6 +369,11 @@ class EnhancedSettingsManager {
 
     this.setupAutoSave();
     this.setupValidation();
+    
+    // Initialize secure key manager and update key status
+    if (typeof secureKeyManager !== 'undefined') {
+      this.updateKeyStatusDisplay();
+    }
   }
 
   renderAIProviderCard(provider, config) {
@@ -830,6 +883,9 @@ class EnhancedSettingsManager {
         });
 
         showToast(message, 'success');
+        
+        // Update key status display after test
+        this.updateKeyStatusDisplay();
       } else {
         throw new Error(result.error || 'Test failed');
       }
@@ -842,6 +898,48 @@ class EnhancedSettingsManager {
   async refreshAllModels() {
     showToast('Refreshing all models...', 'info');
     // TODO: Implement model refresh for all providers
+  }
+
+  async updateKeyStatusDisplay() {
+    try {
+      const token = localStorage.getItem('dmt_token');
+      if (!token) return;
+
+      const response = await fetch('/api/keys/status', {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) return;
+
+      const result = await response.json();
+      if (result.success) {
+        const keyStatus = result.data;
+        
+        ['openai', 'gemini', 'anthropic'].forEach(provider => {
+          const statusEl = document.getElementById(`${provider}-key-status`);
+          if (statusEl) {
+            const status = keyStatus[provider];
+            const indicator = statusEl.querySelector('.w-3.h-3');
+            const text = statusEl.querySelector('.text-xs');
+            
+            if (status && status.configured) {
+              indicator.className = 'w-3 h-3 rounded-full ' + (status.valid ? 'bg-green-400' : 'bg-yellow-400');
+              text.textContent = status.valid ? 'Valid' : 'Invalid';
+              text.className = 'text-xs ' + (status.valid ? 'text-green-600' : 'text-yellow-600');
+            } else {
+              indicator.className = 'w-3 h-3 rounded-full bg-gray-400';
+              text.textContent = 'Not Set';
+              text.className = 'text-xs text-gray-500';
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error updating key status:', error);
+    }
   }
 
   showRAGSettings() {
