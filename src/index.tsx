@@ -307,16 +307,16 @@ app.get('/', (c) => {
     document.addEventListener('DOMContentLoaded', function() {
       try {
         var hasToken = !!(localStorage.getItem('dmt_token') || localStorage.getItem('authToken'));
-        if (!hasToken && typeof showLoginPrompt === 'function') {
+        if (false && !hasToken && typeof showLoginPrompt === 'function') {
           showLoginPrompt();
         }
       } catch (e) {
         // If localStorage is unavailable, show prompt as a fallback
-        if (typeof showLoginPrompt === 'function') showLoginPrompt();
+        if (false && typeof showLoginPrompt === 'function') showLoginPrompt();
       }
     });
     
-    function showLoginPrompt() {
+    function removedLoginPrompt() {
       const app = document.getElementById('app');
       if (app) {
         const loginPrompt = document.createElement('div');
