@@ -1397,12 +1397,13 @@ function showDashboard() {
   console.log('✅ Dashboard data available, rendering dashboard');
   
   mainContent.innerHTML = `
-    <div class="space-y-8">
+    <div class="container mx-auto px-4 py-6">
+      <div class="space-y-8">
       <!-- Modern Header -->
       <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
         <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-3xl font-bold mb-2">Risk Management Dashboard</h1>
+            <h1 class="text-3xl font-bold mb-2">Risk Optiks Dashboard</h1>
             <p class="text-blue-100">Real-time insights into your organization's risk posture</p>
           </div>
           <div class="flex space-x-3">
@@ -1587,6 +1588,7 @@ function showDashboard() {
           </div>
         </div>
       </div>
+      </div>
     </div>
   `;
   
@@ -1604,11 +1606,12 @@ async function showSoA() {
     const res = await axios.get('/api/soa', { headers: { Authorization: `Bearer ${token}` } });
     const rows = res.data.data || [];
     main.innerHTML = `
-      <div class="space-y-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">Statement of Applicability</h2>
-          <div class="text-sm text-gray-500">Read/write (basic)</div>
-        </div>
+      <div class="container mx-auto px-4 py-6">
+        <div class="space-y-6">
+          <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold text-gray-900">Statement of Applicability</h2>
+            <div class="text-sm text-gray-500">Read/write (basic)</div>
+          </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -1638,6 +1641,7 @@ async function showSoA() {
               `).join('')}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
     `;
