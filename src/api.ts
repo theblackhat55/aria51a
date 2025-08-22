@@ -1183,7 +1183,82 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
     }
   });
 
+  // Risk Treatments API
+  api.get('/api/treatments', smartAuthMiddleware, async (c) => {
+    try {
+      const treatments = await c.env.DB.prepare(`
+        SELECT rt.*, r.title as risk_title, u.first_name || ' ' || u.last_name as owner_name
+        FROM risk_treatments rt
+        LEFT JOIN risks r ON rt.risk_id = r.id
+        LEFT JOIN users u ON rt.owner_id = u.id
+        ORDER BY rt.created_at DESC
+      `).all();
 
+      return c.json<ApiResponse<typeof treatments.results>>({ 
+        success: true, 
+        data: treatments.results 
+      });
+    } catch (error) {
+      console.error('Fetch treatments error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch risk treatments' 
+      }, 500);
+    }
+  });
+
+  // Risk Exceptions API
+  api.get('/api/exceptions', smartAuthMiddleware, async (c) => {
+    try {
+      const exceptions = await c.env.DB.prepare(`
+        SELECT re.*, c.title as control_title, r.title as risk_title, 
+               u1.first_name || ' ' || u1.last_name as approver_name,
+               u2.first_name || ' ' || u2.last_name as created_by_name
+        FROM risk_exceptions re
+        LEFT JOIN controls c ON re.control_id = c.id
+        LEFT JOIN risks r ON re.risk_id = r.id
+        LEFT JOIN users u1 ON re.approver_id = u1.id
+        LEFT JOIN users u2 ON re.created_by = u2.id
+        ORDER BY re.created_at DESC
+      `).all();
+
+      return c.json<ApiResponse<typeof exceptions.results>>({ 
+        success: true, 
+        data: exceptions.results 
+      });
+    } catch (error) {
+      console.error('Fetch exceptions error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch risk exceptions' 
+      }, 500);
+    }
+  });
+
+  // Key Risk Indicators (KRIs) API
+  api.get('/api/kris', smartAuthMiddleware, async (c) => {
+    try {
+      const kris = await c.env.DB.prepare(`
+        SELECT k.*, 
+               (SELECT value FROM kri_readings kr WHERE kr.kri_id = k.id ORDER BY timestamp DESC LIMIT 1) as latest_value,
+               (SELECT timestamp FROM kri_readings kr WHERE kr.kri_id = k.id ORDER BY timestamp DESC LIMIT 1) as latest_reading,
+               (SELECT status FROM kri_readings kr WHERE kr.kri_id = k.id ORDER BY timestamp DESC LIMIT 1) as current_status
+        FROM kris k
+        ORDER BY k.name
+      `).all();
+
+      return c.json<ApiResponse<typeof kris.results>>({ 
+        success: true, 
+        data: kris.results 
+      });
+    } catch (error) {
+      console.error('Fetch KRIs error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch KRIs' 
+      }, 500);
+    }
+  });
 
   // AI Assistant (ARIA) API - removed duplicate basic handler (handled by enhanced ARIA router in /api/aria)
   /* api.post('/api/aria/query', authMiddleware, async (c) => {
