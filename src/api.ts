@@ -191,8 +191,12 @@ export function createAPI() {
       `).bind(email).first();
       
       if (!user) {
-        // Create demo user if none exist
-        const hashedPassword = SecurityUtils.hashPassword('demo123');
+        // Create demo user if none exist - use simple hashing since this is for demo only
+        const encoder = new TextEncoder();
+        const data = encoder.encode('demo123' + 'salt');
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         
         const result = await c.env.DB.prepare(`
           INSERT INTO users (
@@ -287,8 +291,12 @@ export function createAPI() {
         }, 400);
       }
       
-      // Create new user
-      const hashedPassword = SecurityUtils.hashPassword(password);
+      // Create new user - use simple hashing for registration
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password + 'salt');
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       const username = email.split('@')[0];
       
       const result = await c.env.DB.prepare(`
