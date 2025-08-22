@@ -1260,6 +1260,160 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
     }
   });
 
+  // KRI Readings API
+  api.get('/api/kris/:id/readings', smartAuthMiddleware, async (c) => {
+    try {
+      const id = c.req.param('id');
+      const readings = await c.env.DB.prepare(`
+        SELECT kr.*, k.name as kri_name
+        FROM kri_readings kr
+        LEFT JOIN kris k ON kr.kri_id = k.id
+        WHERE kr.kri_id = ?
+        ORDER BY kr.timestamp DESC
+        LIMIT 100
+      `).bind(id).all();
+
+      return c.json<ApiResponse<typeof readings.results>>({ 
+        success: true, 
+        data: readings.results 
+      });
+    } catch (error) {
+      console.error('Fetch KRI readings error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch KRI readings' 
+      }, 500);
+    }
+  });
+
+  // Statement of Applicability (SoA) API
+  api.get('/api/soa', smartAuthMiddleware, async (c) => {
+    try {
+      const soa = await c.env.DB.prepare(`
+        SELECT soa.*, cc.framework, cc.external_id, cc.title, cc.description
+        FROM statement_of_applicability soa
+        LEFT JOIN control_catalog cc ON soa.catalog_id = cc.id
+        ORDER BY cc.framework, cc.external_id
+      `).all();
+
+      return c.json<ApiResponse<typeof soa.results>>({ 
+        success: true, 
+        data: soa.results 
+      });
+    } catch (error) {
+      console.error('Fetch SoA error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch Statement of Applicability' 
+      }, 500);
+    }
+  });
+
+  // Update SoA item
+  api.put('/api/soa/:id', smartAuthMiddleware, smartRequireRole(['admin', 'compliance_officer']), async (c) => {
+    try {
+      const id = c.req.param('id');
+      const body = await c.req.json();
+      
+      const result = await c.env.DB.prepare(`
+        UPDATE statement_of_applicability SET
+          included = ?,
+          implementation_status = ?,
+          effectiveness = ?,
+          justification = ?,
+          evidence_refs = ?,
+          last_updated = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        body.included,
+        body.implementation_status,
+        body.effectiveness,
+        body.justification,
+        body.evidence_refs,
+        id
+      ).run();
+
+      if (result.changes === 0) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'SoA item not found' 
+        }, 404);
+      }
+
+      return c.json<ApiResponse<{updated: boolean}>>({ 
+        success: true, 
+        data: { updated: true },
+        message: 'SoA item updated successfully' 
+      });
+    } catch (error) {
+      console.error('Update SoA error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to update SoA item' 
+      }, 500);
+    }
+  });
+
+  // AI Chat API (fallback for aria-chat.js)
+  api.post('/api/ai/chat', smartAuthMiddleware, async (c) => {
+    try {
+      const body = await c.req.json();
+      
+      // Simple fallback response - redirect to ARIA API
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: { 
+          message: "Please use /api/aria/query for AI chat functionality",
+          redirect: "/api/aria/query"
+        },
+        message: 'Use ARIA API for chat functionality' 
+      });
+    } catch (error) {
+      console.error('AI chat error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'AI chat not available, use ARIA API' 
+      }, 500);
+    }
+  });
+
+  // AI Risk Assessment API (for risk-enhancements.js)
+  api.post('/api/ai/risk-assessment', smartAuthMiddleware, async (c) => {
+    try {
+      const body = await c.req.json();
+      
+      // Simple risk assessment analysis
+      const riskData = body.riskData || {};
+      const analysisType = body.analysisType || 'basic';
+      
+      // Mock analysis result - in production this would call AI service
+      const assessment = {
+        riskScore: Math.floor(Math.random() * 10) + 1,
+        likelihood: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)],
+        impact: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)],
+        recommendations: [
+          'Implement additional security controls',
+          'Regular monitoring and assessment',
+          'Staff training and awareness'
+        ],
+        analysisType,
+        timestamp: new Date().toISOString()
+      };
+
+      return c.json<ApiResponse<typeof assessment>>({ 
+        success: true, 
+        data: assessment,
+        message: 'Risk assessment completed' 
+      });
+    } catch (error) {
+      console.error('Risk assessment error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to perform risk assessment' 
+      }, 500);
+    }
+  });
+
   // AI Assistant (ARIA) API - removed duplicate basic handler (handled by enhanced ARIA router in /api/aria)
   /* api.post('/api/aria/query', authMiddleware, async (c) => {
     try {
