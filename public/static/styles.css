@@ -1,5 +1,33 @@
 /* DMT Risk Assessment System v2.0 - Custom Styles */
 
+/* Navigation and Layout Styles */
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  z-index: 50;
+}
+
+.dropdown-menu.hidden {
+  display: none;
+}
+
+.dropdown {
+  position: relative;
+}
+
+/* Ensure navigation doesn't create extra spacing */
+nav {
+  position: relative;
+  z-index: 40;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
 /* Navigation Menu Styles */
 .nav-menu-item {
   display: flex;

@@ -839,6 +839,40 @@ async function initializeNavigation() {
     });
   });
   
+  // Setup dropdown toggles
+  console.log('Setting up dropdown toggle handlers...');
+  document.querySelectorAll('.dropdown-toggle').forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const dropdownId = button.getAttribute('data-dropdown');
+      const dropdown = document.getElementById(dropdownId);
+      
+      if (dropdown) {
+        // Close all other dropdowns first
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+          if (menu.id !== dropdownId) {
+            menu.classList.add('hidden');
+          }
+        });
+        
+        // Toggle current dropdown
+        dropdown.classList.toggle('hidden');
+        console.log('Toggled dropdown:', dropdownId);
+      }
+    });
+  });
+  
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.add('hidden');
+      });
+    }
+  });
+  
   // Setup auth button
   const authButton = document.getElementById('auth-button');
   if (authButton) {

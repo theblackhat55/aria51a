@@ -93,77 +93,77 @@ app.get('/', (c) => {
             <!-- Grouped navigation with click-to-open dropdowns -->
             <div class="hidden md:flex items-center space-x-4" id="internal-nav">
               <!-- Overview -->
-              <details class="relative dropdown">
-                <summary class="nav-menu-item cursor-pointer list-none">
+              <div class="relative dropdown">
+                <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="overview-menu">
                   Overview <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                </summary>
-                <div class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                </button>
+                <div id="overview-menu" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
                   <a href="#" data-page="dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">Dashboard</a>
                   <a href="#" data-page="reports" class="block px-4 py-2 text-sm hover:bg-gray-50">Reports</a>
                 </div>
-              </details>
+              </div>
 
               <!-- Risk -->
-              <details class="relative dropdown">
-                <summary class="nav-menu-item cursor-pointer list-none">
+              <div class="relative dropdown">
+                <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="risk-menu">
                   Risk <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                </summary>
-                <div class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                </button>
+                <div id="risk-menu" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
                   <a href="#" data-page="risks" class="block px-4 py-2 text-sm hover:bg-gray-50">Risks</a>
                   <a href="#" data-page="treatments" class="block px-4 py-2 text-sm hover:bg-gray-50">Treatments</a>
                   <a href="#" data-page="kris" class="block px-4 py-2 text-sm hover:bg-gray-50">KRIs</a>
                   <a href="#" data-page="incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">Incidents</a>
                 </div>
-              </details>
+              </div>
 
               <!-- Compliance -->
-              <details class="relative dropdown">
-                <summary class="nav-menu-item cursor-pointer list-none">
+              <div class="relative dropdown">
+                <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="compliance-menu">
                   Compliance <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                </summary>
-                <div class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                </button>
+                <div id="compliance-menu" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
                   <a href="#" data-page="frameworks" class="block px-4 py-2 text-sm hover:bg-gray-50">Frameworks</a>
                   <a href="#" data-page="soa" class="block px-4 py-2 text-sm hover:bg-gray-50">SoA</a>
                   <a href="#" data-page="evidence" class="block px-4 py-2 text-sm hover:bg-gray-50">Evidence</a>
                   <a href="#" data-page="assessments" class="block px-4 py-2 text-sm hover:bg-gray-50">Assessments</a>
                 </div>
-              </details>
+              </div>
 
               <!-- Operations -->
-              <details class="relative dropdown">
-                <summary class="nav-menu-item cursor-pointer list-none">
+              <div class="relative dropdown">
+                <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="operations-menu">
                   Operations <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                </summary>
-                <div class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                </button>
+                <div id="operations-menu" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
                   <a href="#" data-page="assets" class="block px-4 py-2 text-sm hover:bg-gray-50">Assets</a>
                   <a href="#" data-page="services" class="block px-4 py-2 text-sm hover:bg-gray-50">Services</a>
                   <a href="#" data-page="documents" class="block px-4 py-2 text-sm hover:bg-gray-50">Documents</a>
                 </div>
-              </details>
+              </div>
 
               <!-- Intelligence -->
-              <details class="relative dropdown">
-                <summary class="nav-menu-item cursor-pointer list-none">
+              <div class="relative dropdown">
+                <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="intelligence-menu">
                   Intelligence <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                </summary>
-                <div class="dropdown-menu absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                </button>
+                <div id="intelligence-menu" class="dropdown-menu absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
                   <a href="#" data-page="ai-assure" class="block px-4 py-2 text-sm hover:bg-gray-50">AI/ARIA</a>
                   <a href="#" data-page="ai-providers" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Providers</a>
                   <a href="#" data-page="rag-knowledge" class="block px-4 py-2 text-sm hover:bg-gray-50">RAG & Knowledge</a>
                   <a href="#" data-page="search" class="block px-4 py-2 text-sm hover:bg-gray-50">Search</a>
                   <a href="#" data-page="ai-analytics" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Analytics</a>
                 </div>
-              </details>
+              </div>
 
               <!-- Admin -->
-              <details id="menu-admin" class="relative dropdown">
-                <summary class="nav-menu-item cursor-pointer list-none">
+              <div id="menu-admin" class="relative dropdown">
+                <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="admin-menu">
                   Admin <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                </summary>
-                <div class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                </button>
+                <div id="admin-menu" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
                   <a href="#" data-page="settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
                 </div>
-              </details>
+              </div>
             </div>
             
             <!-- User Section -->
@@ -192,7 +192,7 @@ app.get('/', (c) => {
     
     <!-- Main Content Area -->
     <main id="main-content" class="min-h-screen bg-gray-50">
-      <div class="container mx-auto px-4 py-8">
+      <div class="container mx-auto px-4 pt-4 pb-8">
         <!-- Content will be loaded here based on authentication status -->
       </div>
     </main>
