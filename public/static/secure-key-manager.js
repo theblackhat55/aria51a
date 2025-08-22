@@ -10,7 +10,16 @@ class SecureKeyManager {
   async loadKeyStatus() {
     try {
       const token = localStorage.getItem('dmt_token');
+      
+      // Debug token retrieval in loadKeyStatus
+      console.log('🔑 SecureKeyManager.loadKeyStatus - Token check:', {
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+        allLocalStorageKeys: Object.keys(localStorage)
+      });
+      
       if (!token) {
+        console.log('⚠️ No token found in loadKeyStatus, returning default status');
         // Return default status for unauthenticated users
         this.apiKeyStatus = {
           openai: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
@@ -80,6 +89,16 @@ class SecureKeyManager {
     try {
       this.isLoading = true;
       const token = localStorage.getItem('dmt_token');
+      
+      // Debug token retrieval
+      console.log('🔑 SecureKeyManager - Token check:', {
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+        tokenPrefix: token ? token.substring(0, 10) + '...' : 'null',
+        allKeys: Object.keys(localStorage),
+        dmtKeys: Object.keys(localStorage).filter(k => k.startsWith('dmt_'))
+      });
+      
       if (!token) {
         throw new Error('Please log in to manage API keys');
       }
