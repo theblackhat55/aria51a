@@ -1,47 +1,48 @@
 // Secure API Key Management System - JavaScript Version
 // Provides secure, encrypted storage and management of user API keys for AI providers
 import { Hono } from 'hono';
-import { createHash, createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
-import { promisify } from 'util';
+import { verify } from 'hono/jwt';
 
-const scryptAsync = promisify(scrypt);
-
-// Encryption key derivation from environment or fallback
-const ENCRYPTION_SECRET = process.env.ENCRYPTION_SECRET || 'default-encryption-key-change-in-production';
+// For Cloudflare Workers, we need to use Web Crypto API instead of Node.js crypto
+// These functions will be replaced with Web Crypto API equivalents
 
 /**
- * Encrypts an API key using AES-256-GCM encryption
+ * Encrypts an API key using Web Crypto API (AES-GCM)
  * @param {string} apiKey - The API key to encrypt
- * @param {Object} env - Environment bindings (not used in Node.js version)
- * @returns {Promise<string>} Base64 encoded encrypted key with IV and salt
+ * @param {Object} env - Environment bindings
+ * @returns {Promise<string>} Base64 encoded encrypted key with IV
  */
 async function encryptAPIKey(apiKey, env = null) {
   try {
-    const salt = randomBytes(16);
-    const iv = randomBytes(16);
+    const encoder = new TextEncoder();
+    const keyMaterial = encoder.encode(env?.ENCRYPTION_SECRET || 'default-encryption-key-change-in-production');
     
-    // Derive key from secret and salt
-    const key = await scryptAsync(ENCRYPTION_SECRET, salt, 32);
+    // Import key material
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      await crypto.subtle.digest('SHA-256', keyMaterial),
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt', 'decrypt']
+    );
     
-    // Create cipher
-    const cipher = createCipheriv('aes-256-gcm', key, iv);
+    // Generate random IV
+    const iv = crypto.getRandomValues(new Uint8Array(12));
     
     // Encrypt the API key
-    let encrypted = cipher.update(apiKey, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
+    const encryptedData = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      cryptoKey,
+      encoder.encode(apiKey)
+    );
     
-    // Get authentication tag
-    const authTag = cipher.getAuthTag();
+    // Combine IV + encrypted data
+    const combined = new Uint8Array(iv.length + encryptedData.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(encryptedData), iv.length);
     
-    // Combine salt + iv + authTag + encrypted data
-    const combined = Buffer.concat([
-      salt,
-      iv, 
-      authTag,
-      Buffer.from(encrypted, 'hex')
-    ]);
-    
-    return combined.toString('base64');
+    // Convert to base64
+    return Buffer.from(combined).toString('base64');
   } catch (error) {
     console.error('Encryption error:', error);
     throw new Error('Failed to encrypt API key');
@@ -49,33 +50,41 @@ async function encryptAPIKey(apiKey, env = null) {
 }
 
 /**
- * Decrypts an API key using AES-256-GCM decryption
+ * Decrypts an API key using Web Crypto API (AES-GCM)
  * @param {string} encryptedKey - Base64 encoded encrypted key
- * @param {Object} env - Environment bindings (not used in Node.js version)
+ * @param {Object} env - Environment bindings
  * @returns {Promise<string>} Decrypted API key
  */
 async function decryptAPIKey(encryptedKey, env = null) {
   try {
-    const combined = Buffer.from(encryptedKey, 'base64');
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const keyMaterial = encoder.encode(env?.ENCRYPTION_SECRET || 'default-encryption-key-change-in-production');
     
-    // Extract components
-    const salt = combined.slice(0, 16);
-    const iv = combined.slice(16, 32);
-    const authTag = combined.slice(32, 48);
-    const encrypted = combined.slice(48);
+    // Import key material
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      await crypto.subtle.digest('SHA-256', keyMaterial),
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt', 'decrypt']
+    );
     
-    // Derive key from secret and salt
-    const key = await scryptAsync(ENCRYPTION_SECRET, salt, 32);
+    // Decode base64
+    const combined = new Uint8Array(Buffer.from(encryptedKey, 'base64'));
     
-    // Create decipher
-    const decipher = createDecipheriv('aes-256-gcm', key, iv);
-    decipher.setAuthTag(authTag);
+    // Extract IV and encrypted data
+    const iv = combined.slice(0, 12);
+    const encryptedData = combined.slice(12);
     
-    // Decrypt the data
-    let decrypted = decipher.update(encrypted, null, 'utf8');
-    decrypted += decipher.final('utf8');
+    // Decrypt
+    const decryptedData = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv },
+      cryptoKey,
+      encryptedData
+    );
     
-    return decrypted;
+    return decoder.decode(decryptedData);
   } catch (error) {
     console.error('Decryption error:', error);
     throw new Error('Failed to decrypt API key');
@@ -90,7 +99,7 @@ async function decryptAPIKey(encryptedKey, env = null) {
  */
 function validateAPIKeyFormat(provider, apiKey) {
   const patterns = {
-    openai: /^sk-[A-Za-z0-9]{32,}$/,
+    openai: /^sk-(proj-)?[A-Za-z0-9_-]{32,}$/,
     gemini: /^AIza[A-Za-z0-9_-]{35}$/,
     anthropic: /^sk-ant-[A-Za-z0-9_-]{95,}$/
   };
@@ -167,20 +176,42 @@ async function testAPIKey(provider, apiKey) {
 }
 
 /**
- * Gets user ID from authentication token
+ * Gets user ID from authentication token (supports both JWT and base64 tokens)
  * @param {Object} c - Hono context
- * @returns {number|null} User ID or null if not authenticated
+ * @returns {Promise<number|null>} User ID or null if not authenticated
  */
-function getUserId(c) {
+async function getUserId(c) {
   try {
     const auth = c.req.header('Authorization');
     if (!auth || !auth.startsWith('Bearer ')) return null;
     
     const token = auth.substring(7);
-    const payload = JSON.parse(Buffer.from(token, 'base64').toString());
     
-    return payload?.id || null;
+    // Try JWT verification first (for new API system)
+    try {
+      const JWT_SECRET = c.env.JWT_SECRET || 'development-fallback-secret';
+      const payload = await verify(token, JWT_SECRET);
+      return payload?.id || null;
+    } catch (jwtError) {
+      // Fallback to base64 token decoding (for old API system)
+      try {
+        const decoded = Buffer.from(token, 'base64').toString('utf8');
+        const payload = JSON.parse(decoded);
+        
+        // Check if token is expired
+        if (payload.exp && payload.exp < Date.now()) {
+          console.log('Base64 token expired');
+          return null;
+        }
+        
+        return payload?.id || null;
+      } catch (base64Error) {
+        console.error('Both JWT and base64 token verification failed:', { jwtError, base64Error });
+        return null;
+      }
+    }
   } catch (error) {
+    console.error('Token verification error in getUserId:', error);
     return null;
   }
 }
@@ -193,16 +224,12 @@ function getUserId(c) {
  */
 async function getUserAPIKeys(env, userId) {
   try {
-    const result = env.DB.prepare(`
+    const result = await env.DB.prepare(`
       SELECT provider, encrypted_key, key_prefix, is_valid, created_at, last_tested
       FROM user_api_keys 
       WHERE user_id = ? AND deleted_at IS NULL
       ORDER BY provider
-    `).all(userId);
-
-    if (!result.success) {
-      return {};
-    }
+    `).bind(userId).all();
 
     const keys = {};
     for (const row of result.results || []) {
@@ -231,7 +258,7 @@ export function createSecureKeyManagementAPI() {
 
   // Middleware to require authentication
   app.use('*', async (c, next) => {
-    const userId = getUserId(c);
+    const userId = await getUserId(c);
     if (!userId) {
       return c.json({ success: false, error: 'Authentication required' }, 401);
     }
@@ -306,29 +333,25 @@ export function createSecureKeyManagementAPI() {
 
       // Store in database (handle upsert manually)
       // First, soft delete any existing key
-      c.env.DB.prepare(`
+      await c.env.DB.prepare(`
         UPDATE user_api_keys 
         SET deleted_at = datetime('now')
         WHERE user_id = ? AND provider = ? AND deleted_at IS NULL
-      `).run(userId, provider);
+      `).bind(userId, provider).run();
       
       // Then insert the new key
-      const result = c.env.DB.prepare(`
+      const result = await c.env.DB.prepare(`
         INSERT INTO user_api_keys (user_id, provider, encrypted_key, key_prefix, is_valid, created_at, last_tested)
         VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      `).run(userId, provider, encryptedKey, keyPrefix, testResult.valid ? 1 : 0);
-
-      if (!result.success) {
-        throw new Error('Database operation failed');
-      }
+      `).bind(userId, provider, encryptedKey, keyPrefix, testResult.valid ? 1 : 0).run();
 
       // Log the action
-      c.env.DB.prepare(`
+      await c.env.DB.prepare(`
         INSERT INTO api_key_audit_log (user_id, provider, action, success, ip_address, user_agent)
         VALUES (?, ?, 'set', ?, ?, ?)
-      `).run(userId, provider, testResult.valid ? 1 : 0, 
+      `).bind(userId, provider, testResult.valid ? 1 : 0, 
              c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown',
-             c.req.header('User-Agent') || 'unknown');
+             c.req.header('User-Agent') || 'unknown').run();
 
       return c.json({ 
         success: true, 
@@ -367,19 +390,19 @@ export function createSecureKeyManagementAPI() {
       const testResult = await testAPIKey(provider, apiKey);
 
       // Update validity in database
-      c.env.DB.prepare(`
+      await c.env.DB.prepare(`
         UPDATE user_api_keys 
         SET is_valid = ?, last_tested = datetime('now')
         WHERE user_id = ? AND provider = ?
-      `).run(testResult.valid ? 1 : 0, userId, provider);
+      `).bind(testResult.valid ? 1 : 0, userId, provider).run();
 
       // Log the test
-      c.env.DB.prepare(`
+      await c.env.DB.prepare(`
         INSERT INTO api_key_audit_log (user_id, provider, action, success, ip_address, user_agent)
         VALUES (?, ?, 'test', ?, ?, ?)
-      `).run(userId, provider, testResult.valid ? 1 : 0,
+      `).bind(userId, provider, testResult.valid ? 1 : 0,
              c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown',
-             c.req.header('User-Agent') || 'unknown');
+             c.req.header('User-Agent') || 'unknown').run();
 
       return c.json({ 
         success: true, 
@@ -407,23 +430,23 @@ export function createSecureKeyManagementAPI() {
       }
 
       // Soft delete the API key
-      const result = c.env.DB.prepare(`
+      const result = await c.env.DB.prepare(`
         UPDATE user_api_keys 
-        SET deleted_at = datetime('now'), last_updated = datetime('now')
+        SET deleted_at = datetime('now')
         WHERE user_id = ? AND provider = ? AND deleted_at IS NULL
-      `).run(userId, provider);
+      `).bind(userId, provider).run();
 
-      if (!result.success || result.changes === 0) {
+      if (result.changes === 0) {
         return c.json({ success: false, error: 'API key not found or already deleted' }, 404);
       }
 
       // Log the deletion
-      c.env.DB.prepare(`
+      await c.env.DB.prepare(`
         INSERT INTO api_key_audit_log (user_id, provider, action, ip_address, user_agent)
         VALUES (?, ?, 'delete', ?, ?)
-      `).run(userId, provider,
+      `).bind(userId, provider,
              c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown',
-             c.req.header('User-Agent') || 'unknown');
+             c.req.header('User-Agent') || 'unknown').run();
 
       return c.json({ success: true, data: { provider, action: 'deleted' } });
     } catch (error) {

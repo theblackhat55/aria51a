@@ -181,46 +181,82 @@ export function createAPI() {
   // Demo authentication endpoint
   api.post('/api/auth/demo-login', async (c) => {
     try {
+      console.log('🔧 Demo login attempt started');
       const { email = 'demo@example.com', name = 'Demo User' } = await c.req.json();
+      console.log('📧 Email:', email, 'Name:', name);
+      
+      // Check if DB is available
+      if (!c.env.DB) {
+        console.error('❌ Database not available in context');
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Database not available' 
+        }, 500);
+      }
       
       const authService = new AuthService(c.env.DB);
+      console.log('🔑 AuthService initialized');
       
       // Check if user exists
-      let user = await c.env.DB.prepare(`
-        SELECT * FROM users WHERE email = ?
-      `).bind(email).first();
+      console.log('🔍 Checking if user exists...');
+      let user;
+      try {
+        user = await c.env.DB.prepare(`
+          SELECT * FROM users WHERE email = ?
+        `).bind(email).first();
+        console.log('👤 User query result:', user ? 'Found user' : 'No user found');
+      } catch (dbError) {
+        console.error('❌ Database query error:', dbError);
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: `Database error: ${dbError.message}` 
+        }, 500);
+      }
       
       if (!user) {
+        console.log('👥 Creating new demo user...');
         // Create demo user if none exist - use simple hashing since this is for demo only
         const encoder = new TextEncoder();
         const data = encoder.encode('demo123' + 'salt');
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        console.log('🔐 Password hashed');
         
-        const result = await c.env.DB.prepare(`
-          INSERT INTO users (
-            email, username, password_hash, first_name, last_name, 
-            role, is_active, auth_provider, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-        `).bind(
-          email,
-          email.split('@')[0],
-          hashedPassword,
-          name.split(' ')[0] || 'Demo',
-          name.split(' ')[1] || 'User',
-          'admin',
-          1,
-          'local'
-        ).run();
-        
-        // Get the created user
-        user = await c.env.DB.prepare(`
-          SELECT * FROM users WHERE id = ?
-        `).bind(result.meta.last_row_id).first();
+        try {
+          const result = await c.env.DB.prepare(`
+            INSERT INTO users (
+              email, username, password_hash, first_name, last_name, 
+              role, is_active, auth_provider, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+          `).bind(
+            email,
+            email.split('@')[0],
+            hashedPassword,
+            name.split(' ')[0] || 'Demo',
+            name.split(' ')[1] || 'User',
+            'admin',
+            1,
+            'local'
+          ).run();
+          console.log('✅ User inserted, ID:', result.meta.last_row_id);
+          
+          // Get the created user
+          user = await c.env.DB.prepare(`
+            SELECT * FROM users WHERE id = ?
+          `).bind(result.meta.last_row_id).first();
+          console.log('👤 Created user retrieved:', user ? 'Success' : 'Failed');
+        } catch (insertError) {
+          console.error('❌ User creation error:', insertError);
+          return c.json<ApiResponse<null>>({ 
+            success: false, 
+            error: `Failed to create user: ${insertError.message}` 
+          }, 500);
+        }
       }
       
       if (!user) {
+        console.error('❌ User still null after creation attempt');
         return c.json<ApiResponse<null>>({ 
           success: false, 
           error: 'Failed to create demo user' 
@@ -251,7 +287,8 @@ export function createAPI() {
         message: 'Demo login successful'
       });
     } catch (error) {
-      console.error('Demo login error:', error);
+      console.error('❌ Demo login error:', error);
+      console.error('Error stack:', error?.stack);
       return c.json<ApiResponse<null>>({ 
         success: false, 
         error: error instanceof Error ? error.message : 'Demo login failed' 

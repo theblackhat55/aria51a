@@ -6,9 +6,10 @@ Next-Generation Enterprise Governance, Risk & Compliance Platform with **AI-Powe
 
 ### 🌐 **Live Deployment URLs**
 
-- **🎯 Production**: https://2b16142a.risk-optics.pages.dev
+- **🎯 Current Session**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 - **🔬 GRC 5.0 Branch**: https://grc5-0.risk-optics.pages.dev
 - **📂 GitHub Repository**: https://github.com/theblackhat55/GRC/tree/GRC5.0
+- **⚡ Health Check**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev/health
 
 ---
 
@@ -110,15 +111,21 @@ user_api_keys
 ## 🚀 **Getting Started**
 
 ### **1. Access the Platform**
-Visit: https://grc5-0.risk-optics.pages.dev
+Visit: **https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev**
 
-### **2. Set Up AI Provider Keys**
+### **2. Demo Login**
+1. Click **Login** button in the top right
+2. Use the demo authentication (automatically creates admin user)
+3. You'll be logged in as **Demo User** with admin privileges
+
+### **3. Set Up AI Provider Keys** ✅ **ISSUE RESOLVED**
 1. Navigate to **Settings** → **AI Providers**
 2. Click **Manage Keys** button
 3. Set your API keys for OpenAI, Gemini, or Anthropic
 4. Keys are immediately encrypted and stored securely
+5. **✅ Authentication fixed** - Key management now works properly!
 
-### **3. Start Using ARIA AI Assistant**
+### **4. Start Using ARIA AI Assistant**
 - Click the floating AI button in the bottom right
 - Ask questions about GRC topics, risks, or compliance
 - ARIA uses your securely stored API keys automatically
@@ -145,6 +152,8 @@ Visit: https://grc5-0.risk-optics.pages.dev
 - ✅ **GitHub Integration** - Version control with GRC5.0 branch
 - ✅ **Migration System** - Database schema versioning
 - ✅ **Error Handling** - Comprehensive error management
+- ✅ **Authentication Compatibility** - Fixed JWT/base64 token authentication issues
+- ✅ **Cross-API Integration** - Secure key management works with existing auth system
 
 ---
 
@@ -217,4 +226,21 @@ This platform implements enterprise-grade security controls and complies with:
 
 **Built with ❤️ for Enterprise GRC Excellence**
 
-*Last Updated: August 22, 2025 - GRC 5.0 Secure Release*
+*Last Updated: August 22, 2025 - GRC 5.0 Authentication Fix Complete*
+
+## ✅ **AUTHENTICATION ISSUE RESOLVED**
+
+The secure API key management system is now fully functional! The issue was an authentication compatibility problem between two different token systems:
+
+- **Old System**: Simple base64 encoded tokens (used by main app)
+- **New System**: JWT tokens with signatures (expected by key management)
+
+**Fix Applied**: Updated the secure key management system to support both token formats, ensuring seamless integration with the existing authentication system.
+
+**Status**: 🟢 **All key management operations working perfectly**
+- ✅ User authentication 
+- ✅ API key storage (encrypted)
+- ✅ API key retrieval/status
+- ✅ API key deletion
+- ✅ Provider validation (OpenAI, Gemini, Anthropic)
+- ✅ Format validation and testing
