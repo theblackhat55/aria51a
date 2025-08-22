@@ -305,9 +305,15 @@ app.get('/', (c) => {
   <script>
     // Initialize Keycloak authentication for main app
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('Main app: Initializing legacy authentication...');
-      // Always show login prompt; legacy auth handles session
-      showLoginPrompt();
+      try {
+        var hasToken = !!(localStorage.getItem('dmt_token') || localStorage.getItem('authToken'));
+        if (!hasToken && typeof showLoginPrompt === 'function') {
+          showLoginPrompt();
+        }
+      } catch (e) {
+        // If localStorage is unavailable, show prompt as a fallback
+        if (typeof showLoginPrompt === 'function') showLoginPrompt();
+      }
     });
     
     function showLoginPrompt() {

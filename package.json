@@ -35,16 +35,8 @@
     "git:commit": "git add . && git commit -m",
     "git:status": "git status",
     "git:log": "git log --oneline",
-    "keycloak:setup": "./setup-keycloak.sh",
-    "keycloak:start": "docker-compose -f docker-compose.keycloak.yml up -d",
-    "keycloak:stop": "docker-compose -f docker-compose.keycloak.yml down",
-    "keycloak:logs": "docker-compose -f docker-compose.keycloak.yml logs -f keycloak",
-    "keycloak:test": "./test-keycloak.sh",
     "users:export": "node scripts/export-users.cjs",
-    "users:import": "./import-users-keycloak.sh",
-    "users:migrate": "node scripts/migrate-users.cjs",
-    "keycloak:clean": "docker-compose -f docker-compose.keycloak.yml down -v && docker system prune -f",
-    "deploy:keycloak": "./deploy-keycloak-integration.sh"
+    "users:migrate": "node scripts/migrate-users.cjs"
   },
   "dependencies": {
     "hono": "^4.9.1",
