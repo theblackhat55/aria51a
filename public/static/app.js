@@ -1243,6 +1243,24 @@ function showIntegrations() {
         
         <!-- Integration Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- AI Provider Integrations -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-robot text-purple-600 text-xl"></i>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900">AI Provider Integrations</h3>
+                  <p class="text-sm text-gray-500">OpenAI, Anthropic, Google AI, Azure OpenAI</p>
+                </div>
+              </div>
+            </div>
+            <p class="text-gray-600 mb-4">Configure AI service providers for governance monitoring, risk assessment, and real-time analytics.</p>
+            <button onclick="aiGovernanceManager.showAIProviderSettings()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+              <i class="fas fa-brain mr-2"></i>Configure AI Providers
+            </button>
+          </div>
           <!-- Microsoft Integration -->
           <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
             <div class="flex items-start justify-between mb-4">
@@ -1299,6 +1317,13 @@ function showIntegrations() {
                 <span class="text-sm font-medium text-gray-900">SAML SSO</span>
               </div>
               <span class="text-xs text-red-600 bg-red-100 px-2 py-1 rounded-full">Not Configured</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 bg-purple-400 rounded-full"></div>
+                <span class="text-sm font-medium text-gray-900">AI Governance Integrations</span>
+              </div>
+              <span class="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">Ready for Configuration</span>
             </div>
           </div>
         </div>

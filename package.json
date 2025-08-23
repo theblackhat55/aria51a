@@ -1,6 +1,6 @@
 {
   "name": "risk-optics-grc",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "Risk Optics GRC v5.1.0 - Enterprise Governance, Risk & Compliance Platform with Secure API Key Management & AI Intelligence",
   "type": "module",
   "main": "src/server.js",

@@ -6,6 +6,8 @@ import { cors } from 'hono/cors';
 import { createAPI } from './api';
 import { createKongEnhancedAPI } from './api-kong-enhanced';
 import { CloudflareBindings } from './types';
+import aiSystemsApi from './ai-governance/ai-systems-api.js';
+import aiRiskApi from './ai-governance/ai-risk-api.js';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -38,6 +40,10 @@ app.use('*', async (c, next) => {
 const isKongEnvironment = process.env.KONG_PROXY_URL || process.env.API_GATEWAY_URL;
 const api = isKongEnvironment ? createKongEnhancedAPI() : createAPI();
 app.route('/', api);
+
+// AI Governance API routes
+app.route('/api/ai-governance', aiSystemsApi);
+app.route('/api/ai-risk', aiRiskApi);
 
 // Main application route
 app.get('/', (c) => {
@@ -138,6 +144,36 @@ app.get('/', (c) => {
                   <a href="#" data-page="assets" class="block px-4 py-2 text-sm hover:bg-gray-50">Assets</a>
                   <a href="#" data-page="services" class="block px-4 py-2 text-sm hover:bg-gray-50">Services</a>
                   <a href="#" data-page="documents" class="block px-4 py-2 text-sm hover:bg-gray-50">Documents</a>
+                </div>
+              </div>
+
+              <!-- AI Governance -->
+              <div class="relative dropdown">
+                <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="ai-governance-menu">
+                  <i class="fas fa-robot mr-1 text-purple-600"></i>AI Governance <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                </button>
+                <div id="ai-governance-menu" class="dropdown-menu absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
+                  <div class="px-3 py-2 border-b border-gray-100">
+                    <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">AI Risk Management</p>
+                  </div>
+                  <a href="#" data-page="ai-dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                    <i class="fas fa-tachometer-alt mr-2 text-purple-500"></i>AI Dashboard
+                  </a>
+                  <a href="#" data-page="ai-systems" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                    <i class="fas fa-microchip mr-2 text-blue-500"></i>AI Systems Registry
+                  </a>
+                  <a href="#" data-page="ai-risk-assessments" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                    <i class="fas fa-balance-scale mr-2 text-orange-500"></i>Risk Assessments
+                  </a>
+                  <a href="#" data-page="ai-incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                    <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>AI Incidents
+                  </a>
+                  <a href="#" data-page="ai-monitoring" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                    <i class="fas fa-chart-line mr-2 text-green-500"></i>Real-time Monitoring
+                  </a>
+                  <a href="#" data-page="ai-compliance" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                    <i class="fas fa-gavel mr-2 text-indigo-500"></i>Compliance Status
+                  </a>
                 </div>
               </div>
 
@@ -293,6 +329,7 @@ app.get('/', (c) => {
   <script src="/static/integrated-risk-framework.js?v=2"></script>
   <script src="/static/ai-grc-dashboard.js?v=1"></script>
   <script src="/static/ai-assure-module.js?v=1"></script>
+  <script src="/static/ai-governance.js?v=1"></script>
   <script src="/static/notifications.js?v=5"></script>
   <script src="/static/document-management.js?v=3"></script>
   <script src="/static/mobile-interface.js?v=3"></script>

@@ -1,6 +1,6 @@
-# Risk Optics - Enterprise GRC Platform v5.1
+# Risk Optics - Enterprise GRC Platform v5.2
 
-## 🚀 **GRC 5.1 - Production-Ready Release with Seed Data**
+## 🤖 **GRC 5.2 - AI Governance Framework Release**
 
 Next-Generation Enterprise Governance, Risk & Compliance Platform with **AI-Powered Intelligence** and **Secure API Key Management**.
 
