@@ -7,7 +7,8 @@ Next-Generation Enterprise Governance, Risk & Compliance Platform with **AI-Powe
 ### 🌐 **Live Deployment URLs**
 
 - **🎯 Current Session**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
-- **🔬 GRC 5.1 Branch**: https://grc5-1.risk-optics.pages.dev  
+- **🔬 GRC 5.1 Production**: https://2592abd2.risk-optics.pages.dev
+- **🌟 GRC 5.1 Alias**: https://grc5-1.risk-optics.pages.dev  
 - **📂 GitHub Repository**: https://github.com/theblackhat55/GRC/tree/GRC5.1
 - **⚡ Health Check**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev/health
 
@@ -132,7 +133,49 @@ Visit: **https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev**
 
 ---
 
-## 🔄 **Recent Updates (GRC 5.0)**
+## 🌟 **GRC 5.1 Release - Comprehensive Seed Data**
+
+### **🎯 New Demonstration Data**
+The GRC 5.1 release includes a complete set of realistic demonstration data:
+
+- **👥 5 Realistic Users** across different roles:
+  - Sarah Mitchell (CEO) - Executive leadership
+  - Michael Chen (CISO) - Information security leadership  
+  - Jennifer Rodriguez - Senior Risk Manager
+  - David Thompson - Compliance Officer
+  - Emily Johnson - Senior Internal Auditor
+
+- **🏢 4 Organizational Units** with proper hierarchy:
+  - Risk Optics Corp (parent company)
+  - Technology Division, Security Operations, Compliance Office
+
+- **⚠️ 4 Risk Categories & Detailed Risks**:
+  - **Cybersecurity**: Ransomware attack risk, data breach risk
+  - **Operational**: Key personnel departure risk
+  - **Compliance**: GDPR compliance violation risk
+  - Each risk includes complete metadata (probability, impact, mitigation plans)
+
+- **🛡️ 4 Security Controls** mapped to frameworks:
+  - Multi-Factor Authentication (ISO 27001)
+  - Data Encryption at Rest (ISO 27001)
+  - Regular System Backups (NIST)
+  - Privacy Impact Assessments (GDPR)
+
+- **🚨 2 Security Incidents** with full incident response data:
+  - Phishing email campaign (resolved)
+  - Failed login attempts (under investigation)
+
+- **🔔 3 System Notifications** demonstrating alert system
+
+### **🎮 Demo Experience**
+1. **Login**: Use demo authentication for immediate access
+2. **Explore**: Navigate through populated risk register, controls, and incidents
+3. **Realistic Data**: See how a production GRC system looks with actual data
+4. **Complete Workflows**: Test all platform features with meaningful content
+
+---
+
+## 🔄 **Recent Updates (GRC 5.0-5.1)**
 
 ### **🆕 New Features**
 - ✅ **Secure API Key Management** - Complete write-only system
