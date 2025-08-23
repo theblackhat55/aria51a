@@ -2,14 +2,52 @@
 
 ## 🤖 **GRC 5.2 - AI Governance Framework Release**
 
-Next-Generation Enterprise Governance, Risk & Compliance Platform with **AI-Powered Intelligence** and **Secure API Key Management**.
+### 🚀 **NEW: Native AI Risk Management & Governance**
+
+GRC 5.2 introduces comprehensive AI governance capabilities, making Risk Optics the first GRC platform with native AI risk management and real-time monitoring.
+
+Next-Generation Enterprise Governance, Risk & Compliance Platform with **Native AI Governance Framework** and **Real-Time AI Risk Management**.
+
+## 🤖 **NEW: AI Governance Framework** 
+
+### **📊 Comprehensive AI Risk Management**
+- **AI Systems Registry**: Central inventory of all organizational AI systems
+- **Real-Time Monitoring**: Performance, bias, and data drift detection  
+- **Risk Assessments**: EU AI Act and NIST AI RMF compliant evaluations
+- **Incident Management**: AI-specific incident tracking and response
+- **Compliance Dashboard**: Regulatory compliance status and gap analysis
+- **Provider Integrations**: OpenAI, Anthropic, Google AI, Azure OpenAI monitoring
+
+### **🛡️ Enterprise AI Governance Features**
+- **🔍 Auto-Discovery**: Automatic detection of AI systems across infrastructure
+- **⚖️ Regulatory Compliance**: EU AI Act classification and NIST AI RMF implementation  
+- **📈 Risk Quantification**: Monte Carlo-based AI risk modeling and financial impact
+- **🚨 Real-Time Alerts**: Bias detection, drift monitoring, and performance degradation
+- **📋 Audit Trail**: Complete governance lifecycle with evidence collection
+- **🔗 Native Integration**: Seamless integration with existing GRC workflows
+
+### **🎯 AI Governance Menu**
+Access through the new **AI Governance** menu (purple robot icon):
+1. **AI Dashboard** - Real-time overview of AI risk posture
+2. **AI Systems Registry** - Comprehensive AI system inventory
+3. **Risk Assessments** - Formal AI risk evaluation workflows  
+4. **AI Incidents** - Dedicated AI incident management
+5. **Real-time Monitoring** - Live performance and bias monitoring
+6. **Compliance Status** - Regulatory compliance tracking
+
+### **⚙️ AI Provider Integrations**
+Configure in Settings → Integrations:
+- **OpenAI**: GPT models governance and usage monitoring
+- **Anthropic**: Claude models risk assessment and compliance
+- **Google AI**: Gemini models enterprise governance
+- **Azure OpenAI**: Microsoft enterprise AI governance
 
 ### 🌐 **Live Deployment URLs**
 
-- **🎯 Current Session**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
+- **🤖 GRC 5.2 - AI Governance**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 - **🔬 GRC 5.1 Production**: https://2592abd2.risk-optics.pages.dev
 - **🌟 GRC 5.1 Alias**: https://grc5-1.risk-optics.pages.dev  
-- **📂 GitHub Repository**: https://github.com/theblackhat55/GRC/tree/GRC5.1
+- **📂 GitHub Repository**: https://github.com/theblackhat55/GRC/tree/GRC5.2
 - **⚡ Health Check**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev/health
 
 ---

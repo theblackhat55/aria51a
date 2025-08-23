@@ -1,4 +1,4 @@
-// Mobile Interface Enhancements
+// Mobile Interface Enhancements with Hamburger Navigation
 class MobileInterface {
   constructor() {
     this.isMobile = window.innerWidth <= 768;
@@ -9,11 +9,12 @@ class MobileInterface {
     this.touchEndY = 0;
     this.pullToRefreshThreshold = 100;
     this.isPulling = false;
+    this.mobileNavOpen = false;
   }
 
   initialize() {
     if (this.isMobile) {
-      this.setupMobileNavigation();
+      this.setupHamburgerMenu();
       this.setupTouchGestures();
       this.setupPullToRefresh();
       this.optimizeForMobile();
@@ -32,24 +33,100 @@ class MobileInterface {
     window.addEventListener('resize', () => this.handleResize());
   }
 
-  setupMobileNavigation() {
-    // Hide desktop navigation and create mobile bottom navigation
-    const desktopNav = document.querySelector('nav');
-    if (desktopNav) {
-      desktopNav.style.display = 'none';
+  setupHamburgerMenu() {
+    // Setup hamburger menu functionality
+    const hamburgerBtn = document.getElementById('mobile-menu-btn');
+    const mobileNav = document.getElementById('mobile-nav');
+    const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+    const mobileNavClose = document.getElementById('mobile-nav-close');
+
+    if (!hamburgerBtn || !mobileNav || !mobileNavOverlay) {
+      console.warn('Mobile navigation elements not found');
+      return;
     }
 
-    // Create mobile header
-    this.createMobileHeader();
-    
-    // Create bottom navigation
-    this.createBottomNavigation();
-    
-    // Adjust main content for mobile
+    // Hamburger menu toggle
+    hamburgerBtn.addEventListener('click', () => {
+      this.toggleMobileNav();
+    });
+
+    // Close button
+    if (mobileNavClose) {
+      mobileNavClose.addEventListener('click', () => {
+        this.closeMobileNav();
+      });
+    }
+
+    // Overlay click to close
+    mobileNavOverlay.addEventListener('click', () => {
+      this.closeMobileNav();
+    });
+
+    // Setup mobile nav item clicks
+    const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+    mobileNavItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const page = item.dataset.page;
+        if (page) {
+          this.navigateToPage(page);
+          this.updateMobileNavActive(page);
+          this.closeMobileNav();
+        }
+      });
+    });
+
+    // Adjust main content padding for mobile
     const mainContent = document.getElementById('main-content');
     if (mainContent) {
-      mainContent.className = 'mobile-content';
+      mainContent.style.paddingTop = '1rem';
     }
+  }
+
+  toggleMobileNav() {
+    if (this.mobileNavOpen) {
+      this.closeMobileNav();
+    } else {
+      this.openMobileNav();
+    }
+  }
+
+  openMobileNav() {
+    const hamburgerBtn = document.getElementById('mobile-menu-btn');
+    const mobileNav = document.getElementById('mobile-nav');
+    const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+
+    if (hamburgerBtn) hamburgerBtn.classList.add('active');
+    if (mobileNav) mobileNav.classList.add('active');
+    if (mobileNavOverlay) mobileNavOverlay.classList.add('active');
+
+    // Prevent body scroll when menu is open
+    document.body.style.overflow = 'hidden';
+    this.mobileNavOpen = true;
+  }
+
+  closeMobileNav() {
+    const hamburgerBtn = document.getElementById('mobile-menu-btn');
+    const mobileNav = document.getElementById('mobile-nav');
+    const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+
+    if (hamburgerBtn) hamburgerBtn.classList.remove('active');
+    if (mobileNav) mobileNav.classList.remove('active');
+    if (mobileNavOverlay) mobileNavOverlay.classList.remove('active');
+
+    // Restore body scroll
+    document.body.style.overflow = '';
+    this.mobileNavOpen = false;
+  }
+
+  updateMobileNavActive(page) {
+    const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+    mobileNavItems.forEach(item => {
+      item.classList.remove('active');
+      if (item.dataset.page === page) {
+        item.classList.add('active');
+      }
+    });
   }
 
   createMobileHeader() {
@@ -401,26 +478,19 @@ class MobileInterface {
   }
 
   navigateToPage(page) {
-    if (typeof navigateTo === 'function') {
+    // Use the global navigateTo function
+    if (typeof window.navigateTo === 'function') {
+      window.navigateTo(page);
+    } else if (typeof navigateTo === 'function') {
       navigateTo(page);
-    }
-    
-    // Update mobile page title
-    const pageTitle = document.getElementById('mobile-page-title');
-    if (pageTitle) {
-      const titles = {
-        dashboard: 'Dashboard',
-        risks: 'Risk Management',
-        documents: 'Documents',
-        incidents: 'Incidents',
-        controls: 'Controls',
-        compliance: 'Compliance',
-        frameworks: 'Frameworks',
-        assets: 'Assets',
-        services: 'Services',
-        settings: 'Settings'
-      };
-      pageTitle.textContent = titles[page] || 'DMT Risk Platform';
+    } else {
+      // Fallback: try to find and click the corresponding desktop nav item
+      const desktopNavItem = document.querySelector(`[data-page="${page}"]`);
+      if (desktopNavItem) {
+        desktopNavItem.click();
+      } else {
+        console.warn(`Navigation function not found for page: ${page}`);
+      }
     }
   }
 

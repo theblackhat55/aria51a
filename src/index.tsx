@@ -94,10 +94,17 @@ app.get('/', (c) => {
             </div>
           </div>
           
+          <!-- Mobile Hamburger Menu Button -->
+          <button class="hamburger" id="mobile-menu-btn" aria-label="Open navigation menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          
           <!-- Navigation and User Section -->
           <div class="flex items-center space-x-6">
             <!-- Grouped navigation with click-to-open dropdowns -->
-            <div class="hidden" id="internal-nav">
+            <div class="hidden desktop-nav" id="internal-nav">
               <!-- Overview -->
               <div class="relative dropdown">
                 <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="overview-menu">
@@ -223,6 +230,146 @@ app.get('/', (c) => {
             </div>
           </div>
           </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Mobile Navigation Overlay -->
+    <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
+
+    <!-- Mobile Navigation Menu -->
+    <nav class="mobile-nav" id="mobile-nav">
+      <div class="mobile-nav-header">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="h-8 w-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <i class="fas fa-shield-alt text-white"></i>
+            </div>
+            <div class="ml-3">
+              <h1 class="text-lg font-semibold">Risk Optiks</h1>
+              <p class="text-xs opacity-80">GRC Platform v5.2</p>
+            </div>
+          </div>
+          <button class="text-white p-2" id="mobile-nav-close">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="mobile-nav-content">
+        <!-- Overview Section -->
+        <div class="mobile-nav-section">
+          <div class="mobile-nav-section-title">Overview</div>
+          <a href="#" data-page="dashboard" class="mobile-nav-item">
+            <i class="fas fa-tachometer-alt"></i>Dashboard
+          </a>
+          <a href="#" data-page="reports" class="mobile-nav-item">
+            <i class="fas fa-chart-bar"></i>Reports
+          </a>
+        </div>
+
+        <!-- Risk Management -->
+        <div class="mobile-nav-section">
+          <div class="mobile-nav-section-title">Risk Management</div>
+          <a href="#" data-page="risks" class="mobile-nav-item">
+            <i class="fas fa-exclamation-triangle"></i>Risks
+          </a>
+          <a href="#" data-page="treatments" class="mobile-nav-item">
+            <i class="fas fa-shield-alt"></i>Treatments
+          </a>
+          <a href="#" data-page="kris" class="mobile-nav-item">
+            <i class="fas fa-chart-line"></i>KRIs
+          </a>
+          <a href="#" data-page="incidents" class="mobile-nav-item">
+            <i class="fas fa-fire"></i>Incidents
+          </a>
+        </div>
+
+        <!-- Compliance -->
+        <div class="mobile-nav-section">
+          <div class="mobile-nav-section-title">Compliance</div>
+          <a href="#" data-page="frameworks" class="mobile-nav-item">
+            <i class="fas fa-sitemap"></i>Frameworks
+          </a>
+          <a href="#" data-page="soa" class="mobile-nav-item">
+            <i class="fas fa-clipboard-check"></i>SoA
+          </a>
+          <a href="#" data-page="evidence" class="mobile-nav-item">
+            <i class="fas fa-file-alt"></i>Evidence
+          </a>
+          <a href="#" data-page="assessments" class="mobile-nav-item">
+            <i class="fas fa-tasks"></i>Assessments
+          </a>
+        </div>
+
+        <!-- AI Governance -->
+        <div class="mobile-nav-section">
+          <div class="mobile-nav-section-title">
+            <i class="fas fa-robot mr-2 text-purple-600"></i>AI Governance
+          </div>
+          <a href="#" data-page="ai-dashboard" class="mobile-nav-item">
+            <i class="fas fa-tachometer-alt text-purple-500"></i>AI Dashboard
+          </a>
+          <a href="#" data-page="ai-systems" class="mobile-nav-item">
+            <i class="fas fa-microchip text-blue-500"></i>AI Systems Registry
+          </a>
+          <a href="#" data-page="ai-risk-assessments" class="mobile-nav-item">
+            <i class="fas fa-balance-scale text-orange-500"></i>Risk Assessments
+          </a>
+          <a href="#" data-page="ai-incidents" class="mobile-nav-item">
+            <i class="fas fa-exclamation-triangle text-red-500"></i>AI Incidents
+          </a>
+          <a href="#" data-page="ai-monitoring" class="mobile-nav-item">
+            <i class="fas fa-chart-line text-green-500"></i>Real-time Monitoring
+          </a>
+          <a href="#" data-page="ai-compliance" class="mobile-nav-item">
+            <i class="fas fa-gavel text-indigo-500"></i>Compliance Status
+          </a>
+        </div>
+
+        <!-- Operations -->
+        <div class="mobile-nav-section">
+          <div class="mobile-nav-section-title">Operations</div>
+          <a href="#" data-page="assets" class="mobile-nav-item">
+            <i class="fas fa-server"></i>Assets
+          </a>
+          <a href="#" data-page="services" class="mobile-nav-item">
+            <i class="fas fa-cogs"></i>Services
+          </a>
+          <a href="#" data-page="documents" class="mobile-nav-item">
+            <i class="fas fa-folder"></i>Documents
+          </a>
+        </div>
+
+        <!-- Intelligence -->
+        <div class="mobile-nav-section">
+          <div class="mobile-nav-section-title">Intelligence</div>
+          <a href="#" data-page="ai-assure" class="mobile-nav-item">
+            <i class="fas fa-robot"></i>AI/ARIA
+          </a>
+          <a href="#" data-page="ai-providers" class="mobile-nav-item">
+            <i class="fas fa-cloud"></i>AI Providers
+          </a>
+          <a href="#" data-page="rag-knowledge" class="mobile-nav-item">
+            <i class="fas fa-brain"></i>RAG & Knowledge
+          </a>
+          <a href="#" data-page="search" class="mobile-nav-item">
+            <i class="fas fa-search"></i>Search
+          </a>
+          <a href="#" data-page="ai-analytics" class="mobile-nav-item">
+            <i class="fas fa-chart-pie"></i>AI Analytics
+          </a>
+        </div>
+
+        <!-- Administration -->
+        <div class="mobile-nav-section">
+          <div class="mobile-nav-section-title">Administration</div>
+          <a href="#" data-page="settings" class="mobile-nav-item">
+            <i class="fas fa-cog"></i>Settings
+          </a>
+          <a href="#" data-page="integrations" class="mobile-nav-item">
+            <i class="fas fa-plug"></i>Integrations
+          </a>
         </div>
       </div>
     </nav>
