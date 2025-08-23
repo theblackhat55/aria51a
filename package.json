@@ -1,7 +1,7 @@
 {
-  "name": "dmt-risk-assessment",
-  "version": "2.0.1",
-  "description": "DMT Risk Assessment System v2.0.1 - Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics (Ubuntu Docker Edition)",
+  "name": "risk-optics-grc",
+  "version": "5.1.0",
+  "description": "Risk Optics GRC v5.1.0 - Enterprise Governance, Risk & Compliance Platform with Secure API Key Management & AI Intelligence",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

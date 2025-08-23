@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "dmt-risk-assessment",
+  "name": "risk-optics-grc",
   "compatibility_date": "2025-08-14",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
@@ -9,7 +9,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "dmt-production",
+      "database_name": "risk-optics-grc-production",
       "database_id": "1083cc6a-2f8c-4095-9bd4-550ee8a873d4"
     }
   ],

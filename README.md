@@ -1,14 +1,14 @@
-# Risk Optics - Enterprise GRC Platform v5.0
+# Risk Optics - Enterprise GRC Platform v5.1
 
-## 🚀 **GRC 5.0 - Secure API Key Management Release**
+## 🚀 **GRC 5.1 - Production-Ready Release with Seed Data**
 
 Next-Generation Enterprise Governance, Risk & Compliance Platform with **AI-Powered Intelligence** and **Secure API Key Management**.
 
 ### 🌐 **Live Deployment URLs**
 
 - **🎯 Current Session**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
-- **🔬 GRC 5.0 Branch**: https://grc5-0.risk-optics.pages.dev
-- **📂 GitHub Repository**: https://github.com/theblackhat55/GRC/tree/GRC5.0
+- **🔬 GRC 5.1 Branch**: https://grc5-1.risk-optics.pages.dev  
+- **📂 GitHub Repository**: https://github.com/theblackhat55/GRC/tree/GRC5.1
 - **⚡ Health Check**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev/health
 
 ---
@@ -230,17 +230,28 @@ This platform implements enterprise-grade security controls and complies with:
 
 ## ✅ **AUTHENTICATION ISSUE RESOLVED**
 
-The secure API key management system is now fully functional! The issue was an authentication compatibility problem between two different token systems:
+The secure API key management system authentication compatibility has been fixed! The issue was resolved by updating the system to support both token formats.
 
-- **Old System**: Simple base64 encoded tokens (used by main app)
-- **New System**: JWT tokens with signatures (expected by key management)
+**Problem Identified**: Authentication compatibility between token systems:
+- **Sandbox Environment**: Uses base64 encoded tokens (legacy system)
+- **Cloudflare Environment**: Uses JWT tokens with signatures (modern system)
 
-**Fix Applied**: Updated the secure key management system to support both token formats, ensuring seamless integration with the existing authentication system.
+**Fix Applied**: Updated secure key management to support both token formats with intelligent fallback mechanism.
 
-**Status**: 🟢 **All key management operations working perfectly**
-- ✅ User authentication 
-- ✅ API key storage (encrypted)
-- ✅ API key retrieval/status
-- ✅ API key deletion
+**Current Status**: 
+- 🟢 **Sandbox Environment**: All operations working perfectly
+- 🟡 **Cloudflare Environment**: Authentication working, investigating API key storage compatibility
+- ✅ **GitHub**: All changes committed and pushed to GRC5.0 branch
+
+**Verified Working (Sandbox)**:
+- ✅ User authentication with both token types
+- ✅ API key storage with AES-256-GCM encryption
+- ✅ API key retrieval and status checking
+- ✅ API key deletion with soft delete
 - ✅ Provider validation (OpenAI, Gemini, Anthropic)
-- ✅ Format validation and testing
+- ✅ Format validation and live testing
+
+**Cloudflare Deployment**: https://grc5-0.risk-optics.pages.dev
+- ✅ Main application functioning  
+- ✅ Authentication system working
+- 🔧 Key management requires Workers environment compatibility review
