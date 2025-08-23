@@ -45,6 +45,9 @@ class MobileInterface {
       return;
     }
 
+    // Initially hide hamburger menu if not authenticated
+    this.updateMobileAuthUI();
+
     // Hamburger menu toggle
     hamburgerBtn.addEventListener('click', () => {
       this.toggleMobileNav();
@@ -477,6 +480,52 @@ class MobileInterface {
     });
   }
 
+  // Update mobile UI based on authentication state
+  updateMobileAuthUI() {
+    const token = localStorage.getItem('dmt_token') || localStorage.getItem('authToken');
+    const isAuthenticated = !!(token && window.currentUser);
+    
+    const hamburgerBtn = document.getElementById('mobile-menu-btn');
+    const mobileNav = document.getElementById('mobile-nav');
+    const mobileNavContent = document.querySelector('.mobile-nav-content');
+    
+    if (hamburgerBtn) {
+      // Hide hamburger menu if not authenticated
+      hamburgerBtn.style.display = isAuthenticated ? 'flex' : 'none';
+    }
+    
+    if (mobileNavContent) {
+      // Hide navigation content if not authenticated
+      mobileNavContent.style.display = isAuthenticated ? 'block' : 'none';
+    }
+    
+    // If not authenticated, show login message in mobile nav
+    if (!isAuthenticated && mobileNav) {
+      this.showMobileLoginMessage();
+    }
+  }
+  
+  // Show login message in mobile navigation
+  showMobileLoginMessage() {
+    const mobileNavContent = document.querySelector('.mobile-nav-content');
+    if (!mobileNavContent) return;
+    
+    mobileNavContent.innerHTML = `
+      <div class="mobile-nav-section">
+        <div class="p-6 text-center">
+          <div class="mb-4">
+            <i class="fas fa-lock text-4xl text-gray-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Authentication Required</h3>
+          <p class="text-gray-600 mb-4">Please login to access the GRC platform features</p>
+          <button onclick="window.location.href='/login'" class="btn-primary w-full">
+            <i class="fas fa-sign-in-alt mr-2"></i>Login
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   navigateToPage(page) {
     // Use the global navigateTo function
     if (typeof window.navigateTo === 'function') {
@@ -615,6 +664,20 @@ const mobileInterface = new MobileInterface();
 document.addEventListener('DOMContentLoaded', () => {
   mobileInterface.initialize();
 });
+
+// Listen for authentication state changes
+document.addEventListener('auth-state-changed', () => {
+  if (mobileInterface && typeof mobileInterface.updateMobileAuthUI === 'function') {
+    mobileInterface.updateMobileAuthUI();
+  }
+});
+
+// Make updateMobileAuthUI globally accessible for the main app
+window.updateMobileAuthUI = () => {
+  if (mobileInterface && typeof mobileInterface.updateMobileAuthUI === 'function') {
+    mobileInterface.updateMobileAuthUI();
+  }
+};
 
 // Handle viewport changes
 const metaViewport = document.querySelector('meta[name="viewport"]');

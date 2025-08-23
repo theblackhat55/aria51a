@@ -972,6 +972,11 @@ async function updateAuthUI() {
     // Show public landing page
     showPublicLandingPage();
   }
+  
+  // Update mobile navigation UI based on authentication state
+  if (typeof window.updateMobileAuthUI === 'function') {
+    window.updateMobileAuthUI();
+  }
 }
 
 // Show public landing page for non-authenticated users
