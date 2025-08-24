@@ -899,6 +899,22 @@ async function initializeNavigation() {
     console.warn('Auth button not found');
   }
   
+  // Setup mobile auth button
+  const mobileAuthButton = document.getElementById('mobile-auth-button');
+  if (mobileAuthButton) {
+    mobileAuthButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      const token = localStorage.getItem('aria_token');
+      if (token) {
+        logout();
+      } else {
+        // Redirect to unified login page
+        window.location.href = '/login';
+      }
+    });
+    console.log('Added event handler for mobile auth button');
+  }
+  
   // Update welcome message and auth button based on login status
   await updateAuthUI();
   
@@ -919,6 +935,7 @@ async function updateAuthUI() {
   
   const welcomeMessage = document.getElementById('welcome-message');
   const authButton = document.getElementById('auth-button');
+  const mobileAuthButton = document.getElementById('mobile-auth-button');
   const internalNav = document.getElementById('internal-nav');
   const notificationsContainer = document.getElementById('notifications-container');
   const ariaButton = document.getElementById('aria-button');
@@ -936,6 +953,17 @@ async function updateAuthUI() {
     } else {
       authButton.innerHTML = '<i class="fas fa-sign-in-alt mr-1"></i>Login';
       authButton.className = 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
+    }
+  }
+  
+  // Update mobile auth button
+  if (mobileAuthButton) {
+    if (isAuthenticated) {
+      mobileAuthButton.innerHTML = '<i class="fas fa-sign-out-alt mr-1"></i>Logout';
+      mobileAuthButton.className = 'md:hidden bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
+    } else {
+      mobileAuthButton.innerHTML = '<i class="fas fa-sign-in-alt mr-1"></i>Login';
+      mobileAuthButton.className = 'md:hidden bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
     }
   }
 

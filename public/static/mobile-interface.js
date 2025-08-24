@@ -488,21 +488,36 @@ class MobileInterface {
     const hamburgerBtn = document.getElementById('mobile-menu-btn');
     const mobileNav = document.getElementById('mobile-nav');
     const mobileNavContent = document.querySelector('.mobile-nav-content');
+    const mobileAuthBtn = document.getElementById('mobile-auth-button');
+    
+    const isMobileDevice = window.innerWidth <= 768;
     
     if (hamburgerBtn) {
-      // Always show hamburger menu on mobile devices
-      const isMobileDevice = window.innerWidth <= 768;
-      hamburgerBtn.style.display = isMobileDevice ? 'flex' : 'none';
+      // Show hamburger menu only on mobile devices AND when authenticated
+      hamburgerBtn.style.display = (isMobileDevice && isAuthenticated) ? 'flex' : 'none';
+    }
+    
+    if (mobileAuthBtn) {
+      // Show mobile auth button only on mobile devices AND when NOT authenticated
+      mobileAuthBtn.style.display = (isMobileDevice && !isAuthenticated) ? 'block' : 'none';
+      
+      // Add click handler for mobile auth button
+      mobileAuthBtn.onclick = () => {
+        window.location.href = '/login';
+      };
     }
     
     if (mobileNavContent) {
-      // Hide navigation content if not authenticated
-      mobileNavContent.style.display = isAuthenticated ? 'block' : 'none';
-    }
-    
-    // If not authenticated, show login message in mobile nav
-    if (!isAuthenticated && mobileNav) {
-      this.showMobileLoginMessage();
+      if (isAuthenticated) {
+        // Show navigation content for authenticated users
+        mobileNavContent.style.display = 'block';
+      } else {
+        // Hide navigation content and show login message for non-authenticated users
+        mobileNavContent.style.display = 'none';
+        if (mobileNav) {
+          this.showMobileLoginMessage();
+        }
+      }
     }
   }
   

@@ -101,6 +101,11 @@ app.get('/', (c) => {
             <span></span>
           </button>
           
+          <!-- Mobile Login Button (visible when not authenticated) -->
+          <button id="mobile-auth-button" class="md:hidden bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200" style="display: none;">
+            Login
+          </button>
+          
           <!-- Navigation and User Section -->
           <div class="flex items-center space-x-6">
             <!-- Grouped navigation with click-to-open dropdowns -->
