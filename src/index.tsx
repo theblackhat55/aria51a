@@ -226,7 +226,7 @@ app.get('/', (c) => {
               </div>
               
               <!-- User Info and Auth Button -->
-              <div class="flex items-center space-x-3">
+              <div class="hidden md:flex items-center space-x-3">
                 <span class="text-sm text-gray-600" id="welcome-message">Welcome, Guest</span>
                 <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200" id="auth-button">
                   <i class="fas fa-sign-in-alt mr-1"></i>Login
