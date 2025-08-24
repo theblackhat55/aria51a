@@ -56,7 +56,7 @@
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) {
         appendSystem("Please sign in to use ARIA.");
         return;
@@ -135,7 +135,7 @@
   }
 
   function maybeAutoWelcome() {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     if (!token) return;
     appendSystem('Hi, I\'m ARIA. Ask me about risks, incidents, or documents.');
   }

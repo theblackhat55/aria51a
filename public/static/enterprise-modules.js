@@ -155,7 +155,7 @@ async function showAssets() {
 
 async function loadAssets() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/assets', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -171,7 +171,7 @@ async function loadAssets() {
 }
 
 async function loadAssetsDropdowns() {
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   
   try {
     // Load services for filter dropdown
@@ -392,7 +392,7 @@ function showSettingsTab(tab) {
 
 async function loadUsersForSettings() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/users', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -1310,7 +1310,7 @@ function testSAMLConnection() {
 
 async function loadSAMLConfig() {
     try {
-        const token = localStorage.getItem('dmt_token');
+        const token = localStorage.getItem('aria_token');
         const response = await axios.get('/api/saml/config', {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -1683,7 +1683,7 @@ async function showSAMLSettings() {
 // Microsoft Integration Functions
 async function syncMicrosoftAssets() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/microsoft/sync-assets', {}, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -1699,7 +1699,7 @@ async function syncMicrosoftAssets() {
 
 async function syncMicrosoftIncidents() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/microsoft/sync-incidents', {}, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -1714,7 +1714,7 @@ async function syncMicrosoftIncidents() {
 
 async function syncMicrosoftVulnerabilities() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     
     showToast('Syncing vulnerabilities from Microsoft Defender...', 'info');
     
@@ -2043,7 +2043,7 @@ function setupAddUserFormHandlers() {
   if (genBtn && pwdInput) {
     genBtn.addEventListener('click', async () => {
       try {
-        const token = localStorage.getItem('dmt_token');
+        const token = localStorage.getItem('aria_token');
         const resp = await axios.get('/api/generate-password', {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -2086,7 +2086,7 @@ function setupAddUserFormHandlers() {
     }
 
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       const resp = await axios.post('/api/users', userData, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -2189,7 +2189,7 @@ function updateRiskScoreDisplay(value) {
 }
 
 async function loadAssetModalDropdowns() {
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   
   try {
     // Load organizations
@@ -2267,7 +2267,7 @@ function setupAssetFormHandlers() {
     }
 
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       const response = await axios.post('/api/assets', assetData, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -2318,7 +2318,7 @@ function generateAssetId() {
 
 async function viewAsset(id) {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get(`/api/assets/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -2439,7 +2439,7 @@ function closeViewAssetModal() {
 
 async function editAsset(id) {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get(`/api/assets/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -2625,7 +2625,7 @@ function updateEditRiskScoreDisplay(value) {
 }
 
 async function loadEditAssetModalDropdowns(asset) {
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   
   try {
     // Load organizations
@@ -2703,7 +2703,7 @@ function setupEditAssetFormHandlers() {
     }
 
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       const response = await axios.put(`/api/assets/${assetId}`, assetData, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -2733,7 +2733,7 @@ async function deleteAsset(id) {
   }
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.delete(`/api/assets/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -2919,7 +2919,7 @@ async function importAssets() {
       return;
     }
     
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/assets/import', {
       assets: assets,
       skipDuplicates: skipDuplicates
@@ -2942,7 +2942,7 @@ async function importAssets() {
 
 async function exportAssets() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/assets', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -2984,7 +2984,7 @@ async function filterAssets() {
   const serviceFilter = document.getElementById('asset-service-filter').value;
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/assets', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3515,7 +3515,7 @@ function showSystemSettings() {
 // Organizations Management Functions
 async function loadOrganizationsData() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/organizations', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3633,7 +3633,7 @@ async function saveOrganization() {
   };
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/organizations', formData, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3652,7 +3652,7 @@ async function deleteOrganization(id) {
   if (!confirm('Are you sure you want to delete this organization?')) return;
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.delete(`/api/organizations/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3669,7 +3669,7 @@ async function deleteOrganization(id) {
 // Risk Owners Management Functions
 async function loadRiskOwnersData() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/risk-owners', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3801,7 +3801,7 @@ async function saveRiskOwner() {
   };
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/risk-owners', formData, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3820,7 +3820,7 @@ async function deleteRiskOwner(id) {
   if (!confirm('Are you sure you want to delete this risk owner?')) return;
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.delete(`/api/risk-owners/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3838,7 +3838,7 @@ async function deleteRiskOwner(id) {
 async function editOrganization(id) {
   try {
     // First, get the organization data
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get(`/api/organizations`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -3908,7 +3908,7 @@ async function updateOrganization(id) {
   };
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.put(`/api/organizations/${id}`, formData, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -4321,7 +4321,7 @@ async function refreshRAGStats() {
     statusText.textContent = 'Checking system status...';
     
     // Call RAG server API for stats
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/rag/stats', {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
@@ -4364,7 +4364,7 @@ async function initializeRAGSystem() {
   showToast('Initializing RAG system...', 'info');
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/rag/initialize', {}, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
@@ -4436,7 +4436,7 @@ async function handleRAGFileUpload(event) {
   
   progressDiv.classList.remove('hidden');
   
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   let successCount = 0;
   let errorCount = 0;
   
@@ -4496,7 +4496,7 @@ async function testRAGQuery() {
   showToast('Testing RAG query...', 'info');
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/rag/query', {
       query: query,
       sourceTypes: ['risk', 'incident', 'service', 'document'],
@@ -4539,7 +4539,7 @@ async function refreshDocumentList() {
   const listDiv = document.getElementById('rag-document-list');
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/rag/documents?limit=20', {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
@@ -4611,7 +4611,7 @@ async function removeDocument(documentId) {
   }
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.delete(`/api/rag/documents/${documentId}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
@@ -4635,7 +4635,7 @@ async function clearRAGCache() {
   }
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/rag/cache/clear', {}, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     });
@@ -4683,7 +4683,7 @@ async function resetRAGSystem() {
   }
   
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     
     // Clear all data first
     await axios.post('/api/rag/cache/clear', {}, {
@@ -4708,7 +4708,7 @@ async function resetRAGSystem() {
 // Advanced Analytics Functions
 async function refreshAnalytics() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     
     // Load query analytics
     const queryAnalytics = await axios.get('/api/rag/analytics/queries?days=7', {
@@ -4915,7 +4915,7 @@ async function fetchOpenAIModels() {
     console.log('🔄 Fetching OpenAI models...');
     
     // Call our backend API to fetch OpenAI models
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/ai/fetch-models', {
       provider: 'openai',
       apiKey: apiKey
@@ -4976,7 +4976,7 @@ async function fetchGeminiModels() {
     console.log('🔄 Fetching Gemini models...');
     
     // Call our backend API to fetch Gemini models
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/ai/fetch-models', {
       provider: 'gemini',
       apiKey: apiKey
@@ -5037,7 +5037,7 @@ async function fetchAnthropicModels() {
     console.log('🔄 Fetching Anthropic models...');
     
     // Call our backend API to fetch Anthropic models
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/ai/fetch-models', {
       provider: 'anthropic',
       apiKey: apiKey

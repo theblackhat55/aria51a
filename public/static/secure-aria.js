@@ -10,7 +10,7 @@ async function sendARIAMessageSecure() {
   if (!query) return;
   
   // Check authentication
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   if (!token) {
     appendARIAMessage('system', 'Please log in to use ARIA assistant.');
     return;
@@ -149,7 +149,7 @@ async function updateARIAProviderDisplaySecure() {
   if (!providerDisplay) return;
 
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       providerDisplay.innerHTML = '<span class="text-red-600"><i class="fas fa-sign-in-alt mr-1"></i>Login Required</span>';
       providerDisplay.title = 'Please log in to use AI services';

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const errorDiv = document.getElementById('login-error');
   
   // Check if user is already logged in with valid token
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   console.log('Auth.js: Checking existing token:', token ? 'Found' : 'Not found');
   
   // Only clear Keycloak tokens if user explicitly chooses legacy auth
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (usingLegacy && keycloakToken) {
     localStorage.removeItem('dmt_access_token');
     localStorage.removeItem('dmt_refresh_token');
-    localStorage.removeItem('dmt_token_expires');
+    localStorage.removeItem('aria_token_expires');
     localStorage.removeItem('dmt_kc_access_token');
     localStorage.removeItem('dmt_kc_refresh_token');
     localStorage.removeItem('dmt_kc_token_expires');
@@ -37,14 +37,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       } else {
         console.log('Auth.js: Token invalid, clearing storage');
         // Invalid token, clear it and continue to login form
-        localStorage.removeItem('dmt_token');
+        localStorage.removeItem('aria_token');
         localStorage.removeItem('dmt_expires_at');
         localStorage.removeItem('dmt_user');
       }
     } catch (error) {
       // Token validation failed, clear it and continue to login form
       console.log('Auth.js: Token validation failed, clearing storage:', error.message);
-      localStorage.removeItem('dmt_token');
+      localStorage.removeItem('aria_token');
       localStorage.removeItem('dmt_expires_at');
       localStorage.removeItem('dmt_user');
     }
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', async function() {
           const token = response.data.data.token;
           const expiresAt = response.data.data.expires_at;
           
-          localStorage.setItem('dmt_token', token);
+          localStorage.setItem('aria_token', token);
           localStorage.setItem('dmt_expires_at', expiresAt);
           localStorage.setItem('dmt_user', JSON.stringify(response.data.data.user));
           
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Add security: Clear sensitive data on logout
   window.logout = function() {
-    localStorage.removeItem('dmt_token');
+    localStorage.removeItem('aria_token');
     localStorage.removeItem('dmt_expires_at');
     localStorage.removeItem('dmt_user');
     window.location.href = '/login';

@@ -749,7 +749,7 @@ async function handleEnhancedRiskSubmit(riskId = null) {
 
     try {
         // Try multiple token storage keys
-        const token = localStorage.getItem('dmt_token') ||           // Main app token
+        const token = localStorage.getItem('aria_token') ||           // Main app token
                      localStorage.getItem('authToken') || 
                      localStorage.getItem('token') || 
                      localStorage.getItem('dmt_access_token') ||      // Keycloak token
@@ -889,7 +889,7 @@ async function performAIRiskAssessment() {
     
     try {
         // Try multiple token storage keys (different parts of the app may use different keys)
-        const token = localStorage.getItem('dmt_token') ||           // Main app token
+        const token = localStorage.getItem('aria_token') ||           // Main app token
                      localStorage.getItem('authToken') || 
                      localStorage.getItem('token') || 
                      localStorage.getItem('dmt_access_token') ||      // Keycloak token

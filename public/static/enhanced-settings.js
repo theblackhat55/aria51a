@@ -575,7 +575,7 @@ class EnhancedSettingsManager {
 
   async loadAISettings() {
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) {
         console.log('No auth token, using default settings');
         return this.getDefaultAISettings();
@@ -694,7 +694,7 @@ class EnhancedSettingsManager {
         }
       };
 
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) {
         throw new Error('Authentication required');
       }
@@ -854,7 +854,7 @@ class EnhancedSettingsManager {
     try {
       showToast('Testing AI connections...', 'info');
       
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) {
         throw new Error('Authentication required');
       }
@@ -902,7 +902,7 @@ class EnhancedSettingsManager {
 
   async updateKeyStatusDisplay() {
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) return;
 
       const response = await fetch('/api/keys/status', {

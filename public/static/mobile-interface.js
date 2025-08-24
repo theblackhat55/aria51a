@@ -482,7 +482,7 @@ class MobileInterface {
 
   // Update mobile UI based on authentication state
   updateMobileAuthUI() {
-    const token = localStorage.getItem('dmt_token') || localStorage.getItem('authToken');
+    const token = localStorage.getItem('aria_token') || localStorage.getItem('authToken');
     const isAuthenticated = !!(token && window.currentUser);
     
     const hamburgerBtn = document.getElementById('mobile-menu-btn');

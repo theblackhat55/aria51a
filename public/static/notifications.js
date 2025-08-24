@@ -25,7 +25,7 @@ class NotificationManager {
 
   async loadNotifications(limit = 20, offset = 0) {
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) {
         // If no token, create sample notifications for demo
         this.createSampleNotifications();
@@ -53,7 +53,7 @@ class NotificationManager {
 
   async updateNotificationCount() {
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) {
         // Count local notifications
         this.unreadCount = this.notifications.filter(n => !n.is_read).length;
@@ -375,7 +375,7 @@ class NotificationManager {
 
   async markAsRead(notificationId) {
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) {
         // If no token, just mark local notification as read
         const notification = this.notifications.find(n => n.id === notificationId);
@@ -426,7 +426,7 @@ class NotificationManager {
     this.markingAllAsRead = true;
     
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) {
         // If no token, just mark local notifications as read
         this.notifications.forEach(n => n.is_read = 1);
@@ -800,7 +800,7 @@ const notificationManager = new NotificationManager();
 
 // Auto-initialize when user is logged in
 document.addEventListener('DOMContentLoaded', () => {
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   if (token) {
     setTimeout(() => {
       notificationManager.initialize();

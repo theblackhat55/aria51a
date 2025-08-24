@@ -367,7 +367,7 @@ function showFrameworkTab(tabName) {
 // Load Framework Data
 async function loadFrameworksData() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     
     // Initialize with default data if no API response
     frameworkData = {

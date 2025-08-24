@@ -156,7 +156,7 @@ function showRiskOwnersSettingsFallback() {
 async function loadUsersForSettingsFallback() {
   // Implementation will use existing loadUsersForSettings function from enterprise-modules.js
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/users', {
       headers: { Authorization: `Bearer ${token}` }
     });

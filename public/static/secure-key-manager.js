@@ -9,7 +9,7 @@ class SecureKeyManager {
 
   async loadKeyStatus() {
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       
       // Debug token retrieval in loadKeyStatus
       console.log('🔑 SecureKeyManager.loadKeyStatus - Token check:', {
@@ -39,7 +39,7 @@ class SecureKeyManager {
       if (!response.ok) {
         if (response.status === 401) {
           // Token is invalid or expired, clear it and return default status
-          localStorage.removeItem('dmt_token');
+          localStorage.removeItem('aria_token');
           this.apiKeyStatus = {
             openai: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
             gemini: { configured: false, valid: false, prefix: null, lastTested: null, createdAt: null },
@@ -88,7 +88,7 @@ class SecureKeyManager {
   async manageKey(provider, action, apiKey = null) {
     try {
       this.isLoading = true;
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       
       // Debug token retrieval
       console.log('🔑 SecureKeyManager - Token check:', {
@@ -137,7 +137,7 @@ class SecureKeyManager {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem('dmt_token');
+          localStorage.removeItem('aria_token');
           throw new Error('Session expired. Please log in again');
         }
         let errorMessage;

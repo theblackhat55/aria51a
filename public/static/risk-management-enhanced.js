@@ -791,7 +791,7 @@ async function saveRiskStatusChange(riskId) {
   
   try {
     // In real implementation, this would call the API
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1013,7 +1013,7 @@ async function handleEnhancedRiskSubmit(riskId = null) {
     formData.risk_score = calculateRiskScore();
     
     try {
-        const token = localStorage.getItem('dmt_token');
+        const token = localStorage.getItem('aria_token');
         const url = riskId ? `/api/risks/${riskId}` : '/api/risks';
         const method = riskId ? 'PUT' : 'POST';
         

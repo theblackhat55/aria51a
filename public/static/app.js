@@ -19,7 +19,7 @@ const apiRequest = window.KongAPI ? window.KongAPI.request.bind(window.KongAPI) 
     ...options
   };
   
-  const token = localStorage.getItem('dmt_token') || localStorage.getItem('authToken');
+  const token = localStorage.getItem('aria_token') || localStorage.getItem('authToken');
   if (token) {
     config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
   }
@@ -714,7 +714,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Check authentication and initialize appropriate UI
   try {
     // Debug: Check token in storage
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     console.log('Token found:', token ? 'Yes' : 'No', token ? `(${token.substring(0, 20)}...)` : '');
     
     const authResult = await checkAuthentication();
@@ -727,7 +727,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.error('Authentication error:', error);
     // Clear any invalid state
     currentUser = null;
-    localStorage.removeItem('dmt_token');
+    localStorage.removeItem('aria_token');
     localStorage.removeItem('dmt_user');
     // Update UI to show public landing page
     await updateAuthUI();
@@ -744,7 +744,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // Authentication check
 async function checkAuthentication() {
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   const userData = localStorage.getItem('dmt_user');
   
   if (!token || !userData) {
@@ -768,7 +768,7 @@ async function checkAuthentication() {
   } catch (error) {
     console.error('Authentication error:', error);
     // Clear invalid token
-    localStorage.removeItem('dmt_token');
+    localStorage.removeItem('aria_token');
     localStorage.removeItem('dmt_user');
     return false;
   }
@@ -886,7 +886,7 @@ async function initializeNavigation() {
   if (authButton) {
     authButton.addEventListener('click', (e) => {
       e.preventDefault();
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (token) {
         logout();
       } else {
@@ -909,7 +909,7 @@ async function initializeNavigation() {
 // Update authentication UI
 async function updateAuthUI() {
   console.log('🔄 updateAuthUI called');
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   console.log('🔑 Token status:', token ? 'Present' : 'Missing');
   console.log('👤 Current user:', currentUser ? 'Loaded' : 'Not loaded');
   
@@ -1052,7 +1052,7 @@ function showPublicLandingPage() {
 // Load current user data
 async function loadCurrentUser() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     if (!token) return;
     
     const response = await axios.get('/api/auth/me', {
@@ -1086,7 +1086,7 @@ function navigateTo(page) {
   document.querySelectorAll(`[data-page="${page}"]`).forEach(el => el.classList.add('active'));
   
   // Check if user needs to be authenticated for this page
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   if (!token) {
     // If not authenticated, show inline login prompt instead of hard redirect
     showLoginPrompt();
@@ -1365,7 +1365,7 @@ function showPlaceholder(title, message, icon) {
 // Logout function
 function logout() {
   // Clear user data
-  localStorage.removeItem('dmt_token');
+  localStorage.removeItem('aria_token');
   localStorage.removeItem('dmt_user');
   currentUser = null;
   
@@ -1398,7 +1398,7 @@ async function loadDashboardData() {
     console.log('📡 Loading dashboard data...');
     showLoading('main-content');
     
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     console.log('🔑 Using token:', token ? 'Present' : 'Missing');
     
     const response = await axios.get('/api/dashboard', {
@@ -1642,7 +1642,7 @@ async function showSoA() {
   const main = document.getElementById('main-content');
   showLoading('main-content');
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const res = await axios.get('/api/soa', { headers: { Authorization: `Bearer ${token}` } });
     const rows = res.data.data || [];
     main.innerHTML = `
@@ -1691,7 +1691,7 @@ async function showSoA() {
 }
 
 window.editSoA = function(id) {
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   const modal = document.createElement('div');
   modal.innerHTML = `
     <div class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center">
@@ -1745,7 +1745,7 @@ window.editSoA = function(id) {
 
 window.saveSoA = async function(id) {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const body = {
       included: document.getElementById('soa-included').checked,
       implementation_status: document.getElementById('soa-impl').value || null,
@@ -1767,7 +1767,7 @@ async function showTreatments() {
   updateActiveNavigation && updateActiveNavigation('treatments');
   showLoading('main-content');
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const [treatRes, excRes] = await Promise.all([
       axios.get('/api/treatments', { headers: { Authorization: `Bearer ${token}` } }),
       axios.get('/api/exceptions', { headers: { Authorization: `Bearer ${token}` } })
@@ -1846,7 +1846,7 @@ async function showKRIs() {
   updateActiveNavigation && updateActiveNavigation('kris');
   showLoading('main-content');
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const res = await axios.get('/api/kris', { headers: { Authorization: `Bearer ${token}` } });
     const kris = res.data.data || [];
     const main = document.getElementById('main-content');
@@ -1887,7 +1887,7 @@ async function showKRIs() {
 window.selectKRI = async function(id, name) {
   try {
     document.getElementById('kri-title').textContent = name;
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const res = await axios.get(`/api/kris/${id}/readings`, { headers: { Authorization: `Bearer ${token}` } });
     const readings = res.data.data || [];
     const labels = readings.map(r => new Date(r.timestamp).toLocaleString());
@@ -2388,7 +2388,7 @@ async function sendARIAMessage() {
   if (!query) return;
   
   // Check authentication
-  const token = localStorage.getItem('dmt_token');
+  const token = localStorage.getItem('aria_token');
   if (!token) {
     appendARIAMessage('system', 'Please log in to use ARIA assistant.');
     return;
@@ -2478,7 +2478,7 @@ async function sendARIAMessage() {
   
   // Use the enhanced ARIA API endpoint with RAG context
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const startTime = Date.now();
     
     console.log('🔍 Primary ARIA Call - About to send:', {
@@ -2592,7 +2592,7 @@ async function sendARIAMessage() {
             settings: aiSettings
           },
           { 
-            headers: { Authorization: `Bearer ${localStorage.getItem('dmt_token')}` },
+            headers: { Authorization: `Bearer ${localStorage.getItem('aria_token')}` },
             timeout: 30000
           }
         );
@@ -2678,7 +2678,7 @@ function getProviderDisplayName(provider) {
 
 async function showAIInsights() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/ai/insights?type=all&limit=5', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -2736,7 +2736,7 @@ function renderAIInsights(insights) {
 
 async function showRiskPredictions() {
   try {
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/ai/predict', {
       entity_type: 'system',
       entity_id: 1,
@@ -2991,7 +2991,7 @@ async function performDemoLogin() {
     
     if (result.success) {
       // Store token and user data
-      localStorage.setItem('dmt_token', result.data.token);
+      localStorage.setItem('aria_token', result.data.token);
       currentUser = result.data.user;
       
       // Close modal and update UI
@@ -3035,7 +3035,7 @@ async function performManualLogin() {
     
     if (result.success) {
       // Store token and user data
-      localStorage.setItem('dmt_token', result.data.token);
+      localStorage.setItem('aria_token', result.data.token);
       currentUser = result.data.user;
       
       // Close modal and update UI

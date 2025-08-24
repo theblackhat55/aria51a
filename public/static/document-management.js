@@ -94,7 +94,7 @@ class DocumentManager {
 
   async loadDocuments(page = 1, limit = 12) {
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       if (!token) return;
 
       showLoading('documents-container');
@@ -448,7 +448,7 @@ class DocumentManager {
         tags
       };
 
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       const response = await axios.post('/api/documents', documentData, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -468,7 +468,7 @@ class DocumentManager {
 
   async viewDocument(docId) {
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       const response = await axios.get(`/api/documents/${docId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -572,7 +572,7 @@ class DocumentManager {
     }
 
     try {
-      const token = localStorage.getItem('dmt_token');
+      const token = localStorage.getItem('aria_token');
       const response = await axios.delete(`/api/documents/${docId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });

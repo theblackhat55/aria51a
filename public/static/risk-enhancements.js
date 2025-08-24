@@ -27,7 +27,7 @@ async function generateAIRiskAssessment() {
       threat_source: document.getElementById('risk-threat-source')?.value || ''
     };
     
-    const token = localStorage.getItem('dmt_token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/ai/risk-assessment', analysisData, {
       headers: { Authorization: `Bearer ${token}` }
     });
