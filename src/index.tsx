@@ -1,10 +1,9 @@
-// ARIA v5.2 - AI Risk Intelligence Assistant
+// ARIA Platform v6.0 - Unified AI Risk Intelligence with Enhanced Security
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 import { cors } from 'hono/cors';
 
 import { createAPI } from './api';
-import { createKongEnhancedAPI } from './api-kong-enhanced';
 import { CloudflareBindings } from './types';
 import aiSystemsApi from './ai-governance/ai-systems-api.js';
 import aiRiskApi from './ai-governance/ai-risk-api.js';
@@ -36,9 +35,8 @@ app.use('*', async (c, next) => {
   c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.groq.com");
 });
 
-// API routes - Use Kong-enhanced API when Kong is available
-const isKongEnvironment = process.env.KONG_PROXY_URL || process.env.API_GATEWAY_URL;
-const api = isKongEnvironment ? createKongEnhancedAPI() : createAPI();
+// API routes - Clean Cloudflare-optimized implementation
+const api = createAPI();
 app.route('/', api);
 
 // AI Governance API routes
@@ -52,8 +50,8 @@ app.get('/', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARIA</title>
-  <meta name="description" content="Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics">
+  <title>ARIA Platform v6.0</title>
+  <meta name="description" content="ARIA Platform v6.0 - Unified AI Risk Intelligence with Enhanced Security & Advanced Analytics">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>

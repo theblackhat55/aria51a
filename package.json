@@ -1,7 +1,7 @@
 {
   "name": "aria-platform",
-  "version": "5.2.0",
-  "description": "ARIA - AI Risk Intelligence Assistant v5.2.0 - Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics",
+  "version": "6.0.0",
+  "description": "ARIA Platform v6.0 - Unified AI Risk Intelligence with Enhanced Security & Advanced Analytics",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
@@ -25,27 +25,15 @@
     "db:reset": "rm -rf .wrangler/state/v3/d1 && npm run db:migrate:local && npm run db:seed",
     "db:console:local": "wrangler d1 execute aria-production --local",
     "db:console:prod": "wrangler d1 execute aria-production",
-    "docker:build": "docker build -t aria-platform .",
-    "docker:run": "docker run -p 3000:3000 -v $(pwd)/database:/app/database -v $(pwd)/logs:/app/logs aria-platform",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f",
-    "docker:restart": "docker-compose restart",
     "git:init": "git init && git add . && git commit -m 'Initial commit'",
     "git:commit": "git add . && git commit -m",
     "git:status": "git status",
-    "git:log": "git log --oneline",
-    "users:export": "node scripts/export-users.cjs",
-    "users:migrate": "node scripts/migrate-users.cjs"
+    "git:log": "git log --oneline"
   },
   "dependencies": {
     "hono": "^4.9.1",
-    "@hono/node-server": "^1.12.2",
-    "better-sqlite3": "^11.3.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "node-cron": "^3.0.3",
-    "xlsx": "^0.18.5"
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20250705.0",
