@@ -1,4 +1,4 @@
-// ARIA Platform v5.2 - AI Risk Intelligence Assistant
+// ARIA v5.2 - AI Risk Intelligence Assistant
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 import { cors } from 'hono/cors';
@@ -52,7 +52,7 @@ app.get('/', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARIA Platform</title>
+  <title>ARIA</title>
   <meta name="description" content="Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics">
   
   <!-- Tailwind CSS -->
@@ -89,7 +89,7 @@ app.get('/', (c) => {
               </div>
             </div>
             <div class="ml-4">
-              <h1 class="text-xl font-semibold text-gray-900">ARIA Platform</h1>
+              <h1 class="text-xl font-semibold text-gray-900">ARIA</h1>
               <p class="text-xs text-gray-500">AI Risk Intelligence Assistant</p>
             </div>
           </div>
@@ -246,7 +246,7 @@ app.get('/', (c) => {
               <i class="fas fa-shield-alt text-white"></i>
             </div>
             <div class="ml-3">
-              <h1 class="text-lg font-semibold">ARIA Platform</h1>
+              <h1 class="text-lg font-semibold">ARIA</h1>
               <p class="text-xs opacity-80">GRC Platform v5.2</p>
             </div>
           </div>
@@ -537,7 +537,7 @@ app.get('/login', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - ARIA Platform</title>
+  <title>Login - ARIA</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -547,7 +547,7 @@ app.get('/login', (c) => {
       <div class="mx-auto h-20 w-20 bg-blue-600 rounded-full flex items-center justify-center mb-4">
         <i class="fas fa-shield-alt text-white text-2xl"></i>
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">ARIA Platform</h1>
+      <h1 class="text-2xl font-bold text-gray-900">ARIA</h1>
       <p class="text-gray-600 mt-2">AI Risk Intelligence Assistant</p>
     </div>
 

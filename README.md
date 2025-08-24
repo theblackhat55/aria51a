@@ -1,14 +1,14 @@
 # ARIA - AI Risk Intelligence Assistant
 
 ## Project Overview
-- **Name**: ARIA Platform
+- **Name**: ARIA
 - **Goal**: AI-Powered Risk Intelligence Assistant for Enterprise GRC
 - **Features**: Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics
 - **Version**: 5.2.0
 
 ## 🚀 Live Deployment URLs
 - **Production**: https://aria-platform.pages.dev/
-- **Latest Production**: https://5714845c.aria-platform.pages.dev *(100% ARIA branded)*
+- **Latest Production**: https://83d50092.aria-platform.pages.dev *(Clean ARIA branding)*
 - **Previous Production**: https://fbab6e00.aria-platform.pages.dev
 - **Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 
@@ -142,8 +142,8 @@ npm test               # Test local server
 
 ---
 
-**ARIA Platform v5.2.0** - AI Risk Intelligence Assistant  
+**ARIA v5.2.0** - AI Risk Intelligence Assistant  
 *Next-Generation Enterprise GRC Platform with AI-Powered Intelligence*
 
 🌐 **Live Platform**: https://aria-platform.pages.dev/  
-🤖 **Experience ARIA Today**: Sign in with demo credentials above
+🤖 **Experience ARIA**: Sign in with demo credentials above

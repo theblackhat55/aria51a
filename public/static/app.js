@@ -810,7 +810,7 @@ function showBasicDashboard() {
     mainContent.innerHTML = `
       <div class="text-center py-12">
         <i class="fas fa-shield-alt text-6xl text-blue-600 mb-4"></i>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">ARIA Platform</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">ARIA</h1>
         <p class="text-gray-600 mb-8">AI Risk Intelligence Assistant - Next-Generation Enterprise GRC Platform</p>
         <button onclick="window.location.href='/login'" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
           <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA
@@ -998,7 +998,7 @@ function showPublicLandingPage() {
           <div class="mx-auto h-24 w-24 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mb-6">
             <i class="fas fa-shield-alt text-white text-3xl"></i>
           </div>
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">ARIA Platform</h1>
+          <h1 class="text-4xl font-bold text-gray-900 mb-4">ARIA</h1>
           <p class="text-xl text-gray-600 mb-8">AI Risk Intelligence Assistant - Next-Generation Enterprise GRC Platform with Advanced Analytics</p>
         </div>
         

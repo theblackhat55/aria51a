@@ -255,7 +255,7 @@ app.get('/', (c) => {
               </div>
             </div>
             <div class="ml-4">
-              <h1 class="text-xl font-semibold text-gray-900">ARIA Platform</h1>
+              <h1 class="text-xl font-semibold text-gray-900">ARIA</h1>
               <p class="text-xs text-gray-500">AI Risk Intelligence Assistant v5.2</p>
             </div>
           </div>
@@ -366,7 +366,7 @@ app.get('/', (c) => {
               <i class="fas fa-shield-alt text-white"></i>
             </div>
             <div class="ml-3">
-              <h1 class="text-lg font-semibold">ARIA Platform</h1>
+              <h1 class="text-lg font-semibold">ARIA</h1>
               <p class="text-xs opacity-80">AI Risk Intelligence v5.2</p>
             </div>
           </div>
@@ -503,7 +503,7 @@ app.get('/login', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - ARIA Platform</title>
+  <title>Login - ARIA</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -514,7 +514,7 @@ app.get('/login', (c) => {
         <i class="fas fa-shield-alt text-white text-xl"></i>
       </div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-        ARIA Platform
+        ARIA
       </h2>
       <p class="mt-2 text-center text-sm text-gray-600">
         AI Risk Intelligence Assistant - Secure Access
@@ -600,7 +600,7 @@ async function startServer() {
     await initializeDatabase();
     console.log('✅ ARIA database initialized successfully');
 
-    console.log(`🚀 Starting ARIA Platform on port ${PORT}...`);
+    console.log(`🚀 Starting ARIA on port ${PORT}...`);
     
     serve({
       fetch: app.fetch,

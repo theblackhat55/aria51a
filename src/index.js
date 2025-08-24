@@ -1,4 +1,4 @@
-// ARIA Platform - Cloudflare Workers/Pages Entry Point
+// ARIA - Cloudflare Workers/Pages Entry Point
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
@@ -123,7 +123,7 @@ app.get('/', (c) => {
               </div>
             </div>
             <div class="ml-4">
-              <h1 class="text-xl font-semibold text-gray-900">ARIA Platform</h1>
+              <h1 class="text-xl font-semibold text-gray-900">ARIA</h1>
               <p class="text-xs text-gray-500">AI Risk Intelligence Assistant v5.2</p>
             </div>
           </div>
@@ -151,7 +151,7 @@ app.get('/', (c) => {
           <div class="mx-auto h-24 w-24 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mb-6">
             <i class="fas fa-robot text-white text-3xl"></i>
           </div>
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">ARIA Platform</h1>
+          <h1 class="text-4xl font-bold text-gray-900 mb-4">ARIA</h1>
           <p class="text-xl text-gray-600 mb-8">AI Risk Intelligence Assistant - Next-Generation Enterprise GRC Platform with Advanced Analytics</p>
         </div>
         
@@ -226,7 +226,7 @@ app.get('/login', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - ARIA Platform</title>
+  <title>Login - ARIA</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -237,7 +237,7 @@ app.get('/login', (c) => {
         <i class="fas fa-robot text-white text-xl"></i>
       </div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-        ARIA Platform
+        ARIA
       </h2>
       <p class="mt-2 text-center text-sm text-gray-600">
         AI Risk Intelligence Assistant - Secure Access
