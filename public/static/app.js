@@ -1443,7 +1443,7 @@ function showDashboard() {
       <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
         <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-3xl font-bold mb-2">Risk Optiks Dashboard</h1>
+            <h1 class="text-3xl font-bold mb-2">ARIA Dashboard</h1>
             <p class="text-blue-100">Real-time insights into your organization's risk posture</p>
           </div>
           <div class="flex space-x-3">

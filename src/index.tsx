@@ -1,4 +1,4 @@
-// DMT Risk Assessment System v2.0 - Main Application
+// ARIA Platform v5.2 - AI Risk Intelligence Assistant
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 import { cors } from 'hono/cors';
@@ -13,7 +13,7 @@ const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 // Enable CORS for all routes
 app.use('*', cors({
-  origin: ['http://localhost:3000', 'https://dmt-risk-assessment.pages.dev', 'https://*.pages.dev'],
+  origin: ['http://localhost:3000', 'https://aria-platform.pages.dev', 'https://*.pages.dev'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400, // 24 hours
@@ -52,7 +52,7 @@ app.get('/', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Risk Optiks</title>
+  <title>ARIA Platform</title>
   <meta name="description" content="Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics">
   
   <!-- Tailwind CSS -->
@@ -89,8 +89,8 @@ app.get('/', (c) => {
               </div>
             </div>
             <div class="ml-4">
-              <h1 class="text-xl font-semibold text-gray-900">Risk Optiks</h1>
-              <p class="text-xs text-gray-500">Your trusted Risk Analyst</p>
+              <h1 class="text-xl font-semibold text-gray-900">ARIA Platform</h1>
+              <p class="text-xs text-gray-500">AI Risk Intelligence Assistant</p>
             </div>
           </div>
           
@@ -246,7 +246,7 @@ app.get('/', (c) => {
               <i class="fas fa-shield-alt text-white"></i>
             </div>
             <div class="ml-3">
-              <h1 class="text-lg font-semibold">Risk Optiks</h1>
+              <h1 class="text-lg font-semibold">ARIA Platform</h1>
               <p class="text-xs opacity-80">GRC Platform v5.2</p>
             </div>
           </div>
@@ -492,7 +492,7 @@ app.get('/', (c) => {
     // Initialize Keycloak authentication for main app
     document.addEventListener('DOMContentLoaded', function() {
       try {
-        var hasToken = !!(localStorage.getItem('dmt_token') || localStorage.getItem('authToken'));
+        var hasToken = !!(localStorage.getItem('aria_token') || localStorage.getItem('authToken'));
         if (false && !hasToken && typeof showLoginPrompt === 'function') {
           showLoginPrompt();
         }
@@ -515,7 +515,7 @@ app.get('/', (c) => {
                 '<i class="fas fa-shield-alt text-white text-xl"></i>' +
               '</div>' +
               '<h2 class="text-xl font-bold text-gray-900 mb-2">Authentication Required</h2>' +
-              '<p class="text-gray-600 mb-6">Please login to access the Risk Management Platform</p>' +
+              '<p class="text-gray-600 mb-6">Please login to access ARIA - AI Risk Intelligence Assistant</p>' +
               '<button onclick="window.location.href=\\'/login\\'" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200">' +
                 '<i class="fas fa-sign-in-alt mr-2"></i>' +
                 'Login' +
@@ -537,7 +537,7 @@ app.get('/login', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Risk Optiks</title>
+  <title>Login - ARIA Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -547,8 +547,8 @@ app.get('/login', (c) => {
       <div class="mx-auto h-20 w-20 bg-blue-600 rounded-full flex items-center justify-center mb-4">
         <i class="fas fa-shield-alt text-white text-2xl"></i>
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">Risk Optiks</h1>
-      <p class="text-gray-600 mt-2">Your trusted Risk Analyst</p>
+      <h1 class="text-2xl font-bold text-gray-900">ARIA Platform</h1>
+      <p class="text-gray-600 mt-2">AI Risk Intelligence Assistant</p>
     </div>
 
     <div id="legacy-auth" style="display:none;">
