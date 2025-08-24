@@ -1219,6 +1219,20 @@ function navigateTo(page) {
           showPlaceholder('Statement of Applicability', 'SoA module loading...', 'list-check');
         }
         break;
+      case 'evidence':
+        if (typeof showEvidence === 'function') {
+          showEvidence();
+        } else {
+          showPlaceholder('Evidence Management', 'Evidence module loading...', 'folder-open');
+        }
+        break;
+      case 'assessments':
+        if (typeof showAssessments === 'function') {
+          showAssessments();
+        } else {
+          showPlaceholder('Compliance Assessments', 'Assessments module loading...', 'clipboard-list');
+        }
+        break;
       case 'treatments':
         if (typeof showTreatments === 'function') {
           showTreatments();
@@ -1375,6 +1389,409 @@ function showIntegrations() {
       </div>
     `;
   }
+}
+
+// Show Evidence Management page
+function showEvidence() {
+  updateActiveNavigation && updateActiveNavigation('evidence');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-folder-open mr-2 text-blue-600"></i>Evidence Management
+              </h1>
+              <p class="text-gray-600">Manage compliance evidence, documents, and artifacts</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="addEvidence()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Add Evidence
+              </button>
+              <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Total Evidence</p>
+                <p class="text-2xl font-bold text-gray-900">47</p>
+              </div>
+              <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-file-alt text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Approved</p>
+                <p class="text-2xl font-bold text-green-900">32</p>
+              </div>
+              <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Pending Review</p>
+                <p class="text-2xl font-bold text-yellow-900">12</p>
+              </div>
+              <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-yellow-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Expired</p>
+                <p class="text-2xl font-bold text-red-900">3</p>
+              </div>
+              <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence Table -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900">Evidence Repository</h3>
+              <div class="flex space-x-3">
+                <input type="text" placeholder="Search evidence..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option>All Types</option>
+                  <option>Policy Document</option>
+                  <option>Procedure</option>
+                  <option>Screenshot</option>
+                  <option>Report</option>
+                  <option>Certificate</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evidence</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Control</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">Access Control Policy</div>
+                        <div class="text-sm text-gray-500">IAM-001-Policy.pdf</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Policy Document</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">AC-2: Account Management</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Approved
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-08-20</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                    <button class="text-green-600 hover:text-green-900 mr-3">Download</button>
+                    <button class="text-yellow-600 hover:text-yellow-900">Edit</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-image text-blue-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">MFA Configuration Screenshot</div>
+                        <div class="text-sm text-gray-500">mfa-config-evidence.png</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Screenshot</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">IA-2: Identification and Authentication</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      Pending Review
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-08-22</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                    <button class="text-green-600 hover:text-green-900 mr-3">Approve</button>
+                    <button class="text-red-600 hover:text-red-900">Reject</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-certificate text-green-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">SSL Certificate</div>
+                        <div class="text-sm text-gray-500">wildcard.company.com.crt</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Certificate</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SC-8: Transmission Confidentiality</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Expiring Soon
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-07-15</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                    <button class="text-orange-600 hover:text-orange-900">Renew</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Show Assessments Management page
+function showAssessments() {
+  updateActiveNavigation && updateActiveNavigation('assessments');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-clipboard-list mr-2 text-purple-600"></i>Compliance Assessments
+              </h1>
+              <p class="text-gray-600">Manage compliance assessments, audits, and gap analyses</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="createAssessment()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>New Assessment
+              </button>
+              <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assessment Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Total Assessments</p>
+                <p class="text-2xl font-bold text-gray-900">12</p>
+              </div>
+              <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clipboard-list text-purple-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">In Progress</p>
+                <p class="text-2xl font-bold text-blue-900">5</p>
+              </div>
+              <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-spinner text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Completed</p>
+                <p class="text-2xl font-bold text-green-900">6</p>
+              </div>
+              <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Overdue</p>
+                <p class="text-2xl font-bold text-red-900">1</p>
+              </div>
+              <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assessments Table -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900">Assessment Portfolio</h3>
+              <div class="flex space-x-3">
+                <input type="text" placeholder="Search assessments..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                  <option>All Frameworks</option>
+                  <option>ISO 27001</option>
+                  <option>SOC 2</option>
+                  <option>NIST CSF</option>
+                  <option>PCI DSS</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assessment</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Framework</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-shield-alt text-blue-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">ISO 27001:2022 Assessment</div>
+                        <div class="text-sm text-gray-500">Annual compliance assessment</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">ISO 27001</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: 75%"></div>
+                      </div>
+                      <span class="ml-2 text-sm text-gray-600">75%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      In Progress
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-09-15</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-3">Continue</button>
+                    <button class="text-green-600 hover:text-green-900 mr-3">Report</button>
+                    <button class="text-gray-600 hover:text-gray-900">Settings</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-building text-green-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">SOC 2 Type II Assessment</div>
+                        <div class="text-sm text-gray-500">Security and availability audit</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SOC 2</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-green-600 h-2.5 rounded-full" style="width: 100%"></div>
+                      </div>
+                      <span class="ml-2 text-sm text-gray-600">100%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Completed
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-07-30</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-3">View Report</button>
+                    <button class="text-green-600 hover:text-green-900">Certificate</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-credit-card text-purple-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">PCI DSS Compliance Review</div>
+                        <div class="text-sm text-gray-500">Payment card industry assessment</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">PCI DSS</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-yellow-600 h-2.5 rounded-full" style="width: 45%"></div>
+                      </div>
+                      <span class="ml-2 text-sm text-gray-600">45%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Overdue
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-08-10</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-red-600 hover:text-red-900 mr-3">Urgent</button>
+                    <button class="text-blue-600 hover:text-blue-900">Continue</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Placeholder functions for Evidence actions
+function addEvidence() {
+  showToast('Evidence upload functionality will be available soon', 'info');
+}
+
+// Placeholder functions for Assessment actions
+function createAssessment() {
+  showToast('Assessment creation wizard will be available soon', 'info');
 }
 
 // Show placeholder for modules that haven't loaded yet
