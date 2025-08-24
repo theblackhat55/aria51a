@@ -260,8 +260,8 @@ app.get('/', (c) => {
             </div>
           </div>
           
-          <!-- Mobile Hamburger Menu Button (Initially hidden until auth check) -->
-          <button class="hamburger" id="mobile-menu-btn" aria-label="Open navigation menu" style="display: none;">
+          <!-- Mobile Hamburger Menu Button -->
+          <button class="hamburger" id="mobile-menu-btn" aria-label="Open navigation menu">
             <span></span>
             <span></span>
             <span></span>

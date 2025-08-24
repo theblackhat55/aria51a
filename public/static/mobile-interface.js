@@ -490,8 +490,9 @@ class MobileInterface {
     const mobileNavContent = document.querySelector('.mobile-nav-content');
     
     if (hamburgerBtn) {
-      // Hide hamburger menu if not authenticated
-      hamburgerBtn.style.display = isAuthenticated ? 'flex' : 'none';
+      // Always show hamburger menu on mobile devices
+      const isMobileDevice = window.innerWidth <= 768;
+      hamburgerBtn.style.display = isMobileDevice ? 'flex' : 'none';
     }
     
     if (mobileNavContent) {
