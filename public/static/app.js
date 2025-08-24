@@ -956,16 +956,7 @@ async function updateAuthUI() {
     }
   }
   
-  // Update mobile auth button
-  if (mobileAuthButton) {
-    if (isAuthenticated) {
-      mobileAuthButton.innerHTML = '<i class="fas fa-sign-out-alt mr-1"></i>Logout';
-      mobileAuthButton.className = 'md:hidden bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
-    } else {
-      mobileAuthButton.innerHTML = '<i class="fas fa-sign-in-alt mr-1"></i>Login';
-      mobileAuthButton.className = 'md:hidden bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200';
-    }
-  }
+
 
   // Role-based Admin visibility
   const adminGroup = document.getElementById('menu-admin');
@@ -987,6 +978,11 @@ async function updateAuthUI() {
     if (notificationsContainer) notificationsContainer.classList.remove('hidden');
     if (ariaButton) ariaButton.classList.remove('hidden');
     
+    // Hide mobile auth button when authenticated (desktop nav handles logout)
+    if (mobileAuthButton) {
+      mobileAuthButton.style.display = 'none';
+    }
+    
     try {
       console.log('📊 Initializing dashboard...');
       await initializeDashboard();
@@ -1005,6 +1001,12 @@ async function updateAuthUI() {
     if (internalNav) internalNav.className = 'hidden';
     if (notificationsContainer) notificationsContainer.classList.add('hidden');
     if (ariaButton) ariaButton.classList.add('hidden');
+    
+    // Show mobile auth button when not authenticated
+    const isMobileDevice = window.innerWidth <= 768;
+    if (mobileAuthButton && isMobileDevice) {
+      mobileAuthButton.style.display = 'block';
+    }
     
     // Show public landing page
     showPublicLandingPage();

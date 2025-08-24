@@ -494,17 +494,27 @@ class MobileInterface {
     
     if (hamburgerBtn) {
       // Show hamburger menu only on mobile devices AND when authenticated
-      hamburgerBtn.style.display = (isMobileDevice && isAuthenticated) ? 'flex' : 'none';
+      if (isMobileDevice && isAuthenticated) {
+        hamburgerBtn.style.display = 'flex';
+      } else {
+        hamburgerBtn.style.display = 'none';
+      }
     }
     
     if (mobileAuthBtn) {
       // Show mobile auth button only on mobile devices AND when NOT authenticated
-      mobileAuthBtn.style.display = (isMobileDevice && !isAuthenticated) ? 'block' : 'none';
+      if (isMobileDevice && !isAuthenticated) {
+        mobileAuthBtn.style.display = 'block';
+      } else {
+        mobileAuthBtn.style.display = 'none';
+      }
       
-      // Add click handler for mobile auth button
-      mobileAuthBtn.onclick = () => {
-        window.location.href = '/login';
-      };
+      // Add click handler for mobile auth button if not already added
+      if (!mobileAuthBtn.onclick) {
+        mobileAuthBtn.onclick = () => {
+          window.location.href = '/login';
+        };
+      }
     }
     
     if (mobileNavContent) {
