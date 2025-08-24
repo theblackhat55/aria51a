@@ -214,8 +214,8 @@ app.get('/', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DMT Risk Assessment Platform</title>
-  <meta name="description" content="Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics">
+  <title>ARIA - AI Risk Intelligence Assistant</title>
+  <meta name="description" content="AI-Powered Risk Intelligence Assistant - Next-Generation Enterprise GRC Platform with Advanced Analytics">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   
   <!-- Tailwind CSS -->
@@ -255,8 +255,8 @@ app.get('/', (c) => {
               </div>
             </div>
             <div class="ml-4">
-              <h1 class="text-xl font-semibold text-gray-900">Risk Management Platform</h1>
-              <p class="text-xs text-gray-500">Enterprise GRC Platform v2.0 - Native</p>
+              <h1 class="text-xl font-semibold text-gray-900">ARIA Platform</h1>
+              <p class="text-xs text-gray-500">AI Risk Intelligence Assistant v5.2</p>
             </div>
           </div>
           
@@ -366,8 +366,8 @@ app.get('/', (c) => {
               <i class="fas fa-shield-alt text-white"></i>
             </div>
             <div class="ml-3">
-              <h1 class="text-lg font-semibold">Risk Management</h1>
-              <p class="text-xs opacity-80">GRC Platform v5.2</p>
+              <h1 class="text-lg font-semibold">ARIA Platform</h1>
+              <p class="text-xs opacity-80">AI Risk Intelligence v5.2</p>
             </div>
           </div>
           <button class="text-white p-2" id="mobile-nav-close">
@@ -503,7 +503,7 @@ app.get('/login', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - DMT Risk Assessment Platform</title>
+  <title>Login - ARIA Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -514,10 +514,10 @@ app.get('/login', (c) => {
         <i class="fas fa-shield-alt text-white text-xl"></i>
       </div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-        Sign in to DMT Platform
+        ARIA Platform
       </h2>
       <p class="mt-2 text-center text-sm text-gray-600">
-        Docker Edition - Ubuntu Ready
+        AI Risk Intelligence Assistant - Secure Access
       </p>
     </div>
     
@@ -536,7 +536,7 @@ app.get('/login', (c) => {
             </div>
             <div id="login-error" class="hidden p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm"></div>
             <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md">
-              <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+              <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA
             </button>
           </form>
         </div>
@@ -596,11 +596,11 @@ app.get('/login', (c) => {
 // Initialize database and start server
 async function startServer() {
   try {
-    console.log('🔧 Initializing database...');
+    console.log('🔧 Initializing ARIA database...');
     await initializeDatabase();
-    console.log('✅ Database initialized successfully');
+    console.log('✅ ARIA database initialized successfully');
 
-    console.log(`🚀 Starting DMT Risk Assessment Platform on port ${PORT}...`);
+    console.log(`🚀 Starting ARIA Platform on port ${PORT}...`);
     
     serve({
       fetch: app.fetch,
@@ -619,12 +619,12 @@ async function startServer() {
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n🛑 Received SIGINT. Graceful shutdown...');
+  console.log('\n🛑 ARIA received SIGINT. Graceful shutdown...');
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.log('\n🛑 Received SIGTERM. Graceful shutdown...');
+  console.log('\n🛑 ARIA received SIGTERM. Graceful shutdown...');
   process.exit(0);
 });
 

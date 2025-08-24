@@ -1,0 +1,21 @@
+name = "aria-platform"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "./dist"
+
+# D1 Database Configuration
+# [[ d1_databases ]]
+# binding = "DB"
+# database_name = "aria-production"
+# database_id = "your-database-id-here"
+
+# KV Storage Configuration
+# [[ kv_namespaces ]]
+# binding = "KV"
+# id = "your-kv-id-here"
+# preview_id = "your-kv-preview-id-here"
+
+# Environment Variables
+[vars]
+ENVIRONMENT = "production"

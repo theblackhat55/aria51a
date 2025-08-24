@@ -783,15 +783,19 @@ function showLoginPrompt() {
         <div class="text-center mb-6">
           <i class="fas fa-lock text-4xl text-gray-400 mb-4"></i>
           <h2 class="text-2xl font-bold text-gray-900">Authentication Required</h2>
-          <p class="text-gray-600 mt-2">Please log in to access the GRC platform</p>
+          <p class="text-gray-600 mt-2">Please log in to access ARIA - AI Risk Intelligence Assistant</p>
         </div>
         <div class="space-y-4">
           <button onclick="window.location.href='/login'" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
-            <i class="fas fa-sign-in-alt mr-2"></i>Go to Login
+            <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA
           </button>
           <div class="text-sm text-gray-600 text-center">
-            <p><strong>Demo Credentials:</strong></p>
-            <p>Username: <code>admin</code> | Password: <code>demo123</code></p>
+            <p><strong>Demo Accounts Available:</strong></p>
+            <div class="mt-2 space-y-1">
+              <p>admin / demo123 (Administrator)</p>
+              <p>avi_security / demo123 (Risk Manager)</p>
+              <p>sjohnson / demo123 (Compliance Officer)</p>
+            </div>
           </div>
         </div>
       </div>
@@ -806,11 +810,15 @@ function showBasicDashboard() {
     mainContent.innerHTML = `
       <div class="text-center py-12">
         <i class="fas fa-shield-alt text-6xl text-blue-600 mb-4"></i>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">DMT Risk Assessment System v2.0</h1>
-        <p class="text-gray-600 mb-8">Next-Generation Enterprise GRC Platform</p>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">ARIA Platform</h1>
+        <p class="text-gray-600 mb-8">AI Risk Intelligence Assistant - Next-Generation Enterprise GRC Platform</p>
         <button onclick="window.location.href='/login'" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
-          <i class="fas fa-sign-in-alt mr-2"></i>Login to Continue
+          <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA
         </button>
+        <div class="mt-6 text-sm text-gray-500">
+          <p><strong>Demo Accounts Available</strong></p>
+          <p class="mt-2">admin / demo123 | avi_security / demo123 | sjohnson / demo123</p>
+        </div>
       </div>
     `;
   }
@@ -882,7 +890,8 @@ async function initializeNavigation() {
       if (token) {
         logout();
       } else {
-        showDemoLoginModal();
+        // Redirect to unified login page instead of showing modal
+        window.location.href = '/login';
       }
     });
     console.log('Added event handler for auth button');
@@ -989,8 +998,8 @@ function showPublicLandingPage() {
           <div class="mx-auto h-24 w-24 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mb-6">
             <i class="fas fa-shield-alt text-white text-3xl"></i>
           </div>
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">Risk Management Platform</h1>
-          <p class="text-xl text-gray-600 mb-8">Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics</p>
+          <h1 class="text-4xl font-bold text-gray-900 mb-4">ARIA Platform</h1>
+          <p class="text-xl text-gray-600 mb-8">AI Risk Intelligence Assistant - Next-Generation Enterprise GRC Platform with Advanced Analytics</p>
         </div>
         
         <div class="grid md:grid-cols-3 gap-8 mb-12">
@@ -1021,16 +1030,17 @@ function showPublicLandingPage() {
         
         <div class="bg-blue-50 p-8 rounded-lg border border-blue-200">
           <h3 class="text-xl font-semibold text-gray-900 mb-4">Ready to Get Started?</h3>
-          <p class="text-gray-600 mb-6">Sign in to access the full GRC platform with advanced risk management capabilities.</p>
+          <p class="text-gray-600 mb-6">Sign in to access ARIA's AI-powered risk intelligence platform with advanced GRC capabilities.</p>
           <button onclick="window.location.href='/login'" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors duration-200">
-            <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+            <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA
           </button>
           
           <div class="mt-6 text-sm text-gray-500">
-            <p><strong>Demo Accounts:</strong></p>
+            <p><strong>Demo Accounts Available:</strong></p>
             <div class="mt-2 space-y-1">
               <p><strong>Admin:</strong> admin / demo123</p>
               <p><strong>Risk Manager:</strong> avi_security / demo123</p>
+              <p><strong>Compliance Officer:</strong> sjohnson / demo123</p>
             </div>
           </div>
         </div>
@@ -2919,7 +2929,8 @@ async function refreshDashboard() {
   showToast('Dashboard refreshed successfully', 'success');
 }
 
-// Demo login modal for testing
+// Demo login modal for testing (DEPRECATED - Use /login page instead)
+// This function is kept for backward compatibility but is no longer actively used
 function showDemoLoginModal() {
   showModal('Demo Login', `
     <div class="space-y-6">
