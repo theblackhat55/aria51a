@@ -7,10 +7,10 @@
 - **Version**: 5.2.0
 
 ## 🚀 Live Deployment URLs
-- **ARIA.dev Domain**: https://31db9376.aria-dev.pages.dev *(AI Governance hidden, custom domain)*  
+- **ARIA.dev Domain**: https://a4bb9c6b.aria-dev.pages.dev *(Evidence & Assessments pages fixed)*  
 - **ARIA.dev Alias**: https://grc5-2.aria-dev.pages.dev *(Same deployment, branch alias)*
 - **Original Platform**: https://aria-platform.pages.dev/
-- **Latest Production**: https://7db33f20.aria-platform.pages.dev *(Mobile authentication & hamburger menu fix)*
+- **Previous Production**: https://31db9376.aria-dev.pages.dev *(AI Governance hidden, custom domain)*
 - **Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 
 ## 🤖 Platform Features
@@ -22,7 +22,9 @@
 
 ### **Core GRC Modules**
 - **Risk Management**: Comprehensive risk assessment, treatments, and KRIs
-- **Compliance Management**: Framework management, SoA, and evidence tracking
+- **Compliance Management**: Framework management, SoA, evidence tracking, and assessments
+- **Evidence Management**: Document repository with approval workflows and status tracking
+- **Compliance Assessments**: Assessment portfolio with progress tracking and reporting
 - **Asset Management**: IT asset tracking with vulnerability assessments
 - **Incident Management**: Security incident response and reporting
 - **Document Management**: Centralized document and evidence repository
@@ -127,6 +129,9 @@ npm test               # Test local server
 - ✅ Fixed hamburger menu visibility after authentication on mobile
 - ✅ Token-based authentication state management for mobile
 - ✅ Hidden AI Governance menu (desktop & mobile navigation)
+- ✅ Fixed Evidence and Assessments pages routing issues
+- ✅ Added comprehensive Evidence Management interface
+- ✅ Added Compliance Assessments tracking and reporting
 - ✅ Deployed to custom aria-dev.pages.dev domain
 - ✅ Performance optimizations for edge deployment
 
@@ -134,6 +139,8 @@ npm test               # Test local server
 - **Platform**: ✅ Active and deployed
 - **Authentication**: ✅ Fully functional with demo accounts
 - **Mobile Support**: ✅ Responsive design implemented
+- **Compliance Pages**: ✅ Evidence and Assessments pages fully functional
+- **Navigation**: ✅ All menu items working properly (no more login prompts)
 - **AI Integration**: ✅ ARIA assistant integrated
 - **Cloudflare Deployment**: ✅ Successfully deployed to edge network
 - **Performance**: ✅ Optimized for global edge distribution
