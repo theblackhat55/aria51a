@@ -7,9 +7,10 @@
 - **Version**: 5.2.0
 
 ## 🚀 Live Deployment URLs
-- **Production**: https://aria-platform.pages.dev/
+- **ARIA.dev Domain**: https://31db9376.aria-dev.pages.dev *(AI Governance hidden, custom domain)*  
+- **ARIA.dev Alias**: https://grc5-2.aria-dev.pages.dev *(Same deployment, branch alias)*
+- **Original Platform**: https://aria-platform.pages.dev/
 - **Latest Production**: https://7db33f20.aria-platform.pages.dev *(Mobile authentication & hamburger menu fix)*
-- **Previous Production**: https://9cbe1057.aria-platform.pages.dev *(Mobile duplicate button fix)*
 - **Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 
 ## 🤖 Platform Features
@@ -125,6 +126,8 @@ npm test               # Test local server
 - ✅ Fixed duplicate authentication buttons on mobile
 - ✅ Fixed hamburger menu visibility after authentication on mobile
 - ✅ Token-based authentication state management for mobile
+- ✅ Hidden AI Governance menu (desktop & mobile navigation)
+- ✅ Deployed to custom aria-dev.pages.dev domain
 - ✅ Performance optimizations for edge deployment
 
 ## 📊 Current Status
