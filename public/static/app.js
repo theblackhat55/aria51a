@@ -1268,6 +1268,27 @@ function navigateTo(page) {
           showPlaceholder('Integrations', 'Integrations module loading...', 'plug');
         }
         break;
+      case 'ai-assure':
+        if (typeof showAIAssure === 'function') {
+          showAIAssure();
+        } else {
+          showPlaceholder('AI/ARIA Assistant', 'AI Assistant module loading...', 'robot');
+        }
+        break;
+      case 'search':
+        if (typeof showSearch === 'function') {
+          showSearch();
+        } else {
+          showPlaceholder('Advanced Search', 'Search module loading...', 'search');
+        }
+        break;
+      case 'ai-analytics':
+        if (typeof showAIAnalytics === 'function') {
+          showAIAnalytics();
+        } else {
+          showPlaceholder('AI Analytics', 'AI Analytics module loading...', 'chart-line');
+        }
+        break;
       default:
         showBasicDashboard();
     }
@@ -1792,6 +1813,1093 @@ function addEvidence() {
 // Placeholder functions for Assessment actions
 function createAssessment() {
   showToast('Assessment creation wizard will be available soon', 'info');
+}
+
+// Show Risk Treatments page
+function showTreatments() {
+  updateActiveNavigation && updateActiveNavigation('treatments');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-prescription-bottle mr-2 text-green-600"></i>Risk Treatments
+              </h1>
+              <p class="text-gray-600">Manage risk treatment plans, controls, and mitigation strategies</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="addTreatment()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Add Treatment
+              </button>
+              <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Treatment Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Active Treatments</p>
+                <p class="text-2xl font-bold text-gray-900">23</p>
+              </div>
+              <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-green-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Implemented</p>
+                <p class="text-2xl font-bold text-green-900">18</p>
+              </div>
+              <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">In Progress</p>
+                <p class="text-2xl font-bold text-yellow-900">4</p>
+              </div>
+              <div class="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-yellow-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Overdue</p>
+                <p class="text-2xl font-bold text-red-900">1</p>
+              </div>
+              <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Treatments Table -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900">Risk Treatment Portfolio</h3>
+              <div class="flex space-x-3">
+                <input type="text" placeholder="Search treatments..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                  <option>All Types</option>
+                  <option>Mitigate</option>
+                  <option>Accept</option>
+                  <option>Transfer</option>
+                  <option>Avoid</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Treatment</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-shield-alt text-green-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">Multi-Factor Authentication Implementation</div>
+                        <div class="text-sm text-gray-500">Implement MFA for all user accounts</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">R-001: Unauthorized Access</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Mitigate</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Implemented
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-08-15</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                    <button class="text-green-600 hover:text-green-900 mr-3">Report</button>
+                    <button class="text-gray-600 hover:text-gray-900">Edit</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-clock text-yellow-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">Data Encryption Upgrade</div>
+                        <div class="text-sm text-gray-500">Upgrade to AES-256 encryption</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">R-003: Data Breach</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Mitigate</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      In Progress
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2024-09-30</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-3">Continue</button>
+                    <button class="text-yellow-600 hover:text-yellow-900 mr-3">Update</button>
+                    <button class="text-gray-600 hover:text-gray-900">Edit</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Show KRIs (Key Risk Indicators) page
+function showKRIs() {
+  updateActiveNavigation && updateActiveNavigation('kris');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-wave-square mr-2 text-purple-600"></i>Key Risk Indicators
+              </h1>
+              <p class="text-gray-600">Monitor and analyze key metrics that indicate potential risks</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="addKRI()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Add KRI
+              </button>
+              <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KRI Dashboard -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Total KRIs</p>
+                <p class="text-2xl font-bold text-gray-900">15</p>
+              </div>
+              <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-chart-line text-purple-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Critical Alerts</p>
+                <p class="text-2xl font-bold text-red-900">3</p>
+              </div>
+              <div class="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-red-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Normal Range</p>
+                <p class="text-2xl font-bold text-green-900">12</p>
+              </div>
+              <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KRI Performance Charts -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">KRI Performance Overview</h3>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+              <i class="fas fa-chart-area text-4xl text-purple-400 mb-2"></i>
+              <p class="text-gray-600">System Availability KRI</p>
+              <p class="text-2xl font-bold text-green-600">99.8%</p>
+              <p class="text-sm text-gray-500">Target: >99.5%</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+              <i class="fas fa-shield-alt text-4xl text-blue-400 mb-2"></i>
+              <p class="text-gray-600">Security Incidents</p>
+              <p class="text-2xl font-bold text-yellow-600">2</p>
+              <p class="text-sm text-gray-500">Target: <3 per month</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- KRI Table -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900">KRI Monitoring</h3>
+              <div class="flex space-x-3">
+                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                  <option>All Categories</option>
+                  <option>Operational</option>
+                  <option>Security</option>
+                  <option>Compliance</option>
+                  <option>Financial</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KRI Name</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Value</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-server text-blue-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">System Uptime</div>
+                        <div class="text-sm text-gray-500">Monthly system availability</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">99.8%</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">>99.5%</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Normal
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <i class="fas fa-arrow-up text-green-500"></i>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                    <button class="text-purple-600 hover:text-purple-900">Configure</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">Security Incidents</div>
+                        <div class="text-sm text-gray-500">Monthly security events</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">5</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><3</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Critical
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <i class="fas fa-arrow-up text-red-500"></i>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-red-600 hover:text-red-900 mr-3">Alert</button>
+                    <button class="text-blue-600 hover:text-blue-900">Investigate</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Show AI/ARIA Assistant page
+function showAIAssure() {
+  updateActiveNavigation && updateActiveNavigation('ai-assure');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-robot mr-2 text-blue-600"></i>AI/ARIA Assistant
+              </h1>
+              <p class="text-gray-600">Interact with ARIA - AI Risk Intelligence Assistant</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="clearChat()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-trash mr-2"></i>Clear Chat
+              </button>
+              <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 h-96 flex flex-col">
+          <div class="p-4 border-b border-gray-200">
+            <div class="flex items-center space-x-3">
+              <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-robot text-blue-600"></i>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">ARIA Assistant</h3>
+                <p class="text-sm text-green-600">Online</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex-1 p-4 overflow-y-auto" id="chat-messages">
+            <div class="space-y-4">
+              <div class="flex items-start space-x-3">
+                <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-robot text-blue-600 text-sm"></i>
+                </div>
+                <div class="bg-gray-100 rounded-lg p-3 max-w-md">
+                  <p class="text-sm text-gray-900">Hello! I'm ARIA, your AI Risk Intelligence Assistant. How can I help you with risk management today?</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-4 border-t border-gray-200">
+            <div class="flex space-x-3">
+              <input type="text" id="chat-input" placeholder="Ask ARIA about risks, compliance, or security..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <h3 class="font-semibold text-gray-900 mb-3">Risk Analysis</h3>
+            <p class="text-sm text-gray-600 mb-4">Get AI-powered risk assessments and recommendations</p>
+            <button onclick="askAboutRisk()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+              Analyze Risk
+            </button>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <h3 class="font-semibold text-gray-900 mb-3">Compliance Check</h3>
+            <p class="text-sm text-gray-600 mb-4">Verify compliance status and get remediation advice</p>
+            <button onclick="askAboutCompliance()" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+              Check Compliance
+            </button>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <h3 class="font-semibold text-gray-900 mb-3">Security Insights</h3>
+            <p class="text-sm text-gray-600 mb-4">Get security recommendations and threat intelligence</p>
+            <button onclick="askAboutSecurity()" class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
+              Security Analysis
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Show AI Providers page  
+function showAISettings() {
+  updateActiveNavigation && updateActiveNavigation('ai-providers');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-robot mr-2 text-orange-600"></i>AI Providers
+              </h1>
+              <p class="text-gray-600">Configure and manage AI service providers and API connections</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="addProvider()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Add Provider
+              </button>
+              <button onclick="testConnections()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-plug mr-2"></i>Test All
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Provider Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center">
+                <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                  <i class="fas fa-brain text-green-600"></i>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900">OpenAI</h3>
+                  <p class="text-sm text-gray-600">GPT-4 & GPT-3.5</p>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <span class="h-3 w-3 bg-green-400 rounded-full mr-2"></span>
+                <span class="text-sm text-green-600">Active</span>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">API Status:</span>
+                <span class="text-green-600">Connected</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Usage:</span>
+                <span class="text-gray-900">2.5k requests</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Rate Limit:</span>
+                <span class="text-gray-900">60 RPM</span>
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Configure</button>
+              <button class="flex-1 bg-green-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-green-700">Test</button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center">
+                <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                  <i class="fas fa-microchip text-blue-600"></i>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900">Anthropic</h3>
+                  <p class="text-sm text-gray-600">Claude 3</p>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <span class="h-3 w-3 bg-yellow-400 rounded-full mr-2"></span>
+                <span class="text-sm text-yellow-600">Limited</span>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">API Status:</span>
+                <span class="text-yellow-600">Rate Limited</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Usage:</span>
+                <span class="text-gray-900">850 requests</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Rate Limit:</span>
+                <span class="text-gray-900">25 RPM</span>
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Configure</button>
+              <button class="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700">Test</button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center">
+                <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                  <i class="fas fa-database text-purple-600"></i>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900">Local Model</h3>
+                  <p class="text-sm text-gray-600">On-premises</p>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <span class="h-3 w-3 bg-gray-400 rounded-full mr-2"></span>
+                <span class="text-sm text-gray-600">Inactive</span>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Status:</span>
+                <span class="text-gray-600">Not Configured</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Type:</span>
+                <span class="text-gray-900">Llama 2</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">GPU:</span>
+                <span class="text-gray-900">Required</span>
+              </div>
+            </div>
+            <div class="flex space-x-2">
+              <button class="flex-1 bg-purple-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-purple-700">Setup</button>
+              <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200" disabled>Test</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuration Panel -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Global AI Configuration</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Default Provider</label>
+              <select class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                <option>OpenAI GPT-4</option>
+                <option>Anthropic Claude</option>
+                <option>Local Model</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Fallback Provider</label>
+              <select class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                <option>Anthropic Claude</option>
+                <option>OpenAI GPT-3.5</option>
+                <option>None</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-4 flex space-x-3">
+            <button class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+              Save Configuration
+            </button>
+            <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+              Reset to Defaults
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Show RAG & Knowledge page
+function showRAGSettings() {
+  updateActiveNavigation && updateActiveNavigation('rag-knowledge');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-database mr-2 text-indigo-600"></i>RAG & Knowledge Base
+              </h1>
+              <p class="text-gray-600">Manage Retrieval-Augmented Generation and knowledge repositories</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="uploadKnowledge()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-upload mr-2"></i>Upload Documents
+              </button>
+              <button onclick="reindexKnowledge()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Reindex
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Knowledge Base Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Documents</p>
+                <p class="text-2xl font-bold text-gray-900">1,247</p>
+              </div>
+              <div class="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-file-alt text-indigo-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Embeddings</p>
+                <p class="text-2xl font-bold text-gray-900">45.2K</p>
+              </div>
+              <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-vector-square text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Queries Today</p>
+                <p class="text-2xl font-bold text-gray-900">342</p>
+              </div>
+              <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-search text-green-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Avg. Accuracy</p>
+                <p class="text-2xl font-bold text-gray-900">94.5%</p>
+              </div>
+              <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-bullseye text-purple-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Knowledge Collections -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Knowledge Collections</h3>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-semibold text-gray-900">GRC Policies</h4>
+                  <span class="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">Active</span>
+                </div>
+                <div class="space-y-2 text-sm text-gray-600">
+                  <div class="flex justify-between">
+                    <span>Documents:</span>
+                    <span>156</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Size:</span>
+                    <span>45.2 MB</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Last Updated:</span>
+                    <span>2024-08-22</span>
+                  </div>
+                </div>
+                <div class="mt-4 flex space-x-2">
+                  <button class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
+                  <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Query</button>
+                </div>
+              </div>
+
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-semibold text-gray-900">Security Standards</h4>
+                  <span class="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">Active</span>
+                </div>
+                <div class="space-y-2 text-sm text-gray-600">
+                  <div class="flex justify-between">
+                    <span>Documents:</span>
+                    <span>89</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Size:</span>
+                    <span>23.8 MB</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Last Updated:</span>
+                    <span>2024-08-20</span>
+                  </div>
+                </div>
+                <div class="mt-4 flex space-x-2">
+                  <button class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
+                  <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Query</button>
+                </div>
+              </div>
+
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-semibold text-gray-900">Training Materials</h4>
+                  <span class="text-sm text-yellow-600 bg-yellow-100 px-2 py-1 rounded">Updating</span>
+                </div>
+                <div class="space-y-2 text-sm text-gray-600">
+                  <div class="flex justify-between">
+                    <span>Documents:</span>
+                    <span>234</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Size:</span>
+                    <span>67.4 MB</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Last Updated:</span>
+                    <span>2024-08-24</span>
+                  </div>
+                </div>
+                <div class="mt-4 flex space-x-2">
+                  <button class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
+                  <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200" disabled>Query</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Show Search page
+function showSearch() {
+  updateActiveNavigation && updateActiveNavigation('search');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-search mr-2 text-cyan-600"></i>Advanced Search
+              </h1>
+              <p class="text-gray-600">Search across all GRC data, documents, and knowledge bases</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="saveSearch()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-star mr-2"></i>Save Search
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Interface -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="space-y-4">
+            <div class="relative">
+              <input type="text" id="main-search" placeholder="Search for risks, policies, controls, or ask a question..." class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+              <button onclick="performSearch()" class="absolute right-3 top-3 text-gray-400 hover:text-cyan-600">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+            
+            <div class="flex flex-wrap gap-3">
+              <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                <option>All Categories</option>
+                <option>Risks</option>
+                <option>Controls</option>
+                <option>Policies</option>
+                <option>Evidence</option>
+                <option>Assessments</option>
+              </select>
+              <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                <option>All Time</option>
+                <option>Last 7 days</option>
+                <option>Last 30 days</option>
+                <option>Last 90 days</option>
+              </select>
+              <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                <option>Relevance</option>
+                <option>Date (Newest)</option>
+                <option>Date (Oldest)</option>
+                <option>Name A-Z</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Searches -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Searches</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <button onclick="quickSearch('high risk')" class="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+              <span class="text-sm font-medium">High Risk Items</span>
+            </button>
+            <button onclick="quickSearch('overdue controls')" class="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <i class="fas fa-clock text-yellow-500 mr-2"></i>
+              <span class="text-sm font-medium">Overdue Controls</span>
+            </button>
+            <button onclick="quickSearch('recent incidents')" class="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <i class="fas fa-bell text-orange-500 mr-2"></i>
+              <span class="text-sm font-medium">Recent Incidents</span>
+            </button>
+            <button onclick="quickSearch('compliance gaps')" class="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <i class="fas fa-clipboard-check text-blue-500 mr-2"></i>
+              <span class="text-sm font-medium">Compliance Gaps</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Results -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900">Search Results</h3>
+              <span class="text-sm text-gray-600">0 results</span>
+            </div>
+          </div>
+          <div class="p-6">
+            <div class="text-center py-12">
+              <i class="fas fa-search text-4xl text-gray-300 mb-4"></i>
+              <p class="text-gray-600">Enter a search term to find relevant GRC information</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Show AI Analytics page
+function showAIAnalytics() {
+  updateActiveNavigation && updateActiveNavigation('ai-analytics');
+  const mainContent = document.getElementById('main-content');
+  
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div class="space-y-6">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-chart-line mr-2 text-teal-600"></i>AI Analytics
+              </h1>
+              <p class="text-gray-600">Advanced analytics and insights powered by artificial intelligence</p>
+            </div>
+            <div class="flex space-x-3">
+              <button onclick="generateReport()" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-file-chart mr-2"></i>Generate Report
+              </button>
+              <button onclick="location.reload()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Risk Prediction Model</h3>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Model Accuracy</span>
+                <span class="text-lg font-bold text-green-600">94.2%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Predictions Made</span>
+                <span class="text-lg font-bold text-gray-900">1,247</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">High Risk Alerts</span>
+                <span class="text-lg font-bold text-red-600">23</span>
+              </div>
+            </div>
+            <div class="mt-6">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 mb-2">Next Predicted Risk Event:</p>
+                <p class="font-semibold text-gray-900">Potential Security Incident</p>
+                <p class="text-sm text-orange-600">Probability: 73% within 7 days</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Compliance Trends</h3>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Overall Score</span>
+                <span class="text-lg font-bold text-blue-600">87.3%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Trend (30 days)</span>
+                <span class="text-lg font-bold text-green-600">+5.2%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Framework Coverage</span>
+                <span class="text-lg font-bold text-gray-900">12/15</span>
+              </div>
+            </div>
+            <div class="mt-6">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 mb-2">Recommendation:</p>
+                <p class="font-semibold text-gray-900">Focus on Access Controls</p>
+                <p class="text-sm text-blue-600">Expected improvement: +8.5%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Insights -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">AI-Generated Insights</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-gray-900 mb-1">Critical Risk Pattern Detected</h4>
+                  <p class="text-sm text-gray-600">Multiple failed login attempts from unusual locations detected. Consider implementing stricter access controls.</p>
+                  <div class="mt-2 flex space-x-2">
+                    <button class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">High Priority</button>
+                    <button class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">View Details</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-chart-line text-green-600"></i>
+                </div>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-gray-900 mb-1">Compliance Improvement Opportunity</h4>
+                  <p class="text-sm text-gray-600">Data backup procedures show 98% success rate. Consider documenting this as a best practice.</p>
+                  <div class="mt-2 flex space-x-2">
+                    <button class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Positive Trend</button>
+                    <button class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">Implement</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-lightbulb text-blue-600"></i>
+                </div>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-gray-900 mb-1">Resource Optimization</h4>
+                  <p class="text-sm text-gray-600">AI analysis suggests consolidating security training programs could reduce costs by 25% while maintaining effectiveness.</p>
+                  <div class="mt-2 flex space-x-2">
+                    <button class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Cost Saving</button>
+                    <button class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">Explore</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-brain text-purple-600"></i>
+                </div>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-gray-900 mb-1">Predictive Alert</h4>
+                  <p class="text-sm text-gray-600">Model predicts potential compliance gap in PCI DSS requirements within the next 15 days. Proactive review recommended.</p>
+                  <div class="mt-2 flex space-x-2">
+                    <button class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Prediction</button>
+                    <button class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">Schedule Review</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// Placeholder functions for new features
+function addTreatment() {
+  showToast('Risk treatment creation will be available soon', 'info');
+}
+
+function addKRI() {
+  showToast('KRI configuration will be available soon', 'info');
+}
+
+function clearChat() {
+  showToast('Chat cleared', 'success');
+}
+
+function sendMessage() {
+  showToast('AI chat functionality will be available soon', 'info');
+}
+
+function askAboutRisk() {
+  showToast('Risk analysis AI will be available soon', 'info');
+}
+
+function askAboutCompliance() {
+  showToast('Compliance AI will be available soon', 'info');
+}
+
+function askAboutSecurity() {
+  showToast('Security AI will be available soon', 'info');
+}
+
+function addProvider() {
+  showToast('Provider configuration will be available soon', 'info');
+}
+
+function testConnections() {
+  showToast('Connection testing will be available soon', 'info');
+}
+
+function uploadKnowledge() {
+  showToast('Knowledge upload will be available soon', 'info');
+}
+
+function reindexKnowledge() {
+  showToast('Knowledge reindexing will be available soon', 'info');
+}
+
+function saveSearch() {
+  showToast('Search saving will be available soon', 'info');
+}
+
+function performSearch() {
+  showToast('Advanced search will be available soon', 'info');
+}
+
+function quickSearch(term) {
+  showToast(`Quick search for "${term}" will be available soon`, 'info');
+}
+
+function generateReport() {
+  showToast('AI report generation will be available soon', 'info');
 }
 
 // Show placeholder for modules that haven't loaded yet
