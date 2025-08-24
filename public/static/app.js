@@ -1248,10 +1248,15 @@ function navigateTo(page) {
         }
         break;
       case 'ai-providers':
-        if (typeof showAISettings === 'function') {
-          showAISettings();
+        // Redirect to enhanced Settings > AI Providers for security and consistency
+        if (typeof enhancedSettings !== 'undefined' && enhancedSettings.showEnhancedSettings) {
+          enhancedSettings.showEnhancedSettings();
+          // Auto-navigate to AI tab
+          setTimeout(() => {
+            enhancedSettings.showTab('ai');
+          }, 100);
         } else {
-          showPlaceholder('AI Providers', 'AI Providers module loading...', 'robot');
+          showPlaceholder('AI Providers', 'Loading secure AI configuration...', 'robot');
         }
         break;
       case 'rag-knowledge':
