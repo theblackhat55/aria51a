@@ -8,9 +8,9 @@
 
 ## 🚀 Live Deployment URLs
 - **Production**: https://aria-platform.pages.dev/
-- **Latest Deployment**: https://2616f44d.aria-platform.pages.dev
-- **Development Alias**: https://grc5-2.aria-platform.pages.dev
-- **Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
+- **Latest Production**: https://fbab6e00.aria-platform.pages.dev
+- **Preview Deployments**: https://124dc493.aria-platform.pages.dev
+- **Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 
 ## 🤖 Platform Features
 ### **AI-Powered Capabilities**
