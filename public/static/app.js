@@ -3028,6 +3028,11 @@ async function performDemoLogin() {
       closeUniversalModal();
       await updateAuthUI();
       
+      // Explicitly update mobile UI after login
+      if (typeof window.updateMobileAuthUI === 'function') {
+        window.updateMobileAuthUI();
+      }
+      
       showToast(`Welcome ${result.data.user.first_name}! Demo login successful.`, 'success');
       
       // Refresh the page or redirect to dashboard

@@ -483,7 +483,13 @@ class MobileInterface {
   // Update mobile UI based on authentication state
   updateMobileAuthUI() {
     const token = localStorage.getItem('aria_token') || localStorage.getItem('authToken');
-    const isAuthenticated = !!(token && window.currentUser);
+    // For mobile UI, if we have a token, consider user authenticated
+    // The main app will handle loading currentUser asynchronously
+    const isAuthenticated = !!token;
+    
+    console.log('📱 Mobile UI Update - Token:', token ? 'Present' : 'Missing');
+    console.log('📱 Mobile UI Update - Authenticated:', isAuthenticated);
+    console.log('📱 Mobile UI Update - Screen width:', window.innerWidth);
     
     const hamburgerBtn = document.getElementById('mobile-menu-btn');
     const mobileNav = document.getElementById('mobile-nav');
@@ -492,11 +498,19 @@ class MobileInterface {
     
     const isMobileDevice = window.innerWidth <= 768;
     
+    console.log('📱 Elements found - Hamburger:', !!hamburgerBtn, 'Auth btn:', !!mobileAuthBtn);
+    console.log('📱 Is mobile device:', isMobileDevice);
+    
     if (hamburgerBtn) {
       // Show hamburger menu only on mobile devices AND when authenticated
       if (isMobileDevice && isAuthenticated) {
         hamburgerBtn.style.display = 'flex';
+        hamburgerBtn.style.visibility = 'visible';
+      } else if (isMobileDevice && !isAuthenticated) {
+        // On mobile but not authenticated - hide hamburger menu
+        hamburgerBtn.style.display = 'none';
       } else {
+        // On desktop - hide hamburger menu (CSS handles this but ensure it's hidden)
         hamburgerBtn.style.display = 'none';
       }
     }
@@ -512,7 +526,15 @@ class MobileInterface {
       // Add click handler for mobile auth button if not already added
       if (!mobileAuthBtn.onclick) {
         mobileAuthBtn.onclick = () => {
-          window.location.href = '/login';
+          // Use the same login modal system as the desktop version
+          if (typeof showUniversalModal === 'function') {
+            showUniversalModal('login');
+          } else {
+            // Fallback to main login function
+            if (typeof window.handleAuthClick === 'function') {
+              window.handleAuthClick();
+            }
+          }
         };
       }
     }

@@ -8,8 +8,8 @@
 
 ## 🚀 Live Deployment URLs
 - **Production**: https://aria-platform.pages.dev/
-- **Latest Production**: https://83d50092.aria-platform.pages.dev *(Clean ARIA branding)*
-- **Previous Production**: https://fbab6e00.aria-platform.pages.dev
+- **Latest Production**: https://9cbe1057.aria-platform.pages.dev *(Mobile authentication fix)*
+- **Previous Production**: https://83d50092.aria-platform.pages.dev *(Clean ARIA branding)*
 - **Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 
 ## 🤖 Platform Features
@@ -122,6 +122,7 @@ npm test               # Test local server
 - ✅ Mobile-responsive navigation with hamburger menu
 - ✅ Authentication-secured UI visibility
 - ✅ Unified login flow with consistent branding
+- ✅ Fixed duplicate authentication buttons on mobile
 - ✅ Performance optimizations for edge deployment
 
 ## 📊 Current Status
