@@ -159,8 +159,8 @@ app.get('/', (c) => {
                 </div>
               </div>
 
-              <!-- AI Governance -->
-              <div class="relative dropdown">
+              <!-- AI Governance - Hidden -->
+              <div class="relative dropdown hidden">
                 <button class="nav-menu-item cursor-pointer dropdown-toggle" data-dropdown="ai-governance-menu">
                   <i class="fas fa-robot mr-1 text-purple-600"></i>AI Governance <i class="fas fa-chevron-down ml-1 text-xs"></i>
                 </button>
@@ -307,8 +307,8 @@ app.get('/', (c) => {
           </a>
         </div>
 
-        <!-- AI Governance -->
-        <div class="mobile-nav-section">
+        <!-- AI Governance - Hidden -->
+        <div class="mobile-nav-section hidden">
           <div class="mobile-nav-section-title">
             <i class="fas fa-robot mr-2 text-purple-600"></i>AI Governance
           </div>
