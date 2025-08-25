@@ -353,6 +353,24 @@ class EnhancedSettingsManager {
             helpUrl: 'https://console.anthropic.com/settings/keys'
           })}
 
+          <!-- Cloudflare Configuration -->
+          ${this.renderAIProviderCard('cloudflare', {
+            name: 'Cloudflare Llama 3.1',
+            description: 'Free fallback provider when no API keys configured',
+            icon: 'fas fa-cloud',
+            iconColor: 'text-orange-600',
+            bgColor: 'bg-orange-100',
+            enabled: true, // Always enabled as fallback
+            hasKey: true, // Built-in, no key needed
+            priority: aiSettings.cloudflare?.priority || 4,
+            model: '@cf/meta/llama-3.1-8b-instruct',
+            maxTokens: 1000, // Cloudflare limit
+            temperature: 0.7,
+            models: ['@cf/meta/llama-3.1-8b-instruct'],
+            helpUrl: '#', // No setup needed
+            isBuiltIn: true // Special flag for built-in provider
+          })}
+
           <!-- Local/Custom LLM removed for security -->
         </div>
 
@@ -431,7 +449,10 @@ class EnhancedSettingsManager {
                 <i class="fas fa-server text-gray-400"></i>
               </div>
               <p class="text-xs text-gray-500 mt-2">
-                ${hasKey ? 'API key configured by administrator' : 'Contact administrator to configure API key'}
+                ${config.isBuiltIn ? 
+                  'Built-in provider - No API key required' : 
+                  (hasKey ? 'API key configured by administrator' : 'Contact administrator to configure API key')
+                }
               </p>
             </div>
           </div>

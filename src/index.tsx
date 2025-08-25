@@ -94,15 +94,15 @@ app.get('/', (c) => {
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between items-center h-16">
           <!-- Logo and Brand -->
-          <div class="flex items-center">
+          <div class="flex items-center space-x-3">
             <div class="flex-shrink-0">
               <div class="h-10 w-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
                 <i class="fas fa-shield-alt text-white"></i>
               </div>
             </div>
-            <div class="ml-4">
-              <h1 class="text-xl font-semibold text-gray-900">ARIA</h1>
-              <p class="text-xs text-gray-500">AI Risk Intelligence Assistant</p>
+            <div class="flex flex-col justify-center">
+              <h1 class="text-xl font-semibold text-gray-900 leading-tight">ARIA</h1>
+              <p class="text-xs text-gray-500 leading-tight">AI Risk Intelligence Assistant</p>
             </div>
           </div>
           
@@ -476,6 +476,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- JavaScript -->
+  <script src="/static/helpers.js?v=1"></script>
   <script src="/static/kong-config.js?v=1"></script>
   <script src="/static/modules.js?v=12&t=1734469000"></script>
   <script src="/static/risk-enhancements.js?v=1"></script>

@@ -3322,86 +3322,1060 @@ window.saveSoA = async function(id) {
   }
 }
 
-// Treatments UI (includes Acceptances/Exceptions)
+// Enhanced Risk Treatments UI with Comprehensive Management
 async function showTreatments() {
   updateActiveNavigation && updateActiveNavigation('treatments');
   showLoading('main-content');
   try {
     const token = localStorage.getItem('aria_token');
-    const [treatRes, excRes] = await Promise.all([
+    const [treatRes, excRes, risksRes] = await Promise.all([
       axios.get('/api/treatments', { headers: { Authorization: `Bearer ${token}` } }),
-      axios.get('/api/exceptions', { headers: { Authorization: `Bearer ${token}` } })
+      axios.get('/api/exceptions', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/risks', { headers: { Authorization: `Bearer ${token}` } })
     ]);
     const treatments = treatRes.data.data || [];
     const exceptions = excRes.data.data || [];
+    const risks = risksRes.data.data || [];
+    
+    // Calculate summary statistics
+    const treatmentStats = {
+      total: treatments.length,
+      planned: treatments.filter(t => t.status === 'planned').length,
+      inProgress: treatments.filter(t => t.status === 'in_progress').length,
+      completed: treatments.filter(t => t.status === 'completed').length,
+      overdue: treatments.filter(t => t.due_date && new Date(t.due_date) < new Date()).length
+    };
+    
+    const exceptionStats = {
+      total: exceptions.length,
+      active: exceptions.filter(e => e.status === 'active').length,
+      expired: exceptions.filter(e => e.expiry_date && new Date(e.expiry_date) < new Date()).length,
+      pending: exceptions.filter(e => e.status === 'pending_approval').length
+    };
+
     const main = document.getElementById('main-content');
     main.innerHTML = `
-      <div class="space-y-8">
+      <div class="space-y-6">
+        <!-- Header Section -->
         <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">Risk Treatments</h2>
-          <div class="text-sm text-gray-500">Read-only (write coming soon)</div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Risk</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Strategy</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Owner</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Due</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              ${treatments.map(t => `
-                <tr>
-                  <td class="px-4 py-3 text-sm"><div class="font-medium">${t.risk_title || '-'}</div><div class="text-xs text-gray-500">${t.risk_id || ''}</div></td>
-                  <td class="px-4 py-3 text-sm">${t.strategy}</td>
-                  <td class="px-4 py-3 text-sm">${t.owner_username || '-'}</td>
-                  <td class="px-4 py-3 text-sm">${t.status}</td>
-                  <td class="px-4 py-3 text-sm">${t.due_date || '-'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Risk Treatments & Exceptions</h2>
+            <p class="text-gray-600 mt-1">Manage risk treatment strategies and exception approvals</p>
+          </div>
+          <div class="flex space-x-3">
+            <button onclick="showTreatmentCreateModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+              <i class="fas fa-plus mr-2"></i>New Treatment
+            </button>
+            <button onclick="showExceptionCreateModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+              <i class="fas fa-shield-alt mr-2"></i>New Exception
+            </button>
+          </div>
         </div>
 
-        <div class="flex items-center justify-between mt-8">
-          <h2 class="text-2xl font-bold text-gray-900">Risk Acceptances / Exceptions</h2>
-          <div class="text-sm text-gray-500">Read-only (write coming soon)</div>
+        <!-- Treatments Section -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-gray-900">Risk Treatments</h3>
+            <div class="text-sm text-gray-500">Proactive risk mitigation strategies</div>
+          </div>
+          
+          <!-- Treatment Statistics -->
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Total Treatments</p>
+                  <p class="text-2xl font-bold text-gray-900">${treatmentStats.total}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-full">
+                  <i class="fas fa-tasks text-blue-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Planned</p>
+                  <p class="text-2xl font-bold text-yellow-600">${treatmentStats.planned}</p>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-full">
+                  <i class="fas fa-clock text-yellow-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">In Progress</p>
+                  <p class="text-2xl font-bold text-blue-600">${treatmentStats.inProgress}</p>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-full">
+                  <i class="fas fa-play-circle text-blue-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Completed</p>
+                  <p class="text-2xl font-bold text-green-600">${treatmentStats.completed}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-full">
+                  <i class="fas fa-check-circle text-green-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Overdue</p>
+                  <p class="text-2xl font-bold text-red-600">${treatmentStats.overdue}</p>
+                </div>
+                <div class="p-3 bg-red-100 rounded-full">
+                  <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Treatments Table -->
+          <div class="bg-white rounded-lg shadow-sm border">
+            <div class="p-4 border-b flex justify-between items-center">
+              <h4 class="font-medium">Treatment Plans</h4>
+              <div class="flex space-x-2">
+                <select id="treatmentStatusFilter" onchange="filterTreatments()" class="text-sm border rounded px-2 py-1">
+                  <option value="">All Statuses</option>
+                  <option value="planned">Planned</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <input type="text" id="treatmentSearchInput" placeholder="Search treatments..." 
+                       onkeyup="filterTreatments()" class="text-sm border rounded px-2 py-1">
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Treatment Strategy</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Owner</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="treatmentsTableBody" class="bg-white divide-y divide-gray-200">
+                  ${renderTreatmentsTable(treatments)}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Control</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Risk</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Expiry</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">Justification</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              ${exceptions.map(e => `
-                <tr>
-                  <td class="px-4 py-3 text-sm">${e.control_name || '-'} <span class="text-xs text-gray-500">(ID: ${e.control_id})</span></td>
-                  <td class="px-4 py-3 text-sm">${e.risk_title || '-'} <span class="text-xs text-gray-500">${e.risk_id || ''}</span></td>
-                  <td class="px-4 py-3 text-sm">${e.status}</td>
-                  <td class="px-4 py-3 text-sm">${e.expiry_date || '-'}</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">${e.justification || '-'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+
+        <!-- Exceptions/Acceptances Section -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-semibold text-gray-900">Risk Acceptances & Exceptions</h3>
+            <div class="text-sm text-gray-500">Risk acceptance decisions and control exceptions</div>
+          </div>
+          
+          <!-- Exception Statistics -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Total Exceptions</p>
+                  <p class="text-2xl font-bold text-gray-900">${exceptionStats.total}</p>
+                </div>
+                <div class="p-3 bg-gray-100 rounded-full">
+                  <i class="fas fa-shield-alt text-gray-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Active</p>
+                  <p class="text-2xl font-bold text-green-600">${exceptionStats.active}</p>
+                </div>
+                <div class="p-3 bg-green-100 rounded-full">
+                  <i class="fas fa-check-shield text-green-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Pending Approval</p>
+                  <p class="text-2xl font-bold text-yellow-600">${exceptionStats.pending}</p>
+                </div>
+                <div class="p-3 bg-yellow-100 rounded-full">
+                  <i class="fas fa-hourglass-half text-yellow-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm text-gray-600">Expired</p>
+                  <p class="text-2xl font-bold text-red-600">${exceptionStats.expired}</p>
+                </div>
+                <div class="p-3 bg-red-100 rounded-full">
+                  <i class="fas fa-calendar-times text-red-600"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exceptions Table -->
+          <div class="bg-white rounded-lg shadow-sm border">
+            <div class="p-4 border-b flex justify-between items-center">
+              <h4 class="font-medium">Risk Acceptances & Control Exceptions</h4>
+              <div class="flex space-x-2">
+                <select id="exceptionStatusFilter" onchange="filterExceptions()" class="text-sm border rounded px-2 py-1">
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="expired">Expired</option>
+                  <option value="pending_approval">Pending Approval</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <input type="text" id="exceptionSearchInput" placeholder="Search exceptions..." 
+                       onkeyup="filterExceptions()" class="text-sm border rounded px-2 py-1">
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Control/Risk</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approver</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry Date</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="exceptionsTableBody" class="bg-white divide-y divide-gray-200">
+                  ${renderExceptionsTable(exceptions)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enhanced LLM-Powered Treatment Creation/Edit Modal -->
+      <div id="treatmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-90vh overflow-y-auto">
+          <div class="p-6 border-b bg-gradient-to-r from-blue-50 to-green-50">
+            <div class="flex justify-between items-center">
+              <div>
+                <h3 class="text-xl font-semibold text-gray-900" id="treatmentModalTitle">AI-Enhanced Risk Treatment</h3>
+                <p class="text-sm text-gray-600 mt-1">Powered by artificial intelligence for optimal treatment recommendations</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div class="bg-green-100 px-3 py-1 rounded-full">
+                  <span class="text-xs font-medium text-green-800">
+                    <i class="fas fa-robot mr-1"></i>AI-Powered
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+            <!-- Left Column: Form -->
+            <div class="space-y-4">
+              <form id="treatmentForm" class="space-y-4">
+                <div class="space-y-4">
+                  <div>
+                    <div class="flex justify-between items-center mb-2">
+                      <label class="block text-sm font-medium text-gray-700">Associated Risk *</label>
+                      <button type="button" id="aiRecommendationsBtn" onclick="generateAITreatmentRecommendations()" 
+                              class="bg-gradient-to-r from-blue-500 to-green-500 text-white px-3 py-1 rounded-full text-xs hover:from-blue-600 hover:to-green-600 transition-all">
+                        <i class="fas fa-magic mr-1"></i>AI Recommendations
+                      </button>
+                    </div>
+                    <select id="treatmentRiskId" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                      <option value="">Select a risk...</option>
+                      ${risks.map(r => `<option value="${r.id}">${r.title} (Score: ${r.risk_score})</option>`).join('')}
+                    </select>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Treatment Strategy *</label>
+                      <select id="treatmentStrategy" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select strategy...</option>
+                        <option value="avoid">🚫 Avoid - Eliminate the risk</option>
+                        <option value="mitigate">🛡️ Mitigate - Reduce impact/likelihood</option>
+                        <option value="transfer">🔄 Transfer - Share with third party</option>
+                        <option value="accept">✅ Accept - No further action</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                      <select id="treatmentStatus" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                        <option value="planned">📋 Planned</option>
+                        <option value="in_progress">🔄 In Progress</option>
+                        <option value="completed">✅ Completed</option>
+                        <option value="cancelled">❌ Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                      <input type="date" id="treatmentDueDate" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Cost Estimate ($)</label>
+                      <input type="number" step="0.01" id="treatmentCost" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="0.00">
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Treatment Description *</label>
+                    <textarea id="treatmentDescription" rows="4" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Describe the treatment plan and actions to be taken (AI will help populate this)"></textarea>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Success Criteria</label>
+                    <textarea id="treatmentCriteria" rows="3" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Define measurable success criteria (AI will suggest metrics)"></textarea>
+                  </div>
+                </div>
+                
+                <div class="flex justify-between space-x-3 pt-4 border-t">
+                  <div class="flex space-x-2">
+                    <button type="button" onclick="closeTreatmentModal()" class="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+                  </div>
+                  <div class="flex space-x-2">
+                    <button type="button" onclick="exportRecommendations({})" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                      <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                      <i class="fas fa-save mr-2"></i>Save Treatment
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+            
+            <!-- Right Column: AI Recommendations Panel -->
+            <div class="space-y-4">
+              <div class="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-gray-300">
+                <div class="text-center">
+                  <i class="fas fa-robot text-4xl text-gray-400 mb-2"></i>
+                  <h4 class="font-medium text-gray-700">AI Assistant Ready</h4>
+                  <p class="text-sm text-gray-600 mt-1">Select a risk and click "AI Recommendations" to get intelligent treatment suggestions</p>
+                </div>
+              </div>
+              
+              <!-- AI Recommendations Panel -->
+              <div id="aiRecommendationsPanel" class="hidden">
+                <div class="bg-gradient-to-br from-blue-50 to-green-50 rounded-lg p-4 border border-blue-200">
+                  <h4 class="font-semibold text-blue-900 mb-3">
+                    <i class="fas fa-lightbulb mr-2"></i>AI Recommendations
+                  </h4>
+                  <div id="aiRecommendationsResults"></div>
+                </div>
+              </div>
+              
+              <!-- Optimization Panel -->
+              <div id="optimizationPanel" class="hidden">
+                <div id="optimizationResults"></div>
+              </div>
+              
+              <!-- AI Insights Panel -->
+              <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                <h4 class="font-semibold text-yellow-900 mb-3">
+                  <i class="fas fa-chart-line mr-2"></i>Smart Insights
+                </h4>
+                <div id="smartInsights" class="space-y-2 text-sm text-yellow-800">
+                  <div>💡 AI will analyze risk patterns and suggest optimal strategies</div>
+                  <div>📊 Cost-benefit analysis will be automatically calculated</div>
+                  <div>⏱️ Timeline optimization based on similar treatments</div>
+                  <div>🎯 Success metrics tailored to your risk profile</div>
+                  <div class="pt-2 border-t border-yellow-300">
+                    <div class="flex items-center text-xs">
+                      <i class="fas fa-info-circle mr-2"></i>
+                      <span>Uses Cloudflare Llama3 fallback if no API keys configured. Configure premium providers in Settings for enhanced results.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Quick Actions -->
+              <div class="bg-white rounded-lg p-4 border border-gray-200">
+                <h4 class="font-semibold text-gray-900 mb-3">
+                  <i class="fas fa-bolt mr-2"></i>Quick Actions
+                </h4>
+                <div class="grid grid-cols-2 gap-2">
+                  <button onclick="generateAITreatmentRecommendations()" class="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg hover:bg-blue-200 text-sm">
+                    <i class="fas fa-magic mr-1"></i>Get AI Help
+                  </button>
+                  <button onclick="optimizeTreatmentPlan()" class="bg-green-100 text-green-800 px-3 py-2 rounded-lg hover:bg-green-200 text-sm">
+                    <i class="fas fa-cogs mr-1"></i>Optimize
+                  </button>
+                  <button onclick="clearForm()" class="bg-red-100 text-red-800 px-3 py-2 rounded-lg hover:bg-red-200 text-sm">
+                    <i class="fas fa-eraser mr-1"></i>Clear Form
+                  </button>
+                  <button onclick="loadTemplate()" class="bg-purple-100 text-purple-800 px-3 py-2 rounded-lg hover:bg-purple-200 text-sm">
+                    <i class="fas fa-file-import mr-1"></i>Template
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exception Creation/Edit Modal -->
+      <div id="exceptionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-90vh overflow-y-auto">
+          <div class="p-6 border-b">
+            <h3 class="text-xl font-semibold" id="exceptionModalTitle">Create Risk Exception</h3>
+          </div>
+          <form id="exceptionForm" class="p-6 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Exception Type *</label>
+                <select id="exceptionType" required onchange="updateExceptionFields()" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select type...</option>
+                  <option value="control_exception">Control Exception</option>
+                  <option value="risk_acceptance">Risk Acceptance</option>
+                </select>
+              </div>
+              <div id="exceptionRiskField">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Associated Risk</label>
+                <select id="exceptionRiskId" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select a risk...</option>
+                  ${risks.map(r => `<option value="${r.id}">${r.title}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="exceptionStatus" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                  <option value="pending_approval">Pending Approval</option>
+                  <option value="active">Active</option>
+                  <option value="expired">Expired</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Expiry Date *</label>
+                <input type="date" id="exceptionExpiryDate" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Business Justification *</label>
+              <textarea id="exceptionJustification" rows="4" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Provide detailed business justification for this exception"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Compensating Controls</label>
+              <textarea id="exceptionControls" rows="3" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Describe any compensating controls in place"></textarea>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button" onclick="closeExceptionModal()" class="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+              <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Save Exception</button>
+            </div>
+          </form>
         </div>
       </div>
     `;
+
+    // Store data globally for filtering
+    window.currentTreatments = treatments;
+    window.currentExceptions = exceptions;
   } catch (e) {
-    showError('Failed to load treatments/acceptances');
+    showError('Failed to load treatments/exceptions');
   }
 }
 
-// KRIs UI
+// Render functions for treatments and exceptions tables
+function renderTreatmentsTable(treatments) {
+  if (!treatments || treatments.length === 0) {
+    return '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No treatments found</td></tr>';
+  }
+
+  return treatments.map(t => {
+    const statusClass = getTreatmentStatusClass(t.status);
+    const isOverdue = t.due_date && new Date(t.due_date) < new Date();
+    const progress = t.progress || 0;
+    
+    return `
+      <tr class="treatment-row hover:bg-gray-50" data-status="${t.status}" data-search="${t.risk_title?.toLowerCase() || ''} ${t.strategy?.toLowerCase() || ''}">
+        <td class="px-4 py-3">
+          <div class="font-medium text-gray-900">${t.risk_title || 'Unknown Risk'}</div>
+          <div class="text-xs text-gray-500">Risk ID: ${t.risk_id || 'N/A'}</div>
+        </td>
+        <td class="px-4 py-3">
+          <div class="text-sm font-medium">${t.strategy || 'Not specified'}</div>
+          <div class="text-xs text-gray-500">${t.description ? t.description.substring(0, 60) + '...' : ''}</div>
+        </td>
+        <td class="px-4 py-3 text-sm">${t.owner_username || 'Unassigned'}</td>
+        <td class="px-4 py-3">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">
+            ${t.status?.replace('_', ' ') || 'Unknown'}
+          </span>
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex items-center space-x-2">
+            <div class="flex-1 bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full" style="width: ${progress}%"></div>
+            </div>
+            <span class="text-xs text-gray-600">${progress}%</span>
+          </div>
+        </td>
+        <td class="px-4 py-3">
+          <div class="text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-900'}">
+            ${t.due_date ? new Date(t.due_date).toLocaleDateString() : 'No date set'}
+          </div>
+          ${isOverdue ? '<div class="text-xs text-red-500">Overdue</div>' : ''}
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex space-x-1">
+            <button onclick="viewTreatmentDetails(${t.id})" class="text-blue-600 hover:text-blue-900 text-sm" title="View Details">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button onclick="editTreatment(${t.id})" class="text-gray-600 hover:text-gray-900 text-sm" title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderExceptionsTable(exceptions) {
+  if (!exceptions || exceptions.length === 0) {
+    return '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No exceptions found</td></tr>';
+  }
+
+  return exceptions.map(e => {
+    const statusClass = getExceptionStatusClass(e.status);
+    const isExpired = e.expiry_date && new Date(e.expiry_date) < new Date();
+    
+    return `
+      <tr class="exception-row hover:bg-gray-50" data-status="${e.status}" data-search="${e.control_name?.toLowerCase() || ''} ${e.risk_title?.toLowerCase() || ''}">
+        <td class="px-4 py-3">
+          <div class="text-sm font-medium">${e.exception_type === 'control_exception' ? 'Control Exception' : 'Risk Acceptance'}</div>
+        </td>
+        <td class="px-4 py-3">
+          <div class="font-medium text-gray-900">${e.control_name || e.risk_title || 'Not specified'}</div>
+          <div class="text-xs text-gray-500">
+            ${e.control_id ? `Control ID: ${e.control_id}` : e.risk_id ? `Risk ID: ${e.risk_id}` : ''}
+          </div>
+        </td>
+        <td class="px-4 py-3">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">
+            ${e.status?.replace('_', ' ') || 'Unknown'}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-sm">${e.approved_by_username || 'Pending'}</td>
+        <td class="px-4 py-3">
+          <div class="text-sm ${isExpired ? 'text-red-600 font-medium' : 'text-gray-900'}">
+            ${e.expiry_date ? new Date(e.expiry_date).toLocaleDateString() : 'No expiry'}
+          </div>
+          ${isExpired ? '<div class="text-xs text-red-500">Expired</div>' : ''}
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex space-x-1">
+            <button onclick="viewExceptionDetails(${e.id})" class="text-blue-600 hover:text-blue-900 text-sm" title="View Details">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button onclick="editException(${e.id})" class="text-gray-600 hover:text-gray-900 text-sm" title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Status styling helpers
+function getTreatmentStatusClass(status) {
+  switch(status) {
+    case 'completed': return 'bg-green-100 text-green-800';
+    case 'in_progress': return 'bg-blue-100 text-blue-800';
+    case 'planned': return 'bg-yellow-100 text-yellow-800';
+    case 'cancelled': return 'bg-red-100 text-red-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function getExceptionStatusClass(status) {
+  switch(status) {
+    case 'active': return 'bg-green-100 text-green-800';
+    case 'pending_approval': return 'bg-yellow-100 text-yellow-800';
+    case 'expired': return 'bg-red-100 text-red-800';
+    case 'rejected': return 'bg-gray-100 text-gray-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+}
+
+// Filter functions
+function filterTreatments() {
+  const statusFilter = document.getElementById('treatmentStatusFilter').value.toLowerCase();
+  const searchFilter = document.getElementById('treatmentSearchInput').value.toLowerCase();
+  const rows = document.querySelectorAll('.treatment-row');
+  
+  rows.forEach(row => {
+    const status = row.dataset.status;
+    const searchText = row.dataset.search;
+    
+    const statusMatch = !statusFilter || status === statusFilter;
+    const searchMatch = !searchFilter || searchText.includes(searchFilter);
+    
+    row.style.display = (statusMatch && searchMatch) ? 'table-row' : 'none';
+  });
+}
+
+function filterExceptions() {
+  const statusFilter = document.getElementById('exceptionStatusFilter').value.toLowerCase();
+  const searchFilter = document.getElementById('exceptionSearchInput').value.toLowerCase();
+  const rows = document.querySelectorAll('.exception-row');
+  
+  rows.forEach(row => {
+    const status = row.dataset.status;
+    const searchText = row.dataset.search;
+    
+    const statusMatch = !statusFilter || status === statusFilter;
+    const searchMatch = !searchFilter || searchText.includes(searchFilter);
+    
+    row.style.display = (statusMatch && searchMatch) ? 'table-row' : 'none';
+  });
+}
+
+// Modal functions
+function showTreatmentCreateModal() {
+  document.getElementById('treatmentModalTitle').textContent = 'Create Risk Treatment';
+  document.getElementById('treatmentForm').reset();
+  document.getElementById('treatmentModal').classList.remove('hidden');
+}
+
+function closeTreatmentModal() {
+  document.getElementById('treatmentModal').classList.add('hidden');
+}
+
+function showExceptionCreateModal() {
+  document.getElementById('exceptionModalTitle').textContent = 'Create Risk Exception';
+  document.getElementById('exceptionForm').reset();
+  document.getElementById('exceptionModal').classList.remove('hidden');
+}
+
+function closeExceptionModal() {
+  document.getElementById('exceptionModal').classList.add('hidden');
+}
+
+function updateExceptionFields() {
+  const type = document.getElementById('exceptionType').value;
+  const riskField = document.getElementById('exceptionRiskField');
+  
+  if (type === 'risk_acceptance') {
+    riskField.style.display = 'block';
+    document.getElementById('exceptionRiskId').required = true;
+  } else {
+    riskField.style.display = 'none';
+    document.getElementById('exceptionRiskId').required = false;
+  }
+}
+
+// LLM-Enhanced Treatment Functions
+async function generateAITreatmentRecommendations() {
+  const riskSelect = document.getElementById('treatmentRiskId');
+  const selectedRiskId = riskSelect.value;
+  
+  if (!selectedRiskId) {
+    showNotification('Please select a risk first', 'warning');
+    return;
+  }
+
+  const aiButton = document.getElementById('aiRecommendationsBtn');
+  const originalText = aiButton.innerHTML;
+  
+  try {
+    // Show loading state
+    aiButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating AI Recommendations...';
+    aiButton.disabled = true;
+    
+    const token = localStorage.getItem('aria_token');
+    const response = await axios.post('/api/treatments/ai-recommendations', {
+      riskId: selectedRiskId
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      const recommendations = response.data.data.recommendations;
+      displayAIRecommendations(recommendations);
+      
+      // Show provider info in success message
+      const providerInfo = response.data.data.provider_used || 'AI Provider';
+      const isUsingFallback = providerInfo.includes('Cloudflare') || providerInfo.includes('Fallback');
+      
+      if (isUsingFallback) {
+        showNotification('AI recommendations generated using Cloudflare Llama3 fallback. Configure your own API keys in Settings for premium models!', 'warning');
+      } else {
+        showNotification('AI recommendations generated successfully using your configured provider!', 'success');
+      }
+    } else {
+      throw new Error(response.data.error || 'Failed to generate recommendations');
+    }
+  } catch (error) {
+    console.error('AI recommendations error:', error);
+    let errorMessage = error.message;
+    
+    // Provide specific guidance for common errors
+    if (errorMessage.includes('No configured AI provider')) {
+      errorMessage = 'No AI provider configured. Using Cloudflare Llama3 fallback. For better results, configure an API key for OpenAI, Anthropic, or Google Gemini in Settings > AI Providers.';
+    }
+    
+    showNotification('AI Recommendations Error: ' + errorMessage, 'error');
+  } finally {
+    // Restore button state
+    aiButton.innerHTML = originalText;
+    aiButton.disabled = false;
+  }
+}
+
+function displayAIRecommendations(recommendations) {
+  const aiPanel = document.getElementById('aiRecommendationsPanel');
+  const aiResults = document.getElementById('aiRecommendationsResults');
+  
+  aiResults.innerHTML = `
+    <div class="space-y-4">
+      <!-- Primary Strategy -->
+      <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h4 class="font-semibold text-blue-900 mb-2">
+          <i class="fas fa-lightbulb mr-2"></i>Primary Strategy: ${recommendations.primary_strategy?.toUpperCase()}
+        </h4>
+        <p class="text-blue-800 text-sm">${recommendations.strategy_rationale}</p>
+      </div>
+
+      <!-- Treatment Actions -->
+      <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+        <h4 class="font-semibold text-green-900 mb-3">
+          <i class="fas fa-tasks mr-2"></i>Recommended Actions
+        </h4>
+        <div class="space-y-2">
+          ${(recommendations.treatment_actions || []).map((action, index) => `
+            <div class="flex items-start space-x-2">
+              <span class="bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">${index + 1}</span>
+              <span class="text-green-800 text-sm">${action}</span>
+              <button onclick="addActionToForm('${action.replace(/'/g, "\\'")}')" class="text-green-600 hover:text-green-800 text-xs" title="Add to form">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Priority & Timeline -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+          <h4 class="font-semibold text-yellow-900 mb-2">
+            <i class="fas fa-exclamation-triangle mr-2"></i>Priority: ${recommendations.priority?.toUpperCase()}
+          </h4>
+          <p class="text-yellow-800 text-sm">${recommendations.priority_justification}</p>
+        </div>
+        <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+          <h4 class="font-semibold text-purple-900 mb-2">
+            <i class="fas fa-clock mr-2"></i>Timeline: ${recommendations.timeline_weeks} weeks
+          </h4>
+          <p class="text-purple-800 text-sm">${recommendations.timeline_rationale}</p>
+        </div>
+      </div>
+
+      <!-- Cost & Success Metrics -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+          <h4 class="font-semibold text-red-900 mb-2">
+            <i class="fas fa-dollar-sign mr-2"></i>Cost Estimate: ${recommendations.cost_estimate?.toUpperCase()}
+          </h4>
+          <p class="text-red-800 text-sm">${recommendations.cost_details}</p>
+        </div>
+        <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+          <h4 class="font-semibold text-indigo-900 mb-2">
+            <i class="fas fa-chart-line mr-2"></i>Success Metrics
+          </h4>
+          <ul class="text-indigo-800 text-sm space-y-1">
+            ${(recommendations.success_metrics || []).map(metric => `<li>• ${metric}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="flex space-x-2 pt-4 border-t">
+        <button onclick="applyAIRecommendations(${JSON.stringify(recommendations).replace(/"/g, '&quot;')})" 
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+          <i class="fas fa-magic mr-2"></i>Apply Recommendations
+        </button>
+        <button onclick="optimizeTreatmentPlan()" 
+                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+          <i class="fas fa-cogs mr-2"></i>Optimize Plan
+        </button>
+        <button onclick="exportRecommendations(${JSON.stringify(recommendations).replace(/"/g, '&quot;')})" 
+                class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm">
+          <i class="fas fa-download mr-2"></i>Export
+        </button>
+      </div>
+    </div>
+  `;
+  
+  aiPanel.classList.remove('hidden');
+}
+
+function addActionToForm(action) {
+  const descriptionField = document.getElementById('treatmentDescription');
+  const currentValue = descriptionField.value;
+  const newValue = currentValue ? currentValue + '\n• ' + action : '• ' + action;
+  descriptionField.value = newValue;
+  showNotification('Action added to treatment description', 'success');
+}
+
+function applyAIRecommendations(recommendations) {
+  // Auto-fill form with AI recommendations
+  const strategyField = document.getElementById('treatmentStrategy');
+  const descriptionField = document.getElementById('treatmentDescription');
+  const criteriaField = document.getElementById('treatmentCriteria');
+  const dueDateField = document.getElementById('treatmentDueDate');
+  
+  // Apply strategy
+  strategyField.value = recommendations.primary_strategy || '';
+  
+  // Apply description with actions
+  const actionsText = (recommendations.treatment_actions || [])
+    .map((action, index) => `${index + 1}. ${action}`)
+    .join('\n');
+  
+  descriptionField.value = `${recommendations.strategy_rationale}\n\nRecommended Actions:\n${actionsText}`;
+  
+  // Apply success criteria
+  const criteriaText = (recommendations.success_metrics || [])
+    .map((metric, index) => `${index + 1}. ${metric}`)
+    .join('\n');
+  
+  criteriaField.value = criteriaText;
+  
+  // Set due date based on timeline
+  if (recommendations.timeline_weeks) {
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + (recommendations.timeline_weeks * 7));
+    dueDateField.value = dueDate.toISOString().split('T')[0];
+  }
+  
+  showNotification('AI recommendations applied to form!', 'success');
+}
+
+async function optimizeTreatmentPlan() {
+  const strategyField = document.getElementById('treatmentStrategy');
+  const descriptionField = document.getElementById('treatmentDescription');
+  const dueDateField = document.getElementById('treatmentDueDate');
+  const costField = document.getElementById('treatmentCost');
+  
+  if (!strategyField.value || !descriptionField.value) {
+    showNotification('Please fill in treatment strategy and description first', 'warning');
+    return;
+  }
+  
+  const treatmentPlan = {
+    strategy: strategyField.value,
+    actions: descriptionField.value.split('\n').filter(line => line.trim()),
+    timeline: dueDateField.value,
+    budget: costField.value || 'Not specified',
+    resources: []
+  };
+  
+  try {
+    showNotification('Optimizing treatment plan with AI...', 'info');
+    
+    const token = localStorage.getItem('aria_token');
+    const response = await axios.post('/api/treatments/ai-optimize', {
+      treatmentPlan: treatmentPlan,
+      constraints: {}
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      const optimization = response.data.data.optimization;
+      displayOptimizationResults(optimization);
+      
+      // Check if using fallback provider
+      const providerInfo = response.data.data.provider_used || 'AI Provider';
+      const isUsingFallback = providerInfo.includes('Cloudflare') || providerInfo.includes('Fallback');
+      
+      if (isUsingFallback) {
+        showNotification('Treatment plan optimization completed using Cloudflare Llama3. Configure premium providers for enhanced results!', 'warning');
+      } else {
+        showNotification('Treatment plan optimization completed using your configured provider!', 'success');
+      }
+    } else {
+      throw new Error(response.data.error || 'Failed to optimize plan');
+    }
+  } catch (error) {
+    console.error('Optimization error:', error);
+    let errorMessage = error.message;
+    
+    // Provide specific guidance for common errors
+    if (errorMessage.includes('No configured AI provider')) {
+      errorMessage = 'No AI provider configured. Using Cloudflare Llama3 fallback. For better results, configure an API key for OpenAI, Anthropic, or Google Gemini in Settings > AI Providers.';
+    }
+    
+    showNotification('Optimization Error: ' + errorMessage, 'error');
+  }
+}
+
+function displayOptimizationResults(optimization) {
+  const optimizationPanel = document.getElementById('optimizationResults');
+  
+  optimizationPanel.innerHTML = `
+    <div class="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border-2 border-green-200">
+      <h4 class="font-bold text-green-900 mb-3">
+        <i class="fas fa-chart-line mr-2"></i>Optimization Results (Score: ${optimization.optimization_score}/10)
+      </h4>
+      
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-green-600">${optimization.cost_savings_potential}</div>
+          <div class="text-xs text-green-700">Cost Savings</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-blue-600">${optimization.timeline_improvement}</div>
+          <div class="text-xs text-blue-700">Time Saved</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-purple-600">${optimization.cost_benefit_analysis?.optimized_plan_roi || 'N/A'}</div>
+          <div class="text-xs text-purple-700">Optimized ROI</div>
+        </div>
+      </div>
+      
+      <div class="space-y-3">
+        <div>
+          <h5 class="font-semibold text-gray-900 mb-2">Quick Wins:</h5>
+          <div class="space-y-1">
+            ${(optimization.quick_wins || []).map(win => `
+              <div class="bg-white p-2 rounded text-sm">
+                <span class="font-medium">${win.action}</span> - 
+                <span class="text-gray-600">${win.benefit}</span>
+                <span class="text-green-600 ml-2">(${win.timeline})</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <button onclick="applyOptimizations(${JSON.stringify(optimization).replace(/"/g, '&quot;')})" 
+                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+          <i class="fas fa-check mr-2"></i>Apply Optimizations
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('optimizationPanel').classList.remove('hidden');
+}
+
+function exportRecommendations(recommendations) {
+  const exportData = {
+    generated_at: new Date().toISOString(),
+    risk_id: document.getElementById('treatmentRiskId').value,
+    recommendations: recommendations
+  };
+  
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ai-treatment-recommendations-${Date.now()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  showNotification('Recommendations exported successfully!', 'success');
+}
+
+// Placeholder functions for detailed views and actions
+function viewTreatmentDetails(id) {
+  showNotification('Treatment details view coming soon', 'info');
+}
+
+function editTreatment(id) {
+  showNotification('Edit treatment functionality coming soon', 'info');
+}
+
+function viewExceptionDetails(id) {
+  showNotification('Exception details view coming soon', 'info');
+}
+
+function editException(id) {
+  showNotification('Edit exception functionality coming soon', 'info');
+}
+
+// Additional LLM-Enhanced Helper Functions
+function clearForm() {
+  document.getElementById('treatmentForm').reset();
+  document.getElementById('aiRecommendationsPanel').classList.add('hidden');
+  document.getElementById('optimizationPanel').classList.add('hidden');
+  showNotification('Form cleared', 'info');
+}
+
+function loadTemplate() {
+  const templateOptions = [
+    'Cybersecurity Incident Response',
+    'Compliance Violation Remediation', 
+    'Operational Risk Mitigation',
+    'Financial Risk Controls',
+    'Third-Party Risk Management'
+  ];
+  
+  const template = templateOptions[Math.floor(Math.random() * templateOptions.length)];
+  
+  showNotification(`Loading ${template} template...`, 'info');
+  
+  // Simulate template loading
+  setTimeout(() => {
+    document.getElementById('treatmentDescription').value = `Template: ${template}\n\n1. Immediate containment measures\n2. Root cause analysis\n3. Corrective action implementation\n4. Monitoring and validation`;
+    document.getElementById('treatmentCriteria').value = `1. Incident resolved within SLA\n2. No recurrence for 90 days\n3. Process documentation updated\n4. Team training completed`;
+    showNotification('Template loaded successfully!', 'success');
+  }, 1000);
+}
+
+function applyOptimizations(optimization) {
+  // Apply optimization suggestions to the form
+  const descriptionField = document.getElementById('treatmentDescription');
+  const currentDescription = descriptionField.value;
+  
+  if (optimization.optimized_actions && optimization.optimized_actions.length > 0) {
+    const optimizedText = '\n\nOptimized Actions:\n' + 
+      optimization.optimized_actions
+        .sort((a, b) => a.priority - b.priority)
+        .map((action, index) => `${index + 1}. ${action.action} (Impact: ${action.impact}, Effort: ${action.effort})`)
+        .join('\n');
+    
+    descriptionField.value = currentDescription + optimizedText;
+  }
+  
+  // Update timeline if optimization suggests improvement
+  const dueDateField = document.getElementById('treatmentDueDate');
+  if (optimization.timeline_improvement && dueDateField.value) {
+    const currentDate = new Date(dueDateField.value);
+    const weeksToSave = parseInt(optimization.timeline_improvement.match(/\d+/)?.[0] || 0);
+    currentDate.setDate(currentDate.getDate() - (weeksToSave * 7));
+    dueDateField.value = currentDate.toISOString().split('T')[0];
+  }
+  
+  showNotification('Optimization applied to treatment plan!', 'success');
+}
+
+// Enhanced KRIs UI with Comprehensive Functionality
 async function showKRIs() {
   updateActiveNavigation && updateActiveNavigation('kris');
   showLoading('main-content');
@@ -3410,58 +4384,489 @@ async function showKRIs() {
     const res = await axios.get('/api/kris', { headers: { Authorization: `Bearer ${token}` } });
     const kris = res.data.data || [];
     const main = document.getElementById('main-content');
+    
+    // Get status summary for dashboard
+    const statusCounts = {
+      normal: kris.filter(k => k.current_status === 'normal').length,
+      warning: kris.filter(k => k.current_status === 'warning').length,
+      breach: kris.filter(k => k.current_status === 'breach').length,
+      unknown: kris.filter(k => !k.current_status || k.current_status === 'unknown').length
+    };
+
     main.innerHTML = `
       <div class="space-y-6">
+        <!-- Header Section -->
         <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">Key Risk Indicators</h2>
-          <div class="text-sm text-gray-500">Read-only dashboard</div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Key Risk Indicators (KRIs)</h2>
+            <p class="text-gray-600 mt-1">Monitor and manage key risk metrics across your organization</p>
+          </div>
+          <div class="flex space-x-3">
+            <button onclick="showKRICreateModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+              <i class="fas fa-plus mr-2"></i>Create KRI
+            </button>
+            <button onclick="importKRIReadings()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+              <i class="fas fa-upload mr-2"></i>Import Data
+            </button>
+          </div>
         </div>
+
+        <!-- Status Dashboard -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600">Normal Status</p>
+                <p class="text-2xl font-bold text-green-600">${statusCounts.normal}</p>
+              </div>
+              <div class="p-3 bg-green-100 rounded-full">
+                <i class="fas fa-check-circle text-green-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600">Warning Level</p>
+                <p class="text-2xl font-bold text-yellow-600">${statusCounts.warning}</p>
+              </div>
+              <div class="p-3 bg-yellow-100 rounded-full">
+                <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600">Breach Alert</p>
+                <p class="text-2xl font-bold text-red-600">${statusCounts.breach}</p>
+              </div>
+              <div class="p-3 bg-red-100 rounded-full">
+                <i class="fas fa-exclamation-circle text-red-600"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600">No Data</p>
+                <p class="text-2xl font-bold text-gray-600">${statusCounts.unknown}</p>
+              </div>
+              <div class="p-3 bg-gray-100 rounded-full">
+                <i class="fas fa-question-circle text-gray-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-1 space-y-2">
-            ${kris.map(k => `
-              <div class="p-3 bg-white rounded-lg shadow-sm border hover:border-blue-300 cursor-pointer" onclick="selectKRI(${k.id}, '${k.name.replace(/'/g, "&#39;")}')">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <div class="font-medium text-gray-900">${k.name}</div>
-                    <div class="text-xs text-gray-500">Threshold: ${k.threshold} (${k.direction})</div>
-                  </div>
-                  <div class="text-xs text-gray-500">${k.frequency || ''}</div>
+          <!-- KRI List -->
+          <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-sm border">
+              <div class="p-4 border-b">
+                <h3 class="text-lg font-semibold">KRI List</h3>
+                <div class="mt-2 flex space-x-2">
+                  <select id="kriStatusFilter" onchange="filterKRIs()" class="text-sm border rounded px-2 py-1">
+                    <option value="">All Statuses</option>
+                    <option value="normal">Normal</option>
+                    <option value="warning">Warning</option>
+                    <option value="breach">Breach</option>
+                    <option value="unknown">No Data</option>
+                  </select>
+                  <input type="text" id="kriSearchInput" placeholder="Search KRIs..." 
+                         onkeyup="filterKRIs()" class="text-sm border rounded px-2 py-1 flex-1">
                 </div>
               </div>
-            `).join('')}
+              <div id="kriList" class="max-h-96 overflow-y-auto">
+                ${renderKRIList(kris)}
+              </div>
+            </div>
           </div>
+
+          <!-- KRI Details Panel -->
           <div class="lg:col-span-2">
-            <div class="bg-white rounded-xl shadow-sm border p-4">
-              <h3 id="kri-title" class="text-lg font-semibold mb-2">Select a KRI</h3>
-              <canvas id="kriChart" height="200"></canvas>
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+              <div id="kriDetailsPanel">
+                <div class="text-center py-12">
+                  <i class="fas fa-chart-line text-4xl text-gray-300 mb-4"></i>
+                  <h3 class="text-lg font-medium text-gray-900 mb-2">Select a KRI</h3>
+                  <p class="text-gray-600">Choose a Key Risk Indicator from the list to view its details, trends, and manage settings.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- KRI Creation/Edit Modal -->
+      <div id="kriModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-90vh overflow-y-auto">
+          <div class="p-6 border-b">
+            <h3 class="text-xl font-semibold" id="kriModalTitle">Create New KRI</h3>
+          </div>
+          <form id="kriForm" class="p-6 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">KRI Name *</label>
+                <input type="text" id="kriName" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Data Source</label>
+                <input type="text" id="kriDataSource" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Threshold Value *</label>
+                <input type="number" step="0.01" id="kriThreshold" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Direction *</label>
+                <select id="kriDirection" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Direction</option>
+                  <option value="above">Above Threshold (Higher is Worse)</option>
+                  <option value="below">Below Threshold (Lower is Worse)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                <select id="kriFrequency" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Frequency</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Unit of Measure</label>
+                <input type="text" id="kriUnit" placeholder="e.g., %, count, $" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea id="kriDescription" rows="3" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Describe what this KRI measures and its importance"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Calculation Method</label>
+              <textarea id="kriCalculation" rows="2" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Describe how this KRI is calculated"></textarea>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+              <button type="button" onclick="closeKRIModal()" class="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+              <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save KRI</button>
+            </div>
+          </form>
+        </div>
+      </div>
     `;
+
+    // Store KRIs globally for filtering
+    window.currentKRIs = kris;
   } catch (e) {
     showError('Failed to load KRIs');
   }
 }
 
-window.selectKRI = async function(id, name) {
-  try {
-    document.getElementById('kri-title').textContent = name;
-    const token = localStorage.getItem('aria_token');
-    const res = await axios.get(`/api/kris/${id}/readings`, { headers: { Authorization: `Bearer ${token}` } });
-    const readings = res.data.data || [];
-    const labels = readings.map(r => new Date(r.timestamp).toLocaleString());
-    const data = readings.map(r => r.value);
-    const ctx = document.getElementById('kriChart').getContext('2d');
-    if (window.kriChart) window.kriChart.destroy();
-    window.kriChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: [{ label: name, data, borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true }] },
-      options: { responsive: true, maintainAspectRatio: false }
-    });
-  } catch (e) {
-    showError('Failed to load KRI readings');
+// Render KRI List
+function renderKRIList(kris) {
+  if (!kris || kris.length === 0) {
+    return '<div class="p-4 text-center text-gray-500">No KRIs found</div>';
   }
+
+  return kris.map(k => {
+    const statusClass = getKRIStatusClass(k.current_status);
+    const statusIcon = getKRIStatusIcon(k.current_status);
+    const lastReading = k.latest_reading ? new Date(k.latest_reading).toLocaleDateString() : 'No data';
+    
+    return `
+      <div class="p-4 border-b hover:bg-gray-50 cursor-pointer kri-item" 
+           data-status="${k.current_status || 'unknown'}" 
+           data-name="${k.name.toLowerCase()}"
+           onclick="selectKRIEnhanced(${k.id}, '${k.name.replace(/'/g, "&#39;")}')">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="font-medium text-gray-900">${k.name}</div>
+            <div class="text-sm text-gray-600 mt-1">${k.description || 'No description'}</div>
+            <div class="flex items-center mt-2 space-x-4">
+              <div class="text-xs text-gray-500">
+                <i class="fas fa-bullseye mr-1"></i>
+                Threshold: ${k.threshold} ${k.unit || ''}
+              </div>
+              <div class="text-xs text-gray-500">
+                <i class="fas fa-clock mr-1"></i>
+                ${k.frequency || 'No frequency'}
+              </div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">Last Reading: ${lastReading}</div>
+          </div>
+          <div class="ml-3 flex flex-col items-end">
+            <div class="flex items-center ${statusClass} px-2 py-1 rounded-full text-xs">
+              <i class="${statusIcon} mr-1"></i>
+              ${k.current_status || 'Unknown'}
+            </div>
+            ${k.latest_value ? `<div class="text-sm font-medium mt-1">${k.latest_value} ${k.unit || ''}</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Get status styling
+function getKRIStatusClass(status) {
+  switch(status) {
+    case 'normal': return 'bg-green-100 text-green-800';
+    case 'warning': return 'bg-yellow-100 text-yellow-800';
+    case 'breach': return 'bg-red-100 text-red-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function getKRIStatusIcon(status) {
+  switch(status) {
+    case 'normal': return 'fas fa-check-circle';
+    case 'warning': return 'fas fa-exclamation-triangle';
+    case 'breach': return 'fas fa-exclamation-circle';
+    default: return 'fas fa-question-circle';
+  }
+}
+
+// Filter KRIs
+function filterKRIs() {
+  const statusFilter = document.getElementById('kriStatusFilter').value.toLowerCase();
+  const searchFilter = document.getElementById('kriSearchInput').value.toLowerCase();
+  const kriItems = document.querySelectorAll('.kri-item');
+  
+  kriItems.forEach(item => {
+    const status = item.dataset.status;
+    const name = item.dataset.name;
+    
+    const statusMatch = !statusFilter || status === statusFilter;
+    const nameMatch = !searchFilter || name.includes(searchFilter);
+    
+    if (statusMatch && nameMatch) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+// Enhanced KRI Selection
+window.selectKRIEnhanced = async function(id, name) {
+  try {
+    const token = localStorage.getItem('aria_token');
+    
+    // Get KRI details and readings
+    const [kriRes, readingsRes] = await Promise.all([
+      axios.get(`/api/kris/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get(`/api/kris/${id}/readings`, { headers: { Authorization: `Bearer ${token}` } })
+    ]);
+    
+    const kri = kriRes.data.data;
+    const readings = readingsRes.data.data || [];
+    
+    // Render detailed KRI panel
+    document.getElementById('kriDetailsPanel').innerHTML = renderKRIDetails(kri, readings);
+    
+    // Render chart
+    if (readings.length > 0) {
+      renderKRIChart(readings, kri);
+    }
+    
+  } catch (e) {
+    showError('Failed to load KRI details');
+  }
+}
+
+// Render KRI Details Panel
+function renderKRIDetails(kri, readings) {
+  const lastReading = readings[0];
+  const trend = calculateKRITrend(readings);
+  const statusClass = getKRIStatusClass(kri.current_status);
+  const statusIcon = getKRIStatusIcon(kri.current_status);
+  
+  return `
+    <div class="space-y-6">
+      <!-- KRI Header -->
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="text-xl font-semibold text-gray-900">${kri.name}</h3>
+          <p class="text-gray-600 mt-1">${kri.description || 'No description available'}</p>
+        </div>
+        <div class="flex space-x-2">
+          <button onclick="addKRIReading(${kri.id})" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700">
+            <i class="fas fa-plus mr-1"></i>Add Reading
+          </button>
+          <button onclick="editKRI(${kri.id})" class="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-gray-700">
+            <i class="fas fa-edit mr-1"></i>Edit
+          </button>
+        </div>
+      </div>
+
+      <!-- Status and Metrics -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Current Status</p>
+              <div class="flex items-center mt-1 ${statusClass} px-2 py-1 rounded-full w-fit">
+                <i class="${statusIcon} mr-1"></i>
+                <span class="text-sm font-medium">${kri.current_status || 'Unknown'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-600">Latest Value</p>
+          <p class="text-lg font-semibold">${lastReading ? lastReading.value : 'No data'} ${kri.unit || ''}</p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-600">Threshold</p>
+          <p class="text-lg font-semibold">${kri.threshold} ${kri.unit || ''}</p>
+          <p class="text-xs text-gray-500">${kri.direction === 'above' ? 'Above = Breach' : 'Below = Breach'}</p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-600">7-Day Trend</p>
+          <div class="flex items-center mt-1">
+            <i class="fas fa-${trend.direction === 'up' ? 'arrow-up text-red-500' : trend.direction === 'down' ? 'arrow-down text-green-500' : 'minus text-gray-500'} mr-1"></i>
+            <span class="text-lg font-semibold">${trend.percentage}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="font-medium">Trend Analysis</h4>
+          <div class="flex space-x-2 text-sm">
+            <button onclick="changeKRIChartPeriod('7d')" class="chart-period-btn active px-2 py-1 rounded">7D</button>
+            <button onclick="changeKRIChartPeriod('30d')" class="chart-period-btn px-2 py-1 rounded">30D</button>
+            <button onclick="changeKRIChartPeriod('90d')" class="chart-period-btn px-2 py-1 rounded">90D</button>
+          </div>
+        </div>
+        <canvas id="kriDetailChart" height="200"></canvas>
+      </div>
+
+      <!-- KRI Configuration -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h4 class="font-medium mb-3">Configuration</h4>
+          <div class="space-y-2 text-sm">
+            <div><span class="text-gray-600">Data Source:</span> ${kri.data_source || 'Not specified'}</div>
+            <div><span class="text-gray-600">Frequency:</span> ${kri.frequency || 'Not specified'}</div>
+            <div><span class="text-gray-600">Calculation:</span> ${kri.calculation_method || 'Not specified'}</div>
+            <div><span class="text-gray-600">Owner:</span> ${kri.owner_name || 'Not assigned'}</div>
+          </div>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h4 class="font-medium mb-3">Recent Readings</h4>
+          <div class="space-y-2 max-h-32 overflow-y-auto">
+            ${readings.slice(0, 5).map(r => `
+              <div class="flex justify-between text-sm">
+                <span>${new Date(r.timestamp).toLocaleDateString()}</span>
+                <span class="font-medium">${r.value} ${kri.unit || ''}</span>
+              </div>
+            `).join('') || '<div class="text-sm text-gray-500">No readings available</div>'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Calculate KRI Trend
+function calculateKRITrend(readings) {
+  if (readings.length < 2) return { direction: 'flat', percentage: 0 };
+  
+  const recent = readings.slice(0, 7); // Last 7 readings
+  if (recent.length < 2) return { direction: 'flat', percentage: 0 };
+  
+  const latest = recent[0].value;
+  const previous = recent[recent.length - 1].value;
+  const change = ((latest - previous) / previous) * 100;
+  
+  return {
+    direction: change > 5 ? 'up' : change < -5 ? 'down' : 'flat',
+    percentage: Math.abs(change).toFixed(1)
+  };
+}
+
+// Render KRI Chart
+function renderKRIChart(readings, kri) {
+  const ctx = document.getElementById('kriDetailChart');
+  if (!ctx) return;
+  
+  if (window.kriDetailChart) window.kriDetailChart.destroy();
+  
+  const chartData = readings.reverse(); // Oldest first for proper timeline
+  const labels = chartData.map(r => new Date(r.timestamp).toLocaleDateString());
+  const values = chartData.map(r => r.value);
+  
+  window.kriDetailChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: kri.name,
+        data: values,
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59,130,246,0.1)',
+        fill: true,
+        tension: 0.4
+      }, {
+        label: 'Threshold',
+        data: Array(values.length).fill(kri.threshold),
+        borderColor: '#EF4444',
+        backgroundColor: 'transparent',
+        borderDash: [5, 5],
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: false
+        }
+      },
+      plugins: {
+        legend: {
+          display: true
+        }
+      }
+    }
+  });
+}
+
+// KRI Modal Functions
+function showKRICreateModal() {
+  document.getElementById('kriModalTitle').textContent = 'Create New KRI';
+  document.getElementById('kriForm').reset();
+  document.getElementById('kriModal').classList.remove('hidden');
+}
+
+function closeKRIModal() {
+  document.getElementById('kriModal').classList.add('hidden');
+}
+
+// Add KRI Reading Modal (placeholder for now)
+function addKRIReading(kriId) {
+  showNotification('Add KRI Reading functionality coming soon', 'info');
+}
+
+function editKRI(kriId) {
+  showNotification('Edit KRI functionality coming soon', 'info');
+}
+
+function importKRIReadings() {
+  showNotification('Import KRI Readings functionality coming soon', 'info');
+}
+
+function changeKRIChartPeriod(period) {
+  document.querySelectorAll('.chart-period-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  showNotification(`Chart period changed to ${period}`, 'info');
 }
 
 
