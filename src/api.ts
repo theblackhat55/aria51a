@@ -4244,8 +4244,8 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
       const documentData = {
         document_id: documentId,
         file_name: data.file_name || 'document.pdf',
-        original_file_name: data.original_file_name || data.file_name,
-        file_path: data.file_path || `/uploads/${timestamp}-${data.file_name}`,
+        original_file_name: data.original_file_name || data.file_name || 'document.pdf',
+        file_path: data.file_path || `/uploads/${timestamp}-${data.file_name || 'document.pdf'}`,
         file_size: data.file_size || 0,
         mime_type: data.mime_type || 'application/pdf',
         file_hash: data.file_hash || `hash_${timestamp}`,
@@ -4265,8 +4265,10 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
         INSERT INTO documents (
           document_id, file_name, original_file_name, file_path, file_size, mime_type, file_hash,
           uploaded_by, title, description, document_type, tags, version, visibility,
-          access_permissions, related_entity_type, related_entity_id, download_count, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)
+          access_permissions, related_entity_type, related_entity_id, status, download_count, is_active,
+          upload_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, 1, 
+                  datetime('now'), datetime('now'), datetime('now'))
       `).bind(
         documentData.document_id, documentData.file_name, documentData.original_file_name,
         documentData.file_path, documentData.file_size, documentData.mime_type, documentData.file_hash,
