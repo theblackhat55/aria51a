@@ -4892,19 +4892,7 @@ window.viewDocumentDetails = viewDocumentDetails;
 window.removeDocument = removeDocument;
 // Dynamic Model Fetching Functions
 async function fetchOpenAIModels() {
-  // Try to get API key from DOM input first, then fallback to saved settings
-  let apiKey = document.getElementById('openai-api-key')?.value;
-  
-  if (!apiKey) {
-    // Fallback to saved settings if DOM input is empty
-    const savedSettings = await loadAISettings();
-    apiKey = savedSettings.openai?.apiKey;
-  }
-  
-  if (!apiKey) {
-    showToast('Please enter your OpenAI API key first', 'warning');
-    return;
-  }
+  // No need to get API key from frontend - server uses stored encrypted key
   
   const button = event.target;
   const originalIcon = button.innerHTML;
@@ -4917,8 +4905,7 @@ async function fetchOpenAIModels() {
     // Call our backend API to fetch OpenAI models
     const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/ai/fetch-models', {
-      provider: 'openai',
-      apiKey: apiKey
+      provider: 'openai'
     }, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -4953,19 +4940,7 @@ async function fetchOpenAIModels() {
 }
 
 async function fetchGeminiModels() {
-  // Try to get API key from DOM input first, then fallback to saved settings
-  let apiKey = document.getElementById('gemini-api-key')?.value;
-  
-  if (!apiKey) {
-    // Fallback to saved settings if DOM input is empty
-    const savedSettings = await loadAISettings();
-    apiKey = savedSettings.gemini?.apiKey;
-  }
-  
-  if (!apiKey) {
-    showToast('Please enter your Gemini API key first', 'warning');
-    return;
-  }
+  // No need to get API key from frontend - server uses stored encrypted key
   
   const button = event.target;
   const originalIcon = button.innerHTML;
@@ -4978,8 +4953,7 @@ async function fetchGeminiModels() {
     // Call our backend API to fetch Gemini models
     const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/ai/fetch-models', {
-      provider: 'gemini',
-      apiKey: apiKey
+      provider: 'gemini'
     }, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -5014,19 +4988,7 @@ async function fetchGeminiModels() {
 }
 
 async function fetchAnthropicModels() {
-  // Try to get API key from DOM input first, then fallback to saved settings
-  let apiKey = document.getElementById('anthropic-api-key')?.value;
-  
-  if (!apiKey) {
-    // Fallback to saved settings if DOM input is empty
-    const savedSettings = await loadAISettings();
-    apiKey = savedSettings.anthropic?.apiKey;
-  }
-  
-  if (!apiKey) {
-    showToast('Please enter your Anthropic API key first', 'warning');
-    return;
-  }
+  // No need to get API key from frontend - server uses stored encrypted key
   
   const button = event.target;
   const originalIcon = button.innerHTML;
@@ -5039,8 +5001,7 @@ async function fetchAnthropicModels() {
     // Call our backend API to fetch Anthropic models
     const token = localStorage.getItem('aria_token');
     const response = await axios.post('/api/ai/fetch-models', {
-      provider: 'anthropic',
-      apiKey: apiKey
+      provider: 'anthropic'
     }, {
       headers: { Authorization: `Bearer ${token}` }
     });

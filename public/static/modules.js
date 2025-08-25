@@ -8545,12 +8545,8 @@ function showModal(title, content, buttons = []) {
   setupModalCloseHandlers(modal);
 }
 
-function closeUniversalModal() {
-  const modal = document.getElementById('universal-modal');
-  if (modal) {
-    modal.remove();
-  }
-}
+// closeUniversalModal is defined in helpers.js and exported to window
+// Looking for #universal-modal-overlay (not #universal-modal)
 
 // Toast notification function
 function showToast(message, type = 'info') {

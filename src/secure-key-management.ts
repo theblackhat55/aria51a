@@ -383,7 +383,7 @@ async function decryptAPIKey(encryptedKey: string): Promise<string> {
   return atob(encryptedKey);
 }
 
-async function getDecryptedAPIKey(env: CloudflareBindings, userId: string, provider: string): Promise<string | null> {
+export async function getDecryptedAPIKey(env: CloudflareBindings, userId: string, provider: string): Promise<string | null> {
   try {
     const result = await env.DB.prepare(`
       SELECT encrypted_key 

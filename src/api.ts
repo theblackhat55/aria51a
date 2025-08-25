@@ -9,7 +9,7 @@ import { createRAGAPI } from './api/rag';
 import { createARIAAPI } from './api/aria';
 import { createAIGRCAPI } from './ai-grc-api';
 import { createAIProxyAPI } from './ai-proxy';
-import { createSecureKeyManagementAPI } from './secure-key-management';
+import { createSecureKeyManagementAPI, getDecryptedAPIKey } from './secure-key-management';
 // Keycloak removed
 
 export function createAPI() {
@@ -4949,17 +4949,28 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
     return prediction;
   }
 
-  // AI Model Fetching API
+  // AI Model Fetching API - Uses stored encrypted API keys
   api.post('/api/ai/fetch-models', authMiddleware, async (c) => {
     try {
-      const { provider, apiKey } = await c.req.json();
+      const { provider } = await c.req.json();
+      const userId = c.get('user')?.id;
       
-      console.log(`🔄 Fetching ${provider} models with API key: ${apiKey?.substring(0, 10)}...`);
+      console.log(`🔄 Fetching ${provider} models for user ${userId}...`);
       
-      if (!provider || !apiKey) {
+      if (!provider) {
         return c.json<ApiResponse<null>>({ 
           success: false, 
-          error: 'Provider and API key are required' 
+          error: 'Provider is required' 
+        }, 400);
+      }
+
+      // Get decrypted API key from secure storage
+      const apiKey = await getDecryptedAPIKey(c.env, userId, provider);
+
+      if (!apiKey) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: `No API key found for ${provider}. Please set your API key first.` 
         }, 400);
       }
 

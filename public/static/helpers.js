@@ -146,8 +146,14 @@
     header.className = 'px-6 py-4 border-b flex items-center justify-between';
     header.innerHTML = `
       <h3 class="font-semibold text-gray-900">${escapeHTML(title || 'Dialog')}</h3>
-      <button class="text-gray-400 hover:text-gray-600" aria-label="Close" onclick="closeUniversalModal()"><i class="fas fa-times"></i></button>
+      <button class="text-gray-400 hover:text-gray-600" aria-label="Close" id="modal-close-btn"><i class="fas fa-times"></i></button>
     `;
+    
+    // Add event listener for close button
+    const closeBtn = header.querySelector('#modal-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeUniversalModal);
+    }
 
     const body = document.createElement('div');
     body.className = 'p-6';
@@ -176,6 +182,22 @@
     modal.appendChild(body);
     modal.appendChild(footer);
     wrapper.appendChild(modal);
+
+    // Add overlay click to close (click outside modal)
+    wrapper.addEventListener('click', (e) => {
+      if (e.target === wrapper) {
+        closeUniversalModal();
+      }
+    });
+
+    // Add escape key handler
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeUniversalModal();
+        document.removeEventListener('keydown', escapeHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
 
     return wrapper;
   }

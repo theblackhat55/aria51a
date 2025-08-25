@@ -957,28 +957,159 @@ class EnhancedSettingsManager {
   }
 
   showRAGSettings() {
-    // Call the existing RAG settings implementation from enterprise-modules.js
-    if (typeof window.showRAGSettings === 'function') {
-      // Set the content container first
-      const content = document.getElementById('settings-content');
-      if (content) {
-        content.innerHTML = '<div id="rag-loading" class="text-center py-8">Loading RAG settings...</div>';
-      }
-      // Call the existing function
-      setTimeout(() => window.showRAGSettings(), 100);
+    // Use inline RAG settings implementation that works within settings page
+    const content = document.getElementById('settings-content');
+    if (content) {
+      // Call the RAG settings function directly for inline display
+      this.renderRAGSettingsInline();
     } else {
-      const content = document.getElementById('settings-content');
-      content.innerHTML = `
-        <div class="max-w-4xl mx-auto">
-          <div class="mb-8">
-            <h3 class="text-2xl font-bold text-gray-900">RAG & Knowledge Base</h3>
-            <p class="text-gray-600 mt-2">Configure retrieval-augmented generation and knowledge base settings</p>
+      this.renderRAGSettingsInline();
+    }
+  }
+
+  renderRAGSettingsInline() {
+    const content = document.getElementById('settings-content');
+    if (!content) return;
+
+    content.innerHTML = `
+      <div class="space-y-8">
+        <!-- RAG System Status -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">RAG System Status</h3>
+              <p class="text-sm text-gray-600">Retrieval-Augmented Generation knowledge base and vector storage</p>
+            </div>
+            <div id="rag-status" class="flex items-center space-x-2">
+              <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+              <span class="text-sm text-yellow-600">Initializing...</span>
+            </div>
           </div>
-          <div class="bg-white rounded-lg p-8 text-center text-gray-500">
-            RAG module is not available.
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-blue-600 font-medium">Documents</span>
+                <i class="fas fa-file-text text-blue-500"></i>
+              </div>
+              <div class="mt-2">
+                <span id="document-count" class="text-2xl font-bold text-blue-900">-</span>
+                <span class="text-xs text-blue-600 ml-1">indexed</span>
+              </div>
+            </div>
+            
+            <div class="bg-green-50 p-4 rounded-lg">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-green-600 font-medium">Vector Store</span>
+                <i class="fas fa-database text-green-500"></i>
+              </div>
+              <div class="mt-2">
+                <span id="vector-count" class="text-2xl font-bold text-green-900">-</span>
+                <span class="text-xs text-green-600 ml-1">vectors</span>
+              </div>
+            </div>
+            
+            <div class="bg-pink-50 p-4 rounded-lg">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-pink-600 font-medium">Memory Usage</span>
+                <i class="fas fa-memory text-pink-500"></i>
+              </div>
+              <div class="mt-2">
+                <span id="memory-usage" class="text-2xl font-bold text-pink-900">-</span>
+                <span class="text-xs text-pink-600 ml-1">MB</span>
+              </div>
+            </div>
           </div>
         </div>
-      `;
+
+        <!-- Document Management -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">Document Management</h3>
+              <p class="text-sm text-gray-600">Upload and manage knowledge base documents</p>
+            </div>
+            <button onclick="refreshDocumentList()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+              <i class="fas fa-sync-alt mr-2"></i>Refresh
+            </button>
+          </div>
+          
+          <!-- File Upload -->
+          <div class="mb-6 p-4 border-2 border-dashed border-gray-300 rounded-lg">
+            <div class="text-center">
+              <i class="fas fa-upload text-gray-400 text-3xl mb-2"></i>
+              <p class="text-gray-600 mb-2">Drag & drop files here or click to browse</p>
+              <input type="file" id="rag-file-input" class="hidden" multiple accept=".pdf,.txt,.doc,.docx,.md">
+              <button onclick="document.getElementById('rag-file-input').click()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-colors duration-200">
+                <i class="fas fa-plus mr-2"></i>Upload Documents
+              </button>
+            </div>
+          </div>
+          
+          <!-- Document List -->
+          <div id="document-list" class="space-y-3">
+            <div class="text-center py-4 text-gray-500">
+              <i class="fas fa-spinner fa-spin mr-2"></i>Loading documents...
+            </div>
+          </div>
+        </div>
+
+        <!-- RAG Configuration -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">RAG Configuration</h3>
+              <p class="text-sm text-gray-600">Configure retrieval and generation parameters</p>
+            </div>
+            <button onclick="testRAGQuery()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 transition-colors duration-200">
+              <i class="fas fa-vial mr-2"></i>Test Query
+            </button>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Chunk Size</label>
+              <input type="number" id="chunk-size" value="1000" min="100" max="4000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <p class="text-xs text-gray-500 mt-1">Number of characters per document chunk</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Overlap Size</label>
+              <input type="number" id="overlap-size" value="200" min="0" max="500" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <p class="text-xs text-gray-500 mt-1">Character overlap between chunks</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Top K Results</label>
+              <input type="number" id="top-k" value="5" min="1" max="20" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <p class="text-xs text-gray-500 mt-1">Number of relevant chunks to retrieve</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Similarity Threshold</label>
+              <input type="number" id="similarity-threshold" value="0.7" min="0" max="1" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <p class="text-xs text-gray-500 mt-1">Minimum similarity score for relevance</p>
+            </div>
+          </div>
+          
+          <div class="mt-6 flex space-x-4">
+            <button onclick="initializeRAGSystem()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-colors duration-200">
+              <i class="fas fa-play mr-2"></i>Initialize System
+            </button>
+            <button onclick="clearRAGCache()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 transition-colors duration-200">
+              <i class="fas fa-broom mr-2"></i>Clear Cache
+            </button>
+            <button onclick="resetRAGSystem()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 transition-colors duration-200">
+              <i class="fas fa-trash mr-2"></i>Reset System
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Initialize the RAG settings page
+    if (typeof initializeRAGSettingsPage === 'function') {
+      setTimeout(() => initializeRAGSettingsPage(), 100);
     }
   }
 
