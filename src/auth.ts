@@ -179,8 +179,16 @@ export async function authMiddleware(c: Context<{ Bindings: CloudflareBindings }
       return c.json({ success: false, error: 'Token expired' }, 401);
     }
 
-    // Attach user info to context
-    c.set('user', payload);
+    // Fetch complete user from database
+    const userAuth = new UserAuth(c.env.DB);
+    const user = await userAuth.getUserById(payload.id || payload.user_id || payload.userId);
+    
+    if (!user) {
+      return c.json({ success: false, error: 'User not found' }, 401);
+    }
+
+    // Attach complete user object to context
+    c.set('user', user);
     await next();
   } catch (error) {
     console.error('Auth middleware error:', error);
