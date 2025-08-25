@@ -476,7 +476,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- JavaScript -->
-  <script src="/static/helpers.js?v=1"></script>
+  <script src="/static/helpers.js?v=2"></script>
   <script src="/static/kong-config.js?v=1"></script>
   <script src="/static/modules.js?v=12&t=1734469000"></script>
   <script src="/static/risk-enhancements.js?v=1"></script>
