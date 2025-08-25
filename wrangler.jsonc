@@ -23,7 +23,6 @@
     }
   ],
   "vars": {
-    "JWT_SECRET": "secure-jwt-secret-key-change-in-production",
     "API_RATE_LIMIT": "100",
     "SESSION_TIMEOUT": "86400"
   }
