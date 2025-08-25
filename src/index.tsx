@@ -580,6 +580,29 @@ app.get('/login', (c) => {
       <p class="text-gray-600 mt-2">AI Risk Intelligence Assistant</p>
     </div>
 
+    <!-- SAML Authentication Section -->
+    <div id="saml-auth" class="mb-6" style="display:none;">
+      <button
+        id="saml-login-btn"
+        class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 mb-4"
+      >
+        <i class="fas fa-shield-alt mr-2"></i>
+        Sign In with Enterprise SSO
+      </button>
+      
+      <div class="text-center">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">or</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legacy Authentication Section -->
     <div id="legacy-auth" style="display:block;">
       <form id="login-form">
         <div class="mb-6">
@@ -615,14 +638,14 @@ app.get('/login', (c) => {
           class="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-150"
         >
           <i class="fas fa-sign-in-alt mr-2"></i>
-          Sign In (Legacy)
+          <span id="legacy-login-text">Sign In (Local)</span>
         </button>
       </form>
 
       <div id="login-error" class="mt-4 text-red-600 text-sm hidden"></div>
 
       <div class="mt-4 text-center text-sm text-gray-600">
-        <p>Legacy Demo Accounts:</p>
+        <p>Demo Accounts:</p>
         <div class="mt-2 space-y-1">
           <p><strong>Admin:</strong> admin / demo123</p>
           <p><strong>Risk Manager:</strong> avi_security / demo123</p>
@@ -639,7 +662,65 @@ app.get('/login', (c) => {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-  <!-- Load legacy auth only -->
+  
+  <script>
+    // Check SAML configuration on page load
+    async function checkSAMLConfig() {
+      try {
+        const response = await axios.get('/api/saml/config');
+        if (response.data.success && response.data.config.enabled) {
+          // Show SAML login option
+          document.getElementById('saml-auth').style.display = 'block';
+          document.getElementById('legacy-login-text').textContent = 'Sign In (Local Account)';
+          
+          // Setup SAML login button
+          document.getElementById('saml-login-btn').addEventListener('click', function() {
+            initiateSSO();
+          });
+        }
+      } catch (error) {
+        console.log('SAML not configured or available:', error.message);
+        // Keep only legacy auth visible
+      }
+    }
+    
+    // Initiate SAML SSO login
+    async function initiateSSO() {
+      try {
+        // Show loading state
+        const btn = document.getElementById('saml-login-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Redirecting to SSO...';
+        btn.disabled = true;
+        
+        // Get SSO URL from backend
+        const response = await axios.get('/api/saml/sso-url');
+        if (response.data.success && response.data.sso_url) {
+          // Redirect to identity provider
+          window.location.href = response.data.sso_url;
+        } else {
+          throw new Error('SSO URL not available');
+        }
+      } catch (error) {
+        console.error('SSO initiation failed:', error);
+        const btn = document.getElementById('saml-login-btn');
+        btn.innerHTML = '<i class="fas fa-shield-alt mr-2"></i>Sign In with Enterprise SSO';
+        btn.disabled = false;
+        
+        // Show error message
+        const errorDiv = document.getElementById('login-error');
+        errorDiv.textContent = 'SSO login temporarily unavailable. Please use local account.';
+        errorDiv.classList.remove('hidden');
+      }
+    }
+    
+    // Check SAML config when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      checkSAMLConfig();
+    });
+  </script>
+  
+  <!-- Load legacy auth -->
   <script src="/static/auth.js"></script>
 </body>
 </html>`);

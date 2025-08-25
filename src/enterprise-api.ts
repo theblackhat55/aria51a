@@ -1,7 +1,7 @@
 // Enterprise API Extensions - Assets, Services, Microsoft Integrations
 import { Hono } from 'hono';
 import { CloudflareBindings, ApiResponse } from './types';
-import { authMiddleware } from './auth';
+import { authMiddleware, AuthService } from './auth';
 import { MicrosoftGraphService, EnhancedRiskScoring, type MicrosoftConfig } from './microsoft-integration';
 
 export function createEnterpriseAPI() {
@@ -1143,6 +1143,209 @@ export function createEnterpriseAPI() {
     }
   });
 
+  // SAML SSO Authentication endpoints
+  api.get('/api/saml/sso-url', async (c) => {
+    try {
+      // Get SAML configuration
+      let samlConfig = null;
+      try {
+        samlConfig = await c.env.DB.prepare(`
+          SELECT * FROM saml_configurations 
+          WHERE is_active = 1 AND enabled = 1
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `).first();
+      } catch (tableError) {
+        console.log('SAML configurations table does not exist');
+      }
+
+      if (!samlConfig || !samlConfig.enabled) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'SAML authentication is not configured or enabled'
+        }, 400);
+      }
+
+      // Generate SAML AuthnRequest URL
+      // In a real implementation, you would generate a proper SAML AuthnRequest
+      // For demo purposes, we'll create a simplified SSO URL with callback
+      const baseUrl = new URL(c.req.url).origin;
+      const callbackUrl = `${baseUrl}/api/saml/callback`;
+      
+      // Generate a simple SSO request (in production, use proper SAML library)
+      const ssoUrl = `${samlConfig.sso_url}?` + new URLSearchParams({
+        'SAMLRequest': btoa(`<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="req_${Date.now()}" Version="2.0" IssueInstant="${new Date().toISOString()}" AssertionConsumerServiceURL="${callbackUrl}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">${samlConfig.entity_id}</saml:Issuer></samlp:AuthnRequest>`),
+        'RelayState': baseUrl
+      }).toString();
+
+      return c.json<ApiResponse<any>>({
+        success: true,
+        sso_url: ssoUrl,
+        entity_id: samlConfig.entity_id
+      });
+    } catch (error) {
+      console.error('SSO URL generation error:', error);
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Failed to generate SSO URL'
+      }, 500);
+    }
+  });
+
+  api.post('/api/saml/callback', async (c) => {
+    try {
+      const formData = await c.req.formData();
+      const samlResponse = formData.get('SAMLResponse');
+      const relayState = formData.get('RelayState');
+
+      if (!samlResponse) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'Invalid SAML response'
+        }, 400);
+      }
+
+      // Get SAML configuration 
+      let samlConfig = null;
+      try {
+        samlConfig = await c.env.DB.prepare(`
+          SELECT * FROM saml_configurations 
+          WHERE is_active = 1 AND enabled = 1
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `).first();
+      } catch (tableError) {
+        console.log('SAML configurations table does not exist');
+      }
+
+      if (!samlConfig) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'SAML configuration not found'
+        }, 400);
+      }
+
+      // Parse SAML response (simplified for demo)
+      // In production, use proper SAML library to validate signature, etc.
+      const decodedResponse = atob(samlResponse as string);
+      console.log('SAML Response received:', decodedResponse.substring(0, 200) + '...');
+
+      // Extract user information from SAML assertion (simplified)
+      // This is a demo implementation - in production, properly parse and validate SAML
+      const attributes = JSON.parse(samlConfig.attributes || '{}');
+      
+      // Demo user data extraction (in production, parse XML properly)
+      const userData = {
+        email: 'saml.user@company.com', // Extract from SAML assertion
+        first_name: 'SAML', // Extract from SAML assertion
+        last_name: 'User', // Extract from SAML assertion
+        role: samlConfig.default_role || 'user'
+      };
+
+      // Check if user exists or create if auto-provisioning is enabled
+      let user = null;
+      try {
+        user = await c.env.DB.prepare(`
+          SELECT * FROM users WHERE email = ?
+        `).bind(userData.email).first();
+      } catch (error) {
+        console.error('User lookup error:', error);
+      }
+
+      if (!user && samlConfig.auto_provision) {
+        // Create new user from SAML assertion
+        try {
+          const result = await c.env.DB.prepare(`
+            INSERT INTO users (
+              email, username, first_name, last_name, role, 
+              is_active, auth_provider, saml_user_id, last_saml_login,
+              created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), datetime('now'))
+          `).bind(
+            userData.email,
+            userData.email.split('@')[0],
+            userData.first_name,
+            userData.last_name,
+            userData.role,
+            1,
+            'saml',
+            userData.email, // Use email as SAML user ID for demo
+            new Date().toISOString()
+          ).run();
+
+          user = await c.env.DB.prepare(`
+            SELECT * FROM users WHERE id = ?
+          `).bind(result.meta.last_row_id).first();
+        } catch (error) {
+          console.error('User creation error:', error);
+          return c.json<ApiResponse<null>>({
+            success: false,
+            error: 'Failed to create user account'
+          }, 500);
+        }
+      } else if (!user) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'User account not found and auto-provisioning is disabled'
+        }, 401);
+      }
+
+      if (!user) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'Authentication failed'
+        }, 401);
+      }
+
+      // Update last SAML login
+      try {
+        await c.env.DB.prepare(`
+          UPDATE users SET last_saml_login = datetime('now'), last_login = datetime('now')
+          WHERE id = ?
+        `).bind(user.id).run();
+      } catch (error) {
+        console.warn('Failed to update last login:', error);
+      }
+
+      // Generate JWT token for authenticated user
+      const authService = new AuthService(c.env.DB);
+      const token = await authService.generateToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        username: user.username
+      }, c.env);
+
+      // Redirect to main application with token
+      const redirectUrl = relayState || '/';
+      return c.html(`
+        <html>
+        <head><title>SAML Login Success</title></head>
+        <body>
+          <script>
+            localStorage.setItem('aria_token', '${token}');
+            localStorage.setItem('aria_user', JSON.stringify({
+              id: ${user.id},
+              email: '${user.email}',
+              first_name: '${user.first_name}',
+              last_name: '${user.last_name}',
+              role: '${user.role}',
+              username: '${user.username}'
+            }));
+            window.location.href = '${redirectUrl}';
+          </script>
+        </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('SAML callback error:', error);
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'SAML authentication failed'
+      }, 500);
+    }
+  });
+
   // Organizations Management API endpoints
   api.get('/api/organizations', authMiddleware, async (c) => {
     try {
@@ -1378,6 +1581,74 @@ export function createEnterpriseAPI() {
         success: false,
         error: 'Failed to create risk owner'
       }, 500);
+    }
+  });
+
+  // SAML Logout endpoint
+  api.get('/api/saml/logout', async (c) => {
+    try {
+      // Get SAML configuration for logout URL
+      let samlConfig = null;
+      try {
+        samlConfig = await c.env.DB.prepare(`
+          SELECT * FROM saml_configurations 
+          WHERE is_active = 1 AND enabled = 1
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `).first();
+      } catch (tableError) {
+        console.log('SAML configurations table does not exist');
+      }
+
+      // Clear local session first
+      const logoutScript = `
+        <script>
+          localStorage.removeItem('aria_token');
+          localStorage.removeItem('aria_user');
+          sessionStorage.clear();
+        </script>
+      `;
+
+      if (samlConfig && samlConfig.slo_url) {
+        // Generate SAML LogoutRequest and redirect to IdP
+        const baseUrl = new URL(c.req.url).origin;
+        const logoutUrl = `${samlConfig.slo_url}?` + new URLSearchParams({
+          'SAMLRequest': btoa(`<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="logout_${Date.now()}" Version="2.0" IssueInstant="${new Date().toISOString()}"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">${samlConfig.entity_id}</saml:Issuer></samlp:LogoutRequest>`),
+          'RelayState': `${baseUrl}/login`
+        }).toString();
+
+        return c.html(`
+          <html>
+          <head><title>Logging Out...</title></head>
+          <body>
+            ${logoutScript}
+            <script>
+              setTimeout(() => {
+                window.location.href = '${logoutUrl}';
+              }, 100);
+            </script>
+          </body>
+          </html>
+        `);
+      } else {
+        // Local logout only - redirect to login page
+        return c.html(`
+          <html>
+          <head><title>Logged Out</title></head>
+          <body>
+            ${logoutScript}
+            <script>
+              setTimeout(() => {
+                window.location.href = '/login';
+              }, 100);
+            </script>
+          </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      console.error('SAML logout error:', error);
+      return c.redirect('/login');
     }
   });
 
