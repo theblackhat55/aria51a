@@ -21,12 +21,12 @@
 - **Technical Relevance** - Aligns with 5-dimensional risk analysis approach
 
 ## 🚀 Live Deployment URLs - ARIA5 Platform
-- **🎯 PRODUCTION**: https://1d70df76.aria-platform-v6.pages.dev *(ARIA5 v5.0.0 - SECURITY HARDENED)*
+- **🎯 PRODUCTION**: https://7f79c477.aria-platform-v6.pages.dev *(ARIA5 v5.0.0 - FULLY REBRANDED)*
 - **🔄 ALIAS**: https://grc-6-0-fixes.aria-platform-v6.pages.dev *(Same deployment, branch alias)*
-- **🏥 HEALTH CHECK**: https://1d70df76.aria-platform-v6.pages.dev/health *(ARIA5 system status)*
-- **🤖 RAG API**: https://1d70df76.aria-platform-v6.pages.dev/api/rag/health *(Knowledge intelligence)*
-- **🔑 AI Provider Keys**: https://1d70df76.aria-platform-v6.pages.dev/api/keys/status *(Secure AI key management)*
-- **🤖 AI Systems**: https://1d70df76.aria-platform-v6.pages.dev/api/ai-governance/systems *(AI governance registry)*
+- **🏥 HEALTH CHECK**: https://7f79c477.aria-platform-v6.pages.dev/health *(ARIA5 system status)*
+- **🤖 RAG API**: https://7f79c477.aria-platform-v6.pages.dev/api/rag/health *(Knowledge intelligence)*
+- **🔑 AI Provider Keys**: https://7f79c477.aria-platform-v6.pages.dev/api/keys/status *(Secure AI key management)*
+- **🤖 AI Systems**: https://7f79c477.aria-platform-v6.pages.dev/api/ai-governance/systems *(AI governance registry)*
 
 > 🌐 **Future Domain**: Ready for `aria5.com` deployment - Premium domain available for acquisition!
 
