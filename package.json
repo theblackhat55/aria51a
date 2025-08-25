@@ -1,7 +1,7 @@
 {
-  "name": "aria-platform",
-  "version": "6.0.0",
-  "description": "ARIA Platform v6.0 - Unified AI Risk Intelligence with Enhanced Security & Advanced Analytics",
+  "name": "aria5-platform",
+  "version": "5.0.0",
+  "description": "ARIA5 - Next-Generation AI Risk Intelligence Platform with Enterprise Security & Advanced Analytics",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

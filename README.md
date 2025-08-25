@@ -1,22 +1,38 @@
-# ARIA - AI Risk Intelligence Assistant
+# ARIA5 - AI Risk Intelligence Platform
 
 ## Project Overview
-- **Name**: ARIA
-- **Goal**: AI-Powered Risk Intelligence Assistant for Enterprise GRC
-- **Features**: Next-Generation Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics
-- **Version**: 7.0.0 - PRODUCTION READY - Full Enterprise Features
+- **Name**: ARIA5 (AI Risk Intelligence Assistant - 5th Generation)
+- **Goal**: Next-Generation AI Risk Intelligence Platform for Enterprise GRC
+- **Features**: Revolutionary Enterprise GRC Platform with AI-Powered Intelligence & Advanced Analytics
+- **Version**: 5.0.0 - PRODUCTION READY - Full Enterprise Features with Security Hardening
 
-## 🚀 Live Deployment URLs
-- **🎯 PRODUCTION**: https://1d70df76.aria-platform-v6.pages.dev *(Latest v6.0.2 - SECURITY HARDENED)*
+## 🎯 **Why ARIA5?**
+
+### **The 5 Pillars of AI Risk Intelligence:**
+1. **🎯 Risk Assessment & Management** - Comprehensive AI risk identification and mitigation
+2. **📋 Compliance & Regulatory Alignment** - Multi-framework compliance automation (AI Act, NIST AI RMF, ISO)
+3. **🔒 Security & Privacy Protection** - Enterprise-grade security with OWASP Top 10 compliance
+4. **⚖️ Ethics & Responsible AI** - Ethical AI governance and bias detection
+5. **📊 Performance & Quality Assurance** - Continuous AI system monitoring and optimization
+
+### **Perfect for aria5.com Domain:**
+- **Memorable & Professional** - Short, brandable domain for enterprise clients
+- **Industry Authority** - Positions as the leading AI risk platform (5th generation evolution)
+- **Technical Relevance** - Aligns with 5-dimensional risk analysis approach
+
+## 🚀 Live Deployment URLs - ARIA5 Platform
+- **🎯 PRODUCTION**: https://1d70df76.aria-platform-v6.pages.dev *(ARIA5 v5.0.0 - SECURITY HARDENED)*
 - **🔄 ALIAS**: https://grc-6-0-fixes.aria-platform-v6.pages.dev *(Same deployment, branch alias)*
-- **🏥 HEALTH CHECK**: https://1d70df76.aria-platform-v6.pages.dev/health *(System status)*
-- **🤖 RAG API**: https://1d70df76.aria-platform-v6.pages.dev/api/rag/health *(RAG system status)*
-- **🔑 AI Provider Keys**: https://1d70df76.aria-platform-v6.pages.dev/api/keys/status *(AI key management)*
-- **🤖 AI Systems**: https://1d70df76.aria-platform-v6.pages.dev/api/ai-governance/systems *(AI governance)*
+- **🏥 HEALTH CHECK**: https://1d70df76.aria-platform-v6.pages.dev/health *(ARIA5 system status)*
+- **🤖 RAG API**: https://1d70df76.aria-platform-v6.pages.dev/api/rag/health *(Knowledge intelligence)*
+- **🔑 AI Provider Keys**: https://1d70df76.aria-platform-v6.pages.dev/api/keys/status *(Secure AI key management)*
+- **🤖 AI Systems**: https://1d70df76.aria-platform-v6.pages.dev/api/ai-governance/systems *(AI governance registry)*
+
+> 🌐 **Future Domain**: Ready for `aria5.com` deployment - Premium domain available for acquisition!
 
 ## 🤖 Platform Features
-### **AI-Powered Capabilities**
-- **ARIA Assistant**: Interactive AI chat interface with GRC expertise
+### **ARIA5 AI-Powered Capabilities**
+- **ARIA5 Assistant**: Next-generation AI chat interface with deep GRC expertise
 - **AI Analytics**: Predictive risk modeling and compliance trend analysis
 - **AI Providers**: Multi-provider AI service management (OpenAI, Anthropic, Local)
 - **RAG & Knowledge**: ✅ **DEPLOYED** - Retrieval-Augmented Generation with automatic document indexing
@@ -46,6 +62,20 @@
 - Role-based access control
 - Session management with JWT tokens
 - Mobile-responsive authentication UI
+
+## 🌐 Domain Strategy - aria5.com
+
+### **Premium Domain Opportunity**
+- **`aria5.com`** - Available for acquisition and perfect for our platform
+- **Brand Authority** - Establishes ARIA5 as the leading AI risk intelligence platform
+- **SEO Advantage** - Short, memorable domain for enterprise marketing
+- **Professional Credibility** - Premium .com domain builds trust with enterprise clients
+
+### **Business Value**
+- **Market Positioning** - Positions as 5th-generation AI risk management solution
+- **Enterprise Appeal** - Professional domain for B2B sales and partnerships  
+- **Investment Protection** - Secures brand identity in competitive AI market
+- **Global Reach** - International domain for worldwide enterprise deployment
 
 ## 🏗️ Technical Architecture
 ### **Frontend Stack**

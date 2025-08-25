@@ -1,4 +1,4 @@
-// ARIA Platform v6.0 - Unified AI Risk Intelligence with Enhanced Security
+// ARIA5 Platform - Next-Generation AI Risk Intelligence with Enterprise Security
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/cloudflare-workers';
 import { cors } from 'hono/cors';
@@ -60,12 +60,14 @@ app.route('/api/ai-risk', aiRiskApi);
 app.get('/health', (c) => {
   return c.json({ 
     status: 'healthy', 
-    version: '6.0.0', 
+    platform: 'ARIA5',
+    version: '5.0.0', 
     timestamp: new Date().toISOString(),
     services: {
       database: 'connected',
       ai_engine: 'ready',
-      llm_assessment: 'available'
+      llm_assessment: 'available',
+      risk_intelligence: 'active'
     }
   });
 });
@@ -77,8 +79,8 @@ app.get('/', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ARIA Platform v6.0</title>
-  <meta name="description" content="ARIA Platform v6.0 - Unified AI Risk Intelligence with Enhanced Security & Advanced Analytics">
+  <title>ARIA5 - AI Risk Intelligence Platform</title>
+  <meta name="description" content="ARIA5 - Next-Generation AI Risk Intelligence Platform with Enterprise Security & Advanced Analytics">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -114,8 +116,8 @@ app.get('/', (c) => {
               </div>
             </div>
             <div class="flex flex-col justify-center">
-              <h1 class="text-xl font-semibold text-gray-900 leading-tight">ARIA</h1>
-              <p class="text-xs text-gray-500 leading-tight">AI Risk Intelligence Assistant</p>
+              <h1 class="text-xl font-semibold text-gray-900 leading-tight">ARIA5</h1>
+              <p class="text-xs text-gray-500 leading-tight">AI Risk Intelligence Platform</p>
             </div>
           </div>
           
@@ -220,7 +222,7 @@ app.get('/', (c) => {
                   Intelligence <i class="fas fa-chevron-down ml-1 text-xs"></i>
                 </button>
                 <div id="intelligence-menu" class="dropdown-menu absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
-                  <a href="#" data-page="ai-assure" class="block px-4 py-2 text-sm hover:bg-gray-50">AI/ARIA</a>
+                  <a href="#" data-page="ai-assure" class="block px-4 py-2 text-sm hover:bg-gray-50">AI/ARIA5</a>
                   <a href="#" data-page="ai-providers" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Providers</a>
                   <a href="#" data-page="rag-knowledge" class="block px-4 py-2 text-sm hover:bg-gray-50">RAG & Knowledge</a>
                   <a href="#" data-page="search" class="block px-4 py-2 text-sm hover:bg-gray-50">Search</a>
@@ -275,7 +277,7 @@ app.get('/', (c) => {
               <i class="fas fa-shield-alt text-white"></i>
             </div>
             <div class="ml-3">
-              <h1 class="text-lg font-semibold">ARIA</h1>
+              <h1 class="text-lg font-semibold">ARIA5</h1>
               <p class="text-xs opacity-80">GRC Platform v5.2</p>
             </div>
           </div>
@@ -374,7 +376,7 @@ app.get('/', (c) => {
         <div class="mobile-nav-section">
           <div class="mobile-nav-section-title">Intelligence</div>
           <a href="#" data-page="ai-assure" class="mobile-nav-item">
-            <i class="fas fa-robot"></i>AI/ARIA
+            <i class="fas fa-robot"></i>AI/ARIA5
           </a>
           <a href="#" data-page="ai-providers" class="mobile-nav-item">
             <i class="fas fa-cloud"></i>AI Providers
@@ -417,7 +419,7 @@ app.get('/', (c) => {
               <i class="fas fa-robot text-white text-lg"></i>
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">ARIA - AI Risk Assistant</h3>
+              <h3 class="text-lg font-semibold text-gray-900">ARIA5 - AI Risk Intelligence</h3>
               <p class="text-sm text-gray-500">Powered by multiple AI providers</p>
             </div>
           </div>
@@ -430,7 +432,7 @@ app.get('/', (c) => {
         <div id="aria-chat" class="flex-1 p-6 overflow-y-auto bg-gray-50" style="min-height: 300px; max-height: 400px;">
           <div class="text-center text-gray-500 mt-8">
             <i class="fas fa-robot text-4xl text-gray-300 mb-4"></i>
-            <p class="text-lg font-medium">Hello! I'm ARIA, your AI Risk Assistant.</p>
+            <p class="text-lg font-medium">Hello! I'm ARIA5, your AI Risk Intelligence Platform.</p>
             <p class="text-sm mt-2">Ask me about risk analysis, compliance, security recommendations, or use the quick actions below.</p>
           </div>
         </div>
@@ -445,7 +447,7 @@ app.get('/', (c) => {
           
           <!-- Chat Input -->
           <div class="flex space-x-3">
-            <input type="text" id="aria-input" placeholder="Ask ARIA about risks, compliance, or security..." class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <input type="text" id="aria-input" placeholder="Ask ARIA5 about risks, compliance, or security..." class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <button id="send-aria" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 flex items-center space-x-2">
               <i class="fas fa-paper-plane"></i>
               <span class="hidden sm:block">Send</span>
@@ -471,7 +473,7 @@ app.get('/', (c) => {
           <!-- Note about configuration -->
           <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
             <i class="fas fa-info-circle mr-1"></i>
-            Configure your AI providers in <strong>Settings</strong> to enable ARIA functionality.
+            Configure your AI providers in <strong>Settings</strong> to enable ARIA5 functionality.
           </div>
         </div>
       </div>
@@ -479,7 +481,7 @@ app.get('/', (c) => {
   </div>
 
   <!-- Floating ARIA Button (Hidden until login) -->
-  <button id="aria-button" class="hidden fixed bottom-6 right-6 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-30" title="Ask ARIA - AI Risk Assistant">
+  <button id="aria-button" class="hidden fixed bottom-6 right-6 bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 z-30" title="Ask ARIA5 - AI Risk Intelligence">
     <i class="fas fa-robot text-xl"></i>
   </button>
 
@@ -542,7 +544,7 @@ app.get('/', (c) => {
                 '<i class="fas fa-shield-alt text-white text-xl"></i>' +
               '</div>' +
               '<h2 class="text-xl font-bold text-gray-900 mb-2">Authentication Required</h2>' +
-              '<p class="text-gray-600 mb-6">Please login to access ARIA - AI Risk Intelligence Assistant</p>' +
+              '<p class="text-gray-600 mb-6">Please login to access ARIA5 - AI Risk Intelligence Platform</p>' +
               '<button onclick="window.location.href=\\'/login\\'" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200">' +
                 '<i class="fas fa-sign-in-alt mr-2"></i>' +
                 'Login' +
@@ -564,7 +566,7 @@ app.get('/login', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - ARIA</title>
+  <title>Login - ARIA5</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -574,7 +576,7 @@ app.get('/login', (c) => {
       <div class="mx-auto h-20 w-20 bg-blue-600 rounded-full flex items-center justify-center mb-4">
         <i class="fas fa-shield-alt text-white text-2xl"></i>
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">ARIA</h1>
+      <h1 class="text-2xl font-bold text-gray-900">ARIA5</h1>
       <p class="text-gray-600 mt-2">AI Risk Intelligence Assistant</p>
     </div>
 
