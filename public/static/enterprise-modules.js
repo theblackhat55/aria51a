@@ -3156,4 +3156,3 @@ window.showMicrosoftSettings = showMicrosoftSettings;
 window.showUsersSettings = showUsersSettings;
 window.showOrganizationsSettings = showOrganizationsSettings;
 window.showRiskOwnersSettings = showRiskOwnersSettings;
-}
