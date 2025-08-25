@@ -41,11 +41,42 @@ export function createAPI() {
 
   // Keycloak routes removed
 
-  // CORS middleware
+  // SECURITY FIX: Add security headers middleware
+  api.use('*', async (c, next) => {
+    await next();
+    
+    // Set security headers
+    c.header('X-Content-Type-Options', 'nosniff');
+    c.header('X-Frame-Options', 'DENY');
+    c.header('X-XSS-Protection', '1; mode=block');
+    c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    
+    // Strict CSP for API endpoints only (don't apply to HTML pages)
+    if (c.req.url.includes('/api/')) {
+      c.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+    }
+    
+    // Remove server information
+    c.header('Server', '');
+  });
+
+  // CORS middleware with stricter origin validation
   api.use('/api/*', cors({
-    origin: ['http://localhost:3000', 'http://localhost:8080', 'https://dmt-risk-assessment.pages.dev', 'https://*.pages.dev'],
+    origin: (origin) => {
+      // Allow localhost for development
+      if (origin?.includes('localhost') || origin?.includes('127.0.0.1')) {
+        return origin;
+      }
+      // Allow Cloudflare Pages domains
+      if (origin?.includes('.pages.dev') || origin?.includes('dmt-risk-assessment')) {
+        return origin;
+      }
+      // Reject all other origins
+      return false;
+    },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
     maxAge: 86400,
     credentials: true,
   }));

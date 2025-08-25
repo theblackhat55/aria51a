@@ -27,16 +27,27 @@ export class AuthService {
     return hashedPassword === hash;
   }
 
-  // Generate JWT token
+  // SECURITY FIX: Enhanced JWT token generation with security improvements
   async generateToken(user: Omit<User, 'password_hash' | 'mfa_secret'>, env: any): Promise<string> {
     const JWT_SECRET = env.JWT_SECRET || 'development-fallback-secret';
+    
+    // SECURITY: Shorter token expiry time
+    const tokenExpiry = 8 * 60 * 60; // 8 hours instead of 24
+    
     const payload = {
       id: user.id,
       username: user.username,
       email: user.email,
       role: user.role,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60 // 24 hours
+      exp: Math.floor(Date.now() / 1000) + tokenExpiry,
+      // SECURITY: Add token issuer and audience
+      iss: 'aria-platform',
+      aud: 'aria-users',
+      // SECURITY: Add session identifier for token rotation
+      jti: crypto.randomUUID(),
+      // SECURITY: Add account status validation
+      active: user.is_active
     };
 
     try {
@@ -47,11 +58,34 @@ export class AuthService {
     }
   }
 
-  // Verify JWT token
+  // SECURITY FIX: Enhanced JWT token verification with additional security checks
   async verifyToken(token: string, env: any): Promise<any> {
     const JWT_SECRET = env.JWT_SECRET || 'development-fallback-secret';
+    
     try {
-      return await verify(token, JWT_SECRET);
+      const payload = await verify(token, JWT_SECRET);
+      
+      // SECURITY: Validate token claims
+      if (!payload.iss || payload.iss !== 'aria-platform') {
+        throw new Error('Invalid token issuer');
+      }
+      
+      if (!payload.aud || payload.aud !== 'aria-users') {
+        throw new Error('Invalid token audience');
+      }
+      
+      // SECURITY: Check if account is still active
+      if (payload.active !== true) {
+        throw new Error('Account is deactivated');
+      }
+      
+      // SECURITY: Validate token age
+      const tokenAge = Date.now() / 1000 - payload.iat;
+      if (tokenAge > 8 * 60 * 60) { // 8 hours max
+        throw new Error('Token too old, please re-authenticate');
+      }
+      
+      return payload;
     } catch (error) {
       throw new Error('Invalid or expired token');
     }

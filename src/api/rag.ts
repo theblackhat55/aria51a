@@ -348,6 +348,20 @@ export function createRAGAPI() {
     try {
       const { sourceType, limit, offset } = c.req.query();
 
+      // SECURITY FIX: Input validation and sanitization
+      const sanitizedSourceType = sourceType ? sourceType.toString().trim() : null;
+      const sanitizedLimit = limit ? Math.min(Math.max(parseInt(limit as string) || 50, 1), 1000) : 50;
+      const sanitizedOffset = offset ? Math.max(parseInt(offset as string) || 0, 0) : 0;
+
+      // SECURITY: Validate sourceType against whitelist
+      const allowedSourceTypes = ['document', 'policy', 'procedure', 'regulation', 'standard', 'guideline'];
+      if (sanitizedSourceType && !allowedSourceTypes.includes(sanitizedSourceType)) {
+        return c.json({
+          success: false,
+          message: 'Invalid source type specified'
+        }, 400);
+      }
+
       const db = c.env.DB;
       let query = `
         SELECT id, title, source_type, source_id, chunk_index, total_chunks, 
@@ -356,22 +370,18 @@ export function createRAGAPI() {
       `;
       const params: any[] = [];
 
-      if (sourceType) {
+      if (sanitizedSourceType) {
         query += ' WHERE source_type = ?';
-        params.push(sourceType);
+        params.push(sanitizedSourceType);
       }
 
       query += ' ORDER BY created_at DESC';
 
-      if (limit) {
-        query += ' LIMIT ?';
-        params.push(parseInt(limit as string) || 50);
-      }
+      query += ' LIMIT ?';
+      params.push(sanitizedLimit);
 
-      if (offset) {
-        query += ' OFFSET ?';
-        params.push(parseInt(offset as string) || 0);
-      }
+      query += ' OFFSET ?';
+      params.push(sanitizedOffset);
 
       const results = await db.prepare(query).bind(...params).all();
 
@@ -581,6 +591,20 @@ export function createRAGAPI() {
     try {
       const { sourceType, limit, offset } = c.req.query();
 
+      // SECURITY FIX: Input validation and sanitization (same as /documents)
+      const sanitizedSourceType = sourceType ? sourceType.toString().trim() : null;
+      const sanitizedLimit = limit ? Math.min(Math.max(parseInt(limit as string) || 50, 1), 1000) : 50;
+      const sanitizedOffset = offset ? Math.max(parseInt(offset as string) || 0, 0) : 0;
+
+      // SECURITY: Validate sourceType against whitelist
+      const allowedSourceTypes = ['document', 'policy', 'procedure', 'regulation', 'standard', 'guideline'];
+      if (sanitizedSourceType && !allowedSourceTypes.includes(sanitizedSourceType)) {
+        return c.json({
+          success: false,
+          message: 'Invalid source type specified'
+        }, 400);
+      }
+
       const db = c.env.DB;
       let query = `
         SELECT id, title, source_type, source_id, chunk_index, total_chunks, 
@@ -589,22 +613,18 @@ export function createRAGAPI() {
       `;
       const params: any[] = [];
 
-      if (sourceType) {
+      if (sanitizedSourceType) {
         query += ' WHERE source_type = ?';
-        params.push(sourceType);
+        params.push(sanitizedSourceType);
       }
 
       query += ' ORDER BY created_at DESC';
 
-      if (limit) {
-        query += ' LIMIT ?';
-        params.push(parseInt(limit as string) || 50);
-      }
+      query += ' LIMIT ?';
+      params.push(sanitizedLimit);
 
-      if (offset) {
-        query += ' OFFSET ?';
-        params.push(parseInt(offset as string) || 0);
-      }
+      query += ' OFFSET ?';
+      params.push(sanitizedOffset);
 
       const results = await db.prepare(query).bind(...params).all();
 

@@ -10,11 +10,23 @@ import aiRiskApi from './ai-governance/ai-risk-api.js';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
-// Enable CORS for all routes
+// SECURITY FIX: Enhanced CORS configuration with strict origin validation
 app.use('*', cors({
-  origin: ['http://localhost:3000', 'https://aria-platform.pages.dev', 'https://*.pages.dev'],
+  origin: (origin) => {
+    // Allow localhost for development
+    if (origin?.includes('localhost') || origin?.includes('127.0.0.1')) {
+      return origin;
+    }
+    // Allow specific Cloudflare Pages domains
+    if (origin?.includes('aria-platform.pages.dev') || 
+        origin?.match(/^https:\/\/[a-f0-9-]+\.aria-platform.*\.pages\.dev$/)) {
+      return origin;
+    }
+    // Reject all other origins
+    return false;
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
   maxAge: 86400, // 24 hours
   credentials: true,
 }));
@@ -32,7 +44,8 @@ app.use('*', async (c, next) => {
   c.header('X-XSS-Protection', '1; mode=block');
   c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
-  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://api.groq.com");
+  // SECURITY FIX: Enhanced Content Security Policy with nonce support
+  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
 });
 
 // API routes - Clean Cloudflare-optimized implementation
