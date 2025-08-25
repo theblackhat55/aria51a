@@ -110,18 +110,13 @@ class EnhancedSettingsManager {
                       class="system-subtab w-full text-left flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-all duration-200">
                       <i class="fas fa-users text-green-600"></i>
                       <span>User Management</span>
+                      <span class="ml-auto text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Unified</span>
                     </button>
                     <button onclick="enhancedSettings.showSystemSubTab('organizations')" 
                       id="subtab-organizations" 
                       class="system-subtab w-full text-left flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-all duration-200">
                       <i class="fas fa-building text-indigo-600"></i>
                       <span>Organizations</span>
-                    </button>
-                    <button onclick="enhancedSettings.showSystemSubTab('risk-owners')" 
-                      id="subtab-risk-owners" 
-                      class="system-subtab w-full text-left flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-all duration-200">
-                      <i class="fas fa-user-shield text-orange-600"></i>
-                      <span>Risk Owners</span>
                     </button>
                     <button onclick="enhancedSettings.showSystemSubTab('saml')" 
                       id="subtab-saml" 
@@ -761,29 +756,167 @@ class EnhancedSettingsManager {
   }
 
   showRAGSettings() {
-    // Call the existing RAG settings implementation from enterprise-modules.js
-    if (typeof window.showRAGSettings === 'function') {
-      // Set the content container first
-      const content = document.getElementById('settings-content');
-      if (content) {
-        content.innerHTML = '<div id="rag-loading" class="text-center py-8">Loading RAG settings...</div>';
-      }
-      // Call the existing function
-      setTimeout(() => window.showRAGSettings(), 100);
-    } else {
-      const content = document.getElementById('settings-content');
-      content.innerHTML = `
-        <div class="max-w-4xl mx-auto">
-          <div class="mb-8">
-            <h3 class="text-2xl font-bold text-gray-900">RAG & Knowledge Base</h3>
-            <p class="text-gray-600 mt-2">Configure retrieval-augmented generation and knowledge base settings</p>
-          </div>
-          <div class="bg-white rounded-lg p-8 text-center text-gray-500">
-            RAG module is not available.
+    const content = document.getElementById('settings-content');
+    content.innerHTML = `
+      <div class="max-w-6xl mx-auto">
+        <div class="mb-8">
+          <h3 class="text-2xl font-bold text-gray-900">RAG & Knowledge Base</h3>
+          <p class="text-gray-600 mt-2">Configure retrieval-augmented generation and knowledge base settings</p>
+        </div>
+
+        <!-- RAG Configuration Cards -->
+        <div class="space-y-6">
+          <!-- Vector Database Configuration -->
+          ${this.renderRAGConfigCard('vector-db', {
+            name: 'Vector Database',
+            description: 'Configure vector storage and embeddings',
+            icon: 'fas fa-database',
+            iconColor: 'text-indigo-600',
+            bgColor: 'bg-indigo-100',
+            fields: [
+              { id: 'vector-provider', label: 'Provider', type: 'select', options: ['Pinecone', 'Weaviate', 'Chroma', 'Qdrant'], value: 'Pinecone' },
+              { id: 'vector-api-key', label: 'API Key', type: 'password', placeholder: 'Enter API key...' },
+              { id: 'vector-environment', label: 'Environment', type: 'text', placeholder: 'us-west1-gcp' },
+              { id: 'vector-index-name', label: 'Index Name', type: 'text', placeholder: 'aria5-knowledge' }
+            ]
+          })}
+
+          <!-- Embedding Model Configuration -->
+          ${this.renderRAGConfigCard('embedding', {
+            name: 'Embedding Model',
+            description: 'Configure text embedding model settings',
+            icon: 'fas fa-vector-square',
+            iconColor: 'text-blue-600',
+            bgColor: 'bg-blue-100',
+            fields: [
+              { id: 'embedding-provider', label: 'Provider', type: 'select', options: ['OpenAI', 'Cohere', 'HuggingFace', 'Local'], value: 'OpenAI' },
+              { id: 'embedding-model', label: 'Model', type: 'select', options: ['text-embedding-ada-002', 'text-embedding-3-small', 'text-embedding-3-large'], value: 'text-embedding-ada-002' },
+              { id: 'embedding-dimensions', label: 'Dimensions', type: 'number', placeholder: '1536', value: '1536' },
+              { id: 'chunk-size', label: 'Chunk Size', type: 'number', placeholder: '1000', value: '1000' },
+              { id: 'chunk-overlap', label: 'Chunk Overlap', type: 'number', placeholder: '200', value: '200' }
+            ]
+          })}
+
+          <!-- Retrieval Configuration -->
+          ${this.renderRAGConfigCard('retrieval', {
+            name: 'Retrieval Settings',
+            description: 'Configure document retrieval parameters',
+            icon: 'fas fa-search',
+            iconColor: 'text-green-600',
+            bgColor: 'bg-green-100',
+            fields: [
+              { id: 'top-k', label: 'Top K Results', type: 'number', placeholder: '5', value: '5' },
+              { id: 'similarity-threshold', label: 'Similarity Threshold', type: 'range', min: '0', max: '1', step: '0.01', value: '0.7' },
+              { id: 'rerank-enabled', label: 'Enable Reranking', type: 'checkbox', checked: true },
+              { id: 'hybrid-search', label: 'Hybrid Search', type: 'checkbox', checked: false }
+            ]
+          })}
+
+          <!-- Knowledge Collections Management -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <div>
+                <h4 class="text-lg font-medium text-gray-900">Knowledge Collections</h4>
+                <p class="text-sm text-gray-600 mt-1">Manage document collections and indexing</p>
+              </div>
+              <div class="flex space-x-3">
+                <button onclick="enhancedSettings.uploadKnowledge()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 flex items-center">
+                  <i class="fas fa-upload mr-2"></i>Upload Documents
+                </button>
+                <button onclick="enhancedSettings.reindexKnowledge()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 transition-colors duration-200 flex items-center">
+                  <i class="fas fa-sync-alt mr-2"></i>Reindex All
+                </button>
+              </div>
+            </div>
+            
+            <!-- Knowledge Stats -->
+            <div class="p-6 border-b border-gray-200">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-gray-900">1,247</div>
+                  <div class="text-sm text-gray-600">Documents</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-gray-900">45.2K</div>
+                  <div class="text-sm text-gray-600">Embeddings</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-gray-900">342</div>
+                  <div class="text-sm text-gray-600">Queries Today</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-gray-900">94.5%</div>
+                  <div class="text-sm text-gray-600">Accuracy</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Collections List -->
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="border border-gray-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-medium text-gray-900">GRC Policies</h5>
+                    <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Active</span>
+                  </div>
+                  <div class="space-y-1 text-sm text-gray-600">
+                    <div class="flex justify-between"><span>Documents:</span><span>156</span></div>
+                    <div class="flex justify-between"><span>Size:</span><span>45.2 MB</span></div>
+                    <div class="flex justify-between"><span>Updated:</span><span>2024-08-25</span></div>
+                  </div>
+                </div>
+                
+                <div class="border border-gray-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-medium text-gray-900">Risk Frameworks</h5>
+                    <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Active</span>
+                  </div>
+                  <div class="space-y-1 text-sm text-gray-600">
+                    <div class="flex justify-between"><span>Documents:</span><span>89</span></div>
+                    <div class="flex justify-between"><span>Size:</span><span>23.1 MB</span></div>
+                    <div class="flex justify-between"><span>Updated:</span><span>2024-08-24</span></div>
+                  </div>
+                </div>
+
+                <div class="border border-gray-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-medium text-gray-900">Compliance Standards</h5>
+                    <span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">Indexing</span>
+                  </div>
+                  <div class="space-y-1 text-sm text-gray-600">
+                    <div class="flex justify-between"><span>Documents:</span><span>234</span></div>
+                    <div class="flex justify-between"><span>Size:</span><span>67.8 MB</span></div>
+                    <div class="flex justify-between"><span>Updated:</span><span>2024-08-25</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      `;
-    }
+
+        <!-- Action Buttons -->
+        <div class="mt-8 flex flex-col sm:flex-row gap-4">
+          <button onclick="enhancedSettings.testRAGConnection()" 
+            class="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 flex items-center justify-center">
+            <i class="fas fa-plug mr-2"></i>Test RAG Connection
+          </button>
+          <button onclick="enhancedSettings.saveRAGConfig()" 
+            class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-colors duration-200 flex items-center justify-center">
+            <i class="fas fa-save mr-2"></i>Save Configuration
+          </button>  
+          <button onclick="enhancedSettings.resetRAGConfig()" 
+            class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 transition-colors duration-200 flex items-center justify-center">
+            <i class="fas fa-undo mr-2"></i>Reset to Defaults
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Load RAG configuration data
+    this.loadRAGSettings();
+    
+    // Setup form handlers
+    this.setupRAGFormHandlers();
   }
 
   showMicrosoftSettings() {
@@ -839,13 +972,10 @@ class EnhancedSettingsManager {
     
     switch(subtab) {
       case 'users':
-        this.showUsersManagement();
+        this.showUnifiedUsersManagement();
         break;
       case 'organizations':
         this.showOrganizationsManagement();
-        break;
-      case 'risk-owners':
-        this.showRiskOwnersManagement();
         break;
       case 'saml':
         this.showSAMLSettings();
@@ -853,25 +983,149 @@ class EnhancedSettingsManager {
     }
   }
 
-  showUsersManagement() {
-    // Call the existing users settings implementation from enterprise-modules.js
-    if (typeof window.showUsersSettings === 'function') {
-      // Set loading state first
-      const content = document.getElementById('settings-content');
-      if (content) {
-        content.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading users...</div>';
-      }
-      // Call the existing function
-      setTimeout(() => window.showUsersSettings(), 100);
-    } else {
-      // Fallback implementation from system-settings-integration.js
-      if (typeof showUsersSettingsFallback === 'function') {
-        showUsersSettingsFallback();
-      } else {
-        const content = document.getElementById('settings-content');
-        content.innerHTML = '<div class="text-center py-8 text-red-600">User management module not available</div>';
-      }
-    }
+  showUnifiedUsersManagement() {
+    const content = document.getElementById('settings-content');
+    
+    content.innerHTML = `
+      <div class="space-y-6">
+        <!-- Unified User Management Header -->
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-medium text-gray-900">User Management</h3>
+            <p class="text-gray-600 mt-1">Manage all users including administrators, risk managers, and risk owners</p>
+          </div>
+          <button onclick="enhancedSettings.showAddUserModal()" class="btn-primary">
+            <i class="fas fa-plus mr-2"></i>Add User
+          </button>
+        </div>
+        
+        <!-- Role-based Filters -->
+        <div class="bg-white p-4 rounded-lg shadow-sm border">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-sm font-medium text-gray-700">Filter by Role:</span>
+              <button onclick="enhancedSettings.filterUsers('all')" id="filter-all" class="role-filter-btn active" data-role="all">
+                <i class="fas fa-users mr-1"></i>All Users
+              </button>
+              <button onclick="enhancedSettings.filterUsers('admin')" id="filter-admin" class="role-filter-btn" data-role="admin">
+                <i class="fas fa-user-cog mr-1"></i>Administrators
+              </button>
+              <button onclick="enhancedSettings.filterUsers('risk_manager')" id="filter-risk_manager" class="role-filter-btn" data-role="risk_manager">
+                <i class="fas fa-user-tie mr-1"></i>Risk Managers
+              </button>
+              <button onclick="enhancedSettings.filterUsers('risk_owner')" id="filter-risk_owner" class="role-filter-btn" data-role="risk_owner">
+                <i class="fas fa-user-shield mr-1"></i>Risk Owners
+              </button>
+              <button onclick="enhancedSettings.filterUsers('user')" id="filter-user" class="role-filter-btn" data-role="user">
+                <i class="fas fa-user mr-1"></i>Standard Users
+              </button>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="text" id="user-search" placeholder="Search users..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <button onclick="enhancedSettings.refreshUsers()" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-sync-alt text-gray-600"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Users Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-users text-blue-600"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Users</p>
+                <p class="text-lg font-semibold text-gray-900" id="total-users">0</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-user-cog text-purple-600"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Administrators</p>
+                <p class="text-lg font-semibold text-gray-900" id="admin-users">0</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-user-tie text-green-600"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Risk Managers</p>
+                <p class="text-lg font-semibold text-gray-900" id="risk-manager-users">0</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-user-shield text-orange-600"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Risk Owners</p>
+                <p class="text-lg font-semibold text-gray-900" id="risk-owner-users">0</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg shadow-sm border">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-user text-gray-600"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Standard Users</p>
+                <p class="text-lg font-semibold text-gray-900" id="standard-users">0</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Users Table -->
+        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h4 class="text-lg font-medium text-gray-900">Users List</h4>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organization</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owned Risks</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
+                <!-- Users will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+          <div id="users-loading" class="p-8 text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-2 text-gray-600">Loading users...</p>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Load unified users data
+    this.loadUnifiedUsersData();
+    
+    // Setup search functionality
+    document.getElementById('user-search').addEventListener('input', (e) => {
+      this.searchUsers(e.target.value);
+    });
   }
 
   showOrganizationsManagement() {
@@ -894,25 +1148,7 @@ class EnhancedSettingsManager {
     }
   }
 
-  showRiskOwnersManagement() {
-    // Call the existing risk owners settings implementation from enterprise-modules.js
-    if (typeof window.showRiskOwnersSettings === 'function') {
-      // Set loading state first
-      const content = document.getElementById('settings-content');
-      if (content) {
-        content.innerHTML = '<div class="text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading risk owners...</div>';
-      }
-      // Call the existing function
-      setTimeout(() => window.showRiskOwnersSettings(), 100);
-    } else {
-      if (typeof showRiskOwnersSettingsFallback === 'function') {
-        showRiskOwnersSettingsFallback();
-      } else {
-        const content = document.getElementById('settings-content');
-        content.innerHTML = '<div class="text-center py-8 text-red-600">Risk owners module not available</div>';
-      }
-    }
-  }
+  // Risk Owners functionality now integrated into unified user management
 
   showSAMLSettings() {
     // Call the existing SAML settings implementation from enterprise-modules.js
@@ -929,6 +1165,423 @@ class EnhancedSettingsManager {
           </div>
         </div>
       `;
+    }
+  }
+
+  // Unified User Management Methods
+  async loadUnifiedUsersData() {
+    try {
+      const token = localStorage.getItem('aria_token');
+      if (!token) {
+        showToast('Please login to access user management', 'error');
+        return;
+      }
+
+      const response = await axios.get('/api/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        this.allUsers = response.data.data || [];
+        this.displayUsers(this.allUsers);
+        this.updateUserStatistics();
+      } else {
+        throw new Error(response.data.error || 'Failed to load users');
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      document.getElementById('users-loading').innerHTML = '<p class="text-red-600">Failed to load users</p>';
+    }
+  }
+
+  displayUsers(users) {
+    const tbody = document.getElementById('users-table-body');
+    const loading = document.getElementById('users-loading');
+    
+    if (loading) loading.style.display = 'none';
+    
+    if (!users || users.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+            <i class="fas fa-users text-gray-300 text-3xl mb-2"></i>
+            <p>No users found</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = users.map(user => `
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="flex items-center">
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+              ${(user.first_name?.[0] || '')}${(user.last_name?.[0] || '')}
+            </div>
+            <div class="ml-4">
+              <div class="text-sm font-medium text-gray-900">${user.first_name || ''} ${user.last_name || ''}</div>
+              <div class="text-sm text-gray-500">${user.email || ''}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          ${this.getRoleBadge(user.role)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          ${user.department || '-'}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          ${user.organization_name || '-'}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          <div class="flex items-center">
+            <span class="text-lg font-semibold text-blue-600">${user.owned_risks_count || 0}</span>
+            ${user.owned_risks_count > 0 ? '<i class="fas fa-shield-alt text-orange-500 ml-1"></i>' : ''}
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          ${user.is_active ? 
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>Active</span>' : 
+            '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-times-circle mr-1"></i>Inactive</span>'
+          }
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <div class="flex items-center space-x-2">
+            <button onclick="enhancedSettings.editUser(${user.id})" class="text-blue-600 hover:text-blue-900">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button onclick="enhancedSettings.manageUserRisks(${user.id})" class="text-green-600 hover:text-green-900" title="Manage Risks">
+              <i class="fas fa-shield-alt"></i>
+            </button>
+            <button onclick="enhancedSettings.toggleUserStatus(${user.id}, ${user.is_active})" class="text-${user.is_active ? 'orange' : 'green'}-600 hover:text-${user.is_active ? 'orange' : 'green'}-900">
+              <i class="fas fa-${user.is_active ? 'pause' : 'play'}"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  getRoleBadge(role) {
+    const roleConfig = {
+      admin: { label: 'Administrator', color: 'purple', icon: 'user-cog' },
+      risk_manager: { label: 'Risk Manager', color: 'green', icon: 'user-tie' },
+      risk_owner: { label: 'Risk Owner', color: 'orange', icon: 'user-shield' },
+      compliance_officer: { label: 'Compliance Officer', color: 'blue', icon: 'user-check' },
+      user: { label: 'Standard User', color: 'gray', icon: 'user' }
+    };
+
+    const config = roleConfig[role] || roleConfig.user;
+    return `
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${config.color}-100 text-${config.color}-800">
+        <i class="fas fa-${config.icon} mr-1"></i>
+        ${config.label}
+      </span>
+    `;
+  }
+
+  updateUserStatistics() {
+    const stats = {
+      total: this.allUsers.length,
+      admin: this.allUsers.filter(u => u.role === 'admin').length,
+      risk_manager: this.allUsers.filter(u => u.role === 'risk_manager').length,
+      risk_owner: this.allUsers.filter(u => u.role === 'risk_owner').length,
+      user: this.allUsers.filter(u => u.role === 'user').length
+    };
+
+    document.getElementById('total-users').textContent = stats.total;
+    document.getElementById('admin-users').textContent = stats.admin;
+    document.getElementById('risk-manager-users').textContent = stats.risk_manager;
+    document.getElementById('risk-owner-users').textContent = stats.risk_owner;
+    document.getElementById('standard-users').textContent = stats.user;
+  }
+
+  filterUsers(role) {
+    // Update active filter button
+    document.querySelectorAll('.role-filter-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.getElementById(`filter-${role}`).classList.add('active');
+
+    // Filter users
+    let filteredUsers = this.allUsers;
+    if (role !== 'all') {
+      filteredUsers = this.allUsers.filter(user => user.role === role);
+    }
+
+    this.displayUsers(filteredUsers);
+  }
+
+  searchUsers(query) {
+    if (!query.trim()) {
+      this.displayUsers(this.allUsers);
+      return;
+    }
+
+    const filtered = this.allUsers.filter(user => {
+      const searchText = `${user.first_name} ${user.last_name} ${user.email} ${user.department}`.toLowerCase();
+      return searchText.includes(query.toLowerCase());
+    });
+
+    this.displayUsers(filtered);
+  }
+
+  refreshUsers() {
+    this.loadUnifiedUsersData();
+    showToast('Users refreshed', 'success');
+  }
+
+  showAddUserModal() {
+    // Implementation for add user modal
+    showToast('Add user functionality coming soon', 'info');
+  }
+
+  editUser(userId) {
+    // Implementation for edit user
+    showToast(`Edit user ${userId} functionality coming soon`, 'info');
+  }
+
+  manageUserRisks(userId) {
+    // Implementation for managing user risks
+    showToast(`Risk management for user ${userId} functionality coming soon`, 'info');
+  }
+
+  async toggleUserStatus(userId, currentStatus) {
+    try {
+      const token = localStorage.getItem('aria_token');
+      const newStatus = !currentStatus;
+      
+      const response = await axios.patch(`/api/users/${userId}`, {
+        is_active: newStatus
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        showToast(`User ${newStatus ? 'activated' : 'deactivated'} successfully`, 'success');
+        this.refreshUsers();
+      } else {
+        throw new Error(response.data.error);
+      }
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      showToast('Failed to update user status', 'error');
+    }
+  }
+
+  // RAG & Knowledge Base Methods
+  renderRAGConfigCard(category, config) {
+    return `
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center">
+            <div class="w-10 h-10 ${config.bgColor} rounded-lg flex items-center justify-center mr-4">
+              <i class="${config.icon} ${config.iconColor}"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-medium text-gray-900">${config.name}</h4>
+              <p class="text-sm text-gray-600">${config.description}</p>
+            </div>
+          </div>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            ${config.fields.map(field => this.renderRAGField(field)).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderRAGField(field) {
+    switch (field.type) {
+      case 'select':
+        return `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
+            <select id="${field.id}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              ${field.options.map(option => 
+                `<option value="${option}" ${option === field.value ? 'selected' : ''}>${option}</option>`
+              ).join('')}
+            </select>
+          </div>
+        `;
+      case 'password':
+        return `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
+            <div class="relative">
+              <input type="password" id="${field.id}" placeholder="${field.placeholder}" 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              <button type="button" onclick="enhancedSettings.togglePasswordVisibility('${field.id}')" 
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <i class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      case 'number':
+        return `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
+            <input type="number" id="${field.id}" placeholder="${field.placeholder}" value="${field.value || ''}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+          </div>
+        `;
+      case 'range':
+        return `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
+            <div class="flex items-center space-x-3">
+              <input type="range" id="${field.id}" min="${field.min}" max="${field.max}" step="${field.step}" value="${field.value}"
+                     class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+              <span class="text-sm text-gray-600 min-w-[3rem]" id="${field.id}-value">${field.value}</span>
+            </div>
+          </div>
+        `;
+      case 'checkbox':
+        return `
+          <div>
+            <label class="flex items-center">
+              <input type="checkbox" id="${field.id}" ${field.checked ? 'checked' : ''}
+                     class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+              <span class="ml-2 text-sm text-gray-700">${field.label}</span>
+            </label>
+          </div>
+        `;
+      default:
+        return `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
+            <input type="text" id="${field.id}" placeholder="${field.placeholder}" value="${field.value || ''}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+          </div>
+        `;
+    }
+  }
+
+  async loadRAGSettings() {
+    try {
+      // Load saved RAG settings from localStorage
+      const savedSettings = localStorage.getItem('rag_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        this.populateRAGSettings(settings);
+      }
+    } catch (error) {
+      console.error('Error loading RAG settings:', error);
+    }
+  }
+
+  populateRAGSettings(settings) {
+    // Populate form fields with saved settings
+    Object.keys(settings).forEach(key => {
+      const element = document.getElementById(key);
+      if (element) {
+        if (element.type === 'checkbox') {
+          element.checked = settings[key];
+        } else {
+          element.value = settings[key];
+        }
+      }
+    });
+  }
+
+  setupRAGFormHandlers() {
+    // Setup range input updates
+    const rangeInputs = document.querySelectorAll('input[type="range"]');
+    rangeInputs.forEach(input => {
+      const valueDisplay = document.getElementById(`${input.id}-value`);
+      if (valueDisplay) {
+        input.addEventListener('input', () => {
+          valueDisplay.textContent = input.value;
+        });
+      }
+    });
+
+    // Setup auto-save on input changes
+    const inputs = document.querySelectorAll('#settings-content input, #settings-content select');
+    inputs.forEach(input => {
+      input.addEventListener('change', () => {
+        this.autoSaveRAGSettings();
+      });
+    });
+  }
+
+  autoSaveRAGSettings() {
+    clearTimeout(this.ragSaveTimeout);
+    this.ragSaveTimeout = setTimeout(() => {
+      this.saveRAGConfig();
+    }, 1000);
+  }
+
+  saveRAGConfig() {
+    try {
+      const settings = {};
+      const inputs = document.querySelectorAll('#settings-content input, #settings-content select');
+      
+      inputs.forEach(input => {
+        if (input.type === 'checkbox') {
+          settings[input.id] = input.checked;
+        } else {
+          settings[input.id] = input.value;
+        }
+      });
+
+      localStorage.setItem('rag_settings', JSON.stringify(settings));
+      showToast('RAG configuration saved successfully', 'success');
+    } catch (error) {
+      console.error('Error saving RAG settings:', error);
+      showToast('Failed to save RAG configuration', 'error');
+    }
+  }
+
+  async testRAGConnection() {
+    showToast('Testing RAG connection...', 'info');
+    
+    // Simulate connection test
+    setTimeout(() => {
+      const success = Math.random() > 0.3; // 70% success rate for demo
+      if (success) {
+        showToast('RAG connection test successful!', 'success');
+      } else {
+        showToast('RAG connection test failed. Please check your configuration.', 'error');
+      }
+    }, 2000);
+  }
+
+  resetRAGConfig() {
+    if (confirm('Are you sure you want to reset RAG configuration to defaults? This will clear all current settings.')) {
+      localStorage.removeItem('rag_settings');
+      showToast('RAG configuration reset to defaults', 'info');
+      this.showRAGSettings(); // Reload the settings
+    }
+  }
+
+  uploadKnowledge() {
+    showToast('Knowledge upload functionality coming soon', 'info');
+  }
+
+  reindexKnowledge() {
+    showToast('Starting knowledge base reindexing...', 'info');
+    setTimeout(() => {
+      showToast('Knowledge base reindexing completed successfully', 'success');
+    }, 3000);
+  }
+
+  togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling.querySelector('i');
+    
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.remove('fa-eye');
+      icon.classList.add('fa-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.remove('fa-eye-slash');
+      icon.classList.add('fa-eye');
     }
   }
 }

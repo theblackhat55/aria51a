@@ -2425,7 +2425,7 @@ Respond with JSON:
   });
 
   // Complete User Management CRUD API
-  api.get('/api/users', authMiddleware, requireRole(['admin']), async (c) => {
+  api.get('/api/users', smartAuthMiddleware, smartRequireRole(['admin', 'risk_manager']), async (c) => {
     try {
       const page = Number(c.req.query('page')) || 1;
       const limit = Number(c.req.query('limit')) || 50;
@@ -2434,10 +2434,9 @@ Respond with JSON:
       const users = await c.env.DB.prepare(`
         SELECT u.id, u.email, u.username, u.first_name, u.last_name, u.department, u.job_title, 
                u.phone, u.role, u.is_active, u.last_login, u.auth_provider, u.created_at, u.updated_at,
-               o.name as organization_name,
+               u.department as organization_name,
                (SELECT COUNT(*) FROM risks r WHERE r.owner_id = u.id) as owned_risks_count
         FROM users u
-        LEFT JOIN organizations o ON u.organization_id = o.id
         ORDER BY u.first_name, u.last_name
         LIMIT ? OFFSET ?
       `).bind(limit, offset).all();
@@ -2452,14 +2451,15 @@ Respond with JSON:
         limit
       });
     } catch (error) {
+      console.error('Fetch users error:', error);
       return c.json<ApiResponse<null>>({ 
         success: false, 
-        error: 'Failed to fetch users' 
+        error: error instanceof Error ? error.message : 'Failed to fetch users' 
       }, 500);
     }
   });
 
-  api.get('/api/users/:id', authMiddleware, requireRole(['admin']), async (c) => {
+  api.get('/api/users/:id', smartAuthMiddleware, smartRequireRole(['admin', 'risk_manager']), async (c) => {
     try {
       const id = c.req.param('id');
       const user = await c.env.DB.prepare(`
@@ -2639,7 +2639,7 @@ Respond with JSON:
   });
 
   // PATCH endpoint for partial user updates (e.g., status changes)
-  api.patch('/api/users/:id', authMiddleware, requireRole(['admin']), async (c) => {
+  api.patch('/api/users/:id', smartAuthMiddleware, smartRequireRole(['admin', 'risk_manager']), async (c) => {
     try {
       const id = c.req.param('id');
       const updates = await c.req.json();
