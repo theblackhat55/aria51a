@@ -3977,8 +3977,10 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
         INSERT INTO documents (
           document_id, file_name, original_file_name, file_path, file_size, mime_type, file_hash,
           uploaded_by, title, description, document_type, tags, version, visibility,
-          access_permissions, related_entity_type, related_entity_id, download_count, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)
+          access_permissions, related_entity_type, related_entity_id, status, download_count, is_active,
+          upload_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, 1,
+                  datetime('now'), datetime('now'), datetime('now'))
       `).bind(
         documentData.document_id, documentData.file_name, documentData.original_file_name, 
         documentData.file_path, documentData.file_size, documentData.mime_type, documentData.file_hash,
@@ -3991,36 +3993,37 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
       console.log(`📄 Document metadata saved to database with ID: ${result.meta.last_row_id}`);
 
       // Step 5: Index document for RAG (async, non-blocking)
-      console.log(`🔍 Starting RAG indexing for document: ${documentId}`);
-      try {
-        const { ragServer } = await import('./rag/rag-server.js');
-        await ragServer.initialize();
-        
-        // Create document object for RAG indexing
-        const documentForRAG = {
-          name: file.name,
-          content: await file.text() // Extract text content for indexing
-        };
-        
-        const ragResult = await ragServer.indexDocument(documentForRAG);
-        console.log(`✅ RAG indexing completed: ${ragResult.chunksCreated} chunks created`);
-        
-        // Store RAG indexing information
-        await c.env.DB.prepare(`
-          UPDATE documents 
-          SET rag_indexed = 1, rag_chunks = ?, rag_indexed_at = datetime('now')
-          WHERE document_id = ?
-        `).bind(ragResult.chunksCreated, documentId).run();
-        
-      } catch (ragError) {
-        console.warn(`⚠️ RAG indexing failed for document ${documentId}:`, ragError.message);
-        // Continue with successful upload even if RAG indexing fails
-        await c.env.DB.prepare(`
-          UPDATE documents 
-          SET rag_indexed = 0, rag_error = ?
-          WHERE document_id = ?
-        `).bind(ragError.message, documentId).run();
-      }
+      // TODO: Add RAG columns to database schema before enabling
+      // console.log(`🔍 Starting RAG indexing for document: ${documentId}`);
+      // try {
+      //   const { ragServer } = await import('./rag/rag-server.js');
+      //   await ragServer.initialize();
+      //   
+      //   // Create document object for RAG indexing
+      //   const documentForRAG = {
+      //     name: file.name,
+      //     content: await file.text() // Extract text content for indexing
+      //   };
+      //   
+      //   const ragResult = await ragServer.indexDocument(documentForRAG);
+      //   console.log(`✅ RAG indexing completed: ${ragResult.chunksCreated} chunks created`);
+      //   
+      //   // Store RAG indexing information (requires rag_indexed, rag_chunks, rag_indexed_at columns)
+      //   await c.env.DB.prepare(`
+      //     UPDATE documents 
+      //     SET rag_indexed = 1, rag_chunks = ?, rag_indexed_at = datetime('now')
+      //     WHERE document_id = ?
+      //   `).bind(ragResult.chunksCreated, documentId).run();
+      //   
+      // } catch (ragError) {
+      //   console.warn(`⚠️ RAG indexing failed for document ${documentId}:`, ragError.message);
+      //   // Continue with successful upload even if RAG indexing fails
+      //   await c.env.DB.prepare(`
+      //     UPDATE documents 
+      //     SET rag_indexed = 0, rag_error = ?
+      //     WHERE document_id = ?
+      //   `).bind(ragError.message, documentId).run();
+      // }
 
       return c.json<ApiResponse<any>>({ 
         success: true, 

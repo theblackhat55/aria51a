@@ -434,23 +434,26 @@ class DocumentManager {
       const file = fileInput.files[0];
       const tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
 
-      // In a real implementation, you would upload the file to R2 or similar storage
-      // For now, we'll simulate the upload with metadata
-      const documentData = {
-        file_name: file.name,
-        original_file_name: file.name,
-        file_size: file.size,
-        mime_type: file.type,
+      // Create FormData for actual file upload to R2 storage
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Add metadata as JSON string
+      const metadata = {
         title: title || file.name,
-        description,
-        document_type: type,
-        visibility,
-        tags
+        description: description || '',
+        document_type: type || 'other',
+        visibility: visibility || 'private',
+        tags: tags
       };
+      formData.append('metadata', JSON.stringify(metadata));
 
       const token = localStorage.getItem('aria_token');
-      const response = await axios.post('/api/documents', documentData, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.post('/api/documents/upload', formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       if (response.data.success) {
