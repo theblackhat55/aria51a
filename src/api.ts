@@ -3821,7 +3821,7 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
         SELECT d.*, u.first_name, u.last_name, u.email as uploader_email
         FROM documents d
         LEFT JOIN users u ON d.uploaded_by = u.id
-        WHERE d.is_active = 1
+        WHERE d.status = 'active'
       `;
       
       const params: any[] = [];
@@ -4187,7 +4187,7 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
 
       // Get document to check ownership
       const document = await c.env.DB.prepare(`
-        SELECT * FROM documents WHERE document_id = ? AND is_active = 1
+        SELECT * FROM documents WHERE id = ? AND status = 'active'
       `).bind(documentId).first();
 
       if (!document) {
