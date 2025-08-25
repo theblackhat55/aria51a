@@ -45,7 +45,7 @@ app.use('*', async (c, next) => {
   c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   // SECURITY FIX: Enhanced Content Security Policy with nonce support
-  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'sha256-5uXHBGgmyNX/SWq82GyPSgkBqRQCAgHqupId+6jQfKM=' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
+  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-5uXHBGgmyNX/SWq82GyPSgkBqRQCAgHqupId+6jQfKM=' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
 });
 
 // API routes - Clean Cloudflare-optimized implementation
