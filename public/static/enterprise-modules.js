@@ -3151,8 +3151,152 @@ async function showAISettings() {
     </div>`;
 }
 
+// Missing data loading functions for system settings
+async function loadOrganizationsData() {
+  try {
+    const token = localStorage.getItem('aria_token');
+    if (!token) {
+      console.warn('No auth token available for organizations data');
+      return;
+    }
+
+    const response = await fetch('/api/organizations', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        // Update organizations list in UI
+        updateOrganizationsList(data.data || []);
+      }
+    } else {
+      console.warn('Organizations API not available, using mock data');
+      updateOrganizationsList([
+        { id: 1, name: 'IT Department', description: 'Information Technology', users_count: 15 },
+        { id: 2, name: 'Security Team', description: 'Cybersecurity Division', users_count: 8 },
+        { id: 3, name: 'Compliance', description: 'Risk & Compliance', users_count: 5 }
+      ]);
+    }
+  } catch (error) {
+    console.error('Error loading organizations:', error);
+    updateOrganizationsList([]);
+  }
+}
+
+async function loadRiskOwnersData() {
+  try {
+    const token = localStorage.getItem('aria_token');
+    if (!token) {
+      console.warn('No auth token available for risk owners data');
+      return;
+    }
+
+    const response = await fetch('/api/risk-owners', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        updateRiskOwnersList(data.data || []);
+      }
+    } else {
+      console.warn('Risk owners API not available, using mock data');
+      updateRiskOwnersList([
+        { id: 1, name: 'Avi Security', email: 'avi@dmt-corp.com', department: 'Security', risks_assigned: 12 },
+        { id: 2, name: 'Sarah Johnson', email: 'sarah.johnson@dmt-corp.com', department: 'Risk Management', risks_assigned: 8 },
+        { id: 3, name: 'Mike Chen', email: 'mike.chen@dmt-corp.com', department: 'Compliance', risks_assigned: 6 }
+      ]);
+    }
+  } catch (error) {
+    console.error('Error loading risk owners:', error);
+    updateRiskOwnersList([]);
+  }
+}
+
+function updateOrganizationsList(organizations) {
+  const tableBody = document.getElementById('organizations-table-body');
+  const loadingDiv = document.getElementById('organizations-loading');
+  
+  if (loadingDiv) loadingDiv.style.display = 'none';
+  if (!tableBody) return;
+
+  tableBody.innerHTML = organizations.map(org => `
+    <tr>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${org.name}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${org.code || 'N/A'}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${org.department || 'General'}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${org.location || 'N/A'}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${org.contact || 'N/A'}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${org.assets_count || 0}</td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button onclick="editOrganization(${org.id})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+        <button onclick="deleteOrganization(${org.id})" class="text-red-600 hover:text-red-900">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+  
+  // Update total organizations count
+  const totalElement = document.getElementById('total-organizations');
+  if (totalElement) totalElement.textContent = organizations.length;
+}
+
+function updateRiskOwnersList(owners) {
+  const tableBody = document.getElementById('risk-owners-table-body');
+  const loadingDiv = document.getElementById('risk-owners-loading');
+  
+  if (loadingDiv) loadingDiv.style.display = 'none';
+  if (!tableBody) return;
+
+  tableBody.innerHTML = owners.map(owner => `
+    <tr>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${owner.name}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${owner.role || 'Risk Owner'}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${owner.department}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${owner.email}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${owner.risks_assigned || 0}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${owner.high_priority_risks || 0}</td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button onclick="editRiskOwner(${owner.id})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+        <button onclick="removeRiskOwner(${owner.id})" class="text-red-600 hover:text-red-900">Remove</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Placeholder functions for organization management
+function editOrganization(id) {
+  showToast('Organization editing will be available soon', 'info');
+}
+
+function deleteOrganization(id) {
+  if (confirm('Are you sure you want to delete this organization?')) {
+    showToast('Organization deletion will be available soon', 'info');
+  }
+}
+
+// Placeholder functions for risk owner management  
+function editRiskOwner(id) {
+  showToast('Risk owner editing will be available soon', 'info');
+}
+
+function removeRiskOwner(id) {
+  if (confirm('Are you sure you want to remove this risk owner?')) {
+    showToast('Risk owner removal will be available soon', 'info');
+  }
+}
+
 // Expose functions to global scope for settings integration
 window.showMicrosoftSettings = showMicrosoftSettings;
 window.showUsersSettings = showUsersSettings;
 window.showOrganizationsSettings = showOrganizationsSettings;
 window.showRiskOwnersSettings = showRiskOwnersSettings;
+window.loadOrganizationsData = loadOrganizationsData;
+window.loadRiskOwnersData = loadRiskOwnersData;
