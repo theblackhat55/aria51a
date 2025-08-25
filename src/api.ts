@@ -2432,10 +2432,13 @@ Respond with JSON:
       const offset = (page - 1) * limit;
 
       const users = await c.env.DB.prepare(`
-        SELECT id, email, username, first_name, last_name, department, job_title, 
-               phone, role, is_active, last_login, auth_provider, created_at, updated_at
-        FROM users
-        ORDER BY first_name, last_name
+        SELECT u.id, u.email, u.username, u.first_name, u.last_name, u.department, u.job_title, 
+               u.phone, u.role, u.is_active, u.last_login, u.auth_provider, u.created_at, u.updated_at,
+               o.name as organization_name,
+               (SELECT COUNT(*) FROM risks r WHERE r.owner_id = u.id) as owned_risks_count
+        FROM users u
+        LEFT JOIN organizations o ON u.organization_id = o.id
+        ORDER BY u.first_name, u.last_name
         LIMIT ? OFFSET ?
       `).bind(limit, offset).all();
 
@@ -2631,6 +2634,69 @@ Respond with JSON:
       return c.json<ApiResponse<null>>({ 
         success: false, 
         error: 'Failed to delete user' 
+      }, 500);
+    }
+  });
+
+  // PATCH endpoint for partial user updates (e.g., status changes)
+  api.patch('/api/users/:id', authMiddleware, requireRole(['admin']), async (c) => {
+    try {
+      const id = c.req.param('id');
+      const updates = await c.req.json();
+      const currentUser = c.get('user');
+
+      // Prevent modifying self in certain ways
+      if (currentUser.id.toString() === id && updates.hasOwnProperty('is_active') && !updates.is_active) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Cannot deactivate your own account' 
+        }, 400);
+      }
+
+      // Build dynamic update query
+      const updateFields = [];
+      const updateValues = [];
+      
+      const allowedFields = ['is_active', 'role', 'department', 'job_title'];
+      
+      for (const field of allowedFields) {
+        if (updates.hasOwnProperty(field)) {
+          updateFields.push(`${field} = ?`);
+          updateValues.push(updates[field]);
+        }
+      }
+
+      if (updateFields.length === 0) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'No valid fields to update' 
+        }, 400);
+      }
+
+      updateFields.push('updated_at = datetime(\'now\')');
+      updateValues.push(id);
+
+      const result = await c.env.DB.prepare(`
+        UPDATE users SET ${updateFields.join(', ')} WHERE id = ?
+      `).bind(...updateValues).run();
+
+      if (result.changes === 0) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'User not found' 
+        }, 404);
+      }
+
+      return c.json<ApiResponse<{updated: boolean}>>({ 
+        success: true, 
+        data: { updated: true },
+        message: 'User updated successfully' 
+      });
+    } catch (error) {
+      console.error('Patch user error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to update user' 
       }, 500);
     }
   });

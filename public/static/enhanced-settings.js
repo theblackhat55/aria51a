@@ -242,66 +242,11 @@ class EnhancedSettingsManager {
       <div class="max-w-4xl mx-auto">
         <div class="mb-8">
           <h3 class="text-2xl font-bold text-gray-900">AI Provider Configuration</h3>
-          <p class="text-gray-600 mt-2">Configure your AI provider preferences. API keys are managed securely by administrators.</p>
-          <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div class="flex items-center">
-              <i class="fas fa-shield-alt text-green-600 mr-2"></i>
-              <span class="text-green-800 font-medium">Secure Configuration</span>
-            </div>
-            <p class="text-green-700 text-sm mt-1">API keys are stored securely on the server. You can only configure provider preferences and model settings.</p>
-          </div>
+          <p class="text-gray-600 mt-2">Configure your AI providers for ARIA assistant and risk analysis</p>
         </div>
 
         <!-- AI Provider Cards -->
         <div class="space-y-6">
-          <!-- API Key Management Section -->
-          <div class="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-6 mb-6">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <i class="fas fa-key text-blue-600 text-xl"></i>
-                </div>
-                <div>
-                  <h4 class="text-lg font-semibold text-gray-900">Personal API Key Management</h4>
-                  <p class="text-sm text-gray-600">Manage your personal AI provider API keys securely</p>
-                </div>
-              </div>
-              <button onclick="secureKeyManager.showKeyManagementDialog()" 
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
-                <i class="fas fa-cog mr-2"></i>Manage Keys
-              </button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div id="openai-key-status" class="p-3 bg-white rounded-lg border border-gray-200">
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium text-gray-700">OpenAI</span>
-                  <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 rounded-full bg-gray-400"></div>
-                    <span class="text-xs text-gray-500">Not Set</span>
-                  </div>
-                </div>
-              </div>
-              <div id="gemini-key-status" class="p-3 bg-white rounded-lg border border-gray-200">
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium text-gray-700">Gemini</span>
-                  <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 rounded-full bg-gray-400"></div>
-                    <span class="text-xs text-gray-500">Not Set</span>
-                  </div>
-                </div>
-              </div>
-              <div id="anthropic-key-status" class="p-3 bg-white rounded-lg border border-gray-200">
-                <div class="flex items-center justify-between">
-                  <span class="text-sm font-medium text-gray-700">Anthropic</span>
-                  <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 rounded-full bg-gray-400"></div>
-                    <span class="text-xs text-gray-500">Not Set</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- OpenAI Configuration -->
           ${this.renderAIProviderCard('openai', {
             name: 'OpenAI GPT-4',
@@ -309,14 +254,10 @@ class EnhancedSettingsManager {
             icon: 'fas fa-openai',
             iconColor: 'text-green-600',
             bgColor: 'bg-green-100',
-            enabled: aiSettings.openai?.enabled || false,
-            hasKey: aiSettings.openai?.hasKey || false,
-            priority: aiSettings.openai?.priority || 1,
-            model: aiSettings.openai?.model || 'gpt-4o',
-            maxTokens: aiSettings.openai?.maxTokens || 1500,
-            temperature: aiSettings.openai?.temperature || 0.7,
+            settings: aiSettings.openai,
             models: ['gpt-4o', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo'],
-            helpUrl: 'https://platform.openai.com/api-keys'
+            helpUrl: 'https://platform.openai.com/api-keys',
+            keyPlaceholder: 'sk-proj-...'
           })}
 
           <!-- Gemini Configuration -->
@@ -326,14 +267,10 @@ class EnhancedSettingsManager {
             icon: 'fab fa-google',
             iconColor: 'text-blue-600',
             bgColor: 'bg-blue-100',
-            enabled: aiSettings.gemini?.enabled || false,
-            hasKey: aiSettings.gemini?.hasKey || false,
-            priority: aiSettings.gemini?.priority || 2,
-            model: aiSettings.gemini?.model || 'gemini-pro',
-            maxTokens: aiSettings.gemini?.maxTokens || 1500,
-            temperature: aiSettings.gemini?.temperature || 0.7,
+            settings: aiSettings.gemini,
             models: ['gemini-pro', 'gemini-pro-vision', 'gemini-1.5-pro', 'gemini-1.5-flash'],
-            helpUrl: 'https://aistudio.google.com/app/apikey'
+            helpUrl: 'https://aistudio.google.com/app/apikey',
+            keyPlaceholder: 'AIza...'
           })}
 
           <!-- Anthropic Configuration -->
@@ -343,35 +280,14 @@ class EnhancedSettingsManager {
             icon: 'fas fa-microchip',
             iconColor: 'text-purple-600',
             bgColor: 'bg-purple-100',
-            enabled: aiSettings.anthropic?.enabled || false,
-            hasKey: aiSettings.anthropic?.hasKey || false,
-            priority: aiSettings.anthropic?.priority || 3,
-            model: aiSettings.anthropic?.model || 'claude-3-5-sonnet-20241022',
-            maxTokens: aiSettings.anthropic?.maxTokens || 1500,
-            temperature: aiSettings.anthropic?.temperature || 0.7,
+            settings: aiSettings.anthropic,
             models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
-            helpUrl: 'https://console.anthropic.com/settings/keys'
+            helpUrl: 'https://console.anthropic.com/settings/keys',
+            keyPlaceholder: 'sk-ant-...'
           })}
 
-          <!-- Cloudflare Configuration -->
-          ${this.renderAIProviderCard('cloudflare', {
-            name: 'Cloudflare Llama 3.1',
-            description: 'Free fallback provider when no API keys configured',
-            icon: 'fas fa-cloud',
-            iconColor: 'text-orange-600',
-            bgColor: 'bg-orange-100',
-            enabled: true, // Always enabled as fallback
-            hasKey: true, // Built-in, no key needed
-            priority: aiSettings.cloudflare?.priority || 4,
-            model: '@cf/meta/llama-3.1-8b-instruct',
-            maxTokens: 1000, // Cloudflare limit
-            temperature: 0.7,
-            models: ['@cf/meta/llama-3.1-8b-instruct'],
-            helpUrl: '#', // No setup needed
-            isBuiltIn: true // Special flag for built-in provider
-          })}
-
-          <!-- Local/Custom LLM removed for security -->
+          <!-- Local/Custom LLM Configuration -->
+          ${this.renderLocalLLMCard(aiSettings.local)}
         </div>
 
         <!-- Action Buttons -->
@@ -390,17 +306,11 @@ class EnhancedSettingsManager {
 
     this.setupAutoSave();
     this.setupValidation();
-    
-    // Initialize secure key manager and update key status
-    if (typeof secureKeyManager !== 'undefined') {
-      this.updateKeyStatusDisplay();
-    }
   }
 
   renderAIProviderCard(provider, config) {
-    const settings = config.settings || config; // Use config directly for new secure format
-    const isEnabled = settings.enabled || false;
-    const hasKey = settings.hasKey || false; // Check if API key is configured
+    const settings = config.settings || {};
+    const isEnabled = settings.priority > 0;
     
     return `
       <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -425,36 +335,43 @@ class EnhancedSettingsManager {
                 <option value="2" ${settings.priority === 2 ? 'selected' : ''}>2nd</option>
                 <option value="3" ${settings.priority === 3 ? 'selected' : ''}>3rd</option>
                 <option value="4" ${settings.priority === 4 ? 'selected' : ''}>4th</option>
-                <option value="0" ${settings.priority === 0 || !settings.enabled ? 'selected' : ''}>Disabled</option>
+                <option value="0" ${settings.priority === 0 ? 'selected' : ''}>Disabled</option>
               </select>
             </div>
             <div class="flex items-center">
-              <div class="w-3 h-3 rounded-full ${hasKey ? 'bg-green-400' : 'bg-red-400'} mr-2"></div>
-              <span class="text-sm text-gray-600">${hasKey ? 'Available' : 'Not Configured'}</span>
+              <div class="w-3 h-3 rounded-full ${isEnabled ? 'bg-green-400' : 'bg-red-400'} mr-2"></div>
+              <span class="text-sm text-gray-600">${isEnabled ? 'Enabled' : 'Disabled'}</span>
             </div>
           </div>
         </div>
 
         <!-- Configuration Fields -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Server Status -->
+          <!-- API Key -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Server Configuration</label>
-            <div class="px-4 py-3 border border-gray-200 rounded-lg bg-gray-50">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 rounded-full ${hasKey ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}"></div>
-                  <span class="text-sm font-medium">${hasKey ? 'Available' : 'Not Configured'}</span>
-                </div>
-                <i class="fas fa-server text-gray-400"></i>
-              </div>
-              <p class="text-xs text-gray-500 mt-2">
-                ${config.isBuiltIn ? 
-                  'Built-in provider - No API key required' : 
-                  (hasKey ? 'API key configured by administrator' : 'Contact administrator to configure API key')
-                }
-              </p>
+            <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+            <div class="relative">
+              <input type="password" 
+                id="${provider}-api-key" 
+                placeholder="${config.keyPlaceholder}" 
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 auto-save-field pr-10" 
+                value="${settings.apiKey || ''}"
+                data-provider="${provider}">
+              <button type="button" 
+                onclick="enhancedSettings.togglePasswordVisibility('${provider}-api-key')"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <i class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+              </button>
             </div>
+            <div class="mt-2 flex items-start space-x-2">
+              <div id="${provider}-api-key-validation" class="hidden flex items-center space-x-1">
+                <i class="fas fa-exclamation-triangle text-red-500 text-sm"></i>
+                <span class="text-sm text-red-600"></span>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              Get your API key from <a href="${config.helpUrl}" target="_blank" class="text-blue-600 hover:underline">${config.name} Console</a>
+            </p>
           </div>
 
           <!-- Model Selection -->
@@ -464,13 +381,13 @@ class EnhancedSettingsManager {
               <select id="${provider}-model" 
                 class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent auto-save-field"
                 data-provider="${provider}">
-                ${config.models?.map(model => 
+                ${config.models.map(model => 
                   `<option value="${model}" ${settings.model === model ? 'selected' : ''}>${model}</option>`
-                ).join('') || ''}
+                ).join('')}
               </select>
               <button onclick="enhancedSettings.fetchModels('${provider}')" 
                 class="px-4 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 focus:ring-2 focus:ring-blue-500 transition-colors duration-200" 
-                title="Refresh models">
+                title="Fetch latest models">
                 <i class="fas fa-sync-alt"></i>
               </button>
             </div>
@@ -507,14 +424,6 @@ class EnhancedSettingsManager {
                   <span>Focused</span>
                   <span id="${provider}-temp-value">${settings.temperature || 0.7}</span>
                   <span>Creative</span>
-                </div>
-              </div>
-            </div>
-            <div class="mt-4">
-              <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div class="flex items-center">
-                  <i class="fas fa-info-circle text-blue-600 mr-2"></i>
-                  <span class="text-blue-800 text-sm">These settings control your preferences only. API keys are managed securely by administrators.</span>
                 </div>
               </div>
             </div>
@@ -600,38 +509,20 @@ class EnhancedSettingsManager {
 
   async loadAISettings() {
     try {
-      const token = localStorage.getItem('aria_token');
-      if (!token) {
-        console.log('No auth token, using default settings');
-        return this.getDefaultAISettings();
+      let settings = localStorage.getItem('dmt_ai_settings');
+      if (!settings) {
+        settings = localStorage.getItem('ai_settings');
       }
-
-      const response = await fetch('/api/ai/config', {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        console.error('Failed to load AI settings from server');
-        return this.getDefaultAISettings();
-      }
-
-      const result = await response.json();
-      return result.success ? result.data : this.getDefaultAISettings();
+      return settings ? JSON.parse(settings) : {
+        openai: { priority: 1, apiKey: '', model: 'gpt-4o', maxTokens: 1500, temperature: 0.7 },
+        gemini: { priority: 2, apiKey: '', model: 'gemini-pro', maxTokens: 1500, temperature: 0.7 },
+        anthropic: { priority: 3, apiKey: '', model: 'claude-3-5-sonnet-20241022', maxTokens: 1500, temperature: 0.7 },
+        local: { priority: 0, endpoint: '', model: '', apiKey: '', maxTokens: 1500, temperature: 0.7 }
+      };
     } catch (error) {
       console.error('Error loading AI settings:', error);
-      return this.getDefaultAISettings();
+      return {};
     }
-  }
-
-  getDefaultAISettings() {
-    return {
-      openai: { enabled: false, priority: 1, model: 'gpt-4o', maxTokens: 1500, temperature: 0.7 },
-      gemini: { enabled: false, priority: 2, model: 'gemini-pro', maxTokens: 1500, temperature: 0.7 },
-      anthropic: { enabled: false, priority: 3, model: 'claude-3-5-sonnet-20241022', maxTokens: 1500, temperature: 0.7 }
-    };
   }
 
   setupAutoSave() {
@@ -697,60 +588,44 @@ class EnhancedSettingsManager {
   }
 
   async saveAISettings() {
-    try {
-      const providerConfigs = {
-        openai: {
-          priority: parseInt(document.getElementById('openai-priority')?.value || 0),
-          model: document.getElementById('openai-model')?.value || 'gpt-4o',
-          maxTokens: parseInt(document.getElementById('openai-max-tokens')?.value || 1500),
-          temperature: parseFloat(document.getElementById('openai-temperature')?.value || 0.7)
-        },
-        gemini: {
-          priority: parseInt(document.getElementById('gemini-priority')?.value || 0),
-          model: document.getElementById('gemini-model')?.value || 'gemini-pro',
-          maxTokens: parseInt(document.getElementById('gemini-max-tokens')?.value || 1500),
-          temperature: parseFloat(document.getElementById('gemini-temperature')?.value || 0.7)
-        },
-        anthropic: {
-          priority: parseInt(document.getElementById('anthropic-priority')?.value || 0),
-          model: document.getElementById('anthropic-model')?.value || 'claude-3-5-sonnet-20241022',
-          maxTokens: parseInt(document.getElementById('anthropic-max-tokens')?.value || 1500),
-          temperature: parseFloat(document.getElementById('anthropic-temperature')?.value || 0.7)
-        }
-      };
-
-      const token = localStorage.getItem('aria_token');
-      if (!token) {
-        throw new Error('Authentication required');
+    const settings = {
+      openai: {
+        priority: parseInt(document.getElementById('openai-priority')?.value || 0),
+        apiKey: document.getElementById('openai-api-key')?.value || '',
+        model: document.getElementById('openai-model')?.value || 'gpt-4o',
+        maxTokens: parseInt(document.getElementById('openai-max-tokens')?.value || 1500),
+        temperature: parseFloat(document.getElementById('openai-temperature')?.value || 0.7)
+      },
+      gemini: {
+        priority: parseInt(document.getElementById('gemini-priority')?.value || 0),
+        apiKey: document.getElementById('gemini-api-key')?.value || '',
+        model: document.getElementById('gemini-model')?.value || 'gemini-pro',
+        maxTokens: parseInt(document.getElementById('gemini-max-tokens')?.value || 1500),
+        temperature: parseFloat(document.getElementById('gemini-temperature')?.value || 0.7)
+      },
+      anthropic: {
+        priority: parseInt(document.getElementById('anthropic-priority')?.value || 0),
+        apiKey: document.getElementById('anthropic-api-key')?.value || '',
+        model: document.getElementById('anthropic-model')?.value || 'claude-3-5-sonnet-20241022',
+        maxTokens: parseInt(document.getElementById('anthropic-max-tokens')?.value || 1500),
+        temperature: parseFloat(document.getElementById('anthropic-temperature')?.value || 0.7)
+      },
+      local: {
+        priority: parseInt(document.getElementById('local-priority')?.value || 0),
+        endpoint: document.getElementById('local-endpoint')?.value || '',
+        model: document.getElementById('local-model')?.value || '',
+        apiKey: document.getElementById('local-api-key')?.value || '',
+        maxTokens: parseInt(document.getElementById('local-max-tokens')?.value || 1500),
+        temperature: parseFloat(document.getElementById('local-temperature')?.value || 0.7)
       }
-
-      const response = await fetch('/api/ai/config', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ providerConfigs })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save AI settings');
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || 'Save failed');
-      }
-
-      // Update ARIA5 provider display
-      if (typeof updateARIAProviderDisplay === 'function') {
-        updateARIAProviderDisplay();
-      }
-
-      console.log('AI settings saved successfully');
-    } catch (error) {
-      console.error('Error saving AI settings:', error);
-      throw error;
+    };
+    
+    localStorage.setItem('dmt_ai_settings', JSON.stringify(settings));
+    localStorage.setItem('ai_settings', JSON.stringify(settings));
+    
+    // Update ARIA provider display
+    if (typeof updateARIAProviderDisplay === 'function') {
+      updateARIAProviderDisplay();
     }
   }
 
@@ -876,48 +751,8 @@ class EnhancedSettingsManager {
   }
 
   async testAIConnections() {
-    try {
-      showToast('Testing AI connections...', 'info');
-      
-      const token = localStorage.getItem('aria_token');
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      const response = await fetch('/api/ai/test-connections', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to test connections');
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        const results = result.data;
-        let message = 'Connection Test Results:\n';
-        
-        Object.entries(results).forEach(([provider, status]) => {
-          const statusText = status.status === 'connected' ? '✅' : 
-                           status.status === 'not_configured' ? '⚠️' : '❌';
-          message += `${statusText} ${provider.toUpperCase()}: ${status.status}${status.error ? ` (${status.error})` : ''}\n`;
-        });
-
-        showToast(message, 'success');
-        
-        // Update key status display after test
-        this.updateKeyStatusDisplay();
-      } else {
-        throw new Error(result.error || 'Test failed');
-      }
-    } catch (error) {
-      console.error('Connection test error:', error);
-      showToast(`Connection test failed: ${error.message}`, 'error');
-    }
+    showToast('Testing AI connections...', 'info');
+    // TODO: Implement connection testing
   }
 
   async refreshAllModels() {
@@ -925,212 +760,29 @@ class EnhancedSettingsManager {
     // TODO: Implement model refresh for all providers
   }
 
-  async updateKeyStatusDisplay() {
-    try {
-      const token = localStorage.getItem('aria_token');
-      if (!token) return;
-
-      const response = await fetch('/api/keys/status', {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) return;
-
-      const result = await response.json();
-      if (result.success) {
-        const keyStatus = result.data;
-        
-        ['openai', 'gemini', 'anthropic'].forEach(provider => {
-          const statusEl = document.getElementById(`${provider}-key-status`);
-          if (statusEl) {
-            const status = keyStatus[provider];
-            const indicator = statusEl.querySelector('.w-3.h-3');
-            const text = statusEl.querySelector('.text-xs');
-            
-            if (status && status.configured) {
-              indicator.className = 'w-3 h-3 rounded-full ' + (status.valid ? 'bg-green-400' : 'bg-yellow-400');
-              text.textContent = status.valid ? 'Valid' : 'Invalid';
-              text.className = 'text-xs ' + (status.valid ? 'text-green-600' : 'text-yellow-600');
-            } else {
-              indicator.className = 'w-3 h-3 rounded-full bg-gray-400';
-              text.textContent = 'Not Set';
-              text.className = 'text-xs text-gray-500';
-            }
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error updating key status:', error);
-    }
-  }
-
-  // Method to refresh AI provider configuration after key changes
-  async refreshAIProviderDisplay() {
-    // Check if we're currently on the AI settings page
-    const currentContent = document.getElementById('settings-content');
-    if (currentContent && currentContent.innerHTML.includes('AI Provider Configuration')) {
-      console.log('Refreshing AI provider display after key change');
-      await this.showAISettings(); // Re-render the entire AI settings page
-    }
-  }
-
   showRAGSettings() {
-    // Use inline RAG settings implementation that works within settings page
-    const content = document.getElementById('settings-content');
-    if (content) {
-      // Call the RAG settings function directly for inline display
-      this.renderRAGSettingsInline();
+    // Call the existing RAG settings implementation from enterprise-modules.js
+    if (typeof window.showRAGSettings === 'function') {
+      // Set the content container first
+      const content = document.getElementById('settings-content');
+      if (content) {
+        content.innerHTML = '<div id="rag-loading" class="text-center py-8">Loading RAG settings...</div>';
+      }
+      // Call the existing function
+      setTimeout(() => window.showRAGSettings(), 100);
     } else {
-      this.renderRAGSettingsInline();
-    }
-  }
-
-  renderRAGSettingsInline() {
-    const content = document.getElementById('settings-content');
-    if (!content) return;
-
-    content.innerHTML = `
-      <div class="space-y-8">
-        <!-- RAG System Status -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900">RAG System Status</h3>
-              <p class="text-sm text-gray-600">Retrieval-Augmented Generation knowledge base and vector storage</p>
-            </div>
-            <div id="rag-status" class="flex items-center space-x-2">
-              <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
-              <span class="text-sm text-yellow-600">Initializing...</span>
-            </div>
+      const content = document.getElementById('settings-content');
+      content.innerHTML = `
+        <div class="max-w-4xl mx-auto">
+          <div class="mb-8">
+            <h3 class="text-2xl font-bold text-gray-900">RAG & Knowledge Base</h3>
+            <p class="text-gray-600 mt-2">Configure retrieval-augmented generation and knowledge base settings</p>
           </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-blue-50 p-4 rounded-lg">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-blue-600 font-medium">Documents</span>
-                <i class="fas fa-file-text text-blue-500"></i>
-              </div>
-              <div class="mt-2">
-                <span id="document-count" class="text-2xl font-bold text-blue-900">-</span>
-                <span class="text-xs text-blue-600 ml-1">indexed</span>
-              </div>
-            </div>
-            
-            <div class="bg-green-50 p-4 rounded-lg">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-green-600 font-medium">Vector Store</span>
-                <i class="fas fa-database text-green-500"></i>
-              </div>
-              <div class="mt-2">
-                <span id="vector-count" class="text-2xl font-bold text-green-900">-</span>
-                <span class="text-xs text-green-600 ml-1">vectors</span>
-              </div>
-            </div>
-            
-            <div class="bg-pink-50 p-4 rounded-lg">
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-pink-600 font-medium">Memory Usage</span>
-                <i class="fas fa-memory text-pink-500"></i>
-              </div>
-              <div class="mt-2">
-                <span id="memory-usage" class="text-2xl font-bold text-pink-900">-</span>
-                <span class="text-xs text-pink-600 ml-1">MB</span>
-              </div>
-            </div>
+          <div class="bg-white rounded-lg p-8 text-center text-gray-500">
+            RAG module is not available.
           </div>
         </div>
-
-        <!-- Document Management -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900">Document Management</h3>
-              <p class="text-sm text-gray-600">Upload and manage knowledge base documents</p>
-            </div>
-            <button onclick="refreshDocumentList()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
-              <i class="fas fa-sync-alt mr-2"></i>Refresh
-            </button>
-          </div>
-          
-          <!-- File Upload -->
-          <div class="mb-6 p-4 border-2 border-dashed border-gray-300 rounded-lg">
-            <div class="text-center">
-              <i class="fas fa-upload text-gray-400 text-3xl mb-2"></i>
-              <p class="text-gray-600 mb-2">Drag & drop files here or click to browse</p>
-              <input type="file" id="rag-file-input" class="hidden" multiple accept=".pdf,.txt,.doc,.docx,.md">
-              <button onclick="document.getElementById('rag-file-input').click()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-colors duration-200">
-                <i class="fas fa-plus mr-2"></i>Upload Documents
-              </button>
-            </div>
-          </div>
-          
-          <!-- Document List -->
-          <div id="document-list" class="space-y-3">
-            <div class="text-center py-4 text-gray-500">
-              <i class="fas fa-spinner fa-spin mr-2"></i>Loading documents...
-            </div>
-          </div>
-        </div>
-
-        <!-- RAG Configuration -->
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900">RAG Configuration</h3>
-              <p class="text-sm text-gray-600">Configure retrieval and generation parameters</p>
-            </div>
-            <button onclick="testRAGQuery()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-purple-500 transition-colors duration-200">
-              <i class="fas fa-vial mr-2"></i>Test Query
-            </button>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Chunk Size</label>
-              <input type="number" id="chunk-size" value="1000" min="100" max="4000" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <p class="text-xs text-gray-500 mt-1">Number of characters per document chunk</p>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Overlap Size</label>
-              <input type="number" id="overlap-size" value="200" min="0" max="500" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <p class="text-xs text-gray-500 mt-1">Character overlap between chunks</p>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Top K Results</label>
-              <input type="number" id="top-k" value="5" min="1" max="20" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <p class="text-xs text-gray-500 mt-1">Number of relevant chunks to retrieve</p>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Similarity Threshold</label>
-              <input type="number" id="similarity-threshold" value="0.7" min="0" max="1" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <p class="text-xs text-gray-500 mt-1">Minimum similarity score for relevance</p>
-            </div>
-          </div>
-          
-          <div class="mt-6 flex space-x-4">
-            <button onclick="initializeRAGSystem()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 transition-colors duration-200">
-              <i class="fas fa-play mr-2"></i>Initialize System
-            </button>
-            <button onclick="clearRAGCache()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 focus:ring-2 focus:ring-yellow-500 transition-colors duration-200">
-              <i class="fas fa-broom mr-2"></i>Clear Cache
-            </button>
-            <button onclick="resetRAGSystem()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 transition-colors duration-200">
-              <i class="fas fa-trash mr-2"></i>Reset System
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Initialize the RAG settings page
-    if (typeof initializeRAGSettingsPage === 'function') {
-      setTimeout(() => initializeRAGSettingsPage(), 100);
+      `;
     }
   }
 
@@ -1286,169 +938,3 @@ const enhancedSettings = new EnhancedSettingsManager();
 
 // Export for global access
 window.enhancedSettings = enhancedSettings;
-
-// RAG System Functions - Referenced in enhanced settings RAG tab
-async function initializeRAGSystem() {
-  try {
-    showToast('Initializing RAG system...', 'info');
-    
-    const token = localStorage.getItem('aria_token');
-    if (!token) {
-      showToast('Please login to access this feature', 'error');
-      return;
-    }
-    
-    const response = await axios.post('/api/rag/initialize', {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    if (response.data.success) {
-      showToast('RAG system initialized successfully', 'success');
-      // Update RAG status display
-      updateRAGStatus('healthy', 'System Ready');
-    } else {
-      throw new Error(response.data.error || 'Initialization failed');
-    }
-  } catch (error) {
-    console.error('RAG initialization error:', error);
-    showToast('Failed to initialize RAG system: ' + error.message, 'error');
-    updateRAGStatus('error', 'Initialization Failed');
-  }
-}
-
-async function testRAGQuery() {
-  try {
-    const testQuery = 'What are the main risk categories in our system?';
-    showToast('Testing RAG query...', 'info');
-    
-    const token = localStorage.getItem('aria_token');
-    if (!token) {
-      showToast('Please login to access this feature', 'error');
-      return;
-    }
-    
-    const response = await axios.post('/api/rag/query', {
-      query: testQuery,
-      max_results: 3
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    if (response.data.success) {
-      showToast('RAG test query successful', 'success');
-      // Display results in a modal or update UI
-      console.log('RAG Test Results:', response.data.data);
-    } else {
-      throw new Error(response.data.error || 'Query failed');
-    }
-  } catch (error) {
-    console.error('RAG test query error:', error);
-    showToast('RAG test query failed: ' + error.message, 'error');
-  }
-}
-
-async function clearRAGCache() {
-  try {
-    showToast('Clearing RAG cache...', 'info');
-    
-    const token = localStorage.getItem('aria_token');
-    if (!token) {
-      showToast('Please login to access this feature', 'error');
-      return;
-    }
-    
-    const response = await axios.post('/api/rag/clear-cache', {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    if (response.data.success) {
-      showToast('RAG cache cleared successfully', 'success');
-    } else {
-      throw new Error(response.data.error || 'Cache clear failed');
-    }
-  } catch (error) {
-    console.error('RAG cache clear error:', error);
-    showToast('Failed to clear RAG cache: ' + error.message, 'error');
-  }
-}
-
-async function resetRAGSystem() {
-  if (!confirm('This will reset the entire RAG system and remove all indexed data. Continue?')) {
-    return;
-  }
-  
-  try {
-    showToast('Resetting RAG system...', 'info');
-    
-    const token = localStorage.getItem('aria_token');
-    if (!token) {
-      showToast('Please login to access this feature', 'error');
-      return;
-    }
-    
-    const response = await axios.post('/api/rag/reset', {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    if (response.data.success) {
-      showToast('RAG system reset successfully', 'success');
-      updateRAGStatus('initializing', 'System Reset');
-    } else {
-      throw new Error(response.data.error || 'Reset failed');
-    }
-  } catch (error) {
-    console.error('RAG reset error:', error);
-    showToast('Failed to reset RAG system: ' + error.message, 'error');
-  }
-}
-
-function initializeRAGSettingsPage() {
-  // Update RAG status on page load
-  checkRAGSystemHealth();
-}
-
-async function checkRAGSystemHealth() {
-  try {
-    const token = localStorage.getItem('aria_token');
-    if (!token) return;
-    
-    const response = await axios.get('/api/rag/health', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    
-    if (response.data.success) {
-      const status = response.data.data.status;
-      const message = status === 'healthy' ? 'System Healthy' : 'System Degraded';
-      updateRAGStatus(status, message);
-    }
-  } catch (error) {
-    console.error('RAG health check error:', error);
-    updateRAGStatus('error', 'Health Check Failed');
-  }
-}
-
-function updateRAGStatus(status, message) {
-  const statusElement = document.getElementById('rag-status');
-  if (!statusElement) return;
-  
-  const colors = {
-    healthy: { bg: 'bg-green-400', text: 'text-green-600' },
-    initializing: { bg: 'bg-yellow-400', text: 'text-yellow-600' },
-    degraded: { bg: 'bg-orange-400', text: 'text-orange-600' },
-    error: { bg: 'bg-red-400', text: 'text-red-600' }
-  };
-  
-  const color = colors[status] || colors.error;
-  
-  statusElement.innerHTML = `
-    <div class="w-3 h-3 rounded-full ${color.bg}"></div>
-    <span class="text-sm ${color.text}">${message}</span>
-  `;
-}
-
-// Expose RAG functions to global scope
-window.initializeRAGSystem = initializeRAGSystem;
-window.testRAGQuery = testRAGQuery;
-window.clearRAGCache = clearRAGCache;
-window.resetRAGSystem = resetRAGSystem;
-window.initializeRAGSettingsPage = initializeRAGSettingsPage;
