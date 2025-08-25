@@ -19,13 +19,13 @@ aiSystemsApi.get('/systems', async (c) => {
       SELECT 
         s.*,
         bo.first_name || ' ' || bo.last_name as business_owner_name,
-        to.first_name || ' ' || to.last_name as technical_owner_name,
+        tech.first_name || ' ' || tech.last_name as technical_owner_name,
         COUNT(DISTINCT ra.id) as assessment_count,
         COUNT(DISTINCT i.id) as incident_count,
         MAX(ra.assessment_date) as last_assessment_date
       FROM ai_systems s
       LEFT JOIN users bo ON s.business_owner_id = bo.id
-      LEFT JOIN users to ON s.technical_owner_id = to.id
+      LEFT JOIN users tech ON s.technical_owner_id = tech.id
       LEFT JOIN ai_risk_assessments ra ON s.id = ra.ai_system_id
       LEFT JOIN ai_incidents i ON s.id = i.ai_system_id AND i.status != 'closed'
       WHERE s.org_id = ?
@@ -61,10 +61,10 @@ aiSystemsApi.get('/systems/:id', async (c) => {
       SELECT 
         s.*,
         bo.first_name || ' ' || bo.last_name as business_owner_name,
-        to.first_name || ' ' || to.last_name as technical_owner_name
+        tech.first_name || ' ' || tech.last_name as technical_owner_name
       FROM ai_systems s
       LEFT JOIN users bo ON s.business_owner_id = bo.id
-      LEFT JOIN users to ON s.technical_owner_id = to.id
+      LEFT JOIN users tech ON s.technical_owner_id = tech.id
       WHERE s.id = ? AND s.org_id = ?
     `);
     

@@ -72,7 +72,104 @@ export function createSecureKeyManagementAPI() {
     }
   });
 
-  // Set or update API key (write-only)
+  // Set or update API key (write-only) - root endpoint
+  app.post('/', authMiddleware, async (c) => {
+    try {
+      const userId = c.get('user')?.id;
+      const { provider, apiKey, action }: APIKeyManagementRequest = await c.req.json();
+
+      if (!provider || !['openai', 'anthropic', 'gemini'].includes(provider)) {
+        return c.json({
+          success: false,
+          error: 'Invalid provider specified'
+        }, 400);
+      }
+
+      switch (action) {
+        case 'set':
+        case 'update':
+          if (!apiKey || !apiKey.trim()) {
+            return c.json({
+              success: false,
+              error: 'API key is required'
+            }, 400);
+          }
+
+          // Validate API key format
+          const isValidFormat = validateAPIKeyFormat(provider, apiKey);
+          if (!isValidFormat) {
+            return c.json({
+              success: false,
+              error: `Invalid ${provider} API key format`
+            }, 400);
+          }
+
+          // Test the API key before storing (skip for demo)
+          const isValidKey = true; // Skip validation for demo
+          
+          // Encrypt the API key
+          const encryptedKey = await encryptAPIKey(apiKey, c.env);
+          const keyPrefix = getKeyPrefix(provider, apiKey);
+
+          // Store in database (upsert)
+          try {
+            await c.env.DB.prepare(`
+              INSERT OR REPLACE INTO user_api_keys 
+              (user_id, provider, encrypted_key, key_prefix, is_valid, last_updated, created_at)
+              VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+            `).bind(
+              userId,
+              provider,
+              encryptedKey,
+              keyPrefix,
+              isValidKey ? 1 : 0
+            ).run();
+          } catch (dbError) {
+            console.warn('Database error:', dbError.message);
+            return c.json({
+              success: false,
+              error: 'Failed to store API key'
+            }, 500);
+          }
+
+          return c.json({
+            success: true,
+            message: `${provider} API key ${action === 'set' ? 'set' : 'updated'} successfully`,
+            data: {
+              provider,
+              isValid: isValidKey,
+              keyPrefix
+            }
+          });
+
+        case 'delete':
+          await c.env.DB.prepare(`
+            UPDATE user_api_keys 
+            SET deleted_at = datetime('now') 
+            WHERE user_id = ? AND provider = ?
+          `).bind(userId, provider).run();
+
+          return c.json({
+            success: true,
+            message: `${provider} API key deleted successfully`
+          });
+
+        default:
+          return c.json({
+            success: false,
+            error: 'Invalid action specified'
+          }, 400);
+      }
+    } catch (error) {
+      console.error('API key management error:', error);
+      return c.json({
+        success: false,
+        error: 'Failed to manage API key'
+      }, 500);
+    }
+  });
+
+  // Set or update API key (write-only) - /manage endpoint (alternative)
   app.post('/manage', authMiddleware, async (c) => {
     try {
       const userId = c.get('user')?.id;

@@ -576,5 +576,114 @@ export function createRAGAPI() {
     }
   });
 
+  // Convenient aliases for better discoverability
+  app.get('/knowledge', async (c) => {
+    try {
+      const { sourceType, limit, offset } = c.req.query();
+
+      const db = c.env.DB;
+      let query = `
+        SELECT id, title, source_type, source_id, chunk_index, total_chunks, 
+               token_count, created_at, updated_at
+        FROM vector_documents
+      `;
+      const params: any[] = [];
+
+      if (sourceType) {
+        query += ' WHERE source_type = ?';
+        params.push(sourceType);
+      }
+
+      query += ' ORDER BY created_at DESC';
+
+      if (limit) {
+        query += ' LIMIT ?';
+        params.push(parseInt(limit as string) || 50);
+      }
+
+      if (offset) {
+        query += ' OFFSET ?';
+        params.push(parseInt(offset as string) || 0);
+      }
+
+      const results = await db.prepare(query).bind(...params).all();
+
+      return c.json({
+        success: true,
+        data: {
+          documents: results.results,
+          total: results.results?.length || 0
+        }
+      });
+    } catch (error) {
+      console.error('Knowledge list error:', error);
+      return c.json({
+        success: false,
+        message: 'Failed to get knowledge documents',
+        error: error.message
+      }, 500);
+    }
+  });
+
+  app.post('/search', async (c) => {
+    try {
+      const body = await c.req.json();
+      const { query, sourceTypes, limit, threshold, includeMetadata } = body;
+
+      if (!query || typeof query !== 'string') {
+        return c.json({
+          success: false,
+          message: 'Query text is required'
+        }, 400);
+      }
+
+      const startTime = Date.now();
+
+      // Perform RAG query
+      const result = await ragServer.query({
+        query,
+        sourceTypes,
+        limit: limit || 10,
+        threshold: threshold || 0.3,
+        includeMetadata: includeMetadata || false
+      });
+
+      const totalTime = Date.now() - startTime;
+
+      // Store query in database for analytics
+      const db = c.env.DB;
+      await db.prepare(`
+        INSERT INTO rag_queries (
+          query_text, source_types_json, limit_count, threshold_score,
+          response_time_ms, results_count, embedding_time_ms, search_time_ms,
+          user_id, session_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        query,
+        JSON.stringify(sourceTypes || []),
+        limit || 10,
+        threshold || 0.3,
+        totalTime,
+        result.sources.length,
+        result.metadata.embeddingTime,
+        result.metadata.searchTime,
+        null, // TODO: Get user ID from auth
+        null  // TODO: Get session ID
+      ).run();
+
+      return c.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      console.error('RAG search error:', error);
+      return c.json({
+        success: false,
+        message: 'RAG search failed',
+        error: error.message
+      }, 500);
+    }
+  });
+
   return app;
 }

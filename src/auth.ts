@@ -13,10 +13,10 @@ export class AuthService {
     this.db = db;
   }
 
-  // Secure password hashing using Web Crypto API
+  // Secure password hashing using Web Crypto API (matches registration method)
   private async hashPassword(password: string): Promise<string> {
     const encoder = new TextEncoder();
-    const data = encoder.encode(password);
+    const data = encoder.encode(password + 'salt'); // Add salt to match registration
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
