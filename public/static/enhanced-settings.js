@@ -742,7 +742,7 @@ class EnhancedSettingsManager {
         throw new Error(result.error || 'Save failed');
       }
 
-      // Update ARIA provider display
+      // Update ARIA5 provider display
       if (typeof updateARIAProviderDisplay === 'function') {
         updateARIAProviderDisplay();
       }

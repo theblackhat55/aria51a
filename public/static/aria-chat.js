@@ -1,4 +1,4 @@
-// ARIA Chatbox - Minimal floating assistant using /api/ai/chat
+// ARIA5 Chatbox - Minimal floating assistant using /api/ai/chat
 (function () {
   const state = {
     open: false,
@@ -10,14 +10,14 @@
 
     const html = `
       <div id="aria-chat-container" style="position:fixed; bottom:20px; right:20px; z-index:9999;">
-        <button id="aria-toggle" title="ARIA Assistant" style="background:#2563EB;color:#fff;border:none;border-radius:9999px;width:56px;height:56px;box-shadow:0 10px 15px rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <button id="aria-toggle" title="ARIA5 Assistant" style="background:#2563EB;color:#fff;border:none;border-radius:9999px;width:56px;height:56px;box-shadow:0 10px 15px rgba(0,0,0,0.1);display:flex;align-items:center;justify-content:center;cursor:pointer;">
           <i class="fas fa-robot"></i>
         </button>
         <div id="aria-panel" style="display:none; position:absolute; bottom:70px; right:0; width:360px; max-height:520px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.15); overflow:hidden;">
           <div style="padding:12px 14px; background:linear-gradient(90deg,#1d4ed8,#2563eb); color:#fff; display:flex; align-items:center; justify-content:space-between;">
             <div style="display:flex; align-items:center; gap:8px;">
               <i class="fas fa-robot"></i>
-              <strong>ARIA Assistant</strong>
+              <strong>ARIA5 Assistant</strong>
             </div>
             <button id="aria-close" style="background:transparent;border:none;color:#fff;cursor:pointer"><i class="fas fa-times"></i></button>
           </div>
@@ -58,7 +58,7 @@
       e.preventDefault();
       const token = localStorage.getItem('aria_token');
       if (!token) {
-        appendSystem("Please sign in to use ARIA.");
+        appendSystem("Please sign in to use ARIA5.");
         return;
       }
       const text = input.value.trim();
@@ -137,7 +137,7 @@
   function maybeAutoWelcome() {
     const token = localStorage.getItem('aria_token');
     if (!token) return;
-    appendSystem('Hi, I\'m ARIA. Ask me about risks, incidents, or documents.');
+    appendSystem('Hi, I\'m ARIA5. Ask me about risks, incidents, or documents.');
   }
 
   document.addEventListener('DOMContentLoaded', function () {

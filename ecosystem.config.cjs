@@ -1,4 +1,4 @@
-// PM2 Ecosystem Configuration for ARIA Platform v6.0 - Cloudflare Pages Development
+// PM2 Ecosystem Configuration for ARIA5 Platform v5.0 - Cloudflare Pages Development
 module.exports = {
   apps: [
     {

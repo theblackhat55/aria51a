@@ -1,7 +1,7 @@
-// Secure ARIA Assistant - Client-side functions for secure AI proxy
+// Secure ARIA5 Assistant - Client-side functions for secure AI proxy
 // All API keys are handled server-side for security
 
-// Updated secure ARIA message function
+// Updated secure ARIA5 message function
 async function sendARIAMessageSecure() {
   const ariaInput = document.getElementById('aria-input');
   const ariaChat = document.getElementById('aria-chat');
@@ -12,7 +12,7 @@ async function sendARIAMessageSecure() {
   // Check authentication
   const token = localStorage.getItem('aria_token');
   if (!token) {
-    appendARIAMessage('system', 'Please log in to use ARIA assistant.');
+    appendARIAMessage('system', 'Please log in to use ARIA5 assistant.');
     return;
   }
 
@@ -37,7 +37,7 @@ async function sendARIAMessageSecure() {
     <div class="mb-4" id="${loadingId}">
       <div class="text-left">
         <div class="inline-block bg-gradient-to-r from-purple-100 to-blue-100 text-gray-800 rounded-lg px-4 py-2 text-sm shadow-sm">
-          <i class="fas fa-brain fa-pulse mr-2 text-purple-600"></i>ARIA is analyzing your request...
+          <i class="fas fa-brain fa-pulse mr-2 text-purple-600"></i>ARIA5 is analyzing your request...
           <div class="text-xs text-gray-600 mt-1">Using secure AI proxy</div>
         </div>
       </div>
@@ -47,7 +47,7 @@ async function sendARIAMessageSecure() {
   try {
     const startTime = Date.now();
     
-    console.log('🔒 Secure ARIA Call - Making request:', {
+    console.log('🔒 Secure ARIA5 Call - Making request:', {
       query: query?.substring(0, 50) + '...',
       endpoint: '/api/ai/chat'
     });
@@ -55,7 +55,7 @@ async function sendARIAMessageSecure() {
     const response = await axios.post('/api/ai/chat', {
       message: query,
       provider: 'auto', // Let server choose optimal provider based on user preferences
-      context: 'You are ARIA, an AI Risk Assistant specialized in cybersecurity, risk management, compliance, and governance. Provide helpful, accurate, and actionable information.'
+      context: 'You are ARIA5, an AI Risk Intelligence Platform specialized in cybersecurity, risk management, compliance, and governance. Provide helpful, accurate, and actionable information.'
     }, {
       headers: { 
         'Authorization': `Bearer ${token}`,
@@ -75,7 +75,7 @@ async function sendARIAMessageSecure() {
       
       const responseTime = Date.now() - startTime;
       
-      console.log('✅ Secure ARIA Response:', {
+      console.log('✅ Secure ARIA5 Response:', {
         provider: provider,
         model: model,
         responseTime: responseTime + 'ms',
@@ -89,7 +89,7 @@ async function sendARIAMessageSecure() {
             <div class="inline-block bg-gradient-to-r from-purple-50 to-blue-50 text-gray-800 rounded-lg px-4 py-2 text-sm max-w-lg shadow-sm border border-purple-200">
               <div class="flex items-center mb-2">
                 <i class="fas fa-robot text-purple-600 mr-2"></i>
-                <span class="font-medium text-purple-900">ARIA</span>
+                <span class="font-medium text-purple-900">ARIA5</span>
                 <span class="text-xs text-gray-500 ml-2">via ${provider.toUpperCase()}</span>
               </div>
               <div class="prose prose-sm">${formatMarkdown(aiResponse)}</div>
@@ -106,7 +106,7 @@ async function sendARIAMessageSecure() {
     }
 
   } catch (error) {
-    console.error('❌ Secure ARIA Error:', error);
+    console.error('❌ Secure ARIA5 Error:', error);
     
     // Remove loading message
     document.getElementById(loadingId)?.remove();
@@ -198,7 +198,7 @@ async function updateARIAProviderDisplaySecure() {
   }
 }
 
-// Quick ARIA queries for common tasks
+// Quick ARIA5 queries for common tasks
 async function quickARIAQuerySecure(predefinedQuery) {
   const ariaInput = document.getElementById('aria-input');
   if (ariaInput) {
@@ -233,4 +233,4 @@ if (typeof window !== 'undefined') {
   window.quickARIAQuery = quickARIAQuerySecure;
 }
 
-console.log('🔒 Secure ARIA functions loaded');
+console.log('🔒 Secure ARIA5 functions loaded');

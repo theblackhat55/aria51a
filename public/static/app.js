@@ -703,12 +703,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.error('Navigation initialization error:', navError);
   }
   
-  // Initialize ARIA assistant
+  // Initialize ARIA5 assistant
   try {
-    console.log('Initializing ARIA...');
+    console.log('Initializing ARIA5...');
     initializeARIAAssistant();
   } catch (ariaError) {
-    console.error('ARIA initialization error:', ariaError);
+    console.error('ARIA5 initialization error:', ariaError);
   }
   
   // Check authentication and initialize appropriate UI
@@ -783,11 +783,11 @@ function showLoginPrompt() {
         <div class="text-center mb-6">
           <i class="fas fa-lock text-4xl text-gray-400 mb-4"></i>
           <h2 class="text-2xl font-bold text-gray-900">Authentication Required</h2>
-          <p class="text-gray-600 mt-2">Please log in to access ARIA - AI Risk Intelligence Assistant</p>
+          <p class="text-gray-600 mt-2">Please log in to access ARIA5 - AI Risk Intelligence Platform</p>
         </div>
         <div class="space-y-4">
           <button onclick="window.location.href='/login'" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
-            <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA
+            <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA5
           </button>
           <div class="text-sm text-gray-600 text-center">
             <p><strong>Demo Accounts Available:</strong></p>
@@ -810,7 +810,7 @@ function showBasicDashboard() {
     mainContent.innerHTML = `
       <div class="text-center py-12">
         <i class="fas fa-shield-alt text-6xl text-blue-600 mb-4"></i>
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">ARIA</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">ARIA5</h1>
         <p class="text-gray-600 mb-8">AI Risk Intelligence Assistant - Next-Generation Enterprise GRC Platform</p>
         <button onclick="window.location.href='/login'" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
           <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA
@@ -1028,7 +1028,7 @@ function showPublicLandingPage() {
           <div class="mx-auto h-24 w-24 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full flex items-center justify-center mb-6">
             <i class="fas fa-shield-alt text-white text-3xl"></i>
           </div>
-          <h1 class="text-4xl font-bold text-gray-900 mb-4">ARIA</h1>
+          <h1 class="text-4xl font-bold text-gray-900 mb-4">ARIA5</h1>
           <p class="text-xl text-gray-600 mb-8">AI Risk Intelligence Assistant - Next-Generation Enterprise GRC Platform with Advanced Analytics</p>
         </div>
         
@@ -1053,16 +1053,16 @@ function showPublicLandingPage() {
             <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <i class="fas fa-robot text-purple-600 text-xl"></i>
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">AI-Powered ARIA</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">AI-Powered ARIA5</h3>
             <p class="text-gray-600">Intelligent risk assistant with RAG context and multi-provider AI integration.</p>
           </div>
         </div>
         
         <div class="bg-blue-50 p-8 rounded-lg border border-blue-200">
           <h3 class="text-xl font-semibold text-gray-900 mb-4">Ready to Get Started?</h3>
-          <p class="text-gray-600 mb-6">Sign in to access ARIA's AI-powered risk intelligence platform with advanced GRC capabilities.</p>
+          <p class="text-gray-600 mb-6">Sign in to access ARIA5's AI-powered risk intelligence platform with advanced GRC capabilities.</p>
           <button onclick="window.location.href='/login'" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-medium transition-colors duration-200">
-            <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA
+            <i class="fas fa-sign-in-alt mr-2"></i>Sign In to ARIA5
           </button>
           
           <div class="mt-6 text-sm text-gray-500">
@@ -1277,7 +1277,7 @@ function navigateTo(page) {
         if (typeof showAIAssure === 'function') {
           showAIAssure();
         } else {
-          showPlaceholder('AI/ARIA Assistant', 'AI Assistant module loading...', 'robot');
+          showPlaceholder('AI/ARIA5 Assistant', 'AI Assistant module loading...', 'robot');
         }
         break;
       case 'search':
@@ -2318,7 +2318,7 @@ function showKRIs() {
   }
 }
 
-// Show AI/ARIA Assistant page
+// Show AI/ARIA5 Assistant page
 function showAIAssure() {
   updateActiveNavigation && updateActiveNavigation('ai-assure');
   const mainContent = document.getElementById('main-content');
@@ -2331,9 +2331,9 @@ function showAIAssure() {
           <div class="flex items-center justify-between">
             <div>
               <h1 class="text-2xl font-bold text-gray-900 mb-2">
-                <i class="fas fa-robot mr-2 text-blue-600"></i>AI/ARIA Assistant
+                <i class="fas fa-robot mr-2 text-blue-600"></i>AI/ARIA5 Assistant
               </h1>
-              <p class="text-gray-600">Interact with ARIA - AI Risk Intelligence Assistant</p>
+              <p class="text-gray-600">Interact with ARIA5 - AI Risk Intelligence Platform</p>
             </div>
             <div class="flex space-x-3">
               <button onclick="clearChat()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
@@ -2354,7 +2354,7 @@ function showAIAssure() {
                 <i class="fas fa-robot text-blue-600"></i>
               </div>
               <div>
-                <h3 class="font-semibold text-gray-900">ARIA Assistant</h3>
+                <h3 class="font-semibold text-gray-900">ARIA5 Assistant</h3>
                 <p class="text-sm text-green-600">Online</p>
               </div>
             </div>
@@ -2367,7 +2367,7 @@ function showAIAssure() {
                   <i class="fas fa-robot text-blue-600 text-sm"></i>
                 </div>
                 <div class="bg-gray-100 rounded-lg p-3 max-w-md">
-                  <p class="text-sm text-gray-900">Hello! I'm ARIA, your AI Risk Intelligence Assistant. How can I help you with risk management today?</p>
+                  <p class="text-sm text-gray-900">Hello! I'm ARIA5, your AI Risk Intelligence Platform. How can I help you with risk management today?</p>
                 </div>
               </div>
             </div>
@@ -2375,7 +2375,7 @@ function showAIAssure() {
           
           <div class="p-4 border-t border-gray-200">
             <div class="flex space-x-3">
-              <input type="text" id="chat-input" placeholder="Ask ARIA about risks, compliance, or security..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <input type="text" id="chat-input" placeholder="Ask ARIA5 about risks, compliance, or security..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
               <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
                 <i class="fas fa-paper-plane"></i>
               </button>
@@ -3761,7 +3761,7 @@ function showDashboard() {
       <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
         <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-3xl font-bold mb-2">ARIA Dashboard</h1>
+            <h1 class="text-3xl font-bold mb-2">ARIA5 Dashboard</h1>
             <p class="text-blue-100">Real-time insights into your organization's risk posture</p>
           </div>
           <div class="flex space-x-3">
@@ -6208,7 +6208,7 @@ function toggleHeatMapFullscreen() {
   }, 100);
 }
 
-// ARIA AI Assistant
+// ARIA5 AI Assistant
 function initializeARIAAssistant() {
   const ariaButton = document.getElementById('aria-button');
   const ariaModal = document.getElementById('aria-modal');
@@ -6252,7 +6252,7 @@ function initializeARIAAssistant() {
   }
 }
 
-// Update ARIA provider display
+// Update ARIA5 provider display
 // Legacy function - replaced by secure version in secure-aria.js
 function updateARIAProviderDisplay() {
   // This function is now handled by updateARIAProviderDisplaySecure()

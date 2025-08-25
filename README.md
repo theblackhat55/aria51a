@@ -158,7 +158,7 @@ npm test               # Test local server
 - **Referrer Policy**: Strict referrer policy for privacy
 
 ## 🧠 AI Integration
-### **ARIA Chat Assistant**
+### **ARIA5 Chat Assistant**
 - **Context-Aware**: Understands GRC domain and user context
 - **Multi-Modal**: Text-based conversational interface
 - **Knowledge Base**: Integrated with GRC frameworks and best practices
@@ -172,7 +172,7 @@ npm test               # Test local server
 
 ## 🚀 Recent Updates (v6.0.0 - RAG Integration)
 ### **Platform Rebranding**
-- ✅ Complete rebrand from DMT to ARIA Platform
+- ✅ Complete rebrand from DMT to ARIA5 Platform
 - ✅ Unified authentication experience (eliminated duplicate login pages)
 - ✅ Updated all branding, titles, and messaging
 - ✅ AI-focused visual identity with robot icons
@@ -193,7 +193,7 @@ npm test               # Test local server
 - ✅ Implemented complete Risk Treatments portfolio management
 - ✅ Added Key Risk Indicators (KRI) monitoring and analytics
 - ✅ Built comprehensive Intelligence module suite:
-  - ✅ AI/ARIA Assistant interactive chat interface
+  - ✅ AI/ARIA5 Assistant interactive chat interface
   - ✅ AI Providers multi-service management
   - ✅ RAG & Knowledge Base document repositories
   - ✅ Advanced Search across all GRC data
@@ -244,11 +244,11 @@ npm test               # Test local server
 
 ---
 
-**ARIA v6.0.1** - ALL API ISSUES FIXED Enterprise GRC Platform  
+**ARIA5 v5.0.0** - ALL API ISSUES FIXED Enterprise GRC Platform  
 *Complete AI Risk Intelligence Platform with 100% API Health*
 
 🌐 **Live Platform**: https://fb2557b5.aria-platform-v6.pages.dev  
-🤖 **Experience ARIA**: Sign in with demo credentials above *(100% functional!)*  
+🤖 **Experience ARIA5**: Sign in with demo credentials above *(100% functional!)*  
 📊 **System Health**: https://fb2557b5.aria-platform-v6.pages.dev/health  
 🔑 **Authentication**: Login/registration completely fixed and working  
 🤖 **AI Provider Keys**: Full key management with OpenAI/Anthropic/Gemini support  
