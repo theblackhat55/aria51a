@@ -1286,3 +1286,169 @@ const enhancedSettings = new EnhancedSettingsManager();
 
 // Export for global access
 window.enhancedSettings = enhancedSettings;
+
+// RAG System Functions - Referenced in enhanced settings RAG tab
+async function initializeRAGSystem() {
+  try {
+    showToast('Initializing RAG system...', 'info');
+    
+    const token = localStorage.getItem('aria_token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    const response = await axios.post('/api/rag/initialize', {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('RAG system initialized successfully', 'success');
+      // Update RAG status display
+      updateRAGStatus('healthy', 'System Ready');
+    } else {
+      throw new Error(response.data.error || 'Initialization failed');
+    }
+  } catch (error) {
+    console.error('RAG initialization error:', error);
+    showToast('Failed to initialize RAG system: ' + error.message, 'error');
+    updateRAGStatus('error', 'Initialization Failed');
+  }
+}
+
+async function testRAGQuery() {
+  try {
+    const testQuery = 'What are the main risk categories in our system?';
+    showToast('Testing RAG query...', 'info');
+    
+    const token = localStorage.getItem('aria_token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    const response = await axios.post('/api/rag/query', {
+      query: testQuery,
+      max_results: 3
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('RAG test query successful', 'success');
+      // Display results in a modal or update UI
+      console.log('RAG Test Results:', response.data.data);
+    } else {
+      throw new Error(response.data.error || 'Query failed');
+    }
+  } catch (error) {
+    console.error('RAG test query error:', error);
+    showToast('RAG test query failed: ' + error.message, 'error');
+  }
+}
+
+async function clearRAGCache() {
+  try {
+    showToast('Clearing RAG cache...', 'info');
+    
+    const token = localStorage.getItem('aria_token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    const response = await axios.post('/api/rag/clear-cache', {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('RAG cache cleared successfully', 'success');
+    } else {
+      throw new Error(response.data.error || 'Cache clear failed');
+    }
+  } catch (error) {
+    console.error('RAG cache clear error:', error);
+    showToast('Failed to clear RAG cache: ' + error.message, 'error');
+  }
+}
+
+async function resetRAGSystem() {
+  if (!confirm('This will reset the entire RAG system and remove all indexed data. Continue?')) {
+    return;
+  }
+  
+  try {
+    showToast('Resetting RAG system...', 'info');
+    
+    const token = localStorage.getItem('aria_token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    const response = await axios.post('/api/rag/reset', {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      showToast('RAG system reset successfully', 'success');
+      updateRAGStatus('initializing', 'System Reset');
+    } else {
+      throw new Error(response.data.error || 'Reset failed');
+    }
+  } catch (error) {
+    console.error('RAG reset error:', error);
+    showToast('Failed to reset RAG system: ' + error.message, 'error');
+  }
+}
+
+function initializeRAGSettingsPage() {
+  // Update RAG status on page load
+  checkRAGSystemHealth();
+}
+
+async function checkRAGSystemHealth() {
+  try {
+    const token = localStorage.getItem('aria_token');
+    if (!token) return;
+    
+    const response = await axios.get('/api/rag/health', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    if (response.data.success) {
+      const status = response.data.data.status;
+      const message = status === 'healthy' ? 'System Healthy' : 'System Degraded';
+      updateRAGStatus(status, message);
+    }
+  } catch (error) {
+    console.error('RAG health check error:', error);
+    updateRAGStatus('error', 'Health Check Failed');
+  }
+}
+
+function updateRAGStatus(status, message) {
+  const statusElement = document.getElementById('rag-status');
+  if (!statusElement) return;
+  
+  const colors = {
+    healthy: { bg: 'bg-green-400', text: 'text-green-600' },
+    initializing: { bg: 'bg-yellow-400', text: 'text-yellow-600' },
+    degraded: { bg: 'bg-orange-400', text: 'text-orange-600' },
+    error: { bg: 'bg-red-400', text: 'text-red-600' }
+  };
+  
+  const color = colors[status] || colors.error;
+  
+  statusElement.innerHTML = `
+    <div class="w-3 h-3 rounded-full ${color.bg}"></div>
+    <span class="text-sm ${color.text}">${message}</span>
+  `;
+}
+
+// Expose RAG functions to global scope
+window.initializeRAGSystem = initializeRAGSystem;
+window.testRAGQuery = testRAGQuery;
+window.clearRAGCache = clearRAGCache;
+window.resetRAGSystem = resetRAGSystem;
+window.initializeRAGSettingsPage = initializeRAGSettingsPage;

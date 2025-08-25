@@ -3150,3 +3150,10 @@ async function showAISettings() {
       </div>
     </div>`;
 }
+
+// Expose functions to global scope for settings integration
+window.showMicrosoftSettings = showMicrosoftSettings;
+window.showUsersSettings = showUsersSettings;
+window.showOrganizationsSettings = showOrganizationsSettings;
+window.showRiskOwnersSettings = showRiskOwnersSettings;
+}
