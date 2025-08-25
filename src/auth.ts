@@ -179,9 +179,9 @@ export async function authMiddleware(c: Context<{ Bindings: CloudflareBindings }
       return c.json({ success: false, error: 'Token expired' }, 401);
     }
 
-    // Fetch complete user from database
-    const userAuth = new UserAuth(c.env.DB);
-    const user = await userAuth.getUserById(payload.id || payload.user_id || payload.userId);
+    // Fetch complete user from database using AuthService
+    const authService = new AuthService(c.env.DB);
+    const user = await authService.getUserById(payload.id);
     
     if (!user) {
       return c.json({ success: false, error: 'User not found' }, 401);
