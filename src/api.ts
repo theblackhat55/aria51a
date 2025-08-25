@@ -1481,7 +1481,7 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
   api.get('/api/exceptions', smartAuthMiddleware, async (c) => {
     try {
       const exceptions = await c.env.DB.prepare(`
-        SELECT re.*, c.title as control_title, r.title as risk_title, 
+        SELECT re.*, c.name as control_title, r.title as risk_title, 
                u1.first_name || ' ' || u1.last_name as approver_name,
                u2.first_name || ' ' || u2.last_name as created_by_name
         FROM risk_exceptions re
