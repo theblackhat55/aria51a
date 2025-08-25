@@ -3054,7 +3054,7 @@ async function reindexKnowledge() {
   try {
     showToast('Starting knowledge reindexing...', 'info');
     
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       showToast('Please login to access this feature', 'error');
       return;
@@ -3091,7 +3091,7 @@ function saveSearch() {
 // Knowledge Collections Management
 async function manageKnowledgeCollection(collectionType) {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       showToast('Please login to access this feature', 'error');
       return;
@@ -3213,7 +3213,7 @@ async function executeCollectionQuery(collectionType) {
       return;
     }
     
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       showToast('Please login to access this feature', 'error');
       return;
@@ -3294,7 +3294,7 @@ async function uploadToCollection(collectionType) {
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       showToast('Please login to access this feature', 'error');
       return;
@@ -3342,7 +3342,7 @@ async function deleteDocument(documentId) {
   }
   
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       showToast('Please login to access this feature', 'error');
       return;
@@ -3377,7 +3377,7 @@ function quickSearch(term) {
 
 async function generateReport() {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       showToast('Please login to access this feature', 'error');
       return;
@@ -3448,7 +3448,7 @@ async function executeReportGeneration() {
     const provider = document.getElementById('report-provider').value;
     const includeCharts = document.getElementById('include-charts').checked;
     
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       showToast('Please login to access this feature', 'error');
       return;
@@ -5678,7 +5678,7 @@ async function executeKRIImport() {
       return;
     }
     
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     if (!token) {
       showToast('Please login to access this feature', 'error');
       return;

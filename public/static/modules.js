@@ -5736,7 +5736,7 @@ async function assignIncident(id) {
 
 async function escalateIncident(id) {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     
     showModal('Escalate Incident', `
       <form id="escalate-incident-form" class="space-y-4">
@@ -6227,7 +6227,7 @@ function downloadCSV(csvContent, filename) {
 // Export functions
 async function exportRisks() {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/risks', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -6262,7 +6262,7 @@ async function exportRisks() {
 }
 async function exportControls() {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('aria_token');
     const response = await axios.get('/api/controls', {
       headers: { Authorization: `Bearer ${token}` }
     });

@@ -747,7 +747,7 @@ function editSOC2Control(controlId) {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
     { text: 'Save Changes', class: 'btn-primary', onclick: `saveSOC2Control('${control.id}')` }
   ]);
 }
@@ -858,7 +858,7 @@ function createCustomFramework() {
       </div>
     </form>
   `, [
-    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal(this)' },
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeModal()' },
     { text: 'Create Framework', class: 'btn-primary', onclick: 'saveCustomFramework()' }
   ]);
 }

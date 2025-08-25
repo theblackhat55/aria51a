@@ -861,18 +861,41 @@ async function escalateIncident(incidentId) {
 function checkEscalationRules() {
     const incidents = getIncidents();
     const now = new Date();
+    let escalationCount = 0;
+    let checkedCount = 0;
+    
+    console.log('🔍 Checking escalation rules for', incidents.length, 'incidents');
     
     incidents.forEach(incident => {
         if (incident.status === 'closed' || incident.status === 'resolved') {
             return; // Skip closed/resolved incidents
         }
 
+        checkedCount++;
+        let escalated = false;
+
         INCIDENT_CONFIG.escalationRules.forEach(rule => {
             if (rule.condition(incident)) {
+                console.log('🚨 Escalation rule triggered:', rule.name, 'for incident', incident.id);
                 executeEscalationAction(incident, rule);
+                escalated = true;
+                escalationCount++;
             }
         });
+        
+        if (!escalated) {
+            console.log('✅ No escalation needed for incident', incident.id);
+        }
     });
+    
+    // Show user feedback
+    if (checkedCount === 0) {
+        showToast('No active incidents found to check for escalation', 'info');
+    } else if (escalationCount === 0) {
+        showToast(`Checked ${checkedCount} incidents - no escalations needed`, 'success');
+    } else {
+        showToast(`Escalated ${escalationCount} out of ${checkedCount} incidents`, 'warning');
+    }
 }
 
 function executeEscalationAction(incident, rule) {
