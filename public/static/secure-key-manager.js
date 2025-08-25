@@ -108,19 +108,19 @@ class SecureKeyManager {
       switch (action) {
         case 'set':
         case 'update':
-          endpoint = '/api/keys/set';
+          endpoint = '/api/keys/manage';
           method = 'POST';
-          body = JSON.stringify({ provider, apiKey });
+          body = JSON.stringify({ provider, apiKey, action });
           break;
         case 'delete':
-          endpoint = `/api/keys/${provider}`;
-          method = 'DELETE';
-          body = undefined;
+          endpoint = '/api/keys/manage';
+          method = 'POST';
+          body = JSON.stringify({ provider, action });
           break;
         case 'test':
-          endpoint = '/api/keys/test';
+          endpoint = '/api/keys/manage';
           method = 'POST';
-          body = JSON.stringify({ provider });
+          body = JSON.stringify({ provider, action });
           break;
         default:
           throw new Error(`Unknown action: ${action}`);
@@ -402,6 +402,10 @@ class SecureKeyManager {
       closeUniversalModal();
       showToast(`API key set for ${provider}`, result.data.valid ? 'success' : 'warning');
       this.updateDisplay();
+      // Refresh AI provider display if settings page is active
+      if (typeof enhancedSettings !== 'undefined' && enhancedSettings.refreshAIProviderDisplay) {
+        enhancedSettings.refreshAIProviderDisplay();
+      }
     } catch (error) {
       showToast(`Failed to set API key: ${error.message}`, 'error');
     }
@@ -420,6 +424,10 @@ class SecureKeyManager {
       closeUniversalModal();
       showToast(`API key updated for ${provider}`, result.data.valid ? 'success' : 'warning');
       this.updateDisplay();
+      // Refresh AI provider display if settings page is active
+      if (typeof enhancedSettings !== 'undefined' && enhancedSettings.refreshAIProviderDisplay) {
+        enhancedSettings.refreshAIProviderDisplay();
+      }
     } catch (error) {
       showToast(`Failed to update API key: ${error.message}`, 'error');
     }
@@ -432,6 +440,10 @@ class SecureKeyManager {
       closeUniversalModal();
       showToast(`API key deleted for ${provider}`, 'success');
       this.updateDisplay();
+      // Refresh AI provider display if settings page is active
+      if (typeof enhancedSettings !== 'undefined' && enhancedSettings.refreshAIProviderDisplay) {
+        enhancedSettings.refreshAIProviderDisplay();
+      }
     } catch (error) {
       showToast(`Failed to delete API key: ${error.message}`, 'error');
     }

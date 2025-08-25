@@ -16,6 +16,12 @@
   "ai": {
     "binding": "AI"
   },
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "webapp-bucket"
+    }
+  ],
   "vars": {
     "JWT_SECRET": "secure-jwt-secret-key-change-in-production",
     "API_RATE_LIMIT": "100",

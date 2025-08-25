@@ -310,6 +310,7 @@ class EnhancedSettingsManager {
             iconColor: 'text-green-600',
             bgColor: 'bg-green-100',
             enabled: aiSettings.openai?.enabled || false,
+            hasKey: aiSettings.openai?.hasKey || false,
             priority: aiSettings.openai?.priority || 1,
             model: aiSettings.openai?.model || 'gpt-4o',
             maxTokens: aiSettings.openai?.maxTokens || 1500,
@@ -326,6 +327,7 @@ class EnhancedSettingsManager {
             iconColor: 'text-blue-600',
             bgColor: 'bg-blue-100',
             enabled: aiSettings.gemini?.enabled || false,
+            hasKey: aiSettings.gemini?.hasKey || false,
             priority: aiSettings.gemini?.priority || 2,
             model: aiSettings.gemini?.model || 'gemini-pro',
             maxTokens: aiSettings.gemini?.maxTokens || 1500,
@@ -342,6 +344,7 @@ class EnhancedSettingsManager {
             iconColor: 'text-purple-600',
             bgColor: 'bg-purple-100',
             enabled: aiSettings.anthropic?.enabled || false,
+            hasKey: aiSettings.anthropic?.hasKey || false,
             priority: aiSettings.anthropic?.priority || 3,
             model: aiSettings.anthropic?.model || 'claude-3-5-sonnet-20241022',
             maxTokens: aiSettings.anthropic?.maxTokens || 1500,
@@ -379,6 +382,7 @@ class EnhancedSettingsManager {
   renderAIProviderCard(provider, config) {
     const settings = config.settings || config; // Use config directly for new secure format
     const isEnabled = settings.enabled || false;
+    const hasKey = settings.hasKey || false; // Check if API key is configured
     
     return `
       <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -407,8 +411,8 @@ class EnhancedSettingsManager {
               </select>
             </div>
             <div class="flex items-center">
-              <div class="w-3 h-3 rounded-full ${isEnabled ? 'bg-green-400' : 'bg-red-400'} mr-2"></div>
-              <span class="text-sm text-gray-600">${isEnabled ? 'Available' : 'Not Configured'}</span>
+              <div class="w-3 h-3 rounded-full ${hasKey ? 'bg-green-400' : 'bg-red-400'} mr-2"></div>
+              <span class="text-sm text-gray-600">${hasKey ? 'Available' : 'Not Configured'}</span>
             </div>
           </div>
         </div>
@@ -421,13 +425,13 @@ class EnhancedSettingsManager {
             <div class="px-4 py-3 border border-gray-200 rounded-lg bg-gray-50">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                  <div class="w-3 h-3 rounded-full ${isEnabled ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}"></div>
-                  <span class="text-sm font-medium">${isEnabled ? 'Available' : 'Not Configured'}</span>
+                  <div class="w-3 h-3 rounded-full ${hasKey ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}"></div>
+                  <span class="text-sm font-medium">${hasKey ? 'Available' : 'Not Configured'}</span>
                 </div>
                 <i class="fas fa-server text-gray-400"></i>
               </div>
               <p class="text-xs text-gray-500 mt-2">
-                ${isEnabled ? 'API key configured by administrator' : 'Contact administrator to configure API key'}
+                ${hasKey ? 'API key configured by administrator' : 'Contact administrator to configure API key'}
               </p>
             </div>
           </div>
@@ -939,6 +943,16 @@ class EnhancedSettingsManager {
       }
     } catch (error) {
       console.error('Error updating key status:', error);
+    }
+  }
+
+  // Method to refresh AI provider configuration after key changes
+  async refreshAIProviderDisplay() {
+    // Check if we're currently on the AI settings page
+    const currentContent = document.getElementById('settings-content');
+    if (currentContent && currentContent.innerHTML.includes('AI Provider Configuration')) {
+      console.log('Refreshing AI provider display after key change');
+      await this.showAISettings(); // Re-render the entire AI settings page
     }
   }
 

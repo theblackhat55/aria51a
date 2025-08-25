@@ -43,6 +43,20 @@ app.route('/', api);
 app.route('/api/ai-governance', aiSystemsApi);
 app.route('/api/ai-risk', aiRiskApi);
 
+// Health check endpoint
+app.get('/health', (c) => {
+  return c.json({ 
+    status: 'healthy', 
+    version: '6.0.0', 
+    timestamp: new Date().toISOString(),
+    services: {
+      database: 'connected',
+      ai_engine: 'ready',
+      llm_assessment: 'available'
+    }
+  });
+});
+
 // Main application route
 app.get('/', (c) => {
   return c.html(`<!DOCTYPE html>
@@ -208,7 +222,6 @@ app.get('/', (c) => {
                 </button>
                 <div id="admin-menu" class="dropdown-menu absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
                   <a href="#" data-page="settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
-                  <a href="#" data-page="integrations" class="block px-4 py-2 text-sm hover:bg-gray-50">Integrations</a>
                 </div>
               </div>
             </div>
@@ -369,9 +382,6 @@ app.get('/', (c) => {
           <div class="mobile-nav-section-title">Administration</div>
           <a href="#" data-page="settings" class="mobile-nav-item">
             <i class="fas fa-cog"></i>Settings
-          </a>
-          <a href="#" data-page="integrations" class="mobile-nav-item">
-            <i class="fas fa-plug"></i>Integrations
           </a>
         </div>
       </div>

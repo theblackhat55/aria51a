@@ -59,28 +59,67 @@ export function createAIProxyAPI() {
         }
       }
 
-      // Return configuration without API keys (security)
+      // Check which API keys are available from secure key management
+      let hasOpenAIKey = false;
+      let hasAnthropicKey = false;
+      let hasGeminiKey = false;
+
+      try {
+        // Check for stored API keys in the secure key management system
+        const apiKeys = await c.env.DB.prepare(`
+          SELECT provider, is_valid
+          FROM user_api_keys 
+          WHERE user_id = ? AND deleted_at IS NULL
+        `).bind(userId).all();
+
+        if (apiKeys.results) {
+          for (const key of apiKeys.results) {
+            switch (key.provider) {
+              case 'openai':
+                hasOpenAIKey = true;
+                break;
+              case 'anthropic':
+                hasAnthropicKey = true;
+                break;
+              case 'gemini':
+                hasGeminiKey = true;
+                break;
+            }
+          }
+        }
+      } catch (keyError) {
+        console.warn('Failed to check stored API keys, falling back to environment variables:', keyError.message);
+        // Fallback to environment variables if secure key management is not available
+        hasOpenAIKey = !!c.env.OPENAI_API_KEY;
+        hasAnthropicKey = !!c.env.ANTHROPIC_API_KEY;
+        hasGeminiKey = !!c.env.GEMINI_API_KEY;
+      }
+
+      // Return configuration without API keys (security) but with correct enabled status
       const safeConfig = {
         openai: {
-          enabled: !!(c.env.OPENAI_API_KEY && providerConfigs.openai?.priority > 0),
+          enabled: hasOpenAIKey && (providerConfigs.openai?.priority > 0 || !providerConfigs.openai),
           priority: providerConfigs.openai?.priority || 1,
           model: providerConfigs.openai?.model || 'gpt-4o',
           maxTokens: providerConfigs.openai?.maxTokens || 1500,
-          temperature: providerConfigs.openai?.temperature || 0.7
+          temperature: providerConfigs.openai?.temperature || 0.7,
+          hasKey: hasOpenAIKey
         },
         anthropic: {
-          enabled: !!(c.env.ANTHROPIC_API_KEY && providerConfigs.anthropic?.priority > 0),
+          enabled: hasAnthropicKey && (providerConfigs.anthropic?.priority > 0 || !providerConfigs.anthropic),
           priority: providerConfigs.anthropic?.priority || 2,
           model: providerConfigs.anthropic?.model || 'claude-3-5-sonnet-20241022',
           maxTokens: providerConfigs.anthropic?.maxTokens || 1500,
-          temperature: providerConfigs.anthropic?.temperature || 0.7
+          temperature: providerConfigs.anthropic?.temperature || 0.7,
+          hasKey: hasAnthropicKey
         },
         gemini: {
-          enabled: !!(c.env.GEMINI_API_KEY && providerConfigs.gemini?.priority > 0),
+          enabled: hasGeminiKey && (providerConfigs.gemini?.priority > 0 || !providerConfigs.gemini),
           priority: providerConfigs.gemini?.priority || 3,
           model: providerConfigs.gemini?.model || 'gemini-pro',
           maxTokens: providerConfigs.gemini?.maxTokens || 1500,
-          temperature: providerConfigs.gemini?.temperature || 0.7
+          temperature: providerConfigs.gemini?.temperature || 0.7,
+          hasKey: hasGeminiKey
         }
       };
 

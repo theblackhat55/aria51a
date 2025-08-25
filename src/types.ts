@@ -4,6 +4,7 @@
 export interface CloudflareBindings {
   DB: D1Database;
   AI: Ai;
+  R2: R2Bucket;
   // Secure AI API keys (server-side only)
   OPENAI_API_KEY?: string;
   ANTHROPIC_API_KEY?: string;  
@@ -340,6 +341,54 @@ export interface PaginationParams {
   sort?: string;
   order?: 'asc' | 'desc';
   filter?: string;
+}
+
+// Document Management
+export interface Document {
+  id: number;
+  document_id: string;
+  file_name: string;
+  original_file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  file_hash: string;
+  uploaded_by: number;
+  title?: string;
+  description?: string;
+  document_type: 'policy' | 'procedure' | 'evidence' | 'report' | 'other';
+  tags?: string; // JSON array
+  version: string;
+  visibility: 'public' | 'private' | 'restricted';
+  access_permissions?: string; // JSON array
+  related_entity_type?: 'risk' | 'control' | 'assessment' | 'incident';
+  related_entity_id?: number;
+  upload_date: string;
+  last_accessed?: string;
+  download_count: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDocumentRequest {
+  title?: string;
+  description?: string;
+  document_type: string;
+  tags?: string[];
+  version?: string;
+  visibility?: string;
+  access_permissions?: string[];
+  related_entity_type?: string;
+  related_entity_id?: number;
+}
+
+export interface DocumentUploadResponse {
+  document_id: string;
+  file_name: string;
+  file_size: number;
+  upload_url?: string;
+  download_url?: string;
 }
 
 // Utility Types

@@ -380,7 +380,7 @@ export function createAIGRCAPI() {
   // AI RISK ASSESSMENT FOR FORMS
   // ====================
 
-  // AI-powered risk assessment for form creation/editing
+  // LLM-powered risk assessment for form creation/editing (ARIA Platform v6.0)
   app.post('/risk-assessment', authMiddleware, async (c) => {
     try {
       const { title, description, services, threat_source } = await c.req.json();
@@ -392,9 +392,50 @@ export function createAIGRCAPI() {
         }, 400);
       }
 
-      console.log('🤖 Generating AI risk assessment for:', { title, description, services, threat_source });
+      console.log('🧠 Generating LLM-powered AI risk assessment for:', { title, description, services, threat_source });
 
-      // Create comprehensive risk context for AI analysis
+      // Try LLM-powered assessment first
+      try {
+        const { LLMRiskAssessmentEngine } = await import('./ai-risk-llm-assessment.js');
+        const llmEngine = new LLMRiskAssessmentEngine(c.env);
+        
+        const llmRequest = {
+          title: title || '',
+          description: description || '',
+          services: Array.isArray(services) ? services : (services ? [services] : []),
+          threat_source: threat_source || 'unknown'
+        };
+
+        const llmAssessment = await llmEngine.performLLMRiskAssessment(llmRequest);
+        
+        console.log('✅ LLM assessment completed successfully');
+        return c.json({
+          success: true,
+          data: {
+            probability: llmAssessment.probability,
+            impact: llmAssessment.impact,
+            ai_probability: llmAssessment.probability, // Backward compatibility
+            ai_impact: llmAssessment.impact, // Backward compatibility
+            risk_score: llmAssessment.risk_score,
+            risk_level: llmAssessment.risk_level,
+            reasoning: llmAssessment.reasoning,
+            service_analysis: llmAssessment.service_impact_analysis,
+            recommendations: llmAssessment.recommendations,
+            mitigation_suggestions: llmAssessment.recommendations,
+            confidence: Math.round(llmAssessment.confidence_level * 100),
+            confidence_level: llmAssessment.confidence_level,
+            ai_provider: llmAssessment.ai_provider,
+            assessment_type: llmAssessment.assessment_type,
+            analysis_timestamp: new Date().toISOString()
+          },
+          message: `${llmAssessment.assessment_type === 'llm_powered' ? 'LLM-powered' : 'Algorithm-based'} AI risk assessment completed successfully`
+        });
+      } catch (llmError) {
+        console.warn('LLM assessment failed, falling back to algorithm-based:', llmError);
+        // Fall back to algorithm-based assessment
+      }
+
+      // Fallback: Algorithm-based assessment (original implementation)
       const riskContext = {
         title: title || 'Untitled Risk',
         description: description || '',
@@ -516,9 +557,10 @@ export function createAIGRCAPI() {
           service_impact_analysis: {
             services_count: riskContext.service_count,
             impact_multiplier: serviceImpactMultiplier
-          }
+          },
+          assessment_type: 'algorithm_based'
         },
-        message: 'AI risk assessment completed successfully'
+        message: 'Algorithm-based risk assessment completed (LLM unavailable)'
       });
     } catch (error) {
       console.error('AI risk assessment error:', error);

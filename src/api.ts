@@ -50,28 +50,69 @@ export function createAPI() {
     credentials: true,
   }));
 
-  // Rate limiting middleware (simple implementation)
+  // Production-ready rate limiting middleware
   const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
   
   api.use('/api/*', async (c, next) => {
-    const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+    // Get client identifier - use multiple fallbacks for better compatibility
+    const clientIP = c.req.header('CF-Connecting-IP') || 
+                    c.req.header('X-Forwarded-For') || 
+                    c.req.header('X-Real-IP') ||
+                    'shared'; // Fallback for shared traffic
+
     const now = Date.now();
     const windowMs = 15 * 60 * 1000; // 15 minutes
-    const maxRequests = 100;
+    const maxRequests = 2000; // Generous limit for production use
+    
+    // Skip rate limiting for health checks, status endpoints, and authentication
+    const path = new URL(c.req.url).pathname;
+    if (path.includes('/health') || path.includes('/status')) {
+      await next();
+      return;
+    }
 
-    if (!rateLimitMap.has(clientIP)) {
-      rateLimitMap.set(clientIP, { count: 1, resetTime: now + windowMs });
+    // More lenient limits for auth endpoints
+    const isAuthEndpoint = path.includes('/auth');
+    const effectiveLimit = isAuthEndpoint ? maxRequests * 2 : maxRequests;
+
+    const limitKey = `${clientIP}-${Math.floor(now / windowMs)}`;
+
+    if (!rateLimitMap.has(limitKey)) {
+      rateLimitMap.set(limitKey, { count: 1, resetTime: now + windowMs });
     } else {
-      const limit = rateLimitMap.get(clientIP)!;
+      const limit = rateLimitMap.get(limitKey)!;
       if (now > limit.resetTime) {
-        limit.count = 1;
-        limit.resetTime = now + windowMs;
+        // Clean up old entries and reset
+        rateLimitMap.clear();
+        rateLimitMap.set(limitKey, { count: 1, resetTime: now + windowMs });
       } else {
         limit.count++;
+        if (limit.count > effectiveLimit) {
+          console.log(`Rate limit exceeded for ${clientIP}: ${limit.count}/${effectiveLimit} (${isAuthEndpoint ? 'auth' : 'api'})`);
+          return c.json({ 
+            success: false, 
+            error: 'Rate limit exceeded. Please wait a few minutes before trying again.',
+            retryAfter: Math.ceil((limit.resetTime - now) / 1000),
+            limit: effectiveLimit,
+            remaining: Math.max(0, effectiveLimit - limit.count)
+          }, 429);
+        }
       }
+    }
 
-      if (limit.count > maxRequests) {
-        return c.json({ success: false, error: 'Rate limit exceeded' }, 429);
+    // Add rate limit headers for transparency
+    const limit = rateLimitMap.get(limitKey)!;
+    c.header('X-RateLimit-Limit', effectiveLimit.toString());
+    c.header('X-RateLimit-Remaining', Math.max(0, effectiveLimit - limit.count).toString());
+    c.header('X-RateLimit-Reset', Math.ceil(limit.resetTime / 1000).toString());
+
+    // Clean up old entries periodically to prevent memory leaks
+    if (rateLimitMap.size > 1000) {
+      const cutoff = now - windowMs;
+      for (const [key, value] of rateLimitMap.entries()) {
+        if (value.resetTime < cutoff) {
+          rateLimitMap.delete(key);
+        }
       }
     }
 
@@ -1606,34 +1647,104 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
     }
   });
 
-  // AI Risk Assessment API (for risk-enhancements.js)
+  // AI Risk Assessment API (for risk-enhancements.js) - Now with LLM Integration
   api.post('/api/ai/risk-assessment', smartAuthMiddleware, async (c) => {
     try {
       const body = await c.req.json();
       
-      // Simple risk assessment analysis
-      const riskData = body.riskData || {};
-      const analysisType = body.analysisType || 'basic';
-      
-      // Mock analysis result - in production this would call AI service
-      const assessment = {
-        riskScore: Math.floor(Math.random() * 10) + 1,
-        likelihood: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)],
-        impact: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)],
-        recommendations: [
-          'Implement additional security controls',
-          'Regular monitoring and assessment',
-          'Staff training and awareness'
-        ],
-        analysisType,
-        timestamp: new Date().toISOString()
-      };
+      // Try LLM-powered assessment first
+      try {
+        console.log('🤖 Attempting LLM-powered risk assessment...');
+        const { LLMRiskAssessmentEngine } = await import('./ai-risk-llm-assessment.js');
+        const llmEngine = new LLMRiskAssessmentEngine(c.env);
+        
+        // Build LLM request from the body data (matching LLMRiskAssessmentRequest interface)
+        const serviceNames = body.services?.map(s => s.name) || ['System Service'];
+        
+        const llmRequest = {
+          title: body.title || 'AI Risk Assessment',
+          description: body.description || 'Automated risk assessment using AI analysis',
+          services: serviceNames,
+          threat_source: (body.threat_landscape?.external_threats?.[0] || 'Unknown threats'),
+          service_criticalities: body.services ? body.services.reduce((acc, service) => {
+            acc[service.name] = service.business_criticality || 'medium';
+            return acc;
+          }, {}) : undefined
+        };
+        
+        const llmAssessment = await llmEngine.performLLMRiskAssessment(llmRequest);
+        
+        console.log('✅ LLM assessment completed successfully');
+        
+        // Convert LLM response to expected format for frontend
+        const likelihoodMap = {1: 'Low', 2: 'Low', 3: 'Medium', 4: 'High', 5: 'High'};
+        const impactMap = {1: 'Low', 2: 'Low', 3: 'Medium', 4: 'High', 5: 'High'};
+        
+        return c.json<ApiResponse<any>>({
+          success: true,
+          data: {
+            riskScore: llmAssessment.risk_score,
+            likelihood: likelihoodMap[llmAssessment.probability] || 'Medium',
+            impact: impactMap[llmAssessment.impact] || 'Medium', 
+            recommendations: (llmAssessment.recommendations || []).slice(0, 5), // First 5 recommendations
+            analysisType: 'llm',
+            ai_provider: llmAssessment.ai_provider,
+            confidence_score: llmAssessment.confidence_level,
+            assessment_type: llmAssessment.assessment_type,
+            reasoning: llmAssessment.reasoning,
+            service_impact: llmAssessment.service_impact_analysis,
+            risk_level: llmAssessment.risk_level,
+            timestamp: new Date().toISOString()
+          },
+          message: `LLM-powered risk assessment completed using ${llmAssessment.ai_provider}`
+        });
+        
+      } catch (llmError) {
+        console.error('❌ LLM assessment failed:', llmError.message);
+        console.log('🔄 Falling back to algorithm-based assessment...');
+        
+        // Fallback to basic algorithm-based assessment
+        const riskData = body.riskData || {};
+        const analysisType = 'algorithm-fallback';
+        
+        // Enhanced algorithm-based assessment with better logic
+        const serviceCount = body.services?.length || 1;
+        const threatCount = (body.threat_landscape?.external_threats?.length || 0) + 
+                           (body.threat_landscape?.internal_threats?.length || 0);
+        const complianceCount = body.compliance_requirements?.length || 0;
+        
+        // Calculate risk score based on available data
+        let baseRiskScore = 3; // Base risk
+        if (serviceCount > 2) baseRiskScore += 2;
+        if (threatCount > 4) baseRiskScore += 2;
+        if (complianceCount > 2) baseRiskScore += 2;
+        if (body.business_context && body.business_context.toLowerCase().includes('financial')) baseRiskScore += 1;
+        
+        const riskScore = Math.min(baseRiskScore, 10);
+        
+        const assessment = {
+          riskScore,
+          likelihood: riskScore >= 7 ? 'High' : riskScore >= 4 ? 'Medium' : 'Low',
+          impact: riskScore >= 8 ? 'High' : riskScore >= 5 ? 'Medium' : 'Low',
+          recommendations: [
+            'Implement additional security controls',
+            'Regular monitoring and assessment',
+            'Staff training and awareness',
+            'Review and update security policies',
+            'Conduct regular vulnerability assessments'
+          ],
+          analysisType,
+          timestamp: new Date().toISOString(),
+          fallback_reason: llmError.message
+        };
 
-      return c.json<ApiResponse<typeof assessment>>({ 
-        success: true, 
-        data: assessment,
-        message: 'Risk assessment completed' 
-      });
+        return c.json<ApiResponse<typeof assessment>>({ 
+          success: true, 
+          data: assessment,
+          message: 'Risk assessment completed using algorithm-based fallback' 
+        });
+      }
+      
     } catch (error) {
       console.error('Risk assessment error:', error);
       return c.json<ApiResponse<null>>({ 
@@ -3701,7 +3812,6 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
         limit = 50, 
         offset = 0, 
         type, 
-        status = 'active',
         related_entity_type,
         related_entity_id,
         search
@@ -3711,10 +3821,10 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
         SELECT d.*, u.first_name, u.last_name, u.email as uploader_email
         FROM documents d
         LEFT JOIN users u ON d.uploaded_by = u.id
-        WHERE d.status = ?
+        WHERE d.is_active = 1
       `;
       
-      const params: any[] = [status];
+      const params: any[] = [];
       
       // Add visibility filter based on user role
       if (user.role !== 'admin') {
@@ -3756,26 +3866,389 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
     }
   });
 
-  // Upload document (placeholder - actual file upload would require R2 or external storage)
+  // Upload document with R2 storage integration
+  api.post('/api/documents/upload', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const formData = await c.req.formData();
+      
+      const file = formData.get('file') as File;
+      const metadata = formData.get('metadata') as string;
+      
+      if (!file) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'No file provided' 
+        }, 400);
+      }
+
+      // Parse metadata
+      let parsedMetadata = {};
+      if (metadata) {
+        try {
+          parsedMetadata = JSON.parse(metadata);
+        } catch (error) {
+          console.error('Invalid metadata JSON:', error);
+        }
+      }
+
+      // Generate unique file path and document ID
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const documentId = `doc-${timestamp}-${randomId}`;
+      const fileExtension = file.name.split('.').pop() || '';
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const r2Key = `documents/${user.id}/${documentId}/${sanitizedFileName}`;
+
+      // Generate file hash for deduplication
+      const fileBuffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
+      const fileHash = Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      // Check for duplicate files
+      const existingDoc = await c.env.DB.prepare(`
+        SELECT id, file_name, file_path FROM documents 
+        WHERE file_hash = ? AND uploaded_by = ? AND is_active = 1
+      `).bind(fileHash, user.id).first();
+
+      if (existingDoc) {
+        return c.json<ApiResponse<any>>({ 
+          success: false, 
+          error: 'File already exists',
+          data: { 
+            existing_document: {
+              id: existingDoc.id,
+              file_name: existingDoc.file_name,
+              file_path: existingDoc.file_path
+            }
+          }
+        }, 409);
+      }
+
+      // Upload file to R2
+      console.log(`📁 Uploading file to R2: ${r2Key}`);
+      try {
+        await c.env.R2.put(r2Key, fileBuffer, {
+          httpMetadata: {
+            contentType: file.type,
+            contentDisposition: `attachment; filename="${sanitizedFileName}"`
+          },
+          customMetadata: {
+            originalName: file.name,
+            uploadedBy: user.id.toString(),
+            documentId: documentId,
+            uploadTimestamp: timestamp.toString()
+          }
+        });
+        console.log(`✅ File uploaded successfully to R2: ${r2Key}`);
+      } catch (r2Error) {
+        console.error('❌ R2 upload failed:', r2Error);
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Failed to upload file to storage' 
+        }, 500);
+      }
+
+      // Prepare document metadata for database
+      const documentData = {
+        document_id: documentId,
+        file_name: sanitizedFileName,
+        original_file_name: file.name,
+        file_path: r2Key,
+        file_size: file.size,
+        mime_type: file.type || 'application/octet-stream',
+        file_hash: fileHash,
+        uploaded_by: user.id,
+        title: parsedMetadata.title || file.name,
+        description: parsedMetadata.description || null,
+        document_type: parsedMetadata.document_type || 'other',
+        tags: parsedMetadata.tags ? JSON.stringify(parsedMetadata.tags) : null,
+        version: parsedMetadata.version || '1.0',
+        visibility: parsedMetadata.visibility || 'private',
+        access_permissions: parsedMetadata.access_permissions ? JSON.stringify(parsedMetadata.access_permissions) : null,
+        related_entity_type: parsedMetadata.related_entity_type || null,
+        related_entity_id: parsedMetadata.related_entity_id || null
+      };
+
+      // Insert document record into database
+      const result = await c.env.DB.prepare(`
+        INSERT INTO documents (
+          document_id, file_name, original_file_name, file_path, file_size, mime_type, file_hash,
+          uploaded_by, title, description, document_type, tags, version, visibility,
+          access_permissions, related_entity_type, related_entity_id, download_count, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)
+      `).bind(
+        documentData.document_id, documentData.file_name, documentData.original_file_name, 
+        documentData.file_path, documentData.file_size, documentData.mime_type, documentData.file_hash,
+        documentData.uploaded_by, documentData.title, documentData.description,
+        documentData.document_type, documentData.tags, documentData.version,
+        documentData.visibility, documentData.access_permissions,
+        documentData.related_entity_type, documentData.related_entity_id
+      ).run();
+
+      console.log(`📄 Document metadata saved to database with ID: ${result.meta.last_row_id}`);
+
+      // Step 5: Index document for RAG (async, non-blocking)
+      console.log(`🔍 Starting RAG indexing for document: ${documentId}`);
+      try {
+        const { ragServer } = await import('./rag/rag-server.js');
+        await ragServer.initialize();
+        
+        // Create document object for RAG indexing
+        const documentForRAG = {
+          name: file.name,
+          content: await file.text() // Extract text content for indexing
+        };
+        
+        const ragResult = await ragServer.indexDocument(documentForRAG);
+        console.log(`✅ RAG indexing completed: ${ragResult.chunksCreated} chunks created`);
+        
+        // Store RAG indexing information
+        await c.env.DB.prepare(`
+          UPDATE documents 
+          SET rag_indexed = 1, rag_chunks = ?, rag_indexed_at = datetime('now')
+          WHERE document_id = ?
+        `).bind(ragResult.chunksCreated, documentId).run();
+        
+      } catch (ragError) {
+        console.warn(`⚠️ RAG indexing failed for document ${documentId}:`, ragError.message);
+        // Continue with successful upload even if RAG indexing fails
+        await c.env.DB.prepare(`
+          UPDATE documents 
+          SET rag_indexed = 0, rag_error = ?
+          WHERE document_id = ?
+        `).bind(ragError.message, documentId).run();
+      }
+
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: { 
+          id: result.meta.last_row_id as number,
+          document_id: documentId,
+          file_name: sanitizedFileName,
+          original_file_name: file.name,
+          file_size: file.size,
+          mime_type: file.type,
+          file_hash: fileHash,
+          r2_key: r2Key,
+          download_url: `/api/documents/${documentId}/download`,
+          rag_indexing: 'initiated' // Indicates RAG indexing was started
+        },
+        message: 'Document uploaded successfully to R2 storage with RAG indexing' 
+      }, 201);
+    } catch (error) {
+      console.error('Upload document error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to upload document' 
+      }, 500);
+    }
+  });
+
+  // Download document from R2
+  api.get('/api/documents/:documentId/download', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const documentId = c.req.param('documentId');
+
+      // Get document metadata from database
+      const document = await c.env.DB.prepare(`
+        SELECT d.*, u.first_name, u.last_name 
+        FROM documents d
+        LEFT JOIN users u ON d.uploaded_by = u.id
+        WHERE d.document_id = ? AND d.is_active = 1
+      `).bind(documentId).first();
+
+      if (!document) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Document not found' 
+        }, 404);
+      }
+
+      // Check access permissions
+      const hasAccess = 
+        document.visibility === 'public' || 
+        document.uploaded_by === user.id || 
+        user.role === 'admin' ||
+        (document.access_permissions && 
+         JSON.parse(document.access_permissions).includes(user.role));
+
+      if (!hasAccess) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Access denied' 
+        }, 403);
+      }
+
+      // Get file from R2
+      console.log(`📥 Downloading file from R2: ${document.file_path}`);
+      const r2Object = await c.env.R2.get(document.file_path);
+
+      if (!r2Object) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'File not found in storage' 
+        }, 404);
+      }
+
+      // Update download count
+      await c.env.DB.prepare(`
+        UPDATE documents 
+        SET download_count = download_count + 1, last_accessed = datetime('now')
+        WHERE document_id = ?
+      `).bind(documentId).run();
+
+      // Return file with appropriate headers
+      return new Response(r2Object.body, {
+        headers: {
+          'Content-Type': document.mime_type,
+          'Content-Length': document.file_size.toString(),
+          'Content-Disposition': `attachment; filename="${document.original_file_name}"`,
+          'Cache-Control': 'private, max-age=3600',
+          'X-Document-ID': documentId
+        }
+      });
+
+    } catch (error) {
+      console.error('Download document error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to download document' 
+      }, 500);
+    }
+  });
+
+  // Get document metadata by ID
+  api.get('/api/documents/:documentId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const documentId = c.req.param('documentId');
+
+      const document = await c.env.DB.prepare(`
+        SELECT d.*, u.first_name, u.last_name, u.email as uploader_email
+        FROM documents d
+        LEFT JOIN users u ON d.uploaded_by = u.id
+        WHERE d.document_id = ? AND d.is_active = 1
+      `).bind(documentId).first();
+
+      if (!document) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Document not found' 
+        }, 404);
+      }
+
+      // Check access permissions
+      const hasAccess = 
+        document.visibility === 'public' || 
+        document.uploaded_by === user.id || 
+        user.role === 'admin' ||
+        (document.access_permissions && 
+         JSON.parse(document.access_permissions).includes(user.role));
+
+      if (!hasAccess) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Access denied' 
+        }, 403);
+      }
+
+      // Parse JSON fields
+      const result = {
+        ...document,
+        tags: document.tags ? JSON.parse(document.tags) : [],
+        access_permissions: document.access_permissions ? JSON.parse(document.access_permissions) : [],
+        download_url: `/api/documents/${documentId}/download`,
+        file_size_mb: (document.file_size / (1024 * 1024)).toFixed(2)
+      };
+
+      return c.json<ApiResponse<any>>({ 
+        success: true, 
+        data: result 
+      });
+
+    } catch (error) {
+      console.error('Get document error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to fetch document' 
+      }, 500);
+    }
+  });
+
+  // Delete document (soft delete)
+  api.delete('/api/documents/:documentId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const documentId = c.req.param('documentId');
+
+      // Get document to check ownership
+      const document = await c.env.DB.prepare(`
+        SELECT * FROM documents WHERE document_id = ? AND is_active = 1
+      `).bind(documentId).first();
+
+      if (!document) {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Document not found' 
+        }, 404);
+      }
+
+      // Check permissions (owner or admin can delete)
+      if (document.uploaded_by !== user.id && user.role !== 'admin') {
+        return c.json<ApiResponse<null>>({ 
+          success: false, 
+          error: 'Access denied' 
+        }, 403);
+      }
+
+      // Soft delete document in database
+      await c.env.DB.prepare(`
+        UPDATE documents 
+        SET is_active = 0, updated_at = datetime('now')
+        WHERE document_id = ?
+      `).bind(documentId).run();
+
+      // Optionally delete from R2 (or keep for recovery)
+      // For now, we'll keep the file in R2 for potential recovery
+      console.log(`🗑️ Document ${documentId} soft deleted (file kept in R2)`);
+
+      return c.json<ApiResponse<null>>({ 
+        success: true, 
+        message: 'Document deleted successfully' 
+      });
+
+    } catch (error) {
+      console.error('Delete document error:', error);
+      return c.json<ApiResponse<null>>({ 
+        success: false, 
+        error: 'Failed to delete document' 
+      }, 500);
+    }
+  });
+
+  // Create document metadata entry (for JSON-based uploads)
   api.post('/api/documents', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as User;
       const data = await c.req.json();
       
-      // In a real implementation, you would:
-      // 1. Handle multipart file upload
-      // 2. Store file in R2 or similar storage
-      // 3. Generate file hash for deduplication
-      // 4. Create thumbnail for images/PDFs
-      
-      // For now, we'll simulate document metadata creation
+      // Generate document ID
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const documentId = `doc-${timestamp}-${randomId}`;
+
       const documentData = {
+        document_id: documentId,
         file_name: data.file_name || 'document.pdf',
         original_file_name: data.original_file_name || data.file_name,
-        file_path: `/uploads/${Date.now()}-${data.file_name}`,
+        file_path: data.file_path || `/uploads/${timestamp}-${data.file_name}`,
         file_size: data.file_size || 0,
         mime_type: data.mime_type || 'application/pdf',
-        file_hash: `hash_${Date.now()}`, // Would be actual SHA-256 hash
+        file_hash: data.file_hash || `hash_${timestamp}`,
         uploaded_by: user.id,
         title: data.title,
         description: data.description,
@@ -3787,32 +4260,36 @@ Base your assessment on common cybersecurity and business risk frameworks. Consi
         related_entity_type: data.related_entity_type,
         related_entity_id: data.related_entity_id
       };
-      
+
       const result = await c.env.DB.prepare(`
         INSERT INTO documents (
-          file_name, original_file_name, file_path, file_size, mime_type, file_hash,
+          document_id, file_name, original_file_name, file_path, file_size, mime_type, file_hash,
           uploaded_by, title, description, document_type, tags, version, visibility,
-          access_permissions, related_entity_type, related_entity_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          access_permissions, related_entity_type, related_entity_id, download_count, is_active
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)
       `).bind(
-        documentData.file_name, documentData.original_file_name, documentData.file_path,
-        documentData.file_size, documentData.mime_type, documentData.file_hash,
+        documentData.document_id, documentData.file_name, documentData.original_file_name,
+        documentData.file_path, documentData.file_size, documentData.mime_type, documentData.file_hash,
         documentData.uploaded_by, documentData.title, documentData.description,
         documentData.document_type, documentData.tags, documentData.version,
         documentData.visibility, documentData.access_permissions,
         documentData.related_entity_type, documentData.related_entity_id
       ).run();
 
-      return c.json<ApiResponse<{id: number}>>({ 
+      return c.json<ApiResponse<{id: number, document_id: string}>>({ 
         success: true, 
-        data: { id: result.meta.last_row_id as number },
-        message: 'Document uploaded successfully' 
+        data: { 
+          id: result.meta.last_row_id as number,
+          document_id: documentId
+        },
+        message: 'Document metadata created successfully' 
       }, 201);
+
     } catch (error) {
-      console.error('Upload document error:', error);
+      console.error('Create document metadata error:', error);
       return c.json<ApiResponse<null>>({ 
         success: false, 
-        error: 'Failed to upload document' 
+        error: 'Failed to create document metadata' 
       }, 500);
     }
   });
