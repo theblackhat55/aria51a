@@ -1815,9 +1815,172 @@ function addEvidence() {
   showToast('Evidence upload functionality will be available soon', 'info');
 }
 
-// Placeholder functions for Assessment actions
+// Assessment creation function
 function createAssessment() {
-  showToast('Assessment creation wizard will be available soon', 'info');
+  showModal('Create New Assessment', `
+    <form id="assessment-form" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Assessment Name -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Assessment Name *</label>
+          <input type="text" id="assessment-name" required
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                 placeholder="e.g., Q1 2024 SOC 2 Assessment">
+        </div>
+
+        <!-- Framework -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Framework *</label>
+          <select id="assessment-framework" required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+            <option value="">Select Framework</option>
+            <option value="SOC2">SOC 2</option>
+            <option value="ISO27001">ISO 27001</option>
+            <option value="NIST">NIST Cybersecurity Framework</option>
+            <option value="PCI">PCI DSS</option>
+            <option value="GDPR">GDPR</option>
+            <option value="HIPAA">HIPAA</option>
+            <option value="CUSTOM">Custom Framework</option>
+          </select>
+        </div>
+
+        <!-- Assessment Type -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Assessment Type *</label>
+          <select id="assessment-type" required
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+            <option value="">Select Type</option>
+            <option value="internal">Internal Assessment</option>
+            <option value="external">External Audit</option>
+            <option value="self">Self Assessment</option>
+            <option value="gap_analysis">Gap Analysis</option>
+            <option value="readiness">Readiness Assessment</option>
+          </select>
+        </div>
+
+        <!-- Start Date -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
+          <input type="date" id="assessment-start-date" required
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+        </div>
+
+        <!-- Target Completion Date -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Target Completion *</label>
+          <input type="date" id="assessment-end-date" required
+                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+        </div>
+
+        <!-- Description -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <textarea id="assessment-description" rows="3"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Describe the scope and objectives of this assessment..."></textarea>
+        </div>
+      </div>
+
+      <!-- Status Info -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-center">
+          <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+          <span class="text-blue-800 font-medium">Assessment Information</span>
+        </div>
+        <p class="text-blue-700 text-sm mt-1">
+          The assessment will be created with "Planning" status and can be updated as progress is made.
+        </p>
+      </div>
+    </form>
+  `, [
+    { text: 'Cancel', class: 'btn-secondary', onclick: 'closeUniversalModal()' },
+    { text: 'Create Assessment', class: 'btn-primary', onclick: 'submitAssessment()' }
+  ]);
+
+  // Set default dates
+  const today = new Date().toISOString().split('T')[0];
+  const futureDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 90 days from now
+  
+  document.getElementById('assessment-start-date').value = today;
+  document.getElementById('assessment-end-date').value = futureDate;
+}
+
+async function submitAssessment() {
+  try {
+    const form = document.getElementById('assessment-form');
+    const formData = new FormData(form);
+    
+    // Get form values
+    const assessmentData = {
+      name: document.getElementById('assessment-name').value.trim(),
+      framework: document.getElementById('assessment-framework').value,
+      description: document.getElementById('assessment-description').value.trim(),
+      assessment_type: document.getElementById('assessment-type').value,
+      start_date: document.getElementById('assessment-start-date').value,
+      target_completion_date: document.getElementById('assessment-end-date').value,
+      status: 'planning',
+      organization_id: 1 // Default organization
+    };
+
+    // Validation
+    if (!assessmentData.name) {
+      showToast('Please enter an assessment name', 'error');
+      return;
+    }
+    if (!assessmentData.framework) {
+      showToast('Please select a framework', 'error');
+      return;
+    }
+    if (!assessmentData.assessment_type) {
+      showToast('Please select an assessment type', 'error');
+      return;
+    }
+    if (!assessmentData.start_date) {
+      showToast('Please select a start date', 'error');
+      return;
+    }
+    if (!assessmentData.target_completion_date) {
+      showToast('Please select a target completion date', 'error');
+      return;
+    }
+
+    // Check date logic
+    if (new Date(assessmentData.start_date) >= new Date(assessmentData.target_completion_date)) {
+      showToast('Target completion date must be after start date', 'error');
+      return;
+    }
+
+    // Submit to API
+    const token = localStorage.getItem('aria_token');
+    const response = await axios.post('/api/assessments', assessmentData, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      closeUniversalModal();
+      showToast('Assessment created successfully!', 'success');
+      
+      // Refresh the assessments page if we're currently on it
+      if (window.location.hash === '#assessments' || document.getElementById('main-content').innerHTML.includes('Compliance Assessments')) {
+        showAssessments(); // Reload the assessments page
+      }
+    } else {
+      throw new Error(response.data.error || 'Failed to create assessment');
+    }
+
+  } catch (error) {
+    console.error('Assessment creation error:', error);
+    let errorMessage = error.message || 'Failed to create assessment';
+    
+    // Handle specific API errors
+    if (error.response && error.response.status === 403) {
+      errorMessage = 'You do not have permission to create assessments. Please contact your administrator.';
+    } else if (error.response && error.response.status === 401) {
+      errorMessage = 'Please login to create assessments.';
+    }
+    
+    showToast('Error: ' + errorMessage, 'error');
+  }
 }
 
 // Show Risk Treatments page
@@ -2526,8 +2689,8 @@ function showRAGSettings() {
                   </div>
                 </div>
                 <div class="mt-4 flex space-x-2">
-                  <button class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Query</button>
+                  <button onclick="manageKnowledgeCollection('grc_policies')" class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
+                  <button onclick="queryKnowledgeCollection('grc_policies')" class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Query</button>
                 </div>
               </div>
 
@@ -2551,8 +2714,8 @@ function showRAGSettings() {
                   </div>
                 </div>
                 <div class="mt-4 flex space-x-2">
-                  <button class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Query</button>
+                  <button onclick="manageKnowledgeCollection('security_standards')" class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
+                  <button onclick="queryKnowledgeCollection('security_standards')" class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Query</button>
                 </div>
               </div>
 
@@ -2576,8 +2739,8 @@ function showRAGSettings() {
                   </div>
                 </div>
                 <div class="mt-4 flex space-x-2">
-                  <button class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200" disabled>Query</button>
+                  <button onclick="manageKnowledgeCollection('training_materials')" class="flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-indigo-700">Manage</button>
+                  <button onclick="queryKnowledgeCollection('training_materials')" class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm font-medium hover:bg-gray-200">Query</button>
                 </div>
               </div>
             </div>
@@ -2887,12 +3050,321 @@ function uploadKnowledge() {
   showToast('Knowledge upload will be available soon', 'info');
 }
 
-function reindexKnowledge() {
-  showToast('Knowledge reindexing will be available soon', 'info');
+async function reindexKnowledge() {
+  try {
+    showToast('Starting knowledge reindexing...', 'info');
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    const response = await axios.post('/api/rag/reindex', {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.data.success) {
+      const result = response.data.data;
+      showToast(`Knowledge reindexing completed! Processed ${result.totalProcessed} items in ${(result.processingTime / 1000).toFixed(2)}s`, 'success');
+      
+      // Show detailed results if available
+      if (result.details && result.details.length > 0) {
+        console.log('Reindexing details:', result.details);
+      }
+    } else {
+      showToast(response.data.message || 'Knowledge reindexing failed', 'error');
+    }
+  } catch (error) {
+    console.error('Knowledge reindexing error:', error);
+    showToast('Failed to reindex knowledge data', 'error');
+  }
 }
 
 function saveSearch() {
   showToast('Search saving will be available soon', 'info');
+}
+
+// Knowledge Collections Management
+async function manageKnowledgeCollection(collectionType) {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    // Get collection information
+    const response = await axios.get(`/api/rag/documents?sourceType=${collectionType}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.data.success) {
+      const documents = response.data.data.documents;
+      const collectionName = collectionType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      
+      showModal(`Manage ${collectionName}`, `
+        <div class="space-y-6">
+          <div class="flex justify-between items-center">
+            <h4 class="text-lg font-medium">Documents in Collection</h4>
+            <button onclick="uploadToCollection('${collectionType}')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+              <i class="fas fa-upload mr-2"></i>Upload Document
+            </button>
+          </div>
+          
+          <div class="max-h-96 overflow-y-auto">
+            ${documents && documents.length > 0 ? `
+              <div class="space-y-3">
+                ${documents.map(doc => `
+                  <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-start">
+                      <div class="flex-1">
+                        <h5 class="font-medium text-gray-900">${doc.title || 'Untitled Document'}</h5>
+                        <p class="text-sm text-gray-500 mt-1">
+                          Tokens: ${doc.token_count || 0} | 
+                          Created: ${doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Unknown'}
+                        </p>
+                      </div>
+                      <button onclick="deleteDocument('${doc.id}')" class="text-red-600 hover:text-red-700 ml-4">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            ` : `
+              <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-folder-open text-4xl mb-4"></i>
+                <p>No documents in this collection yet.</p>
+                <p class="text-sm mt-2">Upload documents to start building your knowledge base.</p>
+              </div>
+            `}
+          </div>
+        </div>
+      `);
+    } else {
+      showToast('Failed to load collection documents', 'error');
+    }
+  } catch (error) {
+    console.error('Manage collection error:', error);
+    showToast('Failed to manage knowledge collection', 'error');
+  }
+}
+
+async function queryKnowledgeCollection(collectionType) {
+  const collectionName = collectionType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  
+  showModal(`Query ${collectionName}`, `
+    <div class="space-y-6">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Search Query</label>
+        <textarea id="collection-query" rows="3" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Enter your search query for ${collectionName.toLowerCase()}..."></textarea>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Max Results</label>
+          <select id="collection-limit" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <option value="5">5 results</option>
+            <option value="10" selected>10 results</option>
+            <option value="20">20 results</option>
+            <option value="50">50 results</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Similarity Threshold</label>
+          <select id="collection-threshold" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <option value="0.1">Low (0.1)</option>
+            <option value="0.3" selected>Medium (0.3)</option>
+            <option value="0.5">High (0.5)</option>
+            <option value="0.7">Very High (0.7)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div>
+        <button onclick="executeCollectionQuery('${collectionType}')" 
+                class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700">
+          Search Collection
+        </button>
+      </div>
+      
+      <div id="collection-results" class="hidden">
+        <h4 class="font-medium text-gray-900 mb-3">Search Results</h4>
+        <div id="collection-results-content"></div>
+      </div>
+    </div>
+  `);
+}
+
+async function executeCollectionQuery(collectionType) {
+  try {
+    const query = document.getElementById('collection-query').value.trim();
+    if (!query) {
+      showToast('Please enter a search query', 'error');
+      return;
+    }
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    const limit = parseInt(document.getElementById('collection-limit').value);
+    const threshold = parseFloat(document.getElementById('collection-threshold').value);
+    
+    showToast('Searching collection...', 'info');
+    
+    const response = await axios.post('/api/rag/query', {
+      query: query,
+      sourceTypes: [collectionType],
+      limit: limit,
+      threshold: threshold,
+      includeMetadata: true
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.data.success) {
+      const result = response.data.data;
+      const resultsDiv = document.getElementById('collection-results');
+      const resultsContent = document.getElementById('collection-results-content');
+      
+      if (result.sources && result.sources.length > 0) {
+        resultsContent.innerHTML = `
+          <div class="space-y-4">
+            ${result.sources.map((source, index) => `
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex justify-between items-start mb-2">
+                  <h5 class="font-medium text-gray-900">${source.title || `Result ${index + 1}`}</h5>
+                  <span class="text-sm text-gray-500">${(source.similarity * 100).toFixed(1)}% match</span>
+                </div>
+                <p class="text-gray-700 text-sm mb-2">${source.content}</p>
+                ${source.metadata ? `
+                  <div class="text-xs text-gray-500">
+                    ${source.metadata.page ? `Page: ${source.metadata.page} | ` : ''}
+                    Tokens: ${source.metadata.tokenCount || 'Unknown'}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+        resultsDiv.classList.remove('hidden');
+        showToast(`Found ${result.sources.length} results`, 'success');
+      } else {
+        resultsContent.innerHTML = `
+          <div class="text-center py-8 text-gray-500">
+            <i class="fas fa-search text-4xl mb-4"></i>
+            <p>No results found for your query.</p>
+            <p class="text-sm mt-2">Try adjusting your search terms or lowering the similarity threshold.</p>
+          </div>
+        `;
+        resultsDiv.classList.remove('hidden');
+        showToast('No results found', 'info');
+      }
+    } else {
+      showToast(response.data.message || 'Search failed', 'error');
+    }
+  } catch (error) {
+    console.error('Collection query error:', error);
+    showToast('Failed to search collection', 'error');
+  }
+}
+
+async function uploadToCollection(collectionType) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.pdf,.doc,.docx,.txt,.md';
+  input.multiple = true;
+  
+  input.onchange = async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    for (const file of files) {
+      try {
+        showToast(`Uploading ${file.name}...`, 'info');
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('sourceType', collectionType);
+        
+        const response = await axios.post('/api/rag/index/document', formData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        
+        if (response.data.success) {
+          showToast(`${file.name} uploaded and indexed successfully`, 'success');
+        } else {
+          showToast(`Failed to upload ${file.name}`, 'error');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        showToast(`Failed to upload ${file.name}`, 'error');
+      }
+    }
+    
+    // Refresh the collection view
+    setTimeout(() => {
+      closeModal();
+      manageKnowledgeCollection(collectionType);
+    }, 1000);
+  };
+  
+  input.click();
+}
+
+async function deleteDocument(documentId) {
+  if (!confirm('Are you sure you want to delete this document?')) {
+    return;
+  }
+  
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    const response = await axios.delete(`/api/rag/documents/${documentId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.data.success) {
+      showToast('Document deleted successfully', 'success');
+      // Refresh the current modal view
+      location.reload();
+    } else {
+      showToast('Failed to delete document', 'error');
+    }
+  } catch (error) {
+    console.error('Delete document error:', error);
+    showToast('Failed to delete document', 'error');
+  }
 }
 
 function performSearch() {
@@ -2903,8 +3375,294 @@ function quickSearch(term) {
   showToast(`Quick search for "${term}" will be available soon`, 'info');
 }
 
-function generateReport() {
-  showToast('AI report generation will be available soon', 'info');
+async function generateReport() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    showModal('Generate AI Analytics Report', `
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+          <select id="report-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="executive_summary">Executive Summary</option>
+            <option value="risk_overview">Risk Management Overview</option>
+            <option value="compliance_status">Compliance Status</option>
+            <option value="incident_analysis">Security Incident Analysis</option>
+            <option value="kri_trends">Key Risk Indicators</option>
+            <option value="security_metrics">Security Metrics</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Timeframe</label>
+          <select id="report-timeframe" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="last_7_days">Last 7 Days</option>
+            <option value="last_30_days" selected>Last 30 Days</option>
+            <option value="last_90_days">Last 90 Days</option>
+            <option value="last_year">Last Year</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">AI Provider</label>
+          <select id="report-provider" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            <option value="openai">OpenAI GPT-4</option>
+            <option value="gemini">Google Gemini</option>
+            <option value="anthropic">Anthropic Claude</option>
+            <option value="cloudflare">Cloudflare Llama (Free)</option>
+          </select>
+        </div>
+        
+        <div class="flex items-center">
+          <input type="checkbox" id="include-charts" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+          <label for="include-charts" class="ml-2 text-sm text-gray-700">Include Charts and Visualizations</label>
+        </div>
+        
+        <div class="flex space-x-3">
+          <button onclick="executeReportGeneration()" 
+                  class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center">
+            <i class="fas fa-chart-line mr-2"></i>
+            Generate Report
+          </button>
+          <button onclick="closeModal()" 
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+        </div>
+      </div>
+    `);
+  } catch (error) {
+    console.error('Generate report modal error:', error);
+    showToast('Failed to open report generation', 'error');
+  }
+}
+
+async function executeReportGeneration() {
+  try {
+    const reportType = document.getElementById('report-type').value;
+    const timeframe = document.getElementById('report-timeframe').value;
+    const provider = document.getElementById('report-provider').value;
+    const includeCharts = document.getElementById('include-charts').checked;
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    // Get AI provider settings
+    const aiSettings = getAISettings();
+    
+    showToast('Generating AI analytics report...', 'info');
+    closeModal();
+    
+    // Show loading state
+    showModal('Generating Report', `
+      <div class="text-center py-8">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Generating AI Analytics Report</h3>
+        <p class="text-gray-500">This may take a few moments...</p>
+        <div class="mt-4 text-sm text-gray-400">
+          <p>Report Type: ${reportType.replace('_', ' ')}</p>
+          <p>Timeframe: ${timeframe.replace('_', ' ')}</p>
+          <p>AI Provider: ${provider}</p>
+        </div>
+      </div>
+    `);
+    
+    const response = await axios.post('/api/aria/generate-report', {
+      reportType: reportType,
+      timeframe: timeframe,
+      includeCharts: includeCharts,
+      provider: provider,
+      settings: aiSettings
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 120000 // 2 minutes timeout for report generation
+    });
+    
+    if (response.data.success) {
+      const report = response.data.data;
+      displayGeneratedReport(report);
+      showToast('Report generated successfully!', 'success');
+    } else {
+      closeModal();
+      showToast(response.data.message || 'Report generation failed', 'error');
+    }
+  } catch (error) {
+    console.error('Report generation error:', error);
+    closeModal();
+    if (error.code === 'ECONNABORTED') {
+      showToast('Report generation timed out. Please try again.', 'error');
+    } else {
+      showToast('Failed to generate report', 'error');
+    }
+  }
+}
+
+function displayGeneratedReport(report) {
+  closeModal();
+  
+  const chartsHtml = report.charts ? report.charts.map((chart, index) => `
+    <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+      <h4 class="text-lg font-medium text-gray-900 mb-4">${chart.title}</h4>
+      <canvas id="report-chart-${index}" width="400" height="200"></canvas>
+    </div>
+  `).join('') : '';
+  
+  const recommendationsHtml = report.recommendations && report.recommendations.length > 0 ? `
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+      <h4 class="text-lg font-medium text-blue-900 mb-3">
+        <i class="fas fa-lightbulb mr-2"></i>Key Recommendations
+      </h4>
+      <ul class="space-y-2">
+        ${report.recommendations.map(rec => `
+          <li class="flex items-start">
+            <i class="fas fa-arrow-right text-blue-600 mt-1 mr-2 text-sm"></i>
+            <span class="text-blue-800">${rec}</span>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  ` : '';
+  
+  showModal(`${report.metadata.title}`, `
+    <div class="max-w-4xl max-h-screen overflow-y-auto">
+      <!-- Report Header -->
+      <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-lg mb-6">
+        <h2 class="text-2xl font-bold mb-2">${report.metadata.title}</h2>
+        <div class="flex flex-wrap gap-4 text-indigo-100">
+          <span><i class="fas fa-calendar mr-1"></i> ${report.metadata.timeframe.replace('_', ' ')}</span>
+          <span><i class="fas fa-clock mr-1"></i> Generated: ${new Date(report.metadata.generated_at).toLocaleString()}</span>
+          <span><i class="fas fa-robot mr-1"></i> AI Provider: ${report.metadata.ai_provider}</span>
+        </div>
+      </div>
+      
+      <!-- Executive Summary -->
+      <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4">
+          <i class="fas fa-file-alt mr-2 text-indigo-600"></i>Executive Summary
+        </h3>
+        <div class="prose max-w-none text-gray-700">
+          ${report.executive_summary.replace(/\n/g, '</p><p>')}
+        </div>
+      </div>
+      
+      <!-- Key Recommendations -->
+      ${recommendationsHtml}
+      
+      <!-- Charts -->
+      ${chartsHtml}
+      
+      <!-- Raw Data (Collapsible) -->
+      <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+        <button onclick="toggleReportData()" class="flex items-center text-gray-700 hover:text-gray-900">
+          <i class="fas fa-chevron-right mr-2" id="report-data-icon"></i>
+          <span class="font-medium">View Raw Data</span>
+        </button>
+        <div id="report-raw-data" class="hidden mt-4">
+          <pre class="bg-white p-4 rounded border text-sm overflow-x-auto">${JSON.stringify(report.data, null, 2)}</pre>
+        </div>
+      </div>
+      
+      <!-- Actions -->
+      <div class="flex justify-between mt-6 pt-4 border-t border-gray-200">
+        <button onclick="downloadReport()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+          <i class="fas fa-download mr-2"></i>Download PDF
+        </button>
+        <button onclick="closeModal()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">
+          Close
+        </button>
+      </div>
+    </div>
+  `, [], 'max-w-6xl');
+  
+  // Render charts if included
+  if (report.charts && window.Chart) {
+    setTimeout(() => {
+      report.charts.forEach((chartConfig, index) => {
+        const ctx = document.getElementById(`report-chart-${index}`);
+        if (ctx) {
+          new Chart(ctx, {
+            type: chartConfig.type,
+            data: chartConfig.data,
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }
+          });
+        }
+      });
+    }, 100);
+  }
+  
+  // Store report for download
+  window.currentReport = report;
+}
+
+function toggleReportData() {
+  const dataDiv = document.getElementById('report-raw-data');
+  const icon = document.getElementById('report-data-icon');
+  
+  if (dataDiv.classList.contains('hidden')) {
+    dataDiv.classList.remove('hidden');
+    icon.classList.remove('fa-chevron-right');
+    icon.classList.add('fa-chevron-down');
+  } else {
+    dataDiv.classList.add('hidden');
+    icon.classList.remove('fa-chevron-down');
+    icon.classList.add('fa-chevron-right');
+  }
+}
+
+function downloadReport() {
+  if (!window.currentReport) {
+    showToast('No report available for download', 'error');
+    return;
+  }
+  
+  // Create downloadable content
+  const report = window.currentReport;
+  const content = `${report.metadata.title}
+Generated: ${new Date(report.metadata.generated_at).toLocaleString()}
+Timeframe: ${report.metadata.timeframe.replace('_', ' ')}
+AI Provider: ${report.metadata.ai_provider}
+
+EXECUTIVE SUMMARY
+${report.executive_summary}
+
+${report.recommendations && report.recommendations.length > 0 ? `
+KEY RECOMMENDATIONS
+${report.recommendations.map(rec => `• ${rec}`).join('\n')}
+` : ''}
+
+RAW DATA
+${JSON.stringify(report.data, null, 2)}
+`;
+  
+  // Create and download file
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${report.metadata.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+  
+  showToast('Report downloaded successfully', 'success');
 }
 
 // Show placeholder for modules that haven't loaded yet
@@ -4860,7 +5618,172 @@ function editKRI(kriId) {
 }
 
 function importKRIReadings() {
-  showNotification('Import KRI Readings functionality coming soon', 'info');
+  showModal('Import KRI Readings', `
+    <div class="space-y-6">
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start">
+          <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+          <div>
+            <h4 class="font-medium text-blue-900">CSV Format Requirements</h4>
+            <ul class="mt-2 text-sm text-blue-800 space-y-1">
+              <li>• <strong>kri_name</strong>: Must match existing KRI names exactly</li>
+              <li>• <strong>value</strong>: Numeric reading value</li>
+              <li>• <strong>timestamp</strong>: Date/time in ISO format (YYYY-MM-DD HH:MM:SS)</li>
+              <li>• <strong>status</strong>: Optional (red/amber/green) - auto-calculated if not provided</li>
+              <li>• <strong>comments</strong>: Optional notes about the reading</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+        <input type="file" id="kri-import-file" accept=".csv" 
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+        <p class="mt-1 text-sm text-gray-500">Upload a CSV file with KRI readings data</p>
+      </div>
+      
+      <div class="flex space-x-3">
+        <button onclick="executeKRIImport()" 
+                class="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 flex items-center justify-center">
+          <i class="fas fa-upload mr-2"></i>
+          Import Readings
+        </button>
+        <button onclick="downloadKRITemplate()" 
+                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          <i class="fas fa-download mr-2"></i>
+          Template
+        </button>
+        <button onclick="closeModal()" 
+                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+          Cancel
+        </button>
+      </div>
+    </div>
+  `);
+}
+
+async function executeKRIImport() {
+  try {
+    const fileInput = document.getElementById('kri-import-file');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+      showToast('Please select a CSV file to import', 'error');
+      return;
+    }
+    
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      showToast('Please select a CSV file', 'error');
+      return;
+    }
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showToast('Please login to access this feature', 'error');
+      return;
+    }
+    
+    showToast('Importing KRI readings...', 'info');
+    closeModal();
+    
+    // Show progress modal
+    showModal('Importing KRI Readings', `
+      <div class="text-center py-8">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Processing CSV File</h3>
+        <p class="text-gray-500">Importing KRI readings...</p>
+      </div>
+    `);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await axios.post('/api/kris/readings/import', formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 60000
+    });
+    
+    closeModal();
+    
+    if (response.data.success) {
+      const result = response.data.data;
+      
+      let resultHtml = `
+        <div class="space-y-4">
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-check-circle text-green-600 mr-3"></i>
+              <div>
+                <h4 class="font-medium text-green-900">Import Completed</h4>
+                <p class="text-green-800 mt-1">
+                  Successfully imported ${result.success_count} readings
+                  ${result.error_count > 0 ? `, ${result.error_count} failed` : ''}
+                </p>
+              </div>
+            </div>
+          </div>
+      `;
+      
+      if (result.errors && result.errors.length > 0) {
+        resultHtml += `
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h4 class="font-medium text-red-900 mb-2">Import Errors:</h4>
+            <ul class="text-sm text-red-800 space-y-1">
+              ${result.errors.map(error => `<li>• ${error}</li>`).join('')}
+              ${result.error_count > 10 ? `<li>• And ${result.error_count - 10} more errors...</li>` : ''}
+            </ul>
+          </div>
+        `;
+      }
+      
+      resultHtml += `
+          <div class="flex justify-end">
+            <button onclick="closeModal(); location.reload();" 
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+              <i class="fas fa-refresh mr-2"></i>Refresh Data
+            </button>
+          </div>
+        </div>
+      `;
+      
+      showModal('Import Results', resultHtml);
+      showToast(`Import completed: ${result.success_count} successful`, 'success');
+    } else {
+      showToast(response.data.error || 'Import failed', 'error');
+    }
+  } catch (error) {
+    console.error('KRI import error:', error);
+    closeModal();
+    if (error.code === 'ECONNABORTED') {
+      showToast('Import timed out. Please try again with a smaller file.', 'error');
+    } else {
+      showToast('Failed to import KRI readings', 'error');
+    }
+  }
+}
+
+function downloadKRITemplate() {
+  const templateContent = `kri_name,value,timestamp,status,comments
+"Security Incidents Count",5,"2024-08-25 10:00:00","amber","Monthly security incident count"
+"Failed Login Attempts",250,"2024-08-25 10:00:00","green","Daily failed login attempts"
+"Vulnerability Scan Score",92,"2024-08-25 10:00:00","green","Weekly vulnerability assessment score"
+"Compliance Rating",85,"2024-08-25 10:00:00","red","Quarterly compliance assessment"`;
+  
+  const blob = new Blob([templateContent], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'kri_readings_template.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+  
+  showToast('Template downloaded successfully', 'success');
 }
 
 function changeKRIChartPeriod(period) {

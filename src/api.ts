@@ -1912,6 +1912,163 @@ Respond with JSON:
     }
   });
 
+  // Import KRI readings from CSV
+  api.post('/api/kris/readings/import', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as User;
+      const formData = await c.req.formData();
+      const file = formData.get('file') as File;
+      
+      if (!file) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'CSV file is required'
+        }, 400);
+      }
+      
+      // Read and parse CSV file
+      const csvText = await file.text();
+      const lines = csvText.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: 'CSV file must contain headers and at least one data row'
+        }, 400);
+      }
+      
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const rows = lines.slice(1);
+      
+      // Validate required columns
+      const requiredColumns = ['kri_name', 'value', 'timestamp'];
+      const missingColumns = requiredColumns.filter(col => 
+        !headers.some(h => h.toLowerCase().includes(col.toLowerCase().replace('_', '')))
+      );
+      
+      if (missingColumns.length > 0) {
+        return c.json<ApiResponse<null>>({
+          success: false,
+          error: `Missing required columns: ${missingColumns.join(', ')}`
+        }, 400);
+      }
+      
+      // Find column indices
+      const getColumnIndex = (patterns: string[]) => {
+        for (const pattern of patterns) {
+          const index = headers.findIndex(h => 
+            h.toLowerCase().includes(pattern.toLowerCase())
+          );
+          if (index !== -1) return index;
+        }
+        return -1;
+      };
+      
+      const kriNameIndex = getColumnIndex(['kri_name', 'kri', 'name', 'indicator']);
+      const valueIndex = getColumnIndex(['value', 'reading', 'score']);
+      const timestampIndex = getColumnIndex(['timestamp', 'date', 'time']);
+      const statusIndex = getColumnIndex(['status', 'alert', 'color']);
+      const commentsIndex = getColumnIndex(['comments', 'notes', 'description']);
+      
+      const db = c.env.DB;
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+      
+      // Get all KRIs for name lookup
+      const kriList = await db.prepare('SELECT id, name FROM kris').all();
+      const kriMap = new Map(kriList.results?.map(k => [k.name.toLowerCase(), k.id]) || []);
+      
+      // Process each row
+      for (let i = 0; i < rows.length; i++) {
+        try {
+          const row = rows[i].split(',').map(cell => cell.trim().replace(/"/g, ''));
+          
+          const kriName = row[kriNameIndex];
+          const value = parseFloat(row[valueIndex]);
+          const timestamp = row[timestampIndex];
+          const status = statusIndex >= 0 ? row[statusIndex] : null;
+          const comments = commentsIndex >= 0 ? row[commentsIndex] : null;
+          
+          // Validate data
+          if (!kriName || isNaN(value) || !timestamp) {
+            errors.push(`Row ${i + 2}: Missing required data (KRI name, value, or timestamp)`);
+            errorCount++;
+            continue;
+          }
+          
+          // Find KRI ID
+          const kriId = kriMap.get(kriName.toLowerCase());
+          if (!kriId) {
+            errors.push(`Row ${i + 2}: KRI '${kriName}' not found`);
+            errorCount++;
+            continue;
+          }
+          
+          // Parse timestamp
+          let parsedTimestamp;
+          try {
+            parsedTimestamp = new Date(timestamp).toISOString();
+          } catch {
+            errors.push(`Row ${i + 2}: Invalid timestamp format '${timestamp}'`);
+            errorCount++;
+            continue;
+          }
+          
+          // Determine status if not provided
+          let finalStatus = status;
+          if (!finalStatus) {
+            // Get KRI thresholds to determine status
+            const kri = await db.prepare('SELECT red_threshold, amber_threshold FROM kris WHERE id = ?').bind(kriId).first();
+            if (kri) {
+              if (kri.red_threshold && value >= kri.red_threshold) {
+                finalStatus = 'red';
+              } else if (kri.amber_threshold && value >= kri.amber_threshold) {
+                finalStatus = 'amber';
+              } else {
+                finalStatus = 'green';
+              }
+            } else {
+              finalStatus = 'green';
+            }
+          }
+          
+          // Insert reading
+          await db.prepare(`
+            INSERT INTO kri_readings (kri_id, value, timestamp, status, comments, created_by, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+          `).bind(kriId, value, parsedTimestamp, finalStatus, comments, user.id).run();
+          
+          successCount++;
+        } catch (error) {
+          errors.push(`Row ${i + 2}: ${error.message}`);
+          errorCount++;
+        }
+      }
+      
+      return c.json<ApiResponse<{
+        success_count: number;
+        error_count: number;
+        errors: string[];
+      }>>({
+        success: true,
+        data: {
+          success_count: successCount,
+          error_count: errorCount,
+          errors: errors.slice(0, 10) // Limit errors to first 10
+        },
+        message: `Import completed: ${successCount} successful, ${errorCount} failed`
+      });
+      
+    } catch (error) {
+      console.error('KRI readings import error:', error);
+      return c.json<ApiResponse<null>>({
+        success: false,
+        error: 'Failed to import KRI readings'
+      }, 500);
+    }
+  });
+
   // Statement of Applicability (SoA) API
   api.get('/api/soa', smartAuthMiddleware, async (c) => {
     try {

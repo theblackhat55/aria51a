@@ -5736,7 +5736,7 @@ async function assignIncident(id) {
 
 async function escalateIncident(id) {
   try {
-    const token = localStorage.getItem('aria_token');
+    const token = localStorage.getItem('token');
     
     showModal('Escalate Incident', `
       <form id="escalate-incident-form" class="space-y-4">
@@ -6152,20 +6152,93 @@ async function exportCompliance() {
   }
 }
 
+// CSV Export Utility Functions
+function convertToCSV(data, columns) {
+  if (!data || !data.length) return '';
+  
+  // Create header row
+  const headers = columns.map(col => col.label || col.key);
+  const csvContent = [headers.join(',')];
+  
+  // Add data rows
+  data.forEach(item => {
+    const row = columns.map(col => {
+      let value = item[col.key];
+      
+      // Handle nested objects (like category_name, first_name + last_name for owner)
+      if (col.key === 'category' && !value && item.category_name) {
+        value = item.category_name;
+      } else if (col.key === 'owner' && !value) {
+        value = item.first_name && item.last_name ? `${item.first_name} ${item.last_name}` : '';
+      }
+      
+      // Clean and escape the value
+      if (value === null || value === undefined) {
+        value = '';
+      } else if (typeof value === 'object') {
+        value = JSON.stringify(value);
+      } else {
+        value = String(value);
+      }
+      
+      // Escape quotes and wrap in quotes if contains comma, newline, or quote
+      if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+        value = '"' + value.replace(/"/g, '""') + '"';
+      }
+      
+      return value;
+    });
+    
+    csvContent.push(row.join(','));
+  });
+  
+  return csvContent.join('\n');
+}
+
+function downloadCSV(csvContent, filename) {
+  if (!csvContent) {
+    showToast('No data to export', 'error');
+    return;
+  }
+  
+  // Create blob and download link
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } else {
+    // Fallback for older browsers
+    if (navigator.msSaveBlob) {
+      navigator.msSaveBlob(blob, filename);
+    } else {
+      showToast('Export not supported in this browser', 'error');
+    }
+  }
+}
+
 // Export functions
 async function exportRisks() {
   try {
-    const token = localStorage.getItem('aria_token');
+    const token = localStorage.getItem('token');
     const response = await axios.get('/api/risks', {
       headers: { Authorization: `Bearer ${token}` }
     });
     
-    if (!response.data || !response.data.length) {
+    const risks = response.data.success ? response.data.data : response.data;
+    if (!risks || !risks.length) {
       showToast('No risks found to export', 'warning');
       return;
     }
     
-    const csvContent = convertToCSV(response.data, [
+    const csvContent = convertToCSV(risks, [
       { key: 'id', label: 'ID' },
       { key: 'title', label: 'Title' },
       { key: 'description', label: 'Description' },
@@ -6189,7 +6262,7 @@ async function exportRisks() {
 }
 async function exportControls() {
   try {
-    const token = localStorage.getItem('aria_token');
+    const token = localStorage.getItem('token');
     const response = await axios.get('/api/controls', {
       headers: { Authorization: `Bearer ${token}` }
     });

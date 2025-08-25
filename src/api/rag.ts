@@ -420,6 +420,28 @@ export function createRAGAPI() {
     }
   });
 
+  // Reindex all knowledge data
+  app.post('/reindex', async (c) => {
+    try {
+      console.log('Starting knowledge reindexing...');
+      
+      const result = await ragServer.reindexAllData();
+      
+      return c.json({
+        success: true,
+        message: 'Knowledge reindexing completed successfully',
+        data: result
+      });
+    } catch (error) {
+      console.error('Knowledge reindexing error:', error);
+      return c.json({
+        success: false,
+        message: 'Failed to reindex knowledge data',
+        error: error.message
+      }, 500);
+    }
+  });
+
   // Clear RAG cache
   app.post('/cache/clear', async (c) => {
     try {
