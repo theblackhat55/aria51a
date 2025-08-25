@@ -45,7 +45,7 @@ app.use('*', async (c, next) => {
   c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   // SECURITY FIX: Enhanced Content Security Policy with nonce support
-  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
+  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'sha256-5uXHBGgmyNX/SWq82GyPSgkBqRQCAgHqupId+6jQfKM=' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
 });
 
 // API routes - Clean Cloudflare-optimized implementation
@@ -580,7 +580,7 @@ app.get('/login', (c) => {
       <p class="text-gray-600 mt-2">AI Risk Intelligence Assistant</p>
     </div>
 
-    <div id="legacy-auth" style="display:none;">
+    <div id="legacy-auth" style="display:block;">
       <form id="login-form">
         <div class="mb-6">
           <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
@@ -630,13 +630,10 @@ app.get('/login', (c) => {
       </div>
     </div>
 
-    <!-- Legacy Authentication -->
+    <!-- Legacy Authentication Note -->
     <div class="mt-4 pt-4 border-t border-gray-200">
       <div class="text-center">
-        <p class="text-xs text-gray-500 mb-2">Authentication</p>
-        <button onclick="document.getElementById('legacy-auth').style.display='block'; this.style.display='none';" class="text-gray-400 hover:text-gray-600 text-xs underline">
-          Use Login Form
-        </button>
+        <p class="text-xs text-gray-500">Demo Platform - Use provided demo accounts</p>
       </div>
     </div>
   </div>
