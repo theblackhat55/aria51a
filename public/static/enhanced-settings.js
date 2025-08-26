@@ -110,7 +110,6 @@ class EnhancedSettingsManager {
                       class="system-subtab w-full text-left flex items-center space-x-2 px-3 py-2 text-sm rounded-lg transition-all duration-200">
                       <i class="fas fa-users text-green-600"></i>
                       <span>User Management</span>
-                      <span class="ml-auto text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Unified</span>
                     </button>
                     <button onclick="enhancedSettings.showSystemSubTab('organizations')" 
                       id="subtab-organizations" 
@@ -988,7 +987,7 @@ class EnhancedSettingsManager {
     
     content.innerHTML = `
       <div class="space-y-6">
-        <!-- Unified User Management Header -->
+        <!-- User Management Header -->
         <div class="flex justify-between items-center">
           <div>
             <h3 class="text-lg font-medium text-gray-900">User Management</h3>
@@ -1332,9 +1331,179 @@ class EnhancedSettingsManager {
     showToast('Users refreshed', 'success');
   }
 
+  async submitAddUser() {
+    const form = document.getElementById('add-user-form');
+    const formData = new FormData(form);
+    const userData = Object.fromEntries(formData.entries());
+    
+    // Validate required fields
+    const requiredFields = ['first_name', 'last_name', 'email', 'username', 'password', 'role'];
+    const missingFields = requiredFields.filter(field => !userData[field] || userData[field].trim() === '');
+    
+    if (missingFields.length > 0) {
+      showToast(`Please fill in all required fields: ${missingFields.join(', ')}`, 'error');
+      return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+      showToast('Please enter a valid email address', 'error');
+      return;
+    }
+    
+    // Validate password length
+    if (userData.password.length < 6) {
+      showToast('Password must be at least 6 characters long', 'error');
+      return;
+    }
+    
+    try {
+      // Show loading state
+      const submitBtn = event.target || document.querySelector('#add-user-modal button[onclick*="submitAddUser"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Adding User...';
+      submitBtn.disabled = true;
+      
+      const token = localStorage.getItem('aria_token');
+      const response = await axios.post('/api/users', userData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data.success) {
+        showToast('User added successfully', 'success');
+        document.getElementById('add-user-modal').remove();
+        this.refreshUsers(); // Refresh the users list
+      } else {
+        throw new Error(response.data.error || 'Failed to add user');
+      }
+    } catch (error) {
+      console.error('Add user error:', error);
+      let errorMessage = 'Failed to add user';
+      
+      if (error.response && error.response.data && error.response.data.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showToast(errorMessage, 'error');
+      
+      // Reset button state
+      const submitBtn = document.querySelector('#add-user-modal button[onclick*="submitAddUser"]');
+      if (submitBtn) {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+    }
+  }
+
   showAddUserModal() {
-    // Implementation for add user modal
-    showToast('Add user functionality coming soon', 'info');
+    // Create and show add user modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+    modal.id = 'add-user-modal';
+    
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Add New User</h3>
+            <button type="button" class="text-gray-400 hover:text-gray-600" onclick="this.closest('#add-user-modal').remove()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        
+        <form id="add-user-form" class="px-6 py-4 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+              <input type="text" id="first_name" name="first_name" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+              <input type="text" id="last_name" name="last_name" required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input type="email" id="email" name="email" required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+            <input type="text" id="username" name="username" required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+            <input type="password" id="password" name="password" required minlength="6"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+            <select id="role" name="role" required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Select a role</option>
+              <option value="user">User</option>
+              <option value="risk_owner">Risk Owner</option>
+              <option value="risk_manager">Risk Manager</option>
+              <option value="compliance_officer">Compliance Officer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Department</label>
+              <input type="text" id="department" name="department"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+              <input type="text" id="job_title" name="job_title"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <input type="tel" id="phone" name="phone"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </form>
+        
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <button type="button" onclick="this.closest('#add-user-modal').remove()"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200">
+            Cancel
+          </button>
+          <button type="button" onclick="window.enhancedSettings.submitAddUser()"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700">
+            <i class="fas fa-user-plus mr-1"></i>
+            Add User
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Focus on first input
+    setTimeout(() => {
+      document.getElementById('first_name').focus();
+    }, 100);
   }
 
   editUser(userId) {
