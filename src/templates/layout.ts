@@ -34,6 +34,9 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <!-- Chart.js for Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
+  <!-- AI Governance Scripts -->
+  <script src="/static/ai-governance.js"></script>
+  
   <!-- Custom HTMX Configuration -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -176,7 +179,33 @@ const renderNavigation = (user: any) => html`
             <div x-show="open" @click.away="open = false" x-transition
                  class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
               <a href="/assets" class="block px-4 py-2 text-sm hover:bg-gray-50">Assets</a>
+              <a href="/documents" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                <i class="fas fa-file-alt text-blue-600 mr-2"></i>Documents
+              </a>
+              <a href="/notifications" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                <i class="fas fa-bell text-yellow-600 mr-2"></i>Notifications
+              </a>
+              <a href="/keys" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                <i class="fas fa-key text-green-600 mr-2"></i>API Keys
+              </a>
               <a href="/settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
+            </div>
+          </div>
+          
+          <!-- Intelligence Dropdown -->
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+              <span>Intelligence</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div x-show="open" @click.away="open = false" x-transition
+                 class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <a href="/ai-governance" class="block px-4 py-2 text-sm hover:bg-gray-50">
+                <i class="fas fa-robot text-purple-600 mr-2"></i>AI Governance
+              </a>
+              <a href="/ai-governance/systems" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Systems Registry</a>
+              <a href="/ai-governance/risk-assessments" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Risk Assessments</a>
+              <a href="/ai-governance/incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Incidents</a>
             </div>
           </div>
           
@@ -202,8 +231,30 @@ const renderNavigation = (user: any) => html`
           ` : ''}
         </div>
         
-        <!-- User Section -->
+        <!-- Notifications -->
         <div class="flex items-center space-x-4">
+          <!-- Notification Bell -->
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" class="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
+              <i class="fas fa-bell text-lg"></i>
+              <!-- Notification Badge -->
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" 
+                    hx-get="/notifications/count" 
+                    hx-trigger="load, every 30s" 
+                    hx-swap="innerHTML">
+                3
+              </span>
+            </button>
+            <div x-show="open" @click.away="open = false" x-transition
+                 hx-get="/notifications/dropdown" 
+                 hx-trigger="revealed"
+                 hx-swap="innerHTML"
+                 class="absolute right-0 mt-2 z-50">
+              <!-- Notification dropdown will be loaded here -->
+            </div>
+          </div>
+
+        <!-- User Section -->
           <span class="text-sm text-gray-600">Welcome, ${user?.username || 'User'}</span>
           <button hx-post="/auth/logout" 
                   hx-redirect="/"
