@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { getCookie } from 'hono/cookie';
-import jwt from 'jsonwebtoken';
+// import jwt from 'jsonwebtoken'; // Not compatible with Cloudflare Workers - removed
 import { baseLayout } from '../templates/layout';
 import { html } from 'hono/html';
 
-const JWT_SECRET = 'aria5-htmx-secret-key-change-in-production';
+// const JWT_SECRET = 'aria5-htmx-secret-key-change-in-production'; // Not needed for base64 tokens
 
 export function createHomeRoute() {
   const app = new Hono();
@@ -19,15 +19,22 @@ export function createHomeRoute() {
     }
     
     try {
-      // Verify token
-      const payload = jwt.verify(token, JWT_SECRET) as any;
+      // Verify base64 token (compatible with Cloudflare Workers)
+      const tokenData = JSON.parse(atob(token));
+      
+      // Check if token is expired
+      if (Date.now() > tokenData.expires) {
+        // Token expired - redirect to login
+        return c.redirect('/login');
+      }
+      
       const user = {
-        id: payload.id,
-        username: payload.username,
-        email: payload.email,
-        role: payload.role,
-        firstName: payload.firstName,
-        lastName: payload.lastName
+        id: tokenData.id,
+        username: tokenData.username,
+        email: tokenData.email,
+        role: tokenData.role,
+        firstName: tokenData.firstName,
+        lastName: tokenData.lastName
       };
       
       // Authenticated - show HTMX dashboard

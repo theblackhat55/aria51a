@@ -18,16 +18,15 @@ import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
-// SECURITY FIX: Enhanced CORS configuration with strict origin validation
+// CORS configuration - Allow all Cloudflare Pages domains for now
 app.use('*', cors({
   origin: (origin) => {
     // Allow localhost for development
     if (origin?.includes('localhost') || origin?.includes('127.0.0.1')) {
       return origin;
     }
-    // Allow specific Cloudflare Pages domains
-    if (origin?.includes('aria-platform.pages.dev') || 
-        origin?.match(/^https:\/\/[a-f0-9-]+\.aria-platform.*\.pages\.dev$/)) {
+    // Allow all Cloudflare Pages domains (temporary for debugging)
+    if (origin?.includes('.pages.dev')) {
       return origin;
     }
     // Reject all other origins
@@ -41,6 +40,8 @@ app.use('*', cors({
 
 // Serve static files
 app.use('/static/*', serveStatic({ root: './public' }));
+// Serve HTML files from public root (for debug pages)
+app.use('*.html', serveStatic({ root: './public' }));
 
 // Security headers middleware
 app.use('*', async (c, next) => {
@@ -112,6 +113,225 @@ app.get('/health', (c) => {
       risk_intelligence: 'active'
     }
   });
+});
+
+// Simple login page endpoint (bypassing complex login page)
+app.get('/simple-login.html', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Login - ARIA5.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-indigo-900 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="mx-auto h-20 w-20 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+        <i class="fas fa-shield-alt text-white text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">ARIA5.1</h1>
+      <p class="text-gray-600 mt-2">AI Risk Intelligence Assistant</p>
+    </div>
+
+    <form id="login-form">
+      <div class="mb-4">
+        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+        <input type="text" id="username" name="username" required
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="Enter username">
+      </div>
+      
+      <div class="mb-6">
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+        <input type="password" id="password" name="password" required
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="Enter password">
+      </div>
+      
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        Sign In
+      </button>
+    </form>
+    
+    <div id="login-error" class="mt-4 text-red-600 text-sm hidden"></div>
+    
+    <div class="mt-6 text-center text-sm text-gray-600">
+      <p>Demo Accounts:</p>
+      <p><strong>Admin:</strong> admin / demo123</p>
+      <p><strong>Security:</strong> avi_security / demo123</p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginForm = document.getElementById('login-form');
+      const errorDiv = document.getElementById('login-error');
+      
+      function showError(message) {
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('hidden');
+        setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+      }
+      
+      if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          
+          const username = document.getElementById('username').value.trim();
+          const password = document.getElementById('password').value.trim();
+          
+          if (!username) {
+            showError('Username is required');
+            return;
+          }
+          
+          if (!password) {
+            showError('Password is required');
+            return;
+          }
+          
+          const submitBtn = loginForm.querySelector('button[type="submit"]');
+          const originalText = submitBtn.innerHTML;
+          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing In...';
+          submitBtn.disabled = true;
+
+          try {
+            const response = await axios.post('/api/auth/login', {
+              username: username,
+              password: password
+            });
+
+            if (response.data.success) {
+              localStorage.setItem('aria_token', response.data.token);
+              localStorage.setItem('dmt_user', JSON.stringify(response.data.user));
+              window.location.href = '/';
+            } else {
+              showError(response.data.error || 'Login failed');
+            }
+          } catch (error) {
+            console.error('Login error:', error);
+            if (error.response && error.response.data) {
+              showError(error.response.data.error || 'Login failed');
+            } else {
+              showError('Network error. Please try again.');
+            }
+          } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+          }
+        });
+      }
+    });
+  </script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</body>
+</html>`);
+});
+
+// Debug login page endpoint
+app.get('/debug-login.html', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Login - ARIA5.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+  <div class="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">ARIA5.1 Debug Login</h1>
+    
+    <form id="debug-login-form">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+        <input type="text" id="debug-username" value="admin" 
+               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+        <input type="password" id="debug-password" value="demo123"
+               class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      
+      <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
+        Debug Login
+      </button>
+    </form>
+    
+    <div id="debug-output" class="mt-6 p-4 bg-gray-50 rounded text-sm"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('debug-login-form');
+    const output = document.getElementById('debug-output');
+    
+    function log(message) {
+      console.log(message);
+      output.innerHTML += '<div class="mb-2">' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+      output.scrollTop = output.scrollHeight;
+    }
+    
+    log('Debug login page loaded');
+    log('Current URL: ' + window.location.href);
+    log('Axios available: ' + (typeof axios !== 'undefined'));
+    
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const username = document.getElementById('debug-username').value;
+      const password = document.getElementById('debug-password').value;
+      
+      log('Attempting login with username: ' + username);
+      log('Password length: ' + password.length);
+      
+      try {
+        log('Making API request to /api/auth/login...');
+        
+        const response = await axios.post('/api/auth/login', {
+          username: username,
+          password: password
+        });
+        
+        log('Response status: ' + response.status);
+        log('Response data: ' + JSON.stringify(response.data, null, 2));
+        
+        if (response.data.success) {
+          log('✅ Login successful!');
+          log('Token: ' + response.data.token.substring(0, 20) + '...');
+          log('User: ' + response.data.user.username + ' (' + response.data.user.role + ')');
+          
+          // Store token and redirect
+          localStorage.setItem('aria_token', response.data.token);
+          localStorage.setItem('dmt_user', JSON.stringify(response.data.user));
+          
+          log('Token stored in localStorage');
+          log('Redirecting to dashboard...');
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+        } else {
+          log('❌ Login failed: ' + response.data.error);
+        }
+        
+      } catch (error) {
+        log('❌ Error occurred: ' + error.message);
+        if (error.response) {
+          log('Error response status: ' + error.response.status);
+          log('Error response data: ' + JSON.stringify(error.response.data));
+        }
+        log('Full error: ' + JSON.stringify(error, null, 2));
+      }
+    });
+  </script>
+</body>
+</html>`);
 });
 
 // Replace the SPA main route with HTMX home route

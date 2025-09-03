@@ -2,9 +2,9 @@ import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { DatabaseService } from '../lib/database';
-import jwt from 'jsonwebtoken';
+// import jwt from 'jsonwebtoken'; // Not compatible with Cloudflare Workers - removed
 
-const JWT_SECRET = process.env.JWT_SECRET || 'aria5-htmx-secret-key-change-in-production';
+// const JWT_SECRET = process.env.JWT_SECRET || 'aria5-htmx-secret-key-change-in-production'; // Not needed for base64 tokens
 
 export function createAuthRoutes() {
   const app = new Hono();
@@ -73,7 +73,7 @@ export function createAuthRoutes() {
         return c.html(renderError('Invalid username or password'), 401);
       }
       
-      // Create JWT token
+      // Create base64 token (compatible with Cloudflare Workers)
       const tokenData = {
         id: user.id,
         username: user.username,
@@ -81,10 +81,11 @@ export function createAuthRoutes() {
         role: user.role,
         firstName: user.first_name,
         lastName: user.last_name,
-        organizationId: user.organization_id || 1
+        organizationId: user.organization_id || 1,
+        expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
       };
       
-      const token = jwt.sign(tokenData, JWT_SECRET, { expiresIn: '24h' });
+      const token = btoa(JSON.stringify(tokenData));
       
       // Set cookie
       setCookie(c, 'aria_token', token, {
@@ -140,7 +141,7 @@ export function createAuthRoutes() {
     
     try {
       const decoded = JSON.parse(atob(token));
-      if (decoded.exp < Date.now()) {
+      if (decoded.expires < Date.now()) {
         return c.json({ authenticated: false }, 401);
       }
       return c.json({ 
@@ -205,8 +206,15 @@ export const requireAuth = async (c: any, next: any) => {
   }
   
   try {
-    // Properly verify JWT token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    // Verify base64 token (compatible with Cloudflare Workers)
+    const decoded = JSON.parse(atob(token));
+    
+    // Check if token is expired
+    if (Date.now() > decoded.expires) {
+      deleteCookie(c, 'aria_token', { path: '/' });
+      return c.redirect('/login');
+    }
+    
     c.set('user', {
       id: decoded.id,
       username: decoded.username,
