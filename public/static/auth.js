@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('Auth.js: Validating existing token...');
     // Validate token before redirecting
     try {
-      const response = await axios.get('/api/auth/me', {
+      const response = await axios.get('/api/auth/verify', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -88,12 +88,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (response.data.success) {
           console.log('Auth.js: Login successful, storing token and redirecting');
           // Store token with expiration check
-          const token = response.data.data.token;
-          const expiresAt = response.data.data.expires_at;
+          const token = response.data.token;
+          const user = response.data.user;
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
           
           localStorage.setItem('aria_token', token);
           localStorage.setItem('dmt_expires_at', expiresAt);
-          localStorage.setItem('dmt_user', JSON.stringify(response.data.data.user));
+          localStorage.setItem('dmt_user', JSON.stringify(user));
           
           console.log('Auth.js: Token stored, redirecting to dashboard');
           // Redirect to dashboard

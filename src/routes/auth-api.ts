@@ -138,7 +138,16 @@ export function createAuthAPI() {
 
   // Verify session endpoint
   app.get('/auth/verify', async (c) => {
-    const token = getCookie(c, 'aria_token');
+    // Check both cookie and Authorization header
+    let token = getCookie(c, 'aria_token');
+    
+    // Also check Authorization header if no cookie
+    if (!token) {
+      const authHeader = c.req.header('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
     
     if (!token) {
       return c.json({ 
