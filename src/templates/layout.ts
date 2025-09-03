@@ -19,8 +19,8 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
   
-  <!-- Alpine.js for minimal client-side interactivity (load immediately, not deferred) -->
-  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Alpine.js for minimal client-side interactivity -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -59,7 +59,54 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
           window.location.href = '/login';
         }
       });
+      
+      // Fallback dropdown functionality if Alpine.js fails
+      console.log('Checking Alpine.js initialization...');
+      setTimeout(function() {
+        if (typeof window.Alpine === 'undefined') {
+          console.warn('Alpine.js not loaded, using fallback dropdown functionality');
+          initFallbackDropdowns();
+        } else {
+          console.log('Alpine.js loaded successfully');
+        }
+      }, 1000);
     });
+    
+    function initFallbackDropdowns() {
+      document.querySelectorAll('[x-data]').forEach(function(dropdown) {
+        const button = dropdown.querySelector('button');
+        const menu = dropdown.querySelector('div[x-show]');
+        let isOpen = false;
+        
+        if (button && menu) {
+          // Initially hide all dropdowns
+          menu.style.display = 'none';
+          
+          button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            isOpen = !isOpen;
+            menu.style.display = isOpen ? 'block' : 'none';
+          });
+          
+          // Close on click outside
+          document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+              isOpen = false;
+              menu.style.display = 'none';
+            }
+          });
+          
+          // Close on mouseleave
+          dropdown.addEventListener('mouseleave', function() {
+            setTimeout(function() {
+              isOpen = false;
+              menu.style.display = 'none';
+            }, 200);
+          });
+        }
+      });
+    }
   </script>
   
   <style>
@@ -101,6 +148,14 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
       opacity: 0;
       transform: scale(0.95) translateY(-10px);
       transition: all 0.15s ease-in;
+    }
+    
+    /* Ensure dropdowns are hidden by default */
+    [x-show="open"] {
+      display: none;
+    }
+    [x-cloak] { 
+      display: none !important; 
     }
     
     /* Improved hover effects */
@@ -204,8 +259,8 @@ const renderNavigation = (user: any) => html`
         <!-- Navigation Menu -->
         <div class="hidden md:flex items-center space-x-2">
           <!-- Overview Dropdown -->
-          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.away="open = false" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
               <i class="fas fa-chart-line mr-1"></i>
               <span>Overview</span>
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
@@ -237,8 +292,8 @@ const renderNavigation = (user: any) => html`
           </div>
           
           <!-- Risk Dropdown -->
-          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-orange-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.away="open = false" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-orange-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
               <i class="fas fa-exclamation-triangle mr-1"></i>
               <span>Risk</span>
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
@@ -284,8 +339,8 @@ const renderNavigation = (user: any) => html`
           </div>
           
           <!-- Compliance Dropdown -->
-          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-purple-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.away="open = false" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-purple-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
               <i class="fas fa-clipboard-check mr-1"></i>
               <span>Compliance</span>
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
@@ -331,8 +386,8 @@ const renderNavigation = (user: any) => html`
           </div>
           
           <!-- Operations Dropdown -->
-          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-green-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.away="open = false" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-green-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
               <i class="fas fa-cogs mr-1"></i>
               <span>Operations</span>
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
@@ -385,8 +440,8 @@ const renderNavigation = (user: any) => html`
           </div>
           
           <!-- Intelligence Dropdown -->
-          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-indigo-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.away="open = false" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-indigo-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
               <i class="fas fa-brain mr-1"></i>
               <span>Intelligence</span>
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
@@ -439,8 +494,8 @@ const renderNavigation = (user: any) => html`
           
           <!-- Admin (if authorized) -->
           ${user?.role === 'admin' ? html`
-          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.away="open = false" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
               <i class="fas fa-user-shield mr-1"></i>
               <span>Admin</span>
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
