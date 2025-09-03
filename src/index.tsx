@@ -264,6 +264,151 @@ app.get('/simple-login.html', (c) => {
 </html>`);
 });
 
+// Test full login flow with dashboard redirect
+app.get('/test-full-flow', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full Flow Test - ARIA5.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+  <div class="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">Full Login Flow Test</h1>
+    
+    <button onclick="testFullFlow()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 mb-4">
+      Test Complete Login Flow
+    </button>
+    
+    <div id="status" class="mt-6 p-4 bg-gray-50 rounded text-sm max-h-96 overflow-auto"></div>
+  </div>
+
+  <script>
+    function log(message) {
+      const status = document.getElementById('status');
+      const time = new Date().toLocaleTimeString();
+      status.innerHTML += '<div class="mb-2"><span class="text-blue-600">' + time + ':</span> ' + message + '</div>';
+      status.scrollTop = status.scrollHeight;
+      console.log(message);
+    }
+    
+    async function testFullFlow() {
+      log('🚀 Starting full login flow test...');
+      
+      try {
+        // Step 1: Login
+        log('📡 Step 1: Attempting login...');
+        
+        const loginResponse = await axios.post('/api/auth/login', {
+          email: 'admin',
+          password: 'demo123'
+        });
+        
+        if (loginResponse.data.success) {
+          log('✅ Login successful!');
+          
+          const token = loginResponse.data.data.token;
+          const user = loginResponse.data.data.user;
+          
+          // Step 2: Store token and user data
+          log('💾 Step 2: Storing authentication data...');
+          localStorage.setItem('aria_token', token);
+          localStorage.setItem('dmt_user', JSON.stringify(user));
+          
+          // Set cookie for server-side access
+          document.cookie = \`aria_token=\${token}; path=/; max-age=\${24 * 60 * 60}; SameSite=Strict; Secure\`;
+          log('✅ Token and cookie stored');
+          
+          // Step 3: Wait a moment then redirect to dashboard
+          log('🎯 Step 3: Redirecting to dashboard in 3 seconds...');
+          log('Expected: Dashboard should load with working dropdowns');
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 3000);
+          
+        } else {
+          log('❌ Login failed: ' + (loginResponse.data.error || 'Unknown error'));
+        }
+        
+      } catch (error) {
+        log('💥 Error occurred: ' + error.message);
+        if (error.response) {
+          log('📊 Error Status: ' + error.response.status);
+          log('📋 Error Data: ' + JSON.stringify(error.response.data, null, 2));
+        }
+      }
+    }
+    
+    log('🎯 Full flow test ready - click button to start');
+  </script>
+</body>
+</html>`);
+});
+
+// Debug Alpine.js in navbar
+app.get('/debug-nav', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Navigation - ARIA5.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script>
+    document.addEventListener('alpine:init', () => {
+      console.log('✅ Alpine.js initialized!');
+    });
+  </script>
+</head>
+<body class="bg-gray-100">
+  <nav class="bg-white shadow-lg p-4">
+    <div class="max-w-4xl mx-auto flex space-x-4">
+      
+      <!-- Simple Debug Dropdown -->
+      <div class="relative" x-data="{ open: false }">
+        <button @click="open = !open; console.log('Button clicked, open is now:', open)" 
+                class="bg-blue-600 text-white px-4 py-2 rounded flex items-center space-x-2">
+          <span>Debug Menu</span>
+          <span x-text="open ? '▲' : '▼'"></span>
+        </button>
+        
+        <div x-show="open" 
+             @click.away="open = false; console.log('Clicked away, closing')"
+             x-transition
+             class="absolute left-0 mt-2 w-48 bg-white border rounded shadow-lg z-10">
+          <div class="py-2">
+            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Item 1</a>
+            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Item 2</a>
+            <a href="#" class="block px-4 py-2 hover:bg-gray-100">Item 3</a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Status Display -->
+      <div class="bg-gray-200 px-4 py-2 rounded">
+        <span>Alpine Status: </span>
+        <span x-data x-text="typeof Alpine !== 'undefined' ? '✅ Working' : '❌ Failed'"></span>
+      </div>
+      
+    </div>
+  </nav>
+  
+  <div class="max-w-4xl mx-auto p-8">
+    <h1 class="text-2xl font-bold mb-4">Navigation Debug</h1>
+    <div class="bg-white p-4 rounded shadow">
+      <p>Click the "Debug Menu" button to test Alpine.js dropdown functionality.</p>
+      <p class="mt-2 text-sm text-gray-600">Check the console for debug messages.</p>
+    </div>
+  </div>
+</body>
+</html>`);
+});
+
 // Test dropdowns
 app.get('/test-dropdowns', (c) => {
   return c.html(`<!DOCTYPE html>

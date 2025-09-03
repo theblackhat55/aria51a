@@ -44,15 +44,18 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <!-- Chart.js for Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
-  <!-- AI Governance Scripts -->
-  <script src="/static/ai-governance.js"></script>
+  <!-- AI Governance Scripts - Commented out temporarily for debugging -->
+  <!-- <script src="/static/ai-governance.js"></script> -->
   
   <!-- Custom HTMX Configuration -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Configure HTMX
-      htmx.config.defaultSwapStyle = 'innerHTML';
-      htmx.config.historyCacheSize = 0;
+    // Configure HTMX immediately (no DOMContentLoaded needed)
+    htmx.config.defaultSwapStyle = 'innerHTML';
+    htmx.config.historyCacheSize = 0;
+    
+    // Wait for Alpine.js to be ready before setting up HTMX events
+    document.addEventListener('alpine:initialized', function() {
+      console.log('✅ Alpine.js ready, configuring HTMX...');
       
       // Add CSRF token and authentication to all requests
       document.body.addEventListener('htmx:configRequest', function(event) {
@@ -79,15 +82,17 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
           window.location.href = '/login';
         }
       });
-      
-      // Check Alpine.js status
+    });
+    
+    // Fallback check if Alpine.js doesn't initialize
+    document.addEventListener('DOMContentLoaded', function() {
       setTimeout(function() {
         if (typeof window.Alpine === 'undefined') {
-          console.error('❌ Alpine.js failed to load');
+          console.error('❌ Alpine.js failed to load - dropdowns will not work');
         } else {
-          console.log('✅ Alpine.js loaded and available');
+          console.log('✅ Alpine.js available');
         }
-      }, 1000);
+      }, 2000);
     });
 
   </script>
