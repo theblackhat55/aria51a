@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('Auth.js: Cleared Keycloak tokens for legacy auth');
   }
   
-  if (token) {
+  // Only check token and redirect if NOT on login page
+  if (token && !window.location.pathname.includes('/login')) {
     console.log('Auth.js: Validating existing token...');
     // Validate token before redirecting
     try {
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (response.data.success) {
         console.log('Auth.js: Token valid, redirecting to dashboard');
         // Valid token, redirect to HTMX dashboard
-        window.location.href = '/dashboard';
+        window.location.href = '/';
         return;
       } else {
         console.log('Auth.js: Token invalid, clearing storage');
@@ -97,8 +98,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           localStorage.setItem('dmt_user', JSON.stringify(user));
           
           console.log('Auth.js: Token stored, redirecting to dashboard');
-          // Redirect to HTMX dashboard
-          window.location.href = '/dashboard';
+          // Redirect to home (which will show HTMX dashboard)
+          window.location.href = '/';
         } else {
           showError(response.data.error || 'Login failed');
         }

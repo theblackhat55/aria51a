@@ -205,12 +205,16 @@ export const requireAuth = async (c: any, next: any) => {
   }
   
   try {
-    const decoded = JSON.parse(atob(token));
-    if (decoded.exp < Date.now()) {
-      deleteCookie(c, 'aria_token', { path: '/' });
-      return c.redirect('/login');
-    }
-    c.set('user', decoded);
+    // Properly verify JWT token
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    c.set('user', {
+      id: decoded.id,
+      username: decoded.username,
+      email: decoded.email,
+      role: decoded.role,
+      firstName: decoded.firstName,
+      lastName: decoded.lastName
+    });
     await next();
   } catch (error) {
     console.error('Auth error:', error);
