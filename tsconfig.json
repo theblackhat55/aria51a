@@ -1,15 +1,59 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "module": "ESNext", 
+    "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
     "lib": [
-      "ESNext"
+      "ES2022",
+      "DOM",
+      "DOM.Iterable",
+      "WebWorker"
     ],
-    "types": ["vite/client"],
+    "types": ["vite/client", "@cloudflare/workers-types"],
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
+    "jsxImportSource": "hono/jsx",
+    
+    // Enhanced TypeScript configuration for ARIA5.1
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "declaration": false,
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    
+    // Path mapping for clean imports
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/types/*": ["src/types/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/routes/*": ["src/routes/*"],
+      "@/middleware/*": ["src/middleware/*"]
+    }
   },
+  
+  "include": [
+    "src/**/*",
+    "migrations/**/*",
+    "public/static/**/*",
+    ".dev.vars"
+  ],
+  
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".wrangler",
+    "logs",
+    "backups",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
 }

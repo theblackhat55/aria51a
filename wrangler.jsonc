@@ -1,11 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "aria5",
-  "compatibility_date": "2025-08-14",
+  "name": "aria51-enterprise",
+  "compatibility_date": "2025-01-01",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  
+  // D1 Database Configuration - Enterprise Security Intelligence Platform
   "d1_databases": [
     {
       "binding": "DB",
@@ -14,14 +16,31 @@
     }
   ],
 
+  // KV Namespace for Session Management and Caching
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "placeholder-kv-id",
+      "preview_id": "placeholder-preview-kv-id"
+    }
+  ],
+
+  // R2 Storage for Evidence Files and Reports
   "r2_buckets": [
     {
       "binding": "R2",
-      "bucket_name": "webapp-bucket"
+      "bucket_name": "aria51-storage"
     }
   ],
+  
+  // Environment Variables
   "vars": {
-    "API_RATE_LIMIT": "100",
-    "SESSION_TIMEOUT": "86400"
+    "API_RATE_LIMIT": "1000",
+    "SESSION_TIMEOUT": "86400",
+    "MAX_FILE_SIZE": "50000000",
+    "ENCRYPTION_KEY_ROTATION_DAYS": "90",
+    "WEBSOCKET_TIMEOUT": "300000",
+    "AI_REQUEST_TIMEOUT": "30000",
+    "COMPLIANCE_REPORT_TTL": "604800"
   }
 }
