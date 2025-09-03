@@ -13,9 +13,7 @@
       "database_id": "8c465a3b-7e5a-4f39-9237-ff56b8e644d0"
     }
   ],
-  "ai": {
-    "binding": "AI"
-  },
+
   "r2_buckets": [
     {
       "binding": "R2",
