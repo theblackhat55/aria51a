@@ -5,6 +5,7 @@ import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 import { html } from 'hono/html';
 import { serveStatic } from 'hono/cloudflare-workers';
+import { getCookie } from 'hono/cookie';
 
 // Import route handlers
 import { createAuthRoutes } from './routes/auth-routes';
@@ -41,7 +42,7 @@ app.get('/health', (c) => {
 
 // Home page - redirect to login or dashboard based on auth
 app.get('/', async (c) => {
-  const token = c.req.cookie('aria_token');
+  const token = getCookie(c, 'aria_token');
   
   if (!token) {
     return c.redirect('/login');
