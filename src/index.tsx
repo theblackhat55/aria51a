@@ -116,13 +116,15 @@ app.route('/keys', keysRoutes);
 // Assessments redirect to compliance
 app.get('/assessments', (c) => c.redirect('/compliance/assessments'));
 
-// Auth API routes - These need to be at /api/auth
-const authAPI = createAuthAPI();
-app.route('/api', authAPI);
+// Import comprehensive API routes with authentication fix
+import api from './routes/api';
 
-// Legacy API routes - Mount last to avoid conflicts
-// const api = createAPI();
-// app.route('/api/legacy', api);  // Disabled - using HTMX routes instead
+// Mount comprehensive API routes (includes auth, health, and all endpoints)
+app.route('/', api);
+
+// Legacy Auth API routes - Keep for fallback
+// const authAPI = createAuthAPI();
+// app.route('/api-legacy', authAPI);
 
 // AI Governance API routes
 app.route('/api/ai-governance', aiSystemsApi);

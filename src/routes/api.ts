@@ -16,6 +16,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { jwt } from 'hono/jwt'
+import { sign } from 'hono/jwt'
 import { validator } from 'hono/validator'
 
 // Import all service classes
@@ -166,7 +167,7 @@ api.post('/api/auth/login',
       );
       
       if (isValidCredentials) {
-        const token = await jwt.sign({
+        const token = await sign({
           userId: 1,
           email: email.includes('@') ? email : 'admin@aria5.com',
           role: 'admin',
