@@ -10,8 +10,8 @@ import { getCookie } from 'hono/cookie';
 // Import route handlers
 import { createAuthRoutes } from './routes/auth-routes';
 import { createDashboardRoutes } from './routes/dashboard-routes';
-import { createRiskRoutes } from './routes/risk-routes';
-import { createComplianceRoutes } from './routes/compliance-routes';
+import { createRiskRoutes } from './routes/risk-routes-complete';
+import { createComplianceRoutes } from './routes/compliance-routes-complete';
 import { createAdminRoutes } from './routes/admin-routes';
 import { createAPIRoutes } from './routes/api-routes';
 

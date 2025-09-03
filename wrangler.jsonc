@@ -9,8 +9,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "dmt-production",
-      "database_id": "1083cc6a-2f8c-4095-9bd4-550ee8a873d4"
+      "database_name": "aria51-production",
+      "database_id": "8c465a3b-7e5a-4f39-9237-ff56b8e644d0"
     }
   ],
   "ai": {
