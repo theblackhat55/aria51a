@@ -61,13 +61,13 @@ document.addEventListener('DOMContentLoaded', async function() {
       const password = document.getElementById('password').value.trim();
       
       // Client-side validation
-      if (!username || username.length < 3) {
-        showError('Username must be at least 3 characters');
+      if (!username) {
+        showError('Username is required');
         return;
       }
       
-      if (!password || password.length < 6) {
-        showError('Password must be at least 6 characters');
+      if (!password) {
+        showError('Password is required');
         return;
       }
       
