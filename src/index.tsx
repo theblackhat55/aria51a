@@ -7,6 +7,7 @@ import { createAPI } from './api';
 import { CloudflareBindings } from './types';
 import aiSystemsApi from './ai-governance/ai-systems-api.js';
 import aiRiskApi from './ai-governance/ai-risk-api.js';
+import { createAuthAPI } from './routes/auth-api';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -47,6 +48,10 @@ app.use('*', async (c, next) => {
   // SECURITY FIX: Enhanced Content Security Policy with nonce support
   c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
 });
+
+// Auth API routes (must be mounted first for /api/auth endpoints)
+const authAPI = createAuthAPI();
+app.route('/api', authAPI);
 
 // API routes - Clean Cloudflare-optimized implementation
 const api = createAPI();
