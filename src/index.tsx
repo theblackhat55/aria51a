@@ -55,10 +55,7 @@ app.use('*', async (c, next) => {
   c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
 });
 
-// Auth API routes (must be mounted first for /api/auth endpoints)
-const authAPI = createAuthAPI();
-app.route('/api', authAPI);
-
+// HTMX Routes - Mount these first for proper routing
 // HTMX Dashboard routes
 const dashboardRoutes = createDashboardRoutes();
 app.route('/dashboard', dashboardRoutes);
@@ -82,9 +79,13 @@ app.route('/admin', adminRoutes);
 // Assessments redirect to compliance
 app.get('/assessments', (c) => c.redirect('/compliance/assessments'));
 
-// API routes - Clean Cloudflare-optimized implementation
-const api = createAPI();
-app.route('/', api);
+// Auth API routes - These need to be at /api/auth
+const authAPI = createAuthAPI();
+app.route('/api', authAPI);
+
+// Legacy API routes - Mount last to avoid conflicts
+// const api = createAPI();
+// app.route('/api/legacy', api);  // Disabled - using HTMX routes instead
 
 // AI Governance API routes
 app.route('/api/ai-governance', aiSystemsApi);

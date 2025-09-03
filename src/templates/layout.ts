@@ -139,10 +139,10 @@ const renderNavigation = (user: any) => html`
             </button>
             <div x-show="open" @click.away="open = false" x-transition
                  class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <a href="/risk/risks" class="block px-4 py-2 text-sm hover:bg-gray-50">Risks</a>
-              <a href="/risk/treatments" class="block px-4 py-2 text-sm hover:bg-gray-50">Treatments</a>
-              <a href="/risk/kris" class="block px-4 py-2 text-sm hover:bg-gray-50">KRIs</a>
-              <a href="/risk/incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">Incidents</a>
+              <a href="/risks" class="block px-4 py-2 text-sm hover:bg-gray-50">Risks</a>
+              <a href="/risks/treatments" class="block px-4 py-2 text-sm hover:bg-gray-50">Treatments</a>
+              <a href="/risks/kris" class="block px-4 py-2 text-sm hover:bg-gray-50">KRIs</a>
+              <a href="/incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">Incidents</a>
             </div>
           </div>
           
