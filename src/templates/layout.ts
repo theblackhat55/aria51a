@@ -19,8 +19,8 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
   
-  <!-- Alpine.js for minimal client-side interactivity -->
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Alpine.js for minimal client-side interactivity (load immediately, not deferred) -->
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -82,6 +82,82 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
       from { opacity: 0; }
       to { opacity: 1; }
     }
+    
+    /* Enhanced dropdown animations */
+    .dropdown-enter {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    .dropdown-enter-active {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      transition: all 0.2s ease-out;
+    }
+    .dropdown-leave {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    .dropdown-leave-active {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+      transition: all 0.15s ease-in;
+    }
+    
+    /* Improved hover effects */
+    .nav-item {
+      transition: all 0.2s ease-in-out;
+      position: relative;
+    }
+    .nav-item:hover {
+      transform: translateY(-1px);
+    }
+    .nav-item::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #3B82F6, #1D4ED8);
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+    .nav-item:hover::after {
+      width: 80%;
+    }
+    
+    /* Enhanced notification bell */
+    .notification-bell {
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .notification-bell:hover {
+      transform: rotate(15deg) scale(1.1);
+    }
+    .notification-badge {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    
+    /* Mobile menu enhancements */
+    .mobile-menu {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    
+    /* Loading states */
+    .loading-skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
   </style>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
@@ -126,86 +202,232 @@ const renderNavigation = (user: any) => html`
         </div>
         
         <!-- Navigation Menu -->
-        <div class="hidden md:flex items-center space-x-6">
+        <div class="hidden md:flex items-center space-x-2">
           <!-- Overview Dropdown -->
-          <div class="relative" x-data="{ open: false }">
-            <button @click="open = !open" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-chart-line mr-1"></i>
               <span>Overview</span>
-              <i class="fas fa-chevron-down text-xs"></i>
+              <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
-            <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <a href="/dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">Dashboard</a>
-              <a href="/reports" class="block px-4 py-2 text-sm hover:bg-gray-50">Reports & Analytics</a>
+            <div x-show="open" 
+                 x-transition:enter="dropdown-enter" 
+                 x-transition:enter-active="dropdown-enter-active"
+                 x-transition:leave="dropdown-leave" 
+                 x-transition:leave-active="dropdown-leave-active"
+                 @click.away="open = false"
+                 class="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <a href="/dashboard" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                  <i class="fas fa-tachometer-alt w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Dashboard</div>
+                    <div class="text-xs text-gray-500">Main overview and metrics</div>
+                  </div>
+                </a>
+                <a href="/reports" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                  <i class="fas fa-chart-bar w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Reports & Analytics</div>
+                    <div class="text-xs text-gray-500">Generate comprehensive reports</div>
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
           
           <!-- Risk Dropdown -->
-          <div class="relative" x-data="{ open: false }">
-            <button @click="open = !open" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-orange-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
               <span>Risk</span>
-              <i class="fas fa-chevron-down text-xs"></i>
+              <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
-            <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <a href="/risks" class="block px-4 py-2 text-sm hover:bg-gray-50">Risks</a>
-              <a href="/risks/treatments" class="block px-4 py-2 text-sm hover:bg-gray-50">Treatments</a>
-              <a href="/risks/kris" class="block px-4 py-2 text-sm hover:bg-gray-50">KRIs</a>
-              <a href="/incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">Incidents</a>
+            <div x-show="open" 
+                 x-transition:enter="dropdown-enter" 
+                 x-transition:enter-active="dropdown-enter-active"
+                 x-transition:leave="dropdown-leave" 
+                 x-transition:leave-active="dropdown-leave-active"
+                 @click.away="open = false"
+                 class="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <a href="/risks" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors">
+                  <i class="fas fa-list-alt w-5 text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Risk Register</div>
+                    <div class="text-xs text-gray-500">Manage organizational risks</div>
+                  </div>
+                </a>
+                <a href="/risks/treatments" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors">
+                  <i class="fas fa-shield-alt w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Risk Treatments</div>
+                    <div class="text-xs text-gray-500">Mitigation strategies</div>
+                  </div>
+                </a>
+                <a href="/risks/kris" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors">
+                  <i class="fas fa-gauge-high w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Key Risk Indicators</div>
+                    <div class="text-xs text-gray-500">Monitor risk metrics</div>
+                  </div>
+                </a>
+                <a href="/incidents" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors">
+                  <i class="fas fa-fire w-5 text-red-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Incidents</div>
+                    <div class="text-xs text-gray-500">Security & operational incidents</div>
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
           
           <!-- Compliance Dropdown -->
-          <div class="relative" x-data="{ open: false }">
-            <button @click="open = !open" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-purple-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-clipboard-check mr-1"></i>
               <span>Compliance</span>
-              <i class="fas fa-chevron-down text-xs"></i>
+              <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
-            <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <a href="/compliance/frameworks" class="block px-4 py-2 text-sm hover:bg-gray-50">Frameworks</a>
-              <a href="/compliance/soa" class="block px-4 py-2 text-sm hover:bg-gray-50">SoA</a>
-              <a href="/compliance/evidence" class="block px-4 py-2 text-sm hover:bg-gray-50">Evidence</a>
-              <a href="/compliance/assessments" class="block px-4 py-2 text-sm hover:bg-gray-50">Assessments</a>
+            <div x-show="open" 
+                 x-transition:enter="dropdown-enter" 
+                 x-transition:enter-active="dropdown-enter-active"
+                 x-transition:leave="dropdown-leave" 
+                 x-transition:leave-active="dropdown-leave-active"
+                 @click.away="open = false"
+                 class="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <a href="/compliance/frameworks" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors">
+                  <i class="fas fa-building-columns w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Frameworks</div>
+                    <div class="text-xs text-gray-500">ISO 27001, SOC 2, GDPR</div>
+                  </div>
+                </a>
+                <a href="/compliance/soa" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors">
+                  <i class="fas fa-file-contract w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Statement of Applicability</div>
+                    <div class="text-xs text-gray-500">Control implementation status</div>
+                  </div>
+                </a>
+                <a href="/compliance/evidence" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors">
+                  <i class="fas fa-folder-open w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Evidence</div>
+                    <div class="text-xs text-gray-500">Supporting documentation</div>
+                  </div>
+                </a>
+                <a href="/compliance/assessments" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors">
+                  <i class="fas fa-tasks w-5 text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Assessments</div>
+                    <div class="text-xs text-gray-500">Compliance evaluations</div>
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
           
           <!-- Operations Dropdown -->
-          <div class="relative" x-data="{ open: false }">
-            <button @click="open = !open" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-green-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-cogs mr-1"></i>
               <span>Operations</span>
-              <i class="fas fa-chevron-down text-xs"></i>
+              <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
-            <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <a href="/assets" class="block px-4 py-2 text-sm hover:bg-gray-50">Assets</a>
-              <a href="/documents" class="block px-4 py-2 text-sm hover:bg-gray-50">
-                <i class="fas fa-file-alt text-blue-600 mr-2"></i>Documents
-              </a>
-              <a href="/notifications" class="block px-4 py-2 text-sm hover:bg-gray-50">
-                <i class="fas fa-bell text-yellow-600 mr-2"></i>Notifications
-              </a>
-              <a href="/keys" class="block px-4 py-2 text-sm hover:bg-gray-50">
-                <i class="fas fa-key text-green-600 mr-2"></i>API Keys
-              </a>
-              <a href="/settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
+            <div x-show="open" 
+                 x-transition:enter="dropdown-enter" 
+                 x-transition:enter-active="dropdown-enter-active"
+                 x-transition:leave="dropdown-leave" 
+                 x-transition:leave-active="dropdown-leave-active"
+                 @click.away="open = false"
+                 class="absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <a href="/assets" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-server w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Asset Management</div>
+                    <div class="text-xs text-gray-500">IT assets & infrastructure</div>
+                  </div>
+                </a>
+                <a href="/documents" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-file-alt w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Document Management</div>
+                    <div class="text-xs text-gray-500">Policies, procedures & documents</div>
+                  </div>
+                </a>
+                <a href="/notifications" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-bell w-5 text-yellow-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Notification Center</div>
+                    <div class="text-xs text-gray-500">System alerts & communications</div>
+                  </div>
+                </a>
+                <a href="/keys" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-key w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">API Key Management</div>
+                    <div class="text-xs text-gray-500">Secure credential storage</div>
+                  </div>
+                </a>
+                <a href="/settings" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-sliders-h w-5 text-gray-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">System Settings</div>
+                    <div class="text-xs text-gray-500">Platform configuration</div>
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
           
           <!-- Intelligence Dropdown -->
-          <div class="relative" x-data="{ open: false }">
-            <button @click="open = !open" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-indigo-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-brain mr-1"></i>
               <span>Intelligence</span>
-              <i class="fas fa-chevron-down text-xs"></i>
+              <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
-            <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <a href="/ai-governance" class="block px-4 py-2 text-sm hover:bg-gray-50">
-                <i class="fas fa-robot text-purple-600 mr-2"></i>AI Governance
-              </a>
-              <a href="/ai-governance/systems" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Systems Registry</a>
-              <a href="/ai-governance/risk-assessments" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Risk Assessments</a>
-              <a href="/ai-governance/incidents" class="block px-4 py-2 text-sm hover:bg-gray-50">AI Incidents</a>
+            <div x-show="open" 
+                 x-transition:enter="dropdown-enter" 
+                 x-transition:enter-active="dropdown-enter-active"
+                 x-transition:leave="dropdown-leave" 
+                 x-transition:leave-active="dropdown-leave-active"
+                 @click.away="open = false"
+                 class="absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <a href="/ai-governance" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
+                  <i class="fas fa-robot w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">AI Governance</div>
+                    <div class="text-xs text-gray-500">AI system oversight & ethics</div>
+                  </div>
+                </a>
+                <a href="/ai-governance/systems" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
+                  <i class="fas fa-microchip w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">AI Systems Registry</div>
+                    <div class="text-xs text-gray-500">Catalog of AI implementations</div>
+                  </div>
+                </a>
+                <a href="/ai-governance/risk-assessments" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
+                  <i class="fas fa-exclamation-triangle w-5 text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">AI Risk Assessments</div>
+                    <div class="text-xs text-gray-500">Risk evaluation & mitigation</div>
+                  </div>
+                </a>
+                <a href="/ai-governance/incidents" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
+                  <i class="fas fa-bug w-5 text-red-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">AI Incidents</div>
+                    <div class="text-xs text-gray-500">Issue tracking & resolution</div>
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
           
@@ -217,15 +439,49 @@ const renderNavigation = (user: any) => html`
           
           <!-- Admin (if authorized) -->
           ${user?.role === 'admin' ? html`
-          <div class="relative" x-data="{ open: false }">
-            <button @click="open = !open" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+          <div class="relative" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+            <button @click="open = !open" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-red-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-user-shield mr-1"></i>
               <span>Admin</span>
-              <i class="fas fa-chevron-down text-xs"></i>
+              <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
-            <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <a href="/admin/users" class="block px-4 py-2 text-sm hover:bg-gray-50">Users</a>
-              <a href="/admin/organizations" class="block px-4 py-2 text-sm hover:bg-gray-50">Organizations</a>
+            <div x-show="open" 
+                 x-transition:enter="dropdown-enter" 
+                 x-transition:enter-active="dropdown-enter-active"
+                 x-transition:leave="dropdown-leave" 
+                 x-transition:leave-active="dropdown-leave-active"
+                 @click.away="open = false"
+                 class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <a href="/admin/users" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+                  <i class="fas fa-users w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">User Management</div>
+                    <div class="text-xs text-gray-500">Manage system users</div>
+                  </div>
+                </a>
+                <a href="/admin/organizations" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+                  <i class="fas fa-building w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Organizations</div>
+                    <div class="text-xs text-gray-500">Manage organizations</div>
+                  </div>
+                </a>
+                <a href="/admin/system" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+                  <i class="fas fa-server w-5 text-gray-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">System Health</div>
+                    <div class="text-xs text-gray-500">System monitoring</div>
+                  </div>
+                </a>
+                <a href="/admin/logs" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+                  <i class="fas fa-file-alt w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Audit Logs</div>
+                    <div class="text-xs text-gray-500">System audit trail</div>
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
           ` : ''}
