@@ -52,7 +52,7 @@ export function createComplianceRoutes() {
     const formData = await c.req.parseBody();
     const user = c.get('user');
     const db = new DatabaseService(c.env.DB);
-    try:
+    try {
       await createFramework(db, formData, user.id);
       c.header('HX-Trigger', 'frameworkCreated');
       return c.html(`

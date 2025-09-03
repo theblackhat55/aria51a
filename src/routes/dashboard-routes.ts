@@ -425,5 +425,6 @@ async function getComplianceStatusData(db: DatabaseService) {
           'rgb(239, 68, 68)'
         ]
       }]
-  };
+    };
+  }
 }

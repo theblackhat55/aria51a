@@ -8,6 +8,10 @@ import { CloudflareBindings } from './types';
 import aiSystemsApi from './ai-governance/ai-systems-api.js';
 import aiRiskApi from './ai-governance/ai-risk-api.js';
 import { createAuthAPI } from './routes/auth-api';
+import { createDashboardRoutes } from './routes/dashboard-routes';
+import { createRiskRoutes } from './routes/risk-routes-complete';
+import { createComplianceRoutes } from './routes/compliance-routes-complete';
+import { createHomeRoute } from './routes/home-route';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -53,6 +57,18 @@ app.use('*', async (c, next) => {
 const authAPI = createAuthAPI();
 app.route('/api', authAPI);
 
+// HTMX Dashboard routes
+const dashboardRoutes = createDashboardRoutes();
+app.route('/dashboard', dashboardRoutes);
+
+// HTMX Risk routes
+const riskRoutes = createRiskRoutes();
+app.route('/risks', riskRoutes);
+
+// HTMX Compliance routes
+const complianceRoutes = createComplianceRoutes();
+app.route('/compliance', complianceRoutes);
+
 // API routes - Clean Cloudflare-optimized implementation
 const api = createAPI();
 app.route('/', api);
@@ -77,8 +93,12 @@ app.get('/health', (c) => {
   });
 });
 
-// Main application route
-app.get('/', (c) => {
+// Replace the SPA main route with HTMX home route
+const homeRoute = createHomeRoute();
+app.route('/', homeRoute);
+
+// Old SPA route (disabled - now using HTMX)
+app.get('/spa-old', (c) => {
   return c.html(`<!DOCTYPE html>
 <html lang="en">
 <head>

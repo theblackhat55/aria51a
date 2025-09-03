@@ -222,5 +222,124 @@ export function createAuthAPI() {
     });
   });
 
+  // Auth me endpoint (alias for verify)
+  app.get('/auth/me', async (c) => {
+    // Check both cookie and Authorization header
+    let token = getCookie(c, 'aria_token');
+    
+    if (!token) {
+      const authHeader = c.req.header('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+    
+    if (!token) {
+      return c.json({ 
+        success: false, 
+        error: 'Not authenticated' 
+      }, 401);
+    }
+
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as any;
+      return c.json({
+        success: true,
+        data: {
+          user: {
+            id: payload.id,
+            username: payload.username,
+            email: payload.email,
+            role: payload.role,
+            firstName: payload.firstName,
+            lastName: payload.lastName
+          }
+        }
+      });
+    } catch (error) {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid token' 
+      }, 401);
+    }
+  });
+
+  // Reference endpoints for UI data
+  app.get('/reference/categories', async (c) => {
+    // Check authentication
+    let token = getCookie(c, 'aria_token');
+    if (!token) {
+      const authHeader = c.req.header('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+    
+    if (!token) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    return c.json({
+      success: true,
+      data: [
+        { id: 'cybersecurity', name: 'Cybersecurity', color: 'red' },
+        { id: 'compliance', name: 'Compliance', color: 'blue' },
+        { id: 'operational', name: 'Operational', color: 'green' },
+        { id: 'financial', name: 'Financial', color: 'yellow' },
+        { id: 'strategic', name: 'Strategic', color: 'purple' },
+        { id: 'third-party', name: 'Third Party', color: 'orange' }
+      ]
+    });
+  });
+
+  app.get('/reference/organizations', async (c) => {
+    // Check authentication
+    let token = getCookie(c, 'aria_token');
+    if (!token) {
+      const authHeader = c.req.header('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+    
+    if (!token) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    return c.json({
+      success: true,
+      data: [
+        { id: 1, name: 'ARIA5 Corporation', type: 'primary' },
+        { id: 2, name: 'Risk Management Division', type: 'division' },
+        { id: 3, name: 'Compliance Team', type: 'department' }
+      ]
+    });
+  });
+
+  app.get('/reference/users', async (c) => {
+    // Check authentication
+    let token = getCookie(c, 'aria_token');
+    if (!token) {
+      const authHeader = c.req.header('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
+    
+    if (!token) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    return c.json({
+      success: true,
+      data: [
+        { id: 1, username: 'admin', name: 'Admin User', role: 'admin', email: 'admin@aria5.com' },
+        { id: 2, username: 'avi_security', name: 'Avi Security', role: 'risk_manager', email: 'avi@aria5.com' },
+        { id: 3, username: 'sjohnson', name: 'Sarah Johnson', role: 'compliance_officer', email: 'sarah@aria5.com' },
+        { id: 4, username: 'mbrown', name: 'Mike Brown', role: 'analyst', email: 'mike@aria5.com' }
+      ]
+    });
+  });
+
   return app;
 }
