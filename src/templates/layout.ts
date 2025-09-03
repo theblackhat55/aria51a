@@ -28,6 +28,9 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <!-- Font Awesome -->
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   
+  <!-- Custom Styles -->
+  <link href="/static/styles.css" rel="stylesheet">
+  
   <!-- Chart.js for Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
@@ -95,6 +98,9 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   
   <!-- Toast notifications container -->
   <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+  
+  <!-- Global modal container for HTMX modals -->
+  <div id="modal-container"></div>
 </body>
 </html>
 `;
@@ -127,7 +133,7 @@ const renderNavigation = (user: any) => html`
             <div x-show="open" @click.away="open = false" x-transition
                  class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
               <a href="/dashboard" class="block px-4 py-2 text-sm hover:bg-gray-50">Dashboard</a>
-              <a href="/reports" class="block px-4 py-2 text-sm hover:bg-gray-50">Reports</a>
+              <a href="/reports" class="block px-4 py-2 text-sm hover:bg-gray-50">Reports & Analytics</a>
             </div>
           </div>
           
@@ -161,6 +167,19 @@ const renderNavigation = (user: any) => html`
             </div>
           </div>
           
+          <!-- Operations Dropdown -->
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+              <span>Operations</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div x-show="open" @click.away="open = false" x-transition
+                 class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <a href="/assets" class="block px-4 py-2 text-sm hover:bg-gray-50">Assets</a>
+              <a href="/settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
+            </div>
+          </div>
+          
           <!-- AI Assistant -->
           <a href="/ai" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
             <i class="fas fa-robot text-blue-600 mr-1"></i>
@@ -176,7 +195,6 @@ const renderNavigation = (user: any) => html`
             </button>
             <div x-show="open" @click.away="open = false" x-transition
                  class="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <a href="/admin/settings" class="block px-4 py-2 text-sm hover:bg-gray-50">Settings</a>
               <a href="/admin/users" class="block px-4 py-2 text-sm hover:bg-gray-50">Users</a>
               <a href="/admin/organizations" class="block px-4 py-2 text-sm hover:bg-gray-50">Organizations</a>
             </div>
@@ -211,10 +229,13 @@ const renderNavigation = (user: any) => html`
       </div>
       <div class="p-4 space-y-2">
         <a href="/dashboard" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Dashboard</a>
-        <a href="/risk/risks" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Risks</a>
+        <a href="/risks" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Risks</a>
         <a href="/compliance/frameworks" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Compliance</a>
+        <a href="/assets" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Assets</a>
+        <a href="/reports" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Reports</a>
         <a href="/ai" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">ARIA Assistant</a>
-        ${user?.role === 'admin' ? html`<a href="/admin/settings" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Settings</a>` : ''}
+        <a href="/settings" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Settings</a>
+        ${user?.role === 'admin' ? html`<a href="/admin" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Admin</a>` : ''}
       </div>
     </div>
   </div>

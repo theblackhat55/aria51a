@@ -15,6 +15,9 @@ import { createHomeRoute } from './routes/home-route';
 import { createIncidentRoutes } from './routes/incident-routes';
 import { createAdminRoutes } from './routes/admin-routes';
 import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
+import { createAssetsRoutes } from './routes/assets-routes';
+import { createReportsRoutes } from './routes/reports-routes';
+import { createSettingsRoutes } from './routes/settings-routes';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -81,6 +84,18 @@ app.route('/admin', adminRoutes);
 // AI Assistant routes
 const aiAssistantRoutes = createAIAssistantRoutes();
 app.route('/ai', aiAssistantRoutes);
+
+// Assets Management routes
+const assetsRoutes = createAssetsRoutes();
+app.route('/assets', assetsRoutes);
+
+// Reports & Analytics routes
+const reportsRoutes = createReportsRoutes();
+app.route('/reports', reportsRoutes);
+
+// Settings routes
+const settingsRoutes = createSettingsRoutes();
+app.route('/settings', settingsRoutes);
 
 // Assessments redirect to compliance
 app.get('/assessments', (c) => c.redirect('/compliance/assessments'));
