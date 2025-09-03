@@ -22,25 +22,13 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <!-- Alpine.js for minimal client-side interactivity -->
   <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
-    // Ensure Alpine.js initializes properly
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOM loaded, checking Alpine.js...');
-    });
-    
+    // Alpine.js initialization tracking
     document.addEventListener('alpine:init', () => {
-      console.log('Alpine.js initialized successfully!');
+      console.log('✅ Alpine.js initialized successfully!');
     });
     
-    // Fallback check for Alpine.js
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        if (typeof window.Alpine === 'undefined') {
-          console.error('Alpine.js failed to load, initializing fallback dropdowns');
-          initFallbackDropdowns();
-        } else {
-          console.log('Alpine.js is working correctly');
-        }
-      }, 500);
+    document.addEventListener('alpine:initialized', () => {
+      console.log('✅ Alpine.js fully loaded and ready');
     });
   </script>
   
@@ -92,68 +80,16 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
         }
       });
       
-      // Fallback dropdown functionality if Alpine.js fails
-      console.log('Checking Alpine.js initialization...');
+      // Check Alpine.js status
       setTimeout(function() {
         if (typeof window.Alpine === 'undefined') {
-          console.warn('Alpine.js not loaded, using fallback dropdown functionality');
-          initFallbackDropdowns();
+          console.error('❌ Alpine.js failed to load');
         } else {
-          console.log('Alpine.js loaded successfully');
+          console.log('✅ Alpine.js loaded and available');
         }
       }, 1000);
     });
-    
-    function initFallbackDropdowns() {
-      console.log('Initializing fallback dropdown system...');
-      
-      document.querySelectorAll('[x-data*="open"]').forEach(function(dropdown, index) {
-        console.log('Setting up dropdown #' + (index + 1));
-        
-        const button = dropdown.querySelector('button');
-        const menu = dropdown.querySelector('div[x-show]');
-        let isOpen = false;
-        
-        if (button && menu) {
-          // Initially hide all dropdowns
-          menu.style.display = 'none';
-          menu.classList.add('dropdown-closed');
-          
-          button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Close all other dropdowns first
-            document.querySelectorAll('[x-data*="open"]').forEach(function(otherDropdown) {
-              if (otherDropdown !== dropdown) {
-                const otherMenu = otherDropdown.querySelector('div[x-show]');
-                if (otherMenu) {
-                  otherMenu.style.display = 'none';
-                  otherMenu.classList.add('dropdown-closed');
-                }
-              }
-            });
-            
-            isOpen = !isOpen;
-            menu.style.display = isOpen ? 'block' : 'none';
-            menu.classList.toggle('dropdown-closed', !isOpen);
-            
-            console.log('Dropdown #' + (index + 1) + ' is now: ' + (isOpen ? 'open' : 'closed'));
-          });
-          
-          // Close on click outside
-          document.addEventListener('click', function(e) {
-            if (!dropdown.contains(e.target)) {
-              isOpen = false;
-              menu.style.display = 'none';
-              menu.classList.add('dropdown-closed');
-            }
-          });
-        } else {
-          console.warn('Dropdown #' + (index + 1) + ' missing button or menu elements');
-        }
-      });
-    }
+
   </script>
   
   <style>
@@ -197,12 +133,14 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
       transition: all 0.15s ease-in;
     }
     
-    /* Ensure dropdowns are hidden by default */
-    [x-show="open"] {
-      display: none;
-    }
+    /* Alpine.js cloak for preventing flash of unstyled content */
     [x-cloak] { 
       display: none !important; 
+    }
+    
+    /* Ensure dropdowns start hidden but Alpine.js can control them */
+    .dropdown-menu {
+      display: none;
     }
     
     /* Improved hover effects */
@@ -313,6 +251,7 @@ const renderNavigation = (user: any) => html`
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
             <div x-show="open" 
+                 x-cloak
                  x-transition:enter="dropdown-enter" 
                  x-transition:enter-active="dropdown-enter-active"
                  x-transition:leave="dropdown-leave" 
@@ -346,6 +285,7 @@ const renderNavigation = (user: any) => html`
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
             <div x-show="open" 
+                 x-cloak
                  x-transition:enter="dropdown-enter" 
                  x-transition:enter-active="dropdown-enter-active"
                  x-transition:leave="dropdown-leave" 
@@ -393,6 +333,7 @@ const renderNavigation = (user: any) => html`
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
             <div x-show="open" 
+                 x-cloak
                  x-transition:enter="dropdown-enter" 
                  x-transition:enter-active="dropdown-enter-active"
                  x-transition:leave="dropdown-leave" 
@@ -440,6 +381,7 @@ const renderNavigation = (user: any) => html`
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
             <div x-show="open" 
+                 x-cloak
                  x-transition:enter="dropdown-enter" 
                  x-transition:enter-active="dropdown-enter-active"
                  x-transition:leave="dropdown-leave" 
@@ -494,6 +436,7 @@ const renderNavigation = (user: any) => html`
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
             <div x-show="open" 
+                 x-cloak
                  x-transition:enter="dropdown-enter" 
                  x-transition:enter-active="dropdown-enter-active"
                  x-transition:leave="dropdown-leave" 
@@ -548,6 +491,7 @@ const renderNavigation = (user: any) => html`
               <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
             </button>
             <div x-show="open" 
+                 x-cloak
                  x-transition:enter="dropdown-enter" 
                  x-transition:enter-active="dropdown-enter-active"
                  x-transition:leave="dropdown-leave" 
