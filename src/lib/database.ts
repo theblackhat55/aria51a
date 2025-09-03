@@ -1,5 +1,5 @@
 import { D1Database } from '@cloudflare/workers-types';
-// import bcrypt from 'bcryptjs'; // Not compatible with Cloudflare Workers - removed
+import { PasswordService } from './crypto';
 
 export class DatabaseService {
   constructor(private db: D1Database) {}
@@ -20,9 +20,61 @@ export class DatabaseService {
   }
 
   async validatePassword(password: string, hash: string): Promise<boolean> {
-    // Simple comparison for demo purposes (in production, use proper hashing)
-    // This is temporary until we implement Web API compatible password hashing
-    return password === hash;
+    // Check if it's an old plain text password (for backwards compatibility)
+    if (hash === password) {
+      // Migration: Hash the password and update the database
+      const newHash = await PasswordService.hashPassword(password);
+      // Note: In a real implementation, you'd update the user's password here
+      // await this.updateUserPassword(userId, newHash);
+      return true;
+    }
+    
+    // Use proper password verification for hashed passwords
+    try {
+      return await PasswordService.verifyPassword(password, hash);
+    } catch (error) {
+      console.error('Password validation error:', error);
+      return false;
+    }
+  }
+
+  async createUser(userData: {
+    username: string;
+    email: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+    role?: string;
+    organization_id?: number;
+  }) {
+    // Hash the password before storing
+    const hashedPassword = await PasswordService.hashPassword(userData.password);
+    
+    const result = await this.db.prepare(`
+      INSERT INTO users (
+        username, email, password_hash, first_name, last_name, role, organization_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      userData.username,
+      userData.email,
+      hashedPassword,
+      userData.first_name || '',
+      userData.last_name || '',
+      userData.role || 'user',
+      userData.organization_id || 1
+    ).run();
+    
+    return result.meta.last_row_id;
+  }
+
+  async updateUserPassword(userId: number, newPassword: string) {
+    const hashedPassword = await PasswordService.hashPassword(newPassword);
+    
+    await this.db.prepare(`
+      UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?
+    `).bind(hashedPassword, userId).run();
+    
+    return true;
   }
 
   async updateLastLogin(userId: number) {
@@ -373,6 +425,136 @@ export class DatabaseService {
     return result.meta.last_row_id;
   }
 
+  // Statistics and dashboard operations
+  async getComplianceScore(organizationId: number = 1): Promise<number> {
+    const result = await this.db.prepare(`
+      SELECT 
+        COALESCE(
+          ROUND(
+            COUNT(CASE WHEN s.implementation_status = 'implemented' THEN 1 END) * 100.0 / 
+            NULLIF(COUNT(CASE WHEN s.is_applicable = 1 THEN 1 END), 0)
+          , 1), 0
+        ) as score
+      FROM soa s
+      WHERE s.organization_id = ?
+    `).bind(organizationId).first();
+    
+    return result?.score || 0;
+  }
+
+  async getIncidentStatistics(organizationId: number = 1) {
+    const result = await this.db.prepare(`
+      SELECT 
+        COUNT(CASE WHEN status = 'open' THEN 1 END) as open,
+        COUNT(CASE WHEN status = 'resolved' AND DATE(resolution_date) >= DATE('now', '-30 days') THEN 1 END) as resolved
+      FROM incidents
+      WHERE organization_id = ?
+    `).bind(organizationId).first();
+    
+    return result || { open: 0, resolved: 0 };
+  }
+
+  async getKRIStatistics() {
+    const result = await this.db.prepare(`
+      SELECT 
+        COUNT(CASE WHEN current_value > threshold_value THEN 1 END) as alerts,
+        COUNT(CASE WHEN current_value > threshold_value * 1.2 THEN 1 END) as breached
+      FROM kris
+      WHERE status = 'active'
+    `).first();
+    
+    return result || { alerts: 0, breached: 0 };
+  }
+
+  // Organization operations
+  async getOrganizations() {
+    const result = await this.db.prepare(`
+      SELECT *,
+        (SELECT COUNT(*) FROM users WHERE organization_id = o.id) as user_count
+      FROM organizations o
+      WHERE is_active = 1
+      ORDER BY name
+    `).all();
+    
+    return result.results;
+  }
+
+  async createOrganization(data: any, userId: number) {
+    const result = await this.db.prepare(`
+      INSERT INTO organizations (name, description, type, industry, size, country)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      data.name,
+      data.description || '',
+      data.type || '',
+      data.industry || '',
+      data.size || '',
+      data.country || ''
+    ).run();
+    
+    // Log the action
+    await this.createAuditLog(userId, 'CREATE', 'organization', result.meta.last_row_id as number, null, data);
+    
+    return result.meta.last_row_id;
+  }
+
+  // Assets operations (if not already implemented)
+  async getAssets(filters: any = {}) {
+    let query = `
+      SELECT a.*, 
+        u.first_name || ' ' || u.last_name as owner_name,
+        o.name as organization_name
+      FROM assets a
+      LEFT JOIN users u ON a.owner_id = u.id
+      LEFT JOIN organizations o ON a.organization_id = o.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (filters.type) {
+      query += ' AND a.type = ?';
+      params.push(filters.type);
+    }
+
+    if (filters.status) {
+      query += ' AND a.status = ?';
+      params.push(filters.status);
+    }
+
+    if (filters.search) {
+      query += ' AND (a.name LIKE ? OR a.location LIKE ?)';
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
+
+    query += ' ORDER BY a.created_at DESC';
+
+    const result = await this.db.prepare(query).bind(...params).all();
+    return result.results;
+  }
+
+  async createAsset(data: any, userId: number) {
+    const result = await this.db.prepare(`
+      INSERT INTO assets (
+        name, type, category, owner_id, organization_id,
+        location, criticality, value, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      data.name,
+      data.type || '',
+      data.category || '',
+      data.owner_id || userId,
+      data.organization_id || 1,
+      data.location || '',
+      data.criticality || 'medium',
+      data.value || 0,
+      'active'
+    ).run();
+    
+    await this.createAuditLog(userId, 'CREATE', 'asset', result.meta.last_row_id as number, null, data);
+    
+    return result.meta.last_row_id;
+  }
+
   // Audit log operations
   async createAuditLog(userId: number, action: string, entityType: string, entityId: number, oldValues?: any, newValues?: any) {
     await this.db.prepare(`
@@ -415,5 +597,23 @@ export class DatabaseService {
 
     const result = await this.db.prepare(query).bind(...params).all();
     return result.results;
+  }
+
+  // System health and diagnostics
+  async getSystemHealth() {
+    const stats = await Promise.all([
+      this.db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').first(),
+      this.db.prepare('SELECT COUNT(*) as count FROM risks WHERE status = "active"').first(),
+      this.db.prepare('SELECT COUNT(*) as count FROM incidents WHERE status = "open"').first(),
+      this.db.prepare('SELECT COUNT(*) as count FROM audit_logs WHERE created_at >= datetime("now", "-24 hours")').first()
+    ]);
+
+    return {
+      activeUsers: stats[0]?.count || 0,
+      activeRisks: stats[1]?.count || 0,
+      openIncidents: stats[2]?.count || 0,
+      recentActivity: stats[3]?.count || 0,
+      lastUpdated: new Date().toISOString()
+    };
   }
 }

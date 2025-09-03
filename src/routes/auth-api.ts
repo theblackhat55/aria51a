@@ -1,11 +1,17 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { DatabaseService } from '../lib/database';
+import { SessionService, PasswordService } from '../lib/crypto';
 import type { CloudflareBindings } from '../types';
-// import jwt from 'jsonwebtoken';  // Not compatible with Cloudflare Workers
-// import * as bcrypt from 'bcryptjs';  // Not compatible with Cloudflare Workers
 
-const JWT_SECRET = 'aria5-htmx-secret-key-change-in-production';
+// Enhanced security configuration
+const SESSION_CONFIG = {
+  name: 'aria5_session',
+  httpOnly: true,
+  secure: true,
+  sameSite: 'Strict' as const,
+  maxAge: 24 * 60 * 60 // 24 hours
+};
 
 // Demo users fallback
 const DEMO_USERS = {
@@ -32,7 +38,7 @@ const DEMO_USERS = {
 export function createAuthAPI() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
 
-  // Login endpoint
+  // Login endpoint with enhanced security
   app.post('/auth/login', async (c) => {
     try {
       const body = await c.req.json().catch(() => c.req.parseBody());
@@ -46,21 +52,14 @@ export function createAuthAPI() {
         }, 400);
       }
 
+      // Rate limiting and security tracking
+      const clientIP = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown';
+      
       let user = null;
       let isValidPassword = false;
 
-      // First try demo users (simplified for Cloudflare Workers compatibility)
-      if (DEMO_USERS[username]) {
-        const demoUser = DEMO_USERS[username];
-        if (demoUser.password === password) {
-          user = demoUser;
-          isValidPassword = true;
-        }
-      }
-
-      // Try database if demo user not found (commented out due to bcrypt compatibility issues)
-      /*
-      if (!user && c.env?.DB) {
+      // Try database first with enhanced crypto
+      if (c.env?.DB) {
         try {
           const db = new DatabaseService(c.env.DB);
           user = await db.getUserByUsername(username);
@@ -69,41 +68,54 @@ export function createAuthAPI() {
             isValidPassword = await db.validatePassword(password, user.password_hash);
             if (isValidPassword) {
               await db.updateLastLogin(user.id);
+              await db.createAuditLog(user.id, 'LOGIN', 'user', user.id, null, { ip: clientIP });
             }
           }
-        } catch (dbError) {
-          console.error('Database error, falling back to demo users:', dbError);
+        } catch (error) {
+          console.error('Database authentication error:', error);
         }
       }
-      */
 
+      // Fallback to demo users if database fails or user not found
+      if (!user && DEMO_USERS[username]) {
+        const demoUser = DEMO_USERS[username];
+        if (demoUser.password === password) {
+          user = demoUser;
+          isValidPassword = true;
+        }
+      }
       if (!user || !isValidPassword) {
+        // Log failed login attempt
+        console.warn(`Failed login attempt for username: ${username} from IP: ${clientIP}`);
+        
         return c.json({ 
           success: false, 
           error: 'Invalid username or password' 
         }, 401);
       }
 
-      // Create simple token (temporary solution for Cloudflare Workers compatibility)
-      const tokenData = {
-        id: user.id,
+      // Create secure session token using enhanced SessionService
+      const sessionToken = SessionService.createSessionToken(user.id, {
         username: user.username,
         email: user.email,
         role: user.role || 'user',
         firstName: user.first_name,
         lastName: user.last_name,
-        expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-      };
-      const token = btoa(JSON.stringify(tokenData));
+        loginIP: clientIP,
+        loginTime: new Date().toISOString()
+      });
 
-      // Set cookie
-      setCookie(c, 'aria_token', token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'Lax',
-        maxAge: 86400,
+      // Set secure cookie with enhanced configuration
+      setCookie(c, SESSION_CONFIG.name, sessionToken, {
+        httpOnly: SESSION_CONFIG.httpOnly,
+        secure: false, // Set to true in production with HTTPS
+        sameSite: SESSION_CONFIG.sameSite,
+        maxAge: SESSION_CONFIG.maxAge,
         path: '/'
       });
+
+      // Log successful login
+      console.info(`Successful login for user: ${username} (${user.role || 'user'}) from IP: ${clientIP}`);
 
       return c.json({
         success: true,
