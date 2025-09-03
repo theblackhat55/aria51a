@@ -20,7 +20,7 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
   
   <!-- Alpine.js for minimal client-side interactivity -->
-  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <script>
     // Ensure Alpine.js initializes properly
     document.addEventListener('DOMContentLoaded', function() {

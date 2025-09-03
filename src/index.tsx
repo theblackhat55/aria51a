@@ -61,7 +61,7 @@ app.use('*', async (c, next) => {
   c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   // SECURITY FIX: Enhanced Content Security Policy with nonce support
-  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
+  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests");
 });
 
 // HTMX Routes - Mount these first for proper routing
@@ -259,6 +259,88 @@ app.get('/simple-login.html', (c) => {
       }
     });
   </script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</body>
+</html>`);
+});
+
+// Test dropdowns
+app.get('/test-dropdowns', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dropdown Test - ARIA5.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script>
+    document.addEventListener('alpine:init', () => {
+      console.log('✅ Alpine.js initialized successfully!');
+    });
+    
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        if (typeof window.Alpine === 'undefined') {
+          console.error('❌ Alpine.js failed to load');
+        } else {
+          console.log('✅ Alpine.js is working correctly');
+        }
+      }, 500);
+    });
+  </script>
+</head>
+<body class="bg-gray-100 p-8">
+  <div class="max-w-4xl mx-auto bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-6">Alpine.js Dropdown Test</h1>
+    
+    <div class="flex space-x-4 mb-8">
+      <!-- Test Dropdown 1 -->
+      <div class="relative" x-data="{ open: false }">
+        <button @click="open = !open" @click.away="open = false" 
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+          <span>Test Menu 1</span>
+          <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+        </button>
+        <div x-show="open" x-transition 
+             class="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+          <div class="py-2">
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Option 1</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Option 2</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">Option 3</a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Test Dropdown 2 -->
+      <div class="relative" x-data="{ open: false }">
+        <button @click="open = !open" @click.away="open = false"
+                class="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+          <span>Test Menu 2</span>
+          <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+        </button>
+        <div x-show="open" x-transition
+             class="absolute left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+          <div class="py-2">
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Item A</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Item B</a>
+            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">Item C</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-gray-50 p-4 rounded-lg">
+      <h3 class="font-bold mb-2">Test Instructions:</h3>
+      <ul class="text-sm space-y-1">
+        <li>✅ Click buttons to open dropdowns</li>
+        <li>✅ Click outside or on another button to close</li>
+        <li>✅ Only one dropdown should be open at a time</li>
+        <li>✅ Check console for Alpine.js status</li>
+      </ul>
+    </div>
+  </div>
+  
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </body>
 </html>`);
