@@ -12,7 +12,7 @@ export function createRiskRoutes() {
   app.use('*', requireAuth);
   
   // Main risks page
-  app.get('/risks', async (c) => {
+  app.get('/', async (c) => {
     const user = c.get('user');
     const page = parseInt(c.req.query('page') || '1');
     const search = c.req.query('search') || '';
@@ -29,7 +29,7 @@ export function createRiskRoutes() {
   });
   
   // Risk table content (for HTMX updates)
-  app.get('/risks/table', async (c) => {
+  app.get('/table', async (c) => {
     const page = parseInt(c.req.query('page') || '1');
     const search = c.req.query('search') || '';
     const status = c.req.query('status') || '';
@@ -41,19 +41,19 @@ export function createRiskRoutes() {
   });
   
   // Risk statistics cards (for HTMX updates)
-  app.get('/risks/stats', async (c) => {
+  app.get('/stats', async (c) => {
     const db = new DatabaseService(c.env.DB);
     const stats = await getRiskStatistics(db);
     return c.html(renderRiskStats(stats));
   });
   
   // Create risk modal
-  app.get('/risks/create', async (c) => {
+  app.get('/create', async (c) => {
     return c.html(renderCreateRiskModal());
   });
   
   // Create risk action
-  app.post('/risks', async (c) => {
+  app.post('/', async (c) => {
     const formData = await c.req.parseBody();
     const user = c.get('user');
     const db = new DatabaseService(c.env.DB);
@@ -84,7 +84,7 @@ export function createRiskRoutes() {
   });
   
   // Edit risk modal
-  app.get('/risks/:id/edit', async (c) => {
+  app.get('/:id/edit', async (c) => {
     const id = c.req.param('id');
     const db = new DatabaseService(c.env.DB);
     const risk = await getRiskById(db, id);
@@ -92,7 +92,7 @@ export function createRiskRoutes() {
   });
   
   // Update risk
-  app.put('/risks/:id', async (c) => {
+  app.put('/:id', async (c) => {
     const id = c.req.param('id');
     const formData = await c.req.parseBody();
     const user = c.get('user');
@@ -116,7 +116,7 @@ export function createRiskRoutes() {
   });
   
   // Delete risk
-  app.delete('/risks/:id', async (c) => {
+  app.delete('/:id', async (c) => {
     const id = c.req.param('id');
     const db = new DatabaseService(c.env.DB);
     

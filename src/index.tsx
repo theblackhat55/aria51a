@@ -12,6 +12,8 @@ import { createDashboardRoutes } from './routes/dashboard-routes';
 import { createRiskRoutes } from './routes/risk-routes-complete';
 import { createComplianceRoutes } from './routes/compliance-routes-complete';
 import { createHomeRoute } from './routes/home-route';
+import { createIncidentRoutes } from './routes/incident-routes';
+import { createAdminRoutes } from './routes/admin-routes';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -68,6 +70,17 @@ app.route('/risks', riskRoutes);
 // HTMX Compliance routes
 const complianceRoutes = createComplianceRoutes();
 app.route('/compliance', complianceRoutes);
+
+// HTMX Incident routes
+const incidentRoutes = createIncidentRoutes();
+app.route('/incidents', incidentRoutes);
+
+// HTMX Admin routes
+const adminRoutes = createAdminRoutes();
+app.route('/admin', adminRoutes);
+
+// Assessments redirect to compliance
+app.get('/assessments', (c) => c.redirect('/compliance/assessments'));
 
 // API routes - Clean Cloudflare-optimized implementation
 const api = createAPI();

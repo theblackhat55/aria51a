@@ -3,12 +3,20 @@ import { html } from 'hono/html';
 import { requireAuth, requireAdmin } from './auth-routes';
 import { baseLayout } from '../templates/layout';
 
+import type { CloudflareBindings } from '../types';
+
 export function createAdminRoutes() {
-  const app = new Hono();
+  const app = new Hono<{ Bindings: CloudflareBindings }>();
   
   // Apply authentication and admin middleware
   app.use('*', requireAuth);
   app.use('*', requireAdmin);
+  
+  // Main admin/settings page
+  app.get('/', async (c) => {
+    const user = c.get('user');
+    return c.redirect('/admin/settings');
+  });
   
   // Settings page
   app.get('/settings', async (c) => {
