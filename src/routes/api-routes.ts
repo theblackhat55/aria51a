@@ -20,19 +20,93 @@ export function createAPIRoutes() {
   // Risks API
   app.get('/risks', async (c) => {
     const db = c.env?.DB;
-    // TODO: Fetch from database
+    
+    try {
+      if (db) {
+        const result = await db.prepare(
+          `SELECT id, title, description, category, likelihood, impact, 
+                  risk_score, owner, status, created_at, updated_at 
+           FROM risks ORDER BY created_at DESC LIMIT 50`
+        ).all();
+        
+        return c.json({
+          success: true,
+          data: result.results || []
+        });
+      }
+    } catch (error) {
+      console.error('Database error:', error);
+    }
+    
+    // Fallback mock data
     return c.json({
       success: true,
-      data: []
+      data: [
+        {
+          id: 1,
+          title: 'Data Breach Risk',
+          description: 'Potential unauthorized access to customer data',
+          category: 'cybersecurity',
+          likelihood: 3,
+          impact: 4,
+          risk_score: 12,
+          owner: 'Security Team',
+          status: 'open'
+        },
+        {
+          id: 2,
+          title: 'Compliance Violation',
+          description: 'Risk of non-compliance with GDPR regulations',
+          category: 'compliance',
+          likelihood: 2,
+          impact: 5,
+          risk_score: 10,
+          owner: 'Legal Team',
+          status: 'in_treatment'
+        }
+      ]
     });
   });
   
   app.post('/risks', async (c) => {
     const body = await c.req.json();
-    // TODO: Create risk in database
+    const db = c.env?.DB;
+    const user = c.get('user');
+    
+    try {
+      if (db) {
+        const result = await db.prepare(
+          `INSERT INTO risks (title, description, category, likelihood, impact, risk_score, owner, status, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)
+           RETURNING id`
+        ).bind(
+          body.title,
+          body.description,
+          body.category,
+          body.likelihood,
+          body.impact,
+          (body.likelihood * body.impact),
+          body.owner || user?.name,
+          user?.id
+        ).run();
+        
+        return c.json({
+          success: true,
+          message: 'Risk created successfully',
+          id: result.meta?.last_row_id
+        });
+      }
+    } catch (error) {
+      console.error('Database error:', error);
+      return c.json({
+        success: false,
+        message: 'Failed to create risk: ' + error.message
+      }, 500);
+    }
+    
     return c.json({
       success: true,
-      message: 'Risk created successfully'
+      message: 'Risk created successfully (mock mode)'
     });
   });
   

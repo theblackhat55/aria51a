@@ -161,6 +161,12 @@ const renderNavigation = (user: any) => html`
             </div>
           </div>
           
+          <!-- AI Assistant -->
+          <a href="/ai" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+            <i class="fas fa-robot text-blue-600 mr-1"></i>
+            <span>ARIA Assistant</span>
+          </a>
+          
           <!-- Admin (if authorized) -->
           ${user?.role === 'admin' ? html`
           <div class="relative" x-data="{ open: false }">
@@ -207,6 +213,7 @@ const renderNavigation = (user: any) => html`
         <a href="/dashboard" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Dashboard</a>
         <a href="/risk/risks" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Risks</a>
         <a href="/compliance/frameworks" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Compliance</a>
+        <a href="/ai" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">ARIA Assistant</a>
         ${user?.role === 'admin' ? html`<a href="/admin/settings" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Settings</a>` : ''}
       </div>
     </div>

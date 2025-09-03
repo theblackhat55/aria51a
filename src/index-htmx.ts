@@ -14,6 +14,7 @@ import { createRiskRoutes } from './routes/risk-routes-complete';
 import { createComplianceRoutes } from './routes/compliance-routes-complete';
 import { createAdminRoutes } from './routes/admin-routes';
 import { createAPIRoutes } from './routes/api-routes';
+import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 
 // Import templates
 import { baseLayout } from './templates/layout';
@@ -63,6 +64,7 @@ const riskRoutes = createRiskRoutes();
 const complianceRoutes = createComplianceRoutes();
 const adminRoutes = createAdminRoutes();
 const apiRoutes = createAPIRoutes();
+const aiRoutes = createAIAssistantRoutes();
 
 app.route('/auth', authRoutes);
 app.route('/dashboard', dashboardRoutes);
@@ -70,6 +72,7 @@ app.route('/risk', riskRoutes);
 app.route('/compliance', complianceRoutes);
 app.route('/admin', adminRoutes);
 app.route('/api', apiRoutes);
+app.route('/ai', aiRoutes);
 
 // 404 handler
 app.notFound((c) => {
