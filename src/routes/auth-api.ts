@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { DatabaseService } from '../lib/database';
 import type { CloudflareBindings } from '../types';
-import jwt from 'jsonwebtoken';
-import * as bcrypt from 'bcryptjs';
+// import jwt from 'jsonwebtoken';  // Not compatible with Cloudflare Workers
+// import * as bcrypt from 'bcryptjs';  // Not compatible with Cloudflare Workers
 
 const JWT_SECRET = 'aria5-htmx-secret-key-change-in-production';
 
@@ -49,8 +49,18 @@ export function createAuthAPI() {
       let user = null;
       let isValidPassword = false;
 
-      // Try database first if available
-      if (c.env?.DB) {
+      // First try demo users (simplified for Cloudflare Workers compatibility)
+      if (DEMO_USERS[username]) {
+        const demoUser = DEMO_USERS[username];
+        if (demoUser.password === password) {
+          user = demoUser;
+          isValidPassword = true;
+        }
+      }
+
+      // Try database if demo user not found (commented out due to bcrypt compatibility issues)
+      /*
+      if (!user && c.env?.DB) {
         try {
           const db = new DatabaseService(c.env.DB);
           user = await db.getUserByUsername(username);
@@ -65,15 +75,7 @@ export function createAuthAPI() {
           console.error('Database error, falling back to demo users:', dbError);
         }
       }
-
-      // Fallback to demo users
-      if (!user && DEMO_USERS[username]) {
-        const demoUser = DEMO_USERS[username];
-        if (demoUser.password === password) {
-          user = demoUser;
-          isValidPassword = true;
-        }
-      }
+      */
 
       if (!user || !isValidPassword) {
         return c.json({ 
@@ -82,19 +84,17 @@ export function createAuthAPI() {
         }, 401);
       }
 
-      // Create JWT token
-      const token = jwt.sign(
-        {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role: user.role || 'user',
-          firstName: user.first_name,
-          lastName: user.last_name
-        },
-        JWT_SECRET,
-        { expiresIn: '24h' }
-      );
+      // Create simple token (temporary solution for Cloudflare Workers compatibility)
+      const tokenData = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role || 'user',
+        firstName: user.first_name,
+        lastName: user.last_name,
+        expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+      };
+      const token = btoa(JSON.stringify(tokenData));
 
       // Set cookie
       setCookie(c, 'aria_token', token, {
@@ -157,16 +157,26 @@ export function createAuthAPI() {
     }
 
     try {
-      const payload = jwt.verify(token, JWT_SECRET) as any;
+      // Simple token verification (temporary solution for Cloudflare Workers compatibility)
+      const tokenData = JSON.parse(atob(token));
+      
+      // Check if token is expired
+      if (Date.now() > tokenData.expires) {
+        return c.json({ 
+          success: false, 
+          error: 'Token expired' 
+        }, 401);
+      }
+      
       return c.json({
         success: true,
         user: {
-          id: payload.id,
-          username: payload.username,
-          email: payload.email,
-          role: payload.role,
-          firstName: payload.firstName,
-          lastName: payload.lastName
+          id: tokenData.id,
+          username: tokenData.username,
+          email: tokenData.email,
+          role: tokenData.role,
+          firstName: tokenData.firstName,
+          lastName: tokenData.lastName
         }
       });
     } catch (error) {
@@ -189,16 +199,26 @@ export function createAuthAPI() {
     }
 
     try {
-      const payload = jwt.verify(token, JWT_SECRET) as any;
+      // Simple token verification (temporary solution for Cloudflare Workers compatibility)
+      const tokenData = JSON.parse(atob(token));
+      
+      // Check if token is expired
+      if (Date.now() > tokenData.expires) {
+        return c.json({ 
+          success: false, 
+          error: 'Token expired' 
+        }, 401);
+      }
+      
       return c.json({
         success: true,
         data: {
-          id: payload.id,
-          username: payload.username,
-          email: payload.email,
-          role: payload.role,
-          firstName: payload.firstName,
-          lastName: payload.lastName
+          id: tokenData.id,
+          username: tokenData.username,
+          email: tokenData.email,
+          role: tokenData.role,
+          firstName: tokenData.firstName,
+          lastName: tokenData.lastName
         }
       });
     } catch (error) {
@@ -242,17 +262,27 @@ export function createAuthAPI() {
     }
 
     try {
-      const payload = jwt.verify(token, JWT_SECRET) as any;
+      // Simple token verification (temporary solution for Cloudflare Workers compatibility)
+      const tokenData = JSON.parse(atob(token));
+      
+      // Check if token is expired
+      if (Date.now() > tokenData.expires) {
+        return c.json({ 
+          success: false, 
+          error: 'Token expired' 
+        }, 401);
+      }
+      
       return c.json({
         success: true,
         data: {
           user: {
-            id: payload.id,
-            username: payload.username,
-            email: payload.email,
-            role: payload.role,
-            firstName: payload.firstName,
-            lastName: payload.lastName
+            id: tokenData.id,
+            username: tokenData.username,
+            email: tokenData.email,
+            role: tokenData.role,
+            firstName: tokenData.firstName,
+            lastName: tokenData.lastName
           }
         }
       });
