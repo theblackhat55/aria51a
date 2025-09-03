@@ -154,11 +154,21 @@ api.post('/api/auth/login',
     try {
       const { email, password } = await c.req.json();
       
-      // Mock authentication - replace with real authentication logic
-      if (email === 'admin@aria5.com' && password === 'admin123') {
+      // Demo authentication - supports multiple demo credentials
+      const validCredentials = [
+        { email: 'admin@aria5.com', password: 'admin123' },
+        { email: 'admin', password: 'demo123' },
+        { email: 'demo@aria5.com', password: 'demo123' }
+      ];
+      
+      const isValidCredentials = validCredentials.some(cred => 
+        (cred.email === email && cred.password === password)
+      );
+      
+      if (isValidCredentials) {
         const token = await jwt.sign({
           userId: 1,
-          email,
+          email: email.includes('@') ? email : 'admin@aria5.com',
           role: 'admin',
           exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24 hours
         }, c.env.JWT_SECRET || 'your-jwt-secret');
@@ -167,7 +177,7 @@ api.post('/api/auth/login',
           token,
           user: {
             id: 1,
-            email,
+            email: email.includes('@') ? email : 'admin@aria5.com',
             role: 'admin',
             name: 'System Administrator'
           }

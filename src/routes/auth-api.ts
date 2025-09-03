@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
-import { DatabaseService } from '../lib/database';
-import { SessionService, PasswordService } from '../lib/crypto';
+// import { DatabaseService } from '../lib/database';  // Commented out for now
+import { SessionService } from '../lib/crypto';
 import type { CloudflareBindings } from '../types';
 
 // Enhanced security configuration
@@ -58,25 +58,25 @@ export function createAuthAPI() {
       let user = null;
       let isValidPassword = false;
 
-      // Try database first with enhanced crypto
-      if (c.env?.DB) {
-        try {
-          const db = new DatabaseService(c.env.DB);
-          user = await db.getUserByUsername(username);
-          
-          if (user) {
-            isValidPassword = await db.validatePassword(password, user.password_hash);
-            if (isValidPassword) {
-              await db.updateLastLogin(user.id);
-              await db.createAuditLog(user.id, 'LOGIN', 'user', user.id, null, { ip: clientIP });
-            }
-          }
-        } catch (error) {
-          console.error('Database authentication error:', error);
-        }
-      }
+      // Try database first (commented out for now to avoid errors)
+      // if (c.env?.DB) {
+      //   try {
+      //     const db = new DatabaseService(c.env.DB);
+      //     user = await db.getUserByUsername(username);
+      //     
+      //     if (user) {
+      //       isValidPassword = await db.validatePassword(password, user.password_hash);
+      //       if (isValidPassword) {
+      //         await db.updateLastLogin(user.id);
+      //         await db.createAuditLog(user.id, 'LOGIN', 'user', user.id, null, { ip: clientIP });
+      //       }
+      //     }
+      //   } catch (error) {
+      //     console.error('Database authentication error:', error);
+      //   }
+      // }
 
-      // Fallback to demo users if database fails or user not found
+      // Fallback to demo users (primary method for now)
       if (!user && DEMO_USERS[username]) {
         const demoUser = DEMO_USERS[username];
         if (demoUser.password === password) {
@@ -84,6 +84,7 @@ export function createAuthAPI() {
           isValidPassword = true;
         }
       }
+      
       if (!user || !isValidPassword) {
         // Log failed login attempt
         console.warn(`Failed login attempt for username: ${username} from IP: ${clientIP}`);
@@ -94,7 +95,7 @@ export function createAuthAPI() {
         }, 401);
       }
 
-      // Create secure session token using enhanced SessionService
+      // Create secure session token using SessionService
       const sessionToken = SessionService.createSessionToken(user.id, {
         username: user.username,
         email: user.email,
@@ -105,7 +106,7 @@ export function createAuthAPI() {
         loginTime: new Date().toISOString()
       });
 
-      // Set secure cookie with enhanced configuration
+      // Set secure cookie 
       setCookie(c, SESSION_CONFIG.name, sessionToken, {
         httpOnly: SESSION_CONFIG.httpOnly,
         secure: false, // Set to true in production with HTTPS
@@ -117,7 +118,7 @@ export function createAuthAPI() {
       // Log successful login
       console.info(`Successful login for user: ${username} (${user.role || 'user'}) from IP: ${clientIP}`);
 
-      return c.json({
+      const response = {
         success: true,
         message: 'Login successful',
         user: {
@@ -128,13 +129,16 @@ export function createAuthAPI() {
           firstName: user.first_name || user.firstName,
           lastName: user.last_name || user.lastName
         },
-        token: token
-      });
+        token: sessionToken
+      };
+
+      return c.json(response);
     } catch (error) {
       console.error('Login error:', error);
       return c.json({ 
         success: false, 
-        error: 'Login failed' 
+        error: 'Login failed',
+        details: error.message || 'Unknown error'
       }, 500);
     }
   });
