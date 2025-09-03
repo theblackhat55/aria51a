@@ -16,22 +16,22 @@
     }
   ],
 
-  // KV Namespace for Session Management and Caching
-  "kv_namespaces": [
-    {
-      "binding": "KV",
-      "id": "placeholder-kv-id",
-      "preview_id": "placeholder-preview-kv-id"
-    }
-  ],
+  // KV Namespace for Session Management and Caching (disabled for initial deployment)
+  // "kv_namespaces": [
+  //   {
+  //     "binding": "KV",
+  //     "id": "placeholder-kv-id",
+  //     "preview_id": "placeholder-preview-kv-id"
+  //   }
+  // ],
 
-  // R2 Storage for Evidence Files and Reports
-  "r2_buckets": [
-    {
-      "binding": "R2",
-      "bucket_name": "aria51-storage"
-    }
-  ],
+  // R2 Storage for Evidence Files and Reports (disabled for initial deployment)
+  // "r2_buckets": [
+  //   {
+  //     "binding": "R2",
+  //     "bucket_name": "aria51-storage"
+  //   }
+  // ],
   
   // Environment Variables
   "vars": {
