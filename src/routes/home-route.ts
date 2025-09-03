@@ -19,22 +19,28 @@ export function createHomeRoute() {
     }
     
     try {
-      // Verify base64 token (compatible with Cloudflare Workers)
-      const tokenData = JSON.parse(atob(token));
+      // Parse JWT token (simple parsing without verification for demo)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format');
+      }
+      
+      // Decode JWT payload
+      const payload = JSON.parse(atob(parts[1]));
       
       // Check if token is expired
-      if (Date.now() > tokenData.expires) {
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
         // Token expired - redirect to login
         return c.redirect('/login');
       }
       
       const user = {
-        id: tokenData.id,
-        username: tokenData.username,
-        email: tokenData.email,
-        role: tokenData.role,
-        firstName: tokenData.firstName,
-        lastName: tokenData.lastName
+        id: payload.userId || payload.id,
+        username: payload.email?.split('@')[0] || 'admin',
+        email: payload.email,
+        role: payload.role,
+        firstName: payload.firstName || 'Admin',
+        lastName: payload.lastName || 'User'
       };
       
       // Authenticated - show HTMX dashboard

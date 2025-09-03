@@ -96,18 +96,27 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (response.data.success) {
           console.log('Auth.js: Login successful, storing token and redirecting');
-          // Store token with expiration check
-          const token = response.data.token;
-          const user = response.data.user;
+          // Store token with expiration check  
+          const token = response.data.data.token;
+          const user = response.data.data.user;
           const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
           
           localStorage.setItem('aria_token', token);
           localStorage.setItem('dmt_expires_at', expiresAt);
           localStorage.setItem('dmt_user', JSON.stringify(user));
           
-          console.log('Auth.js: Token stored, redirecting to dashboard');
-          // Redirect to home (which will show HTMX dashboard)
-          window.location.href = '/';
+          // Also store as cookie for server-side access
+          document.cookie = `aria_token=${token}; path=/; max-age=${24 * 60 * 60}; SameSite=Strict; Secure`;
+          console.log('Auth.js: Token stored in both localStorage and cookie');
+          
+          console.log('Auth.js: Token stored successfully:', token.substring(0, 20) + '...');
+          console.log('Auth.js: User stored:', user.email);
+          console.log('Auth.js: Redirecting to dashboard in 1 second...');
+          
+          // Small delay to ensure token is properly stored
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1000);
         } else {
           showError(response.data.error || 'Login failed');
         }

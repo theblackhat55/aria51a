@@ -264,7 +264,98 @@ app.get('/simple-login.html', (c) => {
 </html>`);
 });
 
-// Debug login page endpoint
+// Test login directly
+app.get('/test-login', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Login Test - ARIA5.1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+  <div class="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">ARIA5.1 Direct Login Test</h1>
+    
+    <button onclick="testLogin()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 mb-4">
+      Test Login (admin/demo123)
+    </button>
+    
+    <button onclick="clearStorage()" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 mb-4">
+      Clear Storage
+    </button>
+    
+    <div id="output" class="mt-6 p-4 bg-gray-50 rounded text-sm max-h-96 overflow-auto"></div>
+  </div>
+
+  <script>
+    function log(message) {
+      const output = document.getElementById('output');
+      const time = new Date().toLocaleTimeString();
+      output.innerHTML += '<div class="mb-2"><span class="text-blue-600">' + time + ':</span> ' + message + '</div>';
+      output.scrollTop = output.scrollHeight;
+      console.log(message);
+    }
+    
+    function clearStorage() {
+      localStorage.clear();
+      log('✅ Cleared localStorage');
+    }
+    
+    async function testLogin() {
+      log('🚀 Starting direct login test...');
+      
+      try {
+        log('📡 Making request to /api/auth/login');
+        log('📝 Payload: {"email":"admin","password":"demo123"}');
+        
+        const response = await axios.post('/api/auth/login', {
+          email: 'admin',
+          password: 'demo123'
+        });
+        
+        log('📊 Response Status: ' + response.status);
+        log('📋 Response Data: ' + JSON.stringify(response.data, null, 2));
+        
+        if (response.data.success) {
+          log('✅ Login successful!');
+          log('🔑 Token: ' + response.data.data.token.substring(0, 20) + '...');
+          log('👤 User: ' + JSON.stringify(response.data.data.user, null, 2));
+          
+          localStorage.setItem('aria_token', response.data.data.token);
+          localStorage.setItem('dmt_user', JSON.stringify(response.data.data.user));
+          log('💾 Stored token in localStorage');
+          
+          log('🎯 Attempting redirect to dashboard...');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+          
+        } else {
+          log('❌ Login failed: ' + (response.data.error || 'Unknown error'));
+        }
+        
+      } catch (error) {
+        log('💥 Error occurred: ' + error.message);
+        if (error.response) {
+          log('📊 Error Status: ' + error.response.status);
+          log('📋 Error Data: ' + JSON.stringify(error.response.data, null, 2));
+        }
+        log('🔍 Full Error: ' + JSON.stringify(error, null, 2));
+      }
+    }
+    
+    log('🎯 Direct login test page loaded');
+    log('🌐 Current URL: ' + window.location.href);
+    log('📦 Axios version: ' + (typeof axios !== 'undefined' ? 'loaded' : 'not loaded'));
+  </script>
+</body>
+</html>`);
+});
+
+// Debug login page endpoint  
 app.get('/debug-login.html', (c) => {
   return c.html(`<!DOCTYPE html>
 <html lang="en">
@@ -967,7 +1058,7 @@ app.get('/login', (c) => {
     async function checkSAMLConfig() {
       try {
         const response = await axios.get('/api/saml/config');
-        if (response.data.success && response.data.data.enabled) {
+        if (response.data && response.data.success && response.data.data && response.data.data.enabled) {
           // Show SAML login option
           document.getElementById('saml-auth').style.display = 'block';
           document.getElementById('legacy-login-text').textContent = 'Sign In (Local Account)';
@@ -976,9 +1067,11 @@ app.get('/login', (c) => {
           document.getElementById('saml-login-btn').addEventListener('click', function() {
             initiateSSO();
           });
+        } else {
+          console.log('SAML not enabled, using local authentication only');
         }
       } catch (error) {
-        console.log('SAML not configured or available:', error.message);
+        console.log('SAML not configured or available:', error.message || 'Network error');
         // Keep only legacy auth visible
       }
     }
