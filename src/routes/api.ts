@@ -15,7 +15,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
-import { jwt } from 'hono/jwt'
+import { jwt, verify } from 'hono/jwt'
 import { sign } from 'hono/jwt'
 import { validator } from 'hono/validator'
 
@@ -82,9 +82,28 @@ api.use('/api/*', async (c, next) => {
     return next();
   }
 
-  const jwtSecret = c.env.JWT_SECRET || 'your-jwt-secret';
-  const jwtMiddleware = jwt({ secret: jwtSecret });
-  return jwtMiddleware(c, next);
+  // Check for token in Authorization header first, then cookies
+  let token = c.req.header('Authorization')?.replace('Bearer ', '');
+  
+  if (!token) {
+    // Try to get token from cookie
+    token = c.req.header('Cookie')?.split(';')
+      .find(cookie => cookie.trim().startsWith('aria_token='))
+      ?.split('=')[1];
+  }
+
+  if (!token) {
+    return c.json(createResponse(false, null, 'no authorization included in request'), 401);
+  }
+
+  try {
+    const jwtSecret = c.env.JWT_SECRET || 'your-jwt-secret';
+    const payload = await verify(token, jwtSecret);
+    c.set('jwtPayload', payload);
+    return next();
+  } catch (error) {
+    return c.json(createResponse(false, null, 'Token invalid'), 401);
+  }
 })
 
 // Request ID middleware

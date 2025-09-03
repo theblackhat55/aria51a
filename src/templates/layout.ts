@@ -20,7 +20,29 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
   
   <!-- Alpine.js for minimal client-side interactivity -->
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script>
+    // Ensure Alpine.js initializes properly
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, checking Alpine.js...');
+    });
+    
+    document.addEventListener('alpine:init', () => {
+      console.log('Alpine.js initialized successfully!');
+    });
+    
+    // Fallback check for Alpine.js
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        if (typeof window.Alpine === 'undefined') {
+          console.error('Alpine.js failed to load, initializing fallback dropdowns');
+          initFallbackDropdowns();
+        } else {
+          console.log('Alpine.js is working correctly');
+        }
+      }, 500);
+    });
+  </script>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -44,12 +66,22 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
       htmx.config.defaultSwapStyle = 'innerHTML';
       htmx.config.historyCacheSize = 0;
       
-      // Add CSRF token to all requests if available
+      // Add CSRF token and authentication to all requests
       document.body.addEventListener('htmx:configRequest', function(event) {
+        // Add CSRF token if available
         const token = document.querySelector('meta[name="csrf-token"]')?.content;
         if (token) {
           event.detail.headers['X-CSRF-Token'] = token;
         }
+        
+        // Add JWT token from localStorage if available
+        const jwtToken = localStorage.getItem('aria_token');
+        if (jwtToken) {
+          event.detail.headers['Authorization'] = 'Bearer ' + jwtToken;
+        }
+        
+        // Ensure credentials are sent with requests
+        event.detail.xhr.withCredentials = true;
       });
       
       // Handle HTMX errors
@@ -73,7 +105,11 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
     });
     
     function initFallbackDropdowns() {
-      document.querySelectorAll('[x-data]').forEach(function(dropdown) {
+      console.log('Initializing fallback dropdown system...');
+      
+      document.querySelectorAll('[x-data*="open"]').forEach(function(dropdown, index) {
+        console.log('Setting up dropdown #' + (index + 1));
+        
         const button = dropdown.querySelector('button');
         const menu = dropdown.querySelector('div[x-show]');
         let isOpen = false;
@@ -81,12 +117,28 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
         if (button && menu) {
           // Initially hide all dropdowns
           menu.style.display = 'none';
+          menu.classList.add('dropdown-closed');
           
           button.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('[x-data*="open"]').forEach(function(otherDropdown) {
+              if (otherDropdown !== dropdown) {
+                const otherMenu = otherDropdown.querySelector('div[x-show]');
+                if (otherMenu) {
+                  otherMenu.style.display = 'none';
+                  otherMenu.classList.add('dropdown-closed');
+                }
+              }
+            });
+            
             isOpen = !isOpen;
             menu.style.display = isOpen ? 'block' : 'none';
+            menu.classList.toggle('dropdown-closed', !isOpen);
+            
+            console.log('Dropdown #' + (index + 1) + ' is now: ' + (isOpen ? 'open' : 'closed'));
           });
           
           // Close on click outside
@@ -94,16 +146,11 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
             if (!dropdown.contains(e.target)) {
               isOpen = false;
               menu.style.display = 'none';
+              menu.classList.add('dropdown-closed');
             }
           });
-          
-          // Close on mouseleave
-          dropdown.addEventListener('mouseleave', function() {
-            setTimeout(function() {
-              isOpen = false;
-              menu.style.display = 'none';
-            }, 200);
-          });
+        } else {
+          console.warn('Dropdown #' + (index + 1) + ' missing button or menu elements');
         }
       });
     }
