@@ -967,7 +967,7 @@ app.get('/login', (c) => {
     async function checkSAMLConfig() {
       try {
         const response = await axios.get('/api/saml/config');
-        if (response.data.success && response.data.config.enabled) {
+        if (response.data.success && response.data.data.enabled) {
           // Show SAML login option
           document.getElementById('saml-auth').style.display = 'block';
           document.getElementById('legacy-login-text').textContent = 'Sign In (Local Account)';

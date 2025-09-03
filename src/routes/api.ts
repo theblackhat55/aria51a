@@ -78,7 +78,7 @@ api.use('*', logger())
 // JWT Authentication middleware (except for auth routes)
 api.use('/api/*', async (c, next) => {
   const path = c.req.path;
-  if (path.includes('/auth/') || path.includes('/health')) {
+  if (path.includes('/auth/') || path.includes('/health') || path.includes('/saml/')) {
     return next();
   }
 
@@ -144,6 +144,19 @@ api.get('/api/health', (c) => {
 // AUTHENTICATION & USER MANAGEMENT
 // =============================================================================
 
+// SAML Configuration endpoints (for compatibility)
+api.get('/api/saml/config', (c) => {
+  return c.json(createResponse(true, {
+    enabled: false,
+    provider: 'none',
+    message: 'SAML SSO not configured - using demo authentication'
+  }, undefined, 'SAML configuration status', c.get('requestId')));
+})
+
+api.get('/api/saml/sso-url', (c) => {
+  return c.json(createResponse(false, null, 'SAML SSO not configured'), 404);
+})
+
 api.post('/api/auth/login', 
   validator('json', (value, c) => {
     if (!value.email || !value.password) {
@@ -203,6 +216,20 @@ api.get('/api/auth/me', async (c) => {
     }, undefined, 'User profile retrieved', c.get('requestId')));
   } catch (error) {
     return c.json(createResponse(false, null, 'User not found'), 404);
+  }
+})
+
+api.get('/api/auth/verify', async (c) => {
+  try {
+    const payload = c.get('jwtPayload');
+    return c.json(createResponse(true, {
+      valid: true,
+      userId: payload.userId,
+      email: payload.email,
+      role: payload.role
+    }, undefined, 'Token verified', c.get('requestId')));
+  } catch (error) {
+    return c.json(createResponse(false, null, 'Token invalid'), 401);
   }
 })
 

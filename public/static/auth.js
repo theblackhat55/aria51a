@@ -21,6 +21,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('Auth.js: Cleared Keycloak tokens for legacy auth');
   }
   
+  // Clear any existing tokens on login page to force fresh login
+  if (window.location.pathname.includes('/login')) {
+    console.log('Auth.js: On login page, clearing any existing tokens for fresh login');
+    localStorage.removeItem('aria_token');
+    localStorage.removeItem('dmt_expires_at');
+    localStorage.removeItem('dmt_user');
+  }
+  
   // Only check token and redirect if NOT on login page
   if (token && !window.location.pathname.includes('/login')) {
     console.log('Auth.js: Validating existing token...');
@@ -82,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       try {
         const response = await axios.post('/api/auth/login', {
-          username: username,
+          email: username,  // Our API expects 'email' field, but accepts username as email
           password: password
         });
 
