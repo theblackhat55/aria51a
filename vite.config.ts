@@ -5,7 +5,9 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   plugins: [
-    build(),
+    build({
+      entry: 'src/index-htmx.ts'
+    }),
     devServer({
       adapter,
       entry: 'src/index-htmx.ts'

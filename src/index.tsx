@@ -14,6 +14,7 @@ import { createComplianceRoutes } from './routes/compliance-routes-complete';
 import { createHomeRoute } from './routes/home-route';
 import { createIncidentRoutes } from './routes/incident-routes';
 import { createAdminRoutes } from './routes/admin-routes';
+import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -76,6 +77,10 @@ app.route('/incidents', incidentRoutes);
 const adminRoutes = createAdminRoutes();
 app.route('/admin', adminRoutes);
 
+// AI Assistant routes
+const aiAssistantRoutes = createAIAssistantRoutes();
+app.route('/ai', aiAssistantRoutes);
+
 // Assessments redirect to compliance
 app.get('/assessments', (c) => c.redirect('/compliance/assessments'));
 
@@ -95,11 +100,13 @@ app.route('/api/ai-risk', aiRiskApi);
 app.get('/health', (c) => {
   return c.json({ 
     status: 'healthy', 
-    platform: 'ARIA5',
-    version: '5.0.0', 
+    platform: 'ARIA5.1-HTMX',
+    version: '5.1.0', 
+    mode: 'HTMX-Enhanced',
     timestamp: new Date().toISOString(),
     services: {
       database: 'connected',
+      ai_assistant: 'ready',
       ai_engine: 'ready',
       llm_assessment: 'available',
       risk_intelligence: 'active'
@@ -605,7 +612,7 @@ app.get('/login', (c) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - ARIA5</title>
+  <title>Login - ARIA5.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -615,7 +622,7 @@ app.get('/login', (c) => {
       <div class="mx-auto h-20 w-20 bg-blue-600 rounded-full flex items-center justify-center mb-4">
         <i class="fas fa-shield-alt text-white text-2xl"></i>
       </div>
-      <h1 class="text-2xl font-bold text-gray-900">ARIA5</h1>
+      <h1 class="text-2xl font-bold text-gray-900">ARIA5.1</h1>
       <p class="text-gray-600 mt-2">AI Risk Intelligence Assistant</p>
     </div>
 
