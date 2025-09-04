@@ -369,13 +369,27 @@ export function createAdminRoutesARIA5() {
   app.get('/users', async (c) => {
     const user = c.get('user');
     
-    return c.html(
-      cleanLayout({
-        title: 'User Management',
-        user,
-        content: renderUserManagementPage()
-      })
-    );
+    try {
+      // Get user statistics from database
+      const stats = await getUserStats(c.env.DB);
+      
+      return c.html(
+        cleanLayout({
+          title: 'User Management',
+          user,
+          content: renderUserManagementPage(stats)
+        })
+      );
+    } catch (error) {
+      console.error('Error loading user management:', error);
+      return c.html(
+        cleanLayout({
+          title: 'User Management',
+          user,
+          content: renderErrorPage('Failed to load user management')
+        })
+      );
+    }
   });
 
   // User Creation Modal
@@ -385,30 +399,181 @@ export function createAdminRoutesARIA5() {
 
   // Create User
   app.post('/users/create', async (c) => {
-    const formData = await c.req.parseBody();
-    
-    // Mock user creation
-    console.log('Creating user:', formData);
-    
-    return c.html(html`
-      <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-        <div class="flex items-center">
-          <i class="fas fa-check-circle text-green-500 mr-2"></i>
-          <span class="text-green-700 font-medium">User "${formData.username}" created successfully!</span>
+    try {
+      const formData = await c.req.parseBody();
+      
+      // Validate required fields
+      const requiredFields = ['username', 'email', 'first_name', 'last_name', 'role'];
+      const missing = requiredFields.filter(field => !formData[field]);
+      
+      if (missing.length > 0) {
+        return c.html(renderErrorMessage(`Missing required fields: ${missing.join(', ')}`));
+      }
+      
+      // Check if username or email already exists
+      const existingUser = await c.env.DB.prepare(`
+        SELECT id FROM users WHERE username = ? OR email = ?
+      `).bind(formData.username, formData.email).first();
+      
+      if (existingUser) {
+        return c.html(renderErrorMessage('Username or email already exists'));
+      }
+      
+      // Create password hash (in production, use proper bcrypt)
+      const passwordHash = '$2a$10$K7L1OJ0TfPIZ6V3V4sE5ue5gH4JNqyF9hqPbcFmz.YXd6xGzP3P9a'; // demo123
+      
+      // Insert new user into database
+      const result = await c.env.DB.prepare(`
+        INSERT INTO users (username, email, password_hash, first_name, last_name, role, organization_id, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        formData.username,
+        formData.email,
+        passwordHash,
+        formData.first_name,
+        formData.last_name,
+        formData.role,
+        parseInt(formData.organization_id as string) || 1,
+        formData.is_active === 'true' ? 1 : 0
+      ).run();
+      
+      console.log(`User ${formData.username} created successfully with ID:`, result.meta.last_row_id);
+      
+      return c.html(html`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">User "${formData.username}" created successfully!</span>
+          </div>
         </div>
-      </div>
-      <script>
-        setTimeout(() => {
-          document.getElementById('modal-container').innerHTML = '';
-          htmx.ajax('GET', '/admin/users/table', '#users-table');
-        }, 2000);
-      </script>
-    `);
+        <script>
+          setTimeout(() => {
+            document.getElementById('modal-container').innerHTML = '';
+            htmx.ajax('GET', '/admin/users/table', '#users-table');
+          }, 2000);
+        </script>
+      `);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return c.html(renderErrorMessage('Failed to create user: ' + error.message));
+    }
+  });
+
+  // User Activation/Deactivation/Deletion endpoints
+  app.post('/users/:id/activate', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      await c.env.DB.prepare('UPDATE users SET is_active = 1, updated_at = ? WHERE id = ?')
+        .bind(new Date().toISOString(), userId).run();
+      
+      const usersData = await getUsersFromDB(c.env.DB, {});
+      return c.html(renderUsersTable(usersData));
+    } catch (error) {
+      console.error('Error activating user:', error);
+      return c.html(renderErrorMessage('Failed to activate user'));
+    }
+  });
+
+  app.post('/users/:id/disable', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      await c.env.DB.prepare('UPDATE users SET is_active = 0, updated_at = ? WHERE id = ?')
+        .bind(new Date().toISOString(), userId).run();
+      
+      const usersData = await getUsersFromDB(c.env.DB, {});
+      return c.html(renderUsersTable(usersData));
+    } catch (error) {
+      console.error('Error disabling user:', error);
+      return c.html(renderErrorMessage('Failed to disable user'));
+    }
+  });
+
+  app.post('/users/:id/delete', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      await c.env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId).run();
+      
+      const usersData = await getUsersFromDB(c.env.DB, {});
+      return c.html(renderUsersTable(usersData));
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return c.html(renderErrorMessage('Failed to delete user'));
+    }
+  });
+
+  // Get user for editing
+  app.get('/users/:id/edit', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      const user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+      
+      if (!user) {
+        return c.html(renderErrorMessage('User not found'));
+      }
+      
+      return c.html(renderEditUserModal(user));
+    } catch (error) {
+      console.error('Error fetching user for edit:', error);
+      return c.html(renderErrorMessage('Failed to load user'));
+    }
+  });
+
+  // Update user
+  app.post('/users/:id/edit', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      const formData = await c.req.parseBody();
+      
+      await c.env.DB.prepare(`
+        UPDATE users SET 
+          email = ?, first_name = ?, last_name = ?, role = ?, 
+          organization_id = ?, is_active = ?, updated_at = ?
+        WHERE id = ?
+      `).bind(
+        formData.email,
+        formData.first_name,
+        formData.last_name,
+        formData.role,
+        parseInt(formData.organization_id as string) || 1,
+        formData.is_active === 'true' ? 1 : 0,
+        new Date().toISOString(),
+        userId
+      ).run();
+      
+      return c.html(html`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">User updated successfully!</span>
+          </div>
+        </div>
+        <script>
+          setTimeout(() => {
+            document.getElementById('modal-container').innerHTML = '';
+            htmx.ajax('GET', '/admin/users/table', '#users-table');
+          }, 2000);
+        </script>
+      `);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return c.html(renderErrorMessage('Failed to update user: ' + error.message));
+    }
   });
 
   // Users Table
   app.get('/users/table', async (c) => {
-    return c.html(renderUsersTable());
+    try {
+      const searchQuery = c.req.query('user-search') || c.req.query('search') || '';
+      const roleFilter = c.req.query('role') || '';
+      const page = parseInt(c.req.query('page') || '1');
+      const limit = parseInt(c.req.query('limit') || '10');
+      
+      const usersData = await getUsersFromDB(c.env.DB, { searchQuery, roleFilter, page, limit });
+      return c.html(renderUsersTable(usersData));
+    } catch (error) {
+      console.error('Error loading users table:', error);
+      return c.html(renderErrorMessage('Failed to load users'));
+    }
   });
 
   // Organizations Management
@@ -1120,7 +1285,7 @@ const renderAdminDashboard = () => html`
         <a href="/admin/users" class="group bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1">
           <div class="flex items-center justify-between mb-4">
             <i class="fas fa-users text-3xl opacity-80"></i>
-            <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs font-medium">23 Users</span>
+            <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs font-medium" id="user-count-badge">Users</span>
           </div>
           <h3 class="text-xl font-bold mb-2">User Management</h3>
           <p class="text-orange-100 text-sm">Manage users, roles, permissions, and access controls</p>
@@ -2380,7 +2545,7 @@ const renderSystemSettingsPage = () => html`
 `;
 
 // User Management Page
-const renderUserManagementPage = () => html`
+const renderUserManagementPage = (stats?: { total: number; active: number; admins: number; pending: number }) => html`
   <div class="min-h-screen bg-gray-50">
     <!-- Header -->
     <div class="bg-white shadow">
@@ -2410,7 +2575,7 @@ const renderUserManagementPage = () => html`
             </div>
             <div class="ml-4">
               <div class="text-sm font-medium text-gray-500">Total Users</div>
-              <div class="text-2xl font-bold text-gray-900">23</div>
+              <div class="text-2xl font-bold text-gray-900">${stats?.total || 0}</div>
             </div>
           </div>
         </div>
@@ -2422,7 +2587,7 @@ const renderUserManagementPage = () => html`
             </div>
             <div class="ml-4">
               <div class="text-sm font-medium text-gray-500">Active Users</div>
-              <div class="text-2xl font-bold text-gray-900">19</div>
+              <div class="text-2xl font-bold text-gray-900">${stats?.active || 0}</div>
             </div>
           </div>
         </div>
@@ -2434,7 +2599,7 @@ const renderUserManagementPage = () => html`
             </div>
             <div class="ml-4">
               <div class="text-sm font-medium text-gray-500">Admins</div>
-              <div class="text-2xl font-bold text-gray-900">3</div>
+              <div class="text-2xl font-bold text-gray-900">${stats?.admins || 0}</div>
             </div>
           </div>
         </div>
@@ -2446,7 +2611,7 @@ const renderUserManagementPage = () => html`
             </div>
             <div class="ml-4">
               <div class="text-sm font-medium text-gray-500">Pending</div>
-              <div class="text-2xl font-bold text-gray-900">1</div>
+              <div class="text-2xl font-bold text-gray-900">${stats?.pending || 0}</div>
             </div>
           </div>
         </div>
@@ -2458,13 +2623,28 @@ const renderUserManagementPage = () => html`
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-medium text-gray-900">All Users</h3>
             <div class="flex items-center space-x-4">
-              <input type="search" placeholder="Search users..." 
+              <input type="search" 
+                     id="user-search"
+                     placeholder="Search users..." 
+                     hx-get="/admin/users/table" 
+                     hx-target="#users-table" 
+                     hx-trigger="input changed delay:300ms, search"
+                     hx-include="#role-filter"
                      class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <select class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option>All Roles</option>
-                <option>Admin</option>
-                <option>User</option>
-                <option>Auditor</option>
+              <select id="role-filter"
+                      name="role"
+                      hx-get="/admin/users/table" 
+                      hx-target="#users-table" 
+                      hx-trigger="change"
+                      hx-include="#user-search"
+                      class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+                <option value="risk_manager">Risk Manager</option>
+                <option value="compliance_officer">Compliance Officer</option>
+                <option value="analyst">Analyst</option>
+                <option value="auditor">Auditor</option>
               </select>
             </div>
           </div>
@@ -2477,105 +2657,280 @@ const renderUserManagementPage = () => html`
   </div>
 `;
 
-// Users Table
-const renderUsersTable = () => html`
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">2FA</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="flex-shrink-0 h-10 w-10">
-                <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
+// Users Table (Dynamic from Database)
+const renderUsersTable = (data?: { users: any[]; total: number; page: number; limit: number; totalPages: number }) => {
+  if (!data || !data.users) {
+    return html`
+      <div class="p-8 text-center text-gray-500">
+        <i class="fas fa-users text-4xl mb-4"></i>
+        <p>Loading users...</p>
+      </div>
+    `;
+  }
+
+  if (data.users.length === 0) {
+    return html`
+      <div class="p-8 text-center text-gray-500">
+        <i class="fas fa-user-slash text-4xl mb-4"></i>
+        <p>No users found</p>
+      </div>
+    `;
+  }
+
+  return html`
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">2FA</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${data.users.map(user => html`
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                      <span class="text-white font-semibold text-sm">
+                        ${user.first_name ? user.first_name.charAt(0) : ''}${user.last_name ? user.last_name.charAt(0) : ''}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">
+                      ${user.first_name || ''} ${user.last_name || ''}
+                    </div>
+                    <div class="text-sm text-gray-500">${user.email}</div>
+                    <div class="text-xs text-gray-400">@${user.username}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}">
+                  ${formatRole(user.role)}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                  ${user.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${user.last_login_formatted || 'Never'}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <i class="fas fa-${user.role === 'admin' ? 'check-circle text-green-500' : 'times-circle text-red-500'}"></i>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button hx-get="/admin/users/${user.id}/edit" 
+                        hx-target="#modal-container"
+                        class="text-blue-600 hover:text-blue-900 mr-3">
+                  <i class="fas fa-edit mr-1"></i>Edit
+                </button>
+                ${user.is_active ? 
+                  html`<button hx-post="/admin/users/${user.id}/disable" 
+                               hx-target="#users-table"
+                               hx-confirm="Are you sure you want to disable this user?"
+                               class="text-red-600 hover:text-red-900">
+                         <i class="fas fa-user-slash mr-1"></i>Disable
+                       </button>` :
+                  html`<button hx-post="/admin/users/${user.id}/activate" 
+                               hx-target="#users-table"
+                               class="text-green-600 hover:text-green-900 mr-3">
+                         <i class="fas fa-user-check mr-1"></i>Activate
+                       </button>
+                       <button hx-post="/admin/users/${user.id}/delete" 
+                               hx-target="#users-table"
+                               hx-confirm="Are you sure you want to delete this user? This action cannot be undone."
+                               class="text-red-600 hover:text-red-900">
+                         <i class="fas fa-trash mr-1"></i>Delete
+                       </button>`
+                }
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      ${data.totalPages > 1 ? html`
+        <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+          <div class="flex items-center justify-between">
+            <div class="flex-1 flex justify-between sm:hidden">
+              ${data.page > 1 ? html`
+                <button hx-get="/admin/users/table?page=${data.page - 1}" 
+                        hx-target="#users-table"
+                        hx-include="#user-search, #role-filter"
+                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  Previous
+                </button>
+              ` : ''}
+              ${data.page < data.totalPages ? html`
+                <button hx-get="/admin/users/table?page=${data.page + 1}" 
+                        hx-target="#users-table"
+                        hx-include="#user-search, #role-filter"
+                        class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                  Next
+                </button>
+              ` : ''}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700">
+                  Showing <span class="font-medium">${(data.page - 1) * data.limit + 1}</span> 
+                  to <span class="font-medium">${Math.min(data.page * data.limit, data.total)}</span> 
+                  of <span class="font-medium">${data.total}</span> results
+                </p>
               </div>
-              <div class="ml-4">
-                <div class="text-sm font-medium text-gray-900">John Doe</div>
-                <div class="text-sm text-gray-500">john@example.com</div>
+              <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  ${data.page > 1 ? html`
+                    <button hx-get="/admin/users/table?page=${data.page - 1}" 
+                            hx-target="#users-table"
+                            hx-include="#user-search, #role-filter"
+                            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      <i class="fas fa-chevron-left"></i>
+                    </button>
+                  ` : ''}
+                  
+                  ${Array.from({length: Math.min(5, data.totalPages)}, (_, i) => {
+                    const pageNum = i + 1;
+                    return html`
+                      <button hx-get="/admin/users/table?page=${pageNum}" 
+                              hx-target="#users-table"
+                              hx-include="#user-search, #role-filter"
+                              class="relative inline-flex items-center px-4 py-2 border text-sm font-medium ${pageNum === data.page ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}">
+                        ${pageNum}
+                      </button>
+                    `;
+                  }).join('')}
+                  
+                  ${data.page < data.totalPages ? html`
+                    <button hx-get="/admin/users/table?page=${data.page + 1}" 
+                            hx-target="#users-table"
+                            hx-include="#user-search, #role-filter"
+                            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                      <i class="fas fa-chevron-right"></i>
+                    </button>
+                  ` : ''}
+                </nav>
               </div>
             </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Admin</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 hours ago</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <i class="fas fa-check-circle text-green-500"></i>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-            <button class="text-red-600 hover:text-red-900">Disable</button>
-          </td>
-        </tr>
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="flex-shrink-0 h-10 w-10">
-                <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
-              </div>
-              <div class="ml-4">
-                <div class="text-sm font-medium text-gray-900">Jane Smith</div>
-                <div class="text-sm text-gray-500">jane@example.com</div>
-              </div>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+};
+
+// Helper functions for user display
+function getRoleColor(role: string): string {
+  const colorMap: Record<string, string> = {
+    'admin': 'bg-purple-100 text-purple-800',
+    'risk_manager': 'bg-red-100 text-red-800',
+    'compliance_officer': 'bg-green-100 text-green-800',
+    'analyst': 'bg-blue-100 text-blue-800',
+    'auditor': 'bg-orange-100 text-orange-800',
+    'user': 'bg-gray-100 text-gray-800'
+  };
+  return colorMap[role] || 'bg-gray-100 text-gray-800';
+}
+
+function formatRole(role: string): string {
+  const roleMap: Record<string, string> = {
+    'admin': 'Admin',
+    'risk_manager': 'Risk Manager',
+    'compliance_officer': 'Compliance Officer',
+    'analyst': 'Analyst',
+    'auditor': 'Auditor',
+    'user': 'User'
+  };
+  return roleMap[role] || role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+// Edit User Modal
+const renderEditUserModal = (user: any) => html`
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4">
+      <div class="flex justify-between items-center p-6 border-b">
+        <h3 class="text-lg font-semibold text-gray-900">Edit User</h3>
+        <button onclick="document.getElementById('modal-container').innerHTML=''" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form hx-post="/admin/users/${user.id}/edit" hx-target="#edit-result">
+        <div class="p-6 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+              <input type="text" name="first_name" value="${user.first_name || ''}" required 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">User</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1 day ago</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <i class="fas fa-check-circle text-green-500"></i>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-            <button class="text-red-600 hover:text-red-900">Disable</button>
-          </td>
-        </tr>
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="flex-shrink-0 h-10 w-10">
-                <img class="h-10 w-10 rounded-full" src="https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="">
-              </div>
-              <div class="ml-4">
-                <div class="text-sm font-medium text-gray-900">Mike Johnson</div>
-                <div class="text-sm text-gray-500">mike@example.com</div>
-              </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+              <input type="text" name="last_name" value="${user.last_name || ''}" required 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">Auditor</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Never</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <i class="fas fa-times-circle text-red-500"></i>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-            <button class="text-green-600 hover:text-green-900 mr-3">Activate</button>
-            <button class="text-red-600 hover:text-red-900">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <input type="email" name="email" value="${user.email}" required 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <select name="role" required 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Administrator</option>
+                <option value="risk_manager" ${user.role === 'risk_manager' ? 'selected' : ''}>Risk Manager</option>
+                <option value="compliance_officer" ${user.role === 'compliance_officer' ? 'selected' : ''}>Compliance Officer</option>
+                <option value="analyst" ${user.role === 'analyst' ? 'selected' : ''}>Analyst</option>
+                <option value="auditor" ${user.role === 'auditor' ? 'selected' : ''}>Auditor</option>
+                <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Organization</label>
+              <select name="organization_id" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="1" ${user.organization_id === 1 ? 'selected' : ''}>ARIA5 Corporation</option>
+                <option value="2" ${user.organization_id === 2 ? 'selected' : ''}>Demo Healthcare Inc</option>
+                <option value="3" ${user.organization_id === 3 ? 'selected' : ''}>Financial Services Ltd</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex items-center">
+            <input type="checkbox" name="is_active" value="true" ${user.is_active ? 'checked' : ''} 
+                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+            <label class="ml-2 block text-sm text-gray-700">Active User</label>
+          </div>
+        </div>
+        
+        <div class="flex justify-end items-center p-6 border-t bg-gray-50 space-x-3">
+          <button type="button" onclick="document.getElementById('modal-container').innerHTML=''" 
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+            Update User
+          </button>
+        </div>
+        
+        <div id="edit-result"></div>
+      </form>
+    </div>
   </div>
 `;
 
@@ -2617,15 +2972,34 @@ const renderCreateUserModal = () => html`
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
-            <select name="role" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">Select role...</option>
-              <option value="admin">Administrator</option>
-              <option value="user">User</option>
-              <option value="auditor">Auditor</option>
-              <option value="viewer">Viewer</option>
-            </select>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <select name="role" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Select role...</option>
+                <option value="admin">Administrator</option>
+                <option value="risk_manager">Risk Manager</option>
+                <option value="compliance_officer">Compliance Officer</option>
+                <option value="analyst">Analyst</option>
+                <option value="auditor">Auditor</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Organization</label>
+              <select name="organization_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="1">ARIA5 Corporation</option>
+                <option value="2">Demo Healthcare Inc</option>
+                <option value="3">Financial Services Ltd</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="flex items-center">
+            <input type="checkbox" name="is_active" value="true" checked 
+                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+            <label class="ml-2 block text-sm text-gray-700">Active User (can log in immediately)</label>
           </div>
           
           <div>
@@ -2973,6 +3347,120 @@ const renderSAMLConfigPage = () => html`
           
           <div id="save-result"></div>
         </form>
+      </div>
+    </div>
+  </div>
+`;
+
+// Database helper functions for user management
+async function getUserStats(db: any) {
+  try {
+    const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
+    const activeUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').first();
+    const adminUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').bind('admin').first();
+    const pendingUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 0').first();
+
+    return {
+      total: totalUsers.count || 0,
+      active: activeUsers.count || 0,
+      admins: adminUsers.count || 0,
+      pending: pendingUsers.count || 0
+    };
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    return { total: 0, active: 0, admins: 0, pending: 0 };
+  }
+}
+
+async function getUsersFromDB(db: any, filters: { searchQuery?: string; roleFilter?: string; page?: number; limit?: number }) {
+  try {
+    const { searchQuery = '', roleFilter = '', page = 1, limit = 10 } = filters;
+    const offset = (page - 1) * limit;
+    
+    let query = `
+      SELECT 
+        u.*,
+        o.name as organization_name,
+        CASE 
+          WHEN u.last_login IS NULL THEN 'Never'
+          WHEN datetime(u.last_login, '+1 hour') > datetime('now') THEN 'Less than 1 hour ago'
+          WHEN datetime(u.last_login, '+1 day') > datetime('now') THEN 'Less than 1 day ago'
+          ELSE strftime('%Y-%m-%d', u.last_login)
+        END as last_login_formatted
+      FROM users u
+      LEFT JOIN organizations o ON u.organization_id = o.id
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    
+    if (searchQuery) {
+      query += ` AND (u.username LIKE ? OR u.email LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)`;
+      const searchTerm = `%${searchQuery}%`;
+      params.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+    
+    if (roleFilter) {
+      query += ` AND u.role = ?`;
+      params.push(roleFilter);
+    }
+    
+    query += ` ORDER BY u.created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+    
+    const users = await db.prepare(query).bind(...params).all();
+    
+    // Get total count for pagination
+    let countQuery = 'SELECT COUNT(*) as total FROM users u WHERE 1=1';
+    const countParams: any[] = [];
+    
+    if (searchQuery) {
+      countQuery += ` AND (u.username LIKE ? OR u.email LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?)`;
+      const searchTerm = `%${searchQuery}%`;
+      countParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+    }
+    
+    if (roleFilter) {
+      countQuery += ` AND u.role = ?`;
+      countParams.push(roleFilter);
+    }
+    
+    const totalResult = await db.prepare(countQuery).bind(...countParams).first();
+    
+    return {
+      users: users.results || [],
+      total: totalResult.total || 0,
+      page,
+      limit,
+      totalPages: Math.ceil((totalResult.total || 0) / limit)
+    };
+  } catch (error) {
+    console.error('Error fetching users from DB:', error);
+    return { users: [], total: 0, page: 1, limit, totalPages: 0 };
+  }
+}
+
+// Helper function to render error messages
+const renderErrorMessage = (message: string) => html`
+  <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+    <div class="flex items-center">
+      <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+      <span class="text-red-700 font-medium">${message}</span>
+    </div>
+  </div>
+`;
+
+const renderErrorPage = (message: string) => html`
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div class="max-w-md w-full">
+      <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+        <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+        <h2 class="text-xl font-bold text-gray-900 mb-2">Error</h2>
+        <p class="text-gray-600 mb-4">${message}</p>
+        <a href="/admin" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <i class="fas fa-arrow-left mr-2"></i>
+          Back to Admin
+        </a>
       </div>
     </div>
   </div>
