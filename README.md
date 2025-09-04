@@ -7,9 +7,11 @@
 - **Status**: ✅ **PHASE 1-4 COMPLETE** - Full Enterprise Platform with Advanced Analytics & Automation
 
 ## 🔗 Production URLs
-- **🚀 Latest Production**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev ✅ **PHASE 1-4 COMPLETE**
-- **Health Check**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev/health
+- **🚀 Cloudflare Production**: https://1c9dda60.aria51-htmx.pages.dev ✅ **PHASE 1-4 COMPLETE**
+- **🚀 Alternative URL**: https://aria5-1.aria51-htmx.pages.dev ✅ **PHASE 1-4 COMPLETE**
+- **Health Check**: https://1c9dda60.aria51-htmx.pages.dev/health
 - **GitHub Repository**: https://github.com/username/ARIA5-Ubuntu (Enterprise Edition)
+- **Local Development**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev (Sandbox)
 
 ## 🆕 **PHASE 1-4 IMPLEMENTATION COMPLETE** (September 2025)
 
@@ -326,8 +328,9 @@ Total: **12 major enterprise features** achieving **comprehensive feature parity
 ## 🚀 **DEPLOYMENT STATUS**
 
 ### ✅ **Production Ready**
-- **Platform**: Cloudflare Workers + Pages
-- **Status**: ✅ **ACTIVE - PHASE 1-4 COMPLETE**
+- **Platform**: Cloudflare Workers + Pages ✅ **DEPLOYED**
+- **Production URL**: https://1c9dda60.aria51-htmx.pages.dev
+- **Status**: ✅ **LIVE - PHASE 1-4 COMPLETE**
 - **Tech Stack**: Hono + TypeScript + HTMX + Cloudflare Services
 - **Database**: Cloudflare D1 SQLite with FTS5 search
 - **Performance**: < 100ms response times, 99.9% uptime
@@ -355,7 +358,7 @@ Total: **12 major enterprise features** achieving **comprehensive feature parity
 ## 🛠️ **USER GUIDE**
 
 ### **Getting Started**
-1. **Access Platform**: Visit production URL
+1. **Access Platform**: Visit https://1c9dda60.aria51-htmx.pages.dev
 2. **Authentication**: 
    - Username: `admin` / Password: `demo123`
    - Optional 2FA setup for enhanced security
