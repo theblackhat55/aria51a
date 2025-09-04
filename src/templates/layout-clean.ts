@@ -281,18 +281,32 @@ const renderCleanNavigation = (user: any) => html`
             </button>
             <div data-dropdown-menu class="dropdown-menu absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
               <div class="py-2">
-                <a href="/compliance" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
-                  <i class="fas fa-check-circle w-5 text-green-500 mr-3"></i>
+                <a href="/compliance/frameworks" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+                  <i class="fas fa-layer-group w-5 text-blue-500 mr-3"></i>
                   <div>
-                    <div class="font-medium">Framework Status</div>
-                    <div class="text-xs text-gray-500">Compliance overview</div>
+                    <div class="font-medium">Framework Management</div>
+                    <div class="text-xs text-gray-500">SOC 2, ISO 27001, Custom</div>
                   </div>
                 </a>
-                <a href="/compliance/frameworks" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
-                  <i class="fas fa-list-check w-5 text-blue-500 mr-3"></i>
+                <a href="/compliance/soa" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+                  <i class="fas fa-file-contract w-5 text-purple-500 mr-3"></i>
                   <div>
-                    <div class="font-medium">Frameworks</div>
-                    <div class="text-xs text-gray-500">ISO 27001, SOC 2, etc.</div>
+                    <div class="font-medium">SoA</div>
+                    <div class="text-xs text-gray-500">Statement of Applicability</div>
+                  </div>
+                </a>
+                <a href="/compliance/evidence" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+                  <i class="fas fa-folder-open w-5 text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Evidence</div>
+                    <div class="text-xs text-gray-500">Documentation & Proof</div>
+                  </div>
+                </a>
+                <a href="/compliance/assessments" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+                  <i class="fas fa-clipboard-check w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Assessments</div>
+                    <div class="text-xs text-gray-500">Compliance Audits</div>
                   </div>
                 </a>
               </div>

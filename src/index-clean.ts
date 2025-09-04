@@ -11,10 +11,10 @@ import { getCookie } from 'hono/cookie';
 import { createAuthRoutes } from './routes/auth-routes';
 import { createCleanDashboardRoutes } from './routes/dashboard-routes-clean';
 import { createRiskRoutesARIA5 } from './routes/risk-routes-aria5';
-import { createComplianceRoutes } from './routes/compliance-routes-complete';
+import { createComplianceRoutes } from './routes/compliance-routes';
 import { createOperationsRoutes } from './routes/operations-routes';
 import { createIntelligenceRoutes } from './routes/intelligence-routes';
-import { createAdminRoutes } from './routes/admin-routes';
+import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createAPIRoutes } from './routes/api-routes';
 import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 
@@ -178,7 +178,7 @@ const riskRoutes = createRiskRoutesARIA5();
 const complianceRoutes = createComplianceRoutes();
 const operationsRoutes = createOperationsRoutes();
 const intelligenceRoutes = createIntelligenceRoutes();
-const adminRoutes = createAdminRoutes();
+const adminRoutes = createAdminRoutesARIA5();
 const apiRoutes = createAPIRoutes();
 const aiRoutes = createAIAssistantRoutes();
 
