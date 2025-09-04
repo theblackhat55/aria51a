@@ -313,11 +313,46 @@ const renderCleanNavigation = (user: any) => html`
             </div>
           </div>
           
-          <!-- Operations -->
-          <a href="/operations" class="flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-cogs mr-1"></i>
-            <span>Operations</span>
-          </a>
+          <!-- Operations Dropdown -->
+          <div class="relative" data-dropdown>
+            <button data-dropdown-button class="nav-item flex items-center space-x-1 text-gray-700 hover:text-green-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-cogs mr-1"></i>
+              <span>Operations</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div data-dropdown-menu class="dropdown-menu absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <a href="/operations" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-shield-alt w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Operations Center</div>
+                    <div class="text-xs text-gray-500">Microsoft Defender & security operations</div>
+                  </div>
+                </a>
+                <a href="/operations/assets" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-server w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Asset Management</div>
+                    <div class="text-xs text-gray-500">IT assets & infrastructure</div>
+                  </div>
+                </a>
+                <a href="/operations/services" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-sitemap w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Service Management</div>
+                    <div class="text-xs text-gray-500">Business services & CIA ratings</div>
+                  </div>
+                </a>
+                <a href="/documents" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-file-alt w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Document Management</div>
+                    <div class="text-xs text-gray-500">Policies, procedures & documents</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
           
           <!-- Intelligence -->
           <a href="/intelligence" class="flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">

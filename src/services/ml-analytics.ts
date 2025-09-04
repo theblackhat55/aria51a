@@ -297,7 +297,7 @@ export class MLAnalyticsService {
     const regression = this.calculateLinearRegression(dataPoints);
     
     // Detect anomalies
-    const anomalies = this.detectAnomalies(dataPoints);
+    const anomalies = this.detectStatisticalAnomalies(dataPoints);
     
     // Generate forecast
     const forecast = this.generateForecast(dataPoints, 30); // 30 days forecast
@@ -522,7 +522,7 @@ export class MLAnalyticsService {
     return { slope, rSquared };
   }
 
-  private detectAnomalies(data: Array<{date: string; value: number}>): Array<{
+  private detectStatisticalAnomalies(data: Array<{date: string; value: number}>): Array<{
     date: string; value: number; expected_value: number; deviation_score: number;
   }> {
     const values = data.map(d => d.value);
