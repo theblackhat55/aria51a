@@ -202,132 +202,13 @@ export function createAIAssistantRoutes() {
     );
   });
 
-  // Chat endpoint
-  app.post('/chat', async (c) => {
-    const formData = await c.req.formData();
-    const message = formData.get('message') as string;
-    const user = c.get('user');
+  // Chat endpoint is now implemented below with RAG integration
 
-    // Simulate AI response (in production, integrate with OpenAI/Anthropic/Gemini)
-    let response = generateAIResponse(message);
+  // Quick action endpoints are implemented below with enhanced responses
 
-    return c.html(html`
-      <!-- User Message -->
-      <div class="flex items-start space-x-3 justify-end">
-        <div class="flex-1 max-w-xs">
-          <div class="bg-blue-600 text-white rounded-lg px-4 py-3 ml-auto">
-            <p>${message}</p>
-          </div>
-        </div>
-        <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-            <i class="fas fa-user text-gray-600 text-sm"></i>
-          </div>
-        </div>
-      </div>
 
-      <!-- AI Response -->
-      <div class="flex items-start space-x-3">
-        <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-            <i class="fas fa-robot text-blue-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="flex-1">
-          <div class="bg-gray-100 rounded-lg px-4 py-3">
-            <p class="text-gray-800">${response}</p>
-          </div>
-        </div>
-      </div>
-    `);
-  });
 
-  // Quick action endpoints
-  app.post('/analyze-risks', async (c) => {
-    const user = c.get('user');
-    
-    return c.html(html`
-      <div class="flex items-start space-x-3">
-        <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-            <i class="fas fa-robot text-blue-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="flex-1">
-          <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-            <p class="text-red-800 font-medium">🔍 Risk Analysis Complete</p>
-            <div class="mt-2 space-y-1 text-sm text-red-700">
-              <p>• <strong>3 Critical Risks</strong> require immediate attention</p>
-              <p>• <strong>7 High Risks</strong> need mitigation plans</p>
-              <p>• <strong>12 Medium Risks</strong> are being monitored</p>
-            </div>
-            <p class="mt-2 text-sm text-red-600">
-              <i class="fas fa-exclamation-triangle mr-1"></i>
-              Recommendation: Focus on cybersecurity and data protection risks first.
-            </p>
-          </div>
-        </div>
-      </div>
-    `);
-  });
 
-  app.post('/compliance-check', async (c) => {
-    return c.html(html`
-      <div class="flex items-start space-x-3">
-        <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-            <i class="fas fa-robot text-blue-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="flex-1">
-          <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-            <p class="text-green-800 font-medium">✅ Compliance Status Overview</p>
-            <div class="mt-2 space-y-1 text-sm text-green-700">
-              <p>• <strong>ISO 27001:</strong> 78% compliant (Assessment due in 7 days)</p>
-              <p>• <strong>GDPR:</strong> 92% compliant</p>
-              <p>• <strong>SOC 2:</strong> 85% compliant</p>
-              <p>• <strong>HIPAA:</strong> 88% compliant</p>
-            </div>
-            <p class="mt-2 text-sm text-green-600">
-              <i class="fas fa-info-circle mr-1"></i>
-              Next action: Complete remaining ISO 27001 controls before assessment.
-            </p>
-          </div>
-        </div>
-      </div>
-    `);
-  });
-
-  app.post('/recommendations', async (c) => {
-    return c.html(html`
-      <div class="flex items-start space-x-3">
-        <div class="flex-shrink-0">
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-            <i class="fas fa-robot text-blue-600 text-sm"></i>
-          </div>
-        </div>
-        <div class="flex-1">
-          <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-            <p class="text-blue-800 font-medium">💡 AI Recommendations</p>
-            <div class="mt-2 space-y-2 text-sm text-blue-700">
-              <div class="p-2 bg-white rounded border">
-                <p class="font-medium">1. Implement MFA</p>
-                <p class="text-xs">Deploy multi-factor authentication across all systems (Priority: High)</p>
-              </div>
-              <div class="p-2 bg-white rounded border">
-                <p class="font-medium">2. Update Incident Response Plan</p>
-                <p class="text-xs">Current plan is 18 months old, needs refresh (Priority: Medium)</p>
-              </div>
-              <div class="p-2 bg-white rounded border">
-                <p class="font-medium">3. Conduct Vulnerability Assessment</p>
-                <p class="text-xs">Last assessment was 6 months ago (Priority: High)</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `);
-  });
 
   // Chat endpoint with RAG integration
   app.post('/chat', async (c) => {

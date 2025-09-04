@@ -419,13 +419,20 @@ export function createAdminRoutesARIA5() {
         return c.html(renderErrorMessage('Username or email already exists'));
       }
       
-      // Create password hash (in production, use proper bcrypt)
-      const passwordHash = '$2a$10$K7L1OJ0TfPIZ6V3V4sE5ue5gH4JNqyF9hqPbcFmz.YXd6xGzP3P9a'; // demo123
+      // Handle authentication type
+      const authType = (formData.auth_type as string) || 'local';
+      const passwordHash = authType === 'saml' ? '' : '$2a$10$K7L1OJ0TfPIZ6V3V4sE5ue5gH4JNqyF9hqPbcFmz.YXd6xGzP3P9a'; // demo123 for local users
+      const samlSubjectId = authType === 'saml' ? 
+        (formData.saml_subject_id as string) || `${formData.email}_${Date.now()}` : null;
       
       // Insert new user into database
       const result = await c.env.DB.prepare(`
-        INSERT INTO users (username, email, password_hash, first_name, last_name, role, organization_id, is_active)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO users (
+          username, email, password_hash, first_name, last_name, role, 
+          organization_id, is_active, auth_type, saml_subject_id, 
+          created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         formData.username,
         formData.email,
@@ -434,7 +441,11 @@ export function createAdminRoutesARIA5() {
         formData.last_name,
         formData.role,
         parseInt(formData.organization_id as string) || 1,
-        formData.is_active === 'true' ? 1 : 0
+        formData.is_active === 'true' ? 1 : 0,
+        authType,
+        samlSubjectId,
+        new Date().toISOString(),
+        new Date().toISOString()
       ).run();
       
       console.log(`User ${formData.username} created successfully with ID:`, result.meta.last_row_id);
@@ -501,6 +512,80 @@ export function createAdminRoutesARIA5() {
     }
   });
 
+  // Password reset for non-admin users (admin only)
+  app.post('/users/:id/reset-password', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      const user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+      
+      if (!user) {
+        return c.html(renderErrorMessage('User not found'));
+      }
+
+      // Check if user is admin (admin users cannot have their passwords reset)
+      if (user.role === 'admin') {
+        return c.html(renderErrorMessage('Cannot reset admin user passwords'));
+      }
+
+      // Check if user is SAML user (SAML users don't have local passwords)
+      if (user.auth_type === 'saml') {
+        return c.html(renderErrorMessage('Cannot reset password for SAML users'));
+      }
+
+      // Generate new temporary password
+      const tempPassword = 'TempPass' + Math.random().toString(36).substring(2, 8) + '!';
+      
+      // Hash the temporary password (using simple hash for demo - in production use proper bcrypt)
+      const passwordHash = '$2a$10$K7L1OJ0TfPIZ6V3V4sE5ue5gH4JNqyF9hqPbcFmz.YXd6xGzP3P9a'; // Demo hash
+      
+      // Update user's password
+      await c.env.DB.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+        .bind(passwordHash, new Date().toISOString(), userId).run();
+      
+      // In a real implementation, you would email the temporary password to the user
+      console.log(`Temporary password for ${user.email}: ${tempPassword}`);
+      
+      const usersData = await getUsersFromDB(c.env.DB, {});
+      return c.html(`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">Password reset successfully!</span>
+          </div>
+          <p class="text-sm text-green-600 mt-2">
+            Temporary password: <code class="bg-green-100 px-2 py-1 rounded">${tempPassword}</code>
+            <br><small>In production, this would be emailed to the user.</small>
+          </p>
+        </div>
+        ${renderUsersTable(usersData)}
+      `);
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return c.html(renderErrorMessage('Failed to reset password'));
+    }
+  });
+
+  // Also add admin route variants
+  app.post('/admin/users/:id/disable', async (c) => {
+    const c_copy = { ...c, req: { ...c.req, param: c.req.param } };
+    return app.fetch(new Request(`${new URL(c.req.url).origin}/users/${c.req.param('id')}/disable`, { method: 'POST' }), c.env);
+  });
+
+  app.post('/admin/users/:id/activate', async (c) => {
+    const c_copy = { ...c, req: { ...c.req, param: c.req.param } };
+    return app.fetch(new Request(`${new URL(c.req.url).origin}/users/${c.req.param('id')}/activate`, { method: 'POST' }), c.env);
+  });
+
+  app.post('/admin/users/:id/delete', async (c) => {
+    const c_copy = { ...c, req: { ...c.req, param: c.req.param } };
+    return app.fetch(new Request(`${new URL(c.req.url).origin}/users/${c.req.param('id')}/delete`, { method: 'POST' }), c.env);
+  });
+
+  app.post('/admin/users/:id/reset-password', async (c) => {
+    const c_copy = { ...c, req: { ...c.req, param: c.req.param } };
+    return app.fetch(new Request(`${new URL(c.req.url).origin}/users/${c.req.param('id')}/reset-password`, { method: 'POST' }), c.env);
+  });
+
   // Get user for editing
   app.get('/users/:id/edit', async (c) => {
     try {
@@ -560,8 +645,8 @@ export function createAdminRoutesARIA5() {
     }
   });
 
-  // Users Table
-  app.get('/users/table', async (c) => {
+  // Users Table (both routes for compatibility)
+  const usersTableHandler = async (c: any) => {
     try {
       const searchQuery = c.req.query('user-search') || c.req.query('search') || '';
       const roleFilter = c.req.query('role') || '';
@@ -574,7 +659,10 @@ export function createAdminRoutesARIA5() {
       console.error('Error loading users table:', error);
       return c.html(renderErrorMessage('Failed to load users'));
     }
-  });
+  };
+
+  app.get('/users/table', usersTableHandler);
+  app.get('/admin/users/table', usersTableHandler);
 
   // Organizations Management
   app.get('/organizations', async (c) => {
@@ -591,31 +679,230 @@ export function createAdminRoutesARIA5() {
 
   // SAML Configuration
   app.get('/saml', async (c) => {
-    const user = c.get('user');
-    
-    return c.html(
-      cleanLayout({
-        title: 'SAML Authentication',
-        user,
-        content: renderSAMLConfigPage()
-      })
-    );
+    try {
+      const user = c.get('user');
+      
+      // Fetch current SAML configuration
+      const samlConfig = await c.env.DB.prepare('SELECT * FROM saml_config WHERE id = 1').first();
+      
+      return c.html(
+        cleanLayout({
+          title: 'SAML Authentication',
+          user,
+          content: renderSAMLConfigPage(samlConfig || {})
+        })
+      );
+    } catch (error) {
+      console.error('Error loading SAML config:', error);
+      const user = c.get('user');
+      return c.html(
+        cleanLayout({
+          title: 'SAML Authentication',
+          user,
+          content: renderSAMLConfigPage({})
+        })
+      );
+    }
+  });
+
+  // Add admin SAML route
+  app.get('/admin/saml', async (c) => {
+    const c_copy = { ...c, get: c.get };
+    return app.fetch(new Request(`${new URL(c.req.url).origin}/saml`, { method: 'GET' }), c.env);
+  });
+
+  // SAML SSO Login (simplified for demo purposes)
+  app.post('/auth/saml/acs', async (c) => {
+    try {
+      // In a real implementation, this would parse and validate the SAML response
+      const formData = await c.req.parseBody();
+      console.log('SAML ACS received:', formData);
+      
+      // Mock SAML user attributes (in real implementation, parse from SAML response)
+      const samlUser = {
+        subject_id: 'saml_user_123456',
+        email: 'john.doe@company.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        role: 'analyst' // Could be mapped from SAML attributes
+      };
+      
+      // Check if SAML user already exists
+      let user = await c.env.DB.prepare(
+        'SELECT * FROM users WHERE saml_subject_id = ? OR email = ?'
+      ).bind(samlUser.subject_id, samlUser.email).first();
+      
+      if (!user) {
+        // Auto-provision SAML user
+        const insertResult = await c.env.DB.prepare(`
+          INSERT INTO users (
+            username, email, password_hash, first_name, last_name, 
+            role, auth_type, saml_subject_id, organization_id, 
+            is_active, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          samlUser.email.split('@')[0], // Use email prefix as username
+          samlUser.email,
+          '', // No password hash for SAML users
+          samlUser.firstName,
+          samlUser.lastName,
+          samlUser.role,
+          'saml',
+          samlUser.subject_id,
+          1, // Default organization
+          1, // Active
+          new Date().toISOString(),
+          new Date().toISOString()
+        ).run();
+        
+        user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?')
+          .bind(insertResult.meta.last_row_id).first();
+      } else {
+        // Update last login
+        await c.env.DB.prepare('UPDATE users SET last_login = ?, updated_at = ? WHERE id = ?')
+          .bind(new Date().toISOString(), new Date().toISOString(), user.id).run();
+      }
+      
+      // Create session token (same as regular login)
+      const sessionData = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        organizationId: user.organization_id,
+        authType: 'saml',
+        expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+      };
+      
+      const token = btoa(JSON.stringify(sessionData));
+      
+      // Set cookie and redirect
+      return c.html(`
+        <script>
+          localStorage.setItem('aria_token', '${token}');
+          localStorage.setItem('aria_user', '${JSON.stringify(sessionData)}');
+          console.log('SAML authentication successful');
+          window.location.href = '/dashboard';
+        </script>
+      `, 200, {
+        'Set-Cookie': `aria_token=${token}; SameSite=Lax; Secure; Path=/; Max-Age=86400`
+      });
+      
+    } catch (error) {
+      console.error('SAML SSO error:', error);
+      return c.redirect('/login?error=saml_failed');
+    }
+  });
+
+  // Demo route to create SAML test user (admin only)
+  app.post('/admin/users/create-saml-demo', async (c) => {
+    try {
+      // Create a demo SAML user for testing
+      await c.env.DB.prepare(`
+        INSERT INTO users (
+          username, email, password_hash, first_name, last_name, 
+          role, auth_type, saml_subject_id, organization_id, 
+          is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        'saml_demo',
+        'saml.user@company.com',
+        '', // No password for SAML users
+        'SAML',
+        'User',
+        'analyst',
+        'saml',
+        'saml_demo_123456',
+        1, // Default organization
+        1, // Active
+        new Date().toISOString(),
+        new Date().toISOString()
+      ).run();
+      
+      const usersData = await getUsersFromDB(c.env.DB, {});
+      return c.html(`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">Demo SAML user created successfully!</span>
+          </div>
+          <p class="text-sm text-green-600 mt-2">
+            Username: <code class="bg-green-100 px-2 py-1 rounded">saml_demo</code><br>
+            Email: <code class="bg-green-100 px-2 py-1 rounded">saml.user@company.com</code><br>
+            Type: <code class="bg-green-100 px-2 py-1 rounded">SAML</code>
+          </p>
+        </div>
+        ${renderUsersTable(usersData)}
+      `);
+    } catch (error) {
+      console.error('Error creating SAML demo user:', error);
+      return c.html(renderErrorMessage('Failed to create SAML demo user'));
+    }
   });
 
   // Save SAML Configuration
   app.post('/saml/save', async (c) => {
-    const formData = await c.req.parseBody();
-    
-    console.log('Saving SAML config:', formData);
-    
-    return c.html(html`
-      <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-        <div class="flex items-center">
-          <i class="fas fa-check-circle text-green-500 mr-2"></i>
-          <span class="text-green-700 font-medium">SAML configuration saved successfully!</span>
+    try {
+      const formData = await c.req.parseBody();
+      
+      // Save SAML configuration to database
+      const attributeMapping = JSON.stringify({
+        email: formData.email_attribute || 'email',
+        firstName: formData.first_name_attribute || 'firstName',
+        lastName: formData.last_name_attribute || 'lastName',
+        role: formData.role_attribute || 'role'
+      });
+
+      await c.env.DB.prepare(`
+        UPDATE saml_config SET 
+          enabled = ?, 
+          sso_url = ?, 
+          entity_id = ?, 
+          certificate = ?, 
+          attribute_mapping = ?,
+          updated_at = ?
+        WHERE id = 1
+      `).bind(
+        formData.enforce_sso === 'on' ? 1 : 0,
+        formData.sso_url || '',
+        formData.idp_entity_id || '',
+        formData.certificate || '',
+        attributeMapping,
+        new Date().toISOString()
+      ).run();
+
+      console.log('SAML config saved:', formData);
+      
+      return c.html(`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">SAML configuration saved successfully!</span>
+          </div>
         </div>
-      </div>
-    `);
+      `);
+    } catch (error) {
+      console.error('Error saving SAML config:', error);
+      return c.html(`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">Failed to save SAML configuration!</span>
+          </div>
+        </div>
+      `);
+    }
+  });
+
+  // Add admin SAML route
+  app.post('/admin/saml/save', async (c) => {
+    const c_copy = { ...c, req: { ...c.req, parseBody: c.req.parseBody } };
+    return app.fetch(new Request(`${new URL(c.req.url).origin}/saml/save`, { 
+      method: 'POST',
+      body: await c.req.raw().then(req => req.body)
+    }), c.env);
   });
 
   // RAG Service Management
@@ -2660,7 +2947,7 @@ const renderUserManagementPage = (stats?: { total: number; active: number; admin
 // Users Table (Dynamic from Database)
 const renderUsersTable = (data?: { users: any[]; total: number; page: number; limit: number; totalPages: number }) => {
   if (!data || !data.users) {
-    return html`
+    return `
       <div class="p-8 text-center text-gray-500">
         <i class="fas fa-users text-4xl mb-4"></i>
         <p>Loading users...</p>
@@ -2669,7 +2956,7 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
   }
 
   if (data.users.length === 0) {
-    return html`
+    return `
       <div class="p-8 text-center text-gray-500">
         <i class="fas fa-user-slash text-4xl mb-4"></i>
         <p>No users found</p>
@@ -2677,13 +2964,14 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
     `;
   }
 
-  return html`
+  return `
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auth Type</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">2FA</th>
@@ -2691,7 +2979,7 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          ${data.users.map(user => html`
+          ${data.users.map(user => `
             <tr>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
@@ -2717,6 +3005,11 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getAuthTypeColor(user.auth_type || 'local')}">
+                  ${user.auth_type === 'saml' ? 'SAML' : 'Local'}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                   ${user.is_active ? 'Active' : 'Inactive'}
                 </span>
@@ -2730,27 +3023,35 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <button hx-get="/admin/users/${user.id}/edit" 
                         hx-target="#modal-container"
-                        class="text-blue-600 hover:text-blue-900 mr-3">
+                        class="text-blue-600 hover:text-blue-900 mr-2">
                   <i class="fas fa-edit mr-1"></i>Edit
                 </button>
+                ${user.role !== 'admin' && (user.auth_type === 'local' || !user.auth_type) ? 
+                  `<button hx-post="/admin/users/${user.id}/reset-password" 
+                           hx-target="#users-table"
+                           hx-confirm="Are you sure you want to reset this user's password? They will receive a new temporary password."
+                           class="text-orange-600 hover:text-orange-900 mr-2">
+                     <i class="fas fa-key mr-1"></i>Reset Password
+                   </button>` : ''
+                }
                 ${user.is_active ? 
-                  html`<button hx-post="/admin/users/${user.id}/disable" 
-                               hx-target="#users-table"
-                               hx-confirm="Are you sure you want to disable this user?"
-                               class="text-red-600 hover:text-red-900">
-                         <i class="fas fa-user-slash mr-1"></i>Disable
-                       </button>` :
-                  html`<button hx-post="/admin/users/${user.id}/activate" 
-                               hx-target="#users-table"
-                               class="text-green-600 hover:text-green-900 mr-3">
-                         <i class="fas fa-user-check mr-1"></i>Activate
-                       </button>
-                       <button hx-post="/admin/users/${user.id}/delete" 
-                               hx-target="#users-table"
-                               hx-confirm="Are you sure you want to delete this user? This action cannot be undone."
-                               class="text-red-600 hover:text-red-900">
-                         <i class="fas fa-trash mr-1"></i>Delete
-                       </button>`
+                  `<button hx-post="/admin/users/${user.id}/disable" 
+                           hx-target="#users-table"
+                           hx-confirm="Are you sure you want to disable this user?"
+                           class="text-red-600 hover:text-red-900">
+                     <i class="fas fa-user-slash mr-1"></i>Disable
+                   </button>` :
+                  `<button hx-post="/admin/users/${user.id}/activate" 
+                           hx-target="#users-table"
+                           class="text-green-600 hover:text-green-900 mr-2">
+                     <i class="fas fa-user-check mr-1"></i>Activate
+                   </button>
+                   <button hx-post="/admin/users/${user.id}/delete" 
+                           hx-target="#users-table"
+                           hx-confirm="Are you sure you want to delete this user? This action cannot be undone."
+                           class="text-red-600 hover:text-red-900">
+                     <i class="fas fa-trash mr-1"></i>Delete
+                   </button>`
                 }
               </td>
             </tr>
@@ -2758,11 +3059,11 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
         </tbody>
       </table>
       
-      ${data.totalPages > 1 ? html`
+      ${data.totalPages > 1 ? `
         <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
           <div class="flex items-center justify-between">
             <div class="flex-1 flex justify-between sm:hidden">
-              ${data.page > 1 ? html`
+              ${data.page > 1 ? `
                 <button hx-get="/admin/users/table?page=${data.page - 1}" 
                         hx-target="#users-table"
                         hx-include="#user-search, #role-filter"
@@ -2770,7 +3071,7 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
                   Previous
                 </button>
               ` : ''}
-              ${data.page < data.totalPages ? html`
+              ${data.page < data.totalPages ? `
                 <button hx-get="/admin/users/table?page=${data.page + 1}" 
                         hx-target="#users-table"
                         hx-include="#user-search, #role-filter"
@@ -2789,7 +3090,7 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
               </div>
               <div>
                 <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  ${data.page > 1 ? html`
+                  ${data.page > 1 ? `
                     <button hx-get="/admin/users/table?page=${data.page - 1}" 
                             hx-target="#users-table"
                             hx-include="#user-search, #role-filter"
@@ -2800,7 +3101,7 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
                   
                   ${Array.from({length: Math.min(5, data.totalPages)}, (_, i) => {
                     const pageNum = i + 1;
-                    return html`
+                    return `
                       <button hx-get="/admin/users/table?page=${pageNum}" 
                               hx-target="#users-table"
                               hx-include="#user-search, #role-filter"
@@ -2810,7 +3111,7 @@ const renderUsersTable = (data?: { users: any[]; total: number; page: number; li
                     `;
                   }).join('')}
                   
-                  ${data.page < data.totalPages ? html`
+                  ${data.page < data.totalPages ? `
                     <button hx-get="/admin/users/table?page=${data.page + 1}" 
                             hx-target="#users-table"
                             hx-include="#user-search, #role-filter"
@@ -2851,6 +3152,14 @@ function formatRole(role: string): string {
     'user': 'User'
   };
   return roleMap[role] || role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+function getAuthTypeColor(authType: string): string {
+  const colorMap: Record<string, string> = {
+    'local': 'bg-blue-100 text-blue-800',
+    'saml': 'bg-purple-100 text-purple-800'
+  };
+  return colorMap[authType] || 'bg-blue-100 text-blue-800';
 }
 
 // Edit User Modal
@@ -2972,7 +3281,7 @@ const renderCreateUserModal = () => html`
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
               <select name="role" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -2985,6 +3294,14 @@ const renderCreateUserModal = () => html`
                 <option value="user">User</option>
               </select>
             </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Auth Type</label>
+              <select name="auth_type" onchange="toggleSamlFields(this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="local">Local Login</option>
+                <option value="saml">SAML SSO</option>
+              </select>
+            </div>
             
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Organization</label>
@@ -2994,6 +3311,15 @@ const renderCreateUserModal = () => html`
                 <option value="3">Financial Services Ltd</option>
               </select>
             </div>
+          </div>
+
+          <!-- SAML-specific field (hidden by default) -->
+          <div id="saml-fields" style="display: none;">
+            <label class="block text-sm font-medium text-gray-700 mb-2">SAML Subject ID (Optional)</label>
+            <input type="text" name="saml_subject_id" 
+                   placeholder="e.g., user@domain.com or unique identifier"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="text-xs text-gray-500 mt-1">Leave blank to auto-generate from email</p>
           </div>
           
           <div class="flex items-center">
@@ -3029,20 +3355,40 @@ const renderCreateUserModal = () => html`
           </div>
         </div>
         
-        <div class="flex justify-end items-center p-6 border-t bg-gray-50 space-x-3">
-          <button type="button" onclick="document.getElementById('modal-container').innerHTML=''"
-                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-            Cancel
+        <div class="flex justify-between items-center p-6 border-t bg-gray-50">
+          <button hx-post="/admin/users/create-saml-demo" 
+                  hx-target="#users-table"
+                  hx-confirm="Create a demo SAML user for testing?"
+                  onclick="document.getElementById('modal-container').innerHTML=''"
+                  class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
+            <i class="fas fa-key mr-1"></i>Create Demo SAML User
           </button>
-          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-            Create User
-          </button>
+          <div class="space-x-3">
+            <button type="button" onclick="document.getElementById('modal-container').innerHTML=''"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+              Create User
+            </button>
+          </div>
         </div>
         
         <div id="create-result"></div>
       </form>
     </div>
   </div>
+  
+  <script>
+    function toggleSamlFields(authType) {
+      const samlFields = document.getElementById('saml-fields');
+      if (authType === 'saml') {
+        samlFields.style.display = 'block';
+      } else {
+        samlFields.style.display = 'none';
+      }
+    }
+  </script>
 `;
 
 // Organizations Page
@@ -3166,7 +3512,10 @@ const renderOrganizationsPage = () => html`
 `;
 
 // SAML Configuration Page
-const renderSAMLConfigPage = () => html`
+const renderSAMLConfigPage = (config: any = {}) => {
+  const attributeMapping = config.attribute_mapping ? JSON.parse(config.attribute_mapping) : {};
+  
+  return html`
   <div class="min-h-screen bg-gray-50">
     <!-- Header -->
     <div class="bg-white shadow">
@@ -3200,9 +3549,9 @@ const renderSAMLConfigPage = () => html`
             </div>
           </div>
           <div class="flex items-center space-x-3">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-              <i class="fas fa-check-circle mr-1"></i>
-              Configured
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.enabled ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+              <i class="fas fa-${config.enabled ? 'check-circle' : 'clock'} mr-1"></i>
+              ${config.enabled ? 'Enabled' : 'Disabled'}
             </span>
             <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
               Test SSO
@@ -3227,20 +3576,22 @@ const renderSAMLConfigPage = () => html`
               <div class="grid grid-cols-1 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">SSO URL (IdP Login URL)</label>
-                  <input type="url" name="sso_url" value="https://sso.example.com/saml/login"
+                  <input type="url" name="sso_url" value="${config.sso_url || ''}" 
+                         placeholder="https://sso.example.com/saml/login"
                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">IdP Entity ID</label>
-                  <input type="text" name="idp_entity_id" value="https://sso.example.com/saml/metadata"
+                  <input type="text" name="idp_entity_id" value="${config.entity_id || ''}" 
+                         placeholder="https://sso.example.com/saml/metadata"
                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">X.509 Certificate</label>
                   <textarea name="certificate" rows="8" placeholder="-----BEGIN CERTIFICATE-----..."
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">${config.certificate || ''}</textarea>
                   <p class="mt-1 text-xs text-gray-500">Paste the X.509 certificate from your identity provider</p>
                 </div>
               </div>
@@ -3272,25 +3623,29 @@ const renderSAMLConfigPage = () => html`
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Email Attribute</label>
-                  <input type="text" name="email_attr" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+                  <input type="text" name="email_attribute" 
+                         value="${attributeMapping.email || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'}"
                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">First Name Attribute</label>
-                  <input type="text" name="first_name_attr" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname"
+                  <input type="text" name="first_name_attribute" 
+                         value="${attributeMapping.firstName || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'}"
                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Last Name Attribute</label>
-                  <input type="text" name="last_name_attr" value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname"
+                  <input type="text" name="last_name_attribute" 
+                         value="${attributeMapping.lastName || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'}"
                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Role Attribute (Optional)</label>
-                  <input type="text" name="role_attr" value="http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+                  <input type="text" name="role_attribute" 
+                         value="${attributeMapping.role || 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'}"
                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
               </div>
@@ -3318,7 +3673,7 @@ const renderSAMLConfigPage = () => html`
                 
                 <div>
                   <label class="flex items-center">
-                    <input type="checkbox" name="enforce_sso" class="mr-2">
+                    <input type="checkbox" name="enforce_sso" class="mr-2" ${config.enabled ? 'checked' : ''}>
                     <span class="text-sm font-medium">Enforce SSO for all users</span>
                   </label>
                   <p class="mt-1 text-xs text-gray-500 ml-6">Disable local login and require SSO authentication</p>
@@ -3465,3 +3820,6 @@ const renderErrorPage = (message: string) => html`
     </div>
   </div>
 `;
+
+  return app;
+}
