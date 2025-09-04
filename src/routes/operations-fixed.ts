@@ -89,12 +89,12 @@ export function createOperationsRoutes() {
   // API endpoints
   app.get('/api/assets', async (c) => {
     const assets = await getAssets();
-    return c.json({ success: true, assets });
+    return c.html(renderAssetRows());
   });
 
   app.get('/api/services', async (c) => {
     const services = await getServices();
-    return c.json({ success: true, services });
+    return c.html(renderServiceRows());
   });
 
   app.post('/api/assets', async (c) => {
@@ -363,6 +363,109 @@ export function createOperationsRoutes() {
     }
   });
 
+  // Asset-Service linking endpoints
+  app.get('/api/assets/:id/link-services', async (c) => {
+    const assetId = parseInt(c.req.param('id'));
+    const asset = await getAssetById(assetId);
+    const allServices = await getServices();
+    const linkedServiceIds = assetServiceLinks.get(assetId) || [];
+    
+    return c.html(renderAssetServiceLinkModal(asset, allServices, linkedServiceIds));
+  });
+
+  app.get('/api/services/:id/link-assets', async (c) => {
+    const serviceId = parseInt(c.req.param('id'));
+    const service = await getServiceById(serviceId);
+    const allAssets = await getAssets();
+    
+    return c.html(renderServiceAssetLinkModal(service, allAssets));
+  });
+
+  app.post('/api/assets/:id/link-services', async (c) => {
+    const assetId = parseInt(c.req.param('id'));
+    const formData = await c.req.formData();
+    const selectedServiceIds = formData.getAll('services').map((id: any) => parseInt(id));
+    
+    // Update asset-service links
+    assetServiceLinks.set(assetId, selectedServiceIds);
+    
+    // Update service linked_assets arrays
+    const allServices = await getServices();
+    allServices.forEach(service => {
+      const currentAssets = service.linked_assets || [];
+      const shouldIncludeAsset = selectedServiceIds.includes(service.id);
+      
+      if (shouldIncludeAsset && !currentAssets.includes(assetId)) {
+        currentAssets.push(assetId);
+      } else if (!shouldIncludeAsset && currentAssets.includes(assetId)) {
+        const index = currentAssets.indexOf(assetId);
+        currentAssets.splice(index, 1);
+      }
+      
+      service.linked_assets = currentAssets;
+      service.asset_count = currentAssets.length;
+      servicesStore.set(service.id, service);
+    });
+
+    return c.html(html`
+      <div class="fixed inset-0 bg-green-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+          <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Asset Linked Successfully!</h3>
+          <p class="text-sm text-gray-600 mb-4">Asset has been linked to ${selectedServiceIds.length} service(s).</p>
+          <button hx-get="/operations/api/link/close" hx-target="#link-modal" hx-swap="innerHTML"
+                  class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+            Close
+          </button>
+        </div>
+      </div>
+    `);
+  });
+
+  app.post('/api/services/:id/link-assets', async (c) => {
+    const serviceId = parseInt(c.req.param('id'));
+    const formData = await c.req.formData();
+    const selectedAssetIds = formData.getAll('assets').map((id: any) => parseInt(id));
+    
+    // Update service linked_assets
+    const service = await getServiceById(serviceId);
+    if (service) {
+      service.linked_assets = selectedAssetIds;
+      service.asset_count = selectedAssetIds.length;
+      servicesStore.set(serviceId, service);
+    }
+    
+    // Update asset-service links
+    const allAssets = await getAssets();
+    allAssets.forEach(asset => {
+      const currentServices = assetServiceLinks.get(asset.id) || [];
+      const shouldIncludeService = selectedAssetIds.includes(asset.id);
+      
+      if (shouldIncludeService && !currentServices.includes(serviceId)) {
+        currentServices.push(serviceId);
+      } else if (!shouldIncludeService && currentServices.includes(serviceId)) {
+        const index = currentServices.indexOf(serviceId);
+        currentServices.splice(index, 1);
+      }
+      
+      assetServiceLinks.set(asset.id, currentServices);
+    });
+
+    return c.html(html`
+      <div class="fixed inset-0 bg-green-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+          <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Service Linked Successfully!</h3>
+          <p class="text-sm text-gray-600 mb-4">Service has been linked to ${selectedAssetIds.length} asset(s).</p>
+          <button hx-get="/operations/api/link/close" hx-target="#link-modal" hx-swap="innerHTML"
+                  class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+            Close
+          </button>
+        </div>
+      </div>
+    `);
+  });
+
   // Modal close endpoints
   app.get('/api/assets/close', async (c) => {
     return c.html(''); // Return empty content to close modal
@@ -374,6 +477,22 @@ export function createOperationsRoutes() {
 
   app.get('/api/documents/close', async (c) => {
     return c.html(''); // Return empty content to close modal
+  });
+
+  app.get('/api/link/close', async (c) => {
+    return c.html(''); // Return empty content to close link modal
+  });
+
+  // API endpoint to get services for risk management
+  app.get('/api/services/for-risk', async (c) => {
+    const services = await getServices();
+    return c.json({ success: true, services });
+  });
+
+  // API endpoint to get assets for risk management  
+  app.get('/api/assets/for-risk', async (c) => {
+    const assets = await getAssets();
+    return c.json({ success: true, assets });
   });
 
   return app;
@@ -644,6 +763,18 @@ const renderAssetManagement = () => html`
   
   <!-- Asset Modal Container -->
   <div id="asset-modal"></div>
+  
+  <!-- Link Modal Container -->  
+  <div id="link-modal"></div>
+  
+  <script>
+    function linkAssetToServices(assetId) {
+      htmx.ajax('GET', \`/operations/api/assets/\${assetId}/link-services\`, {
+        target: '#link-modal',
+        swap: 'innerHTML'
+      });
+    }
+  </script>
 `;
 
 // Service Management Page  
@@ -692,6 +823,18 @@ const renderServiceManagement = () => html`
 
   <!-- Service Modal Container -->
   <div id="service-modal"></div>
+  
+  <!-- Link Modal Container -->
+  <div id="link-modal"></div>
+  
+  <script>
+    function linkServiceToAssets(serviceId) {
+      htmx.ajax('GET', \`/operations/api/services/\${serviceId}/link-assets\`, {
+        target: '#link-modal',
+        swap: 'innerHTML'
+      });
+    }
+  </script>
 `;
 
 // Document Management Page
@@ -882,17 +1025,28 @@ const renderDefenderIntegration = () => html`
 
 // Helper functions - using raw strings to avoid HTML escaping issues
 function renderAssetRows() {
-  const assets = [
-    { name: 'WEB-SRV-01', type: 'Server', status: 'Active', location: 'Data Center', risk: 'Medium' },
-    { name: 'DB-SRV-02', type: 'Server', status: 'Active', location: 'Data Center', risk: 'High' },
-    { name: 'WS-ADMIN-03', type: 'Workstation', status: 'Active', location: 'Office', risk: 'Low' },
-    { name: 'FW-MAIN-01', type: 'Network Device', status: 'Active', location: 'Data Center', risk: 'Critical' }
-  ];
+  const assets = Array.from(assetsStore.values());
+  
+  if (assets.length === 0) {
+    return `
+      <tr>
+        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+          <i class="fas fa-server text-gray-300 text-3xl mb-2"></i>
+          <div>No assets found. <a href="#" hx-get="/operations/api/assets/new" hx-target="#asset-modal" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Add your first asset</a>.</div>
+        </td>
+      </tr>
+    `;
+  }
   
   return assets.map(asset => `
     <tr>
       <td class="px-6 py-4 whitespace-nowrap">
-        <div class="text-sm font-medium text-gray-900">${asset.name}</div>
+        <div class="flex items-center">
+          <div>
+            <div class="text-sm font-medium text-gray-900">${asset.name}</div>
+            <div class="text-sm text-gray-500">${asset.operating_system || 'OS not specified'}</div>
+          </div>
+        </div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.type}</td>
       <td class="px-6 py-4 whitespace-nowrap">
@@ -902,12 +1056,13 @@ function renderAssetRows() {
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${asset.location}</td>
       <td class="px-6 py-4 whitespace-nowrap">
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(asset.risk)}">
-          ${asset.risk}
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(asset.overall_risk_level)}">
+          ${asset.overall_risk_level}
         </span>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+        <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="linkAssetToServices(${asset.id})">Link Services</button>
+        <button class="text-gray-600 hover:text-gray-900 mr-3">Edit</button>
         <button class="text-red-600 hover:text-red-900">Delete</button>
       </td>
     </tr>
@@ -915,36 +1070,49 @@ function renderAssetRows() {
 }
 
 function renderServiceRows() {
-  const services = [
-    { name: 'Customer Portal', assets: 23, c: 'High', i: 'High', a: 'Medium', risk: 'High' },
-    { name: 'Payment Gateway', assets: 12, c: 'Critical', i: 'Critical', a: 'High', risk: 'Critical' },
-    { name: 'API Services', assets: 45, c: 'High', i: 'High', a: 'High', risk: 'High' },
-    { name: 'Data Warehouse', assets: 18, c: 'Critical', i: 'High', a: 'Medium', risk: 'High' }
-  ];
+  const services = Array.from(servicesStore.values());
+  
+  if (services.length === 0) {
+    return `
+      <tr>
+        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+          <i class="fas fa-sitemap text-gray-300 text-3xl mb-2"></i>
+          <div>No services found. <a href="#" hx-get="/operations/api/services/new" hx-target="#service-modal" hx-swap="innerHTML" class="text-green-600 hover:text-green-800">Add your first service</a>.</div>
+        </td>
+      </tr>
+    `;
+  }
   
   return services.map(service => `
     <tr>
       <td class="px-6 py-4 whitespace-nowrap">
-        <div class="text-sm font-medium text-gray-900">${service.name}</div>
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap">
-        <span class="text-sm text-gray-900">${service.assets}</span>
-      </td>
-      <td class="px-6 py-4 whitespace-nowrap">
-        <div class="text-xs space-y-1">
-          <div>C: <span class="font-medium text-red-600">${service.c}</span></div>
-          <div>I: <span class="font-medium text-orange-600">${service.i}</span></div>
-          <div>A: <span class="font-medium text-yellow-600">${service.a}</span></div>
+        <div class="flex items-center">
+          <div>
+            <div class="text-sm font-medium text-gray-900">${service.name}</div>
+            <div class="text-sm text-gray-500">${service.category}</div>
+          </div>
         </div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(service.risk)}">
-          ${service.risk}
+        <span class="text-sm text-gray-900">${service.asset_count}</span>
+        <div class="text-xs text-gray-500">linked</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-xs space-y-1">
+          <div>C: <span class="font-medium ${service.confidentiality >= 3 ? 'text-red-600' : 'text-orange-600'}">${service.confidentiality}</span></div>
+          <div>I: <span class="font-medium ${service.integrity >= 3 ? 'text-red-600' : 'text-orange-600'}">${service.integrity}</span></div>
+          <div>A: <span class="font-medium ${service.availability >= 3 ? 'text-red-600' : 'text-orange-600'}">${service.availability}</span></div>
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRiskColor(service.overall_risk_level)}">
+          ${service.overall_risk_level}
         </span>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button class="text-green-600 hover:text-green-900 mr-3" onclick="linkServiceToAssets(${service.id})">Link Assets</button>
         <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-        <button class="text-green-600 hover:text-green-900">Link Assets</button>
+        <button class="text-red-600 hover:text-red-900">Delete</button>
       </td>
     </tr>
   `).join('');
@@ -1022,27 +1190,153 @@ function getSeverityColor(severity: string) {
   }
 }
 
-// Mock data functions
-async function getAssets() {
-  return [
-    { id: 1, name: 'WEB-SRV-01', type: 'Server', status: 'Active', location: 'Data Center' },
-    { id: 2, name: 'DB-SRV-02', type: 'Server', status: 'Active', location: 'Data Center' },
-    { id: 3, name: 'WS-ADMIN-03', type: 'Workstation', status: 'Active', location: 'Office' }
+// In-memory data stores (in production, this would be D1 database)
+const assetsStore = new Map();
+const servicesStore = new Map();
+const assetServiceLinks = new Map(); // Maps asset IDs to service IDs
+
+// Initialize with some sample data
+function initializeData() {
+  // Sample assets
+  const sampleAssets = [
+    { 
+      id: 1, 
+      name: 'WEB-SRV-01', 
+      type: 'Web Server', 
+      status: 'Active', 
+      location: 'Primary Data Center',
+      operating_system: 'Windows Server 2022',
+      confidentiality: 3,
+      integrity: 3,
+      availability: 4,
+      risk_score: 3.4,
+      overall_risk_level: 'High',
+      created_at: new Date().toISOString(),
+      linked_services: []
+    },
+    { 
+      id: 2, 
+      name: 'DB-SRV-02', 
+      type: 'Database Server', 
+      status: 'Active', 
+      location: 'Primary Data Center',
+      operating_system: 'Ubuntu 22.04 LTS',
+      confidentiality: 4,
+      integrity: 4,
+      availability: 4,
+      risk_score: 4.0,
+      overall_risk_level: 'Critical',
+      created_at: new Date().toISOString(),
+      linked_services: []
+    },
+    { 
+      id: 3, 
+      name: 'WS-ADMIN-03', 
+      type: 'Workstation', 
+      status: 'Active', 
+      location: 'Head Office',
+      operating_system: 'Windows 11',
+      confidentiality: 2,
+      integrity: 2,
+      availability: 2,
+      risk_score: 2.0,
+      overall_risk_level: 'Medium',
+      created_at: new Date().toISOString(),
+      linked_services: []
+    }
   ];
+
+  // Sample services
+  const sampleServices = [
+    { 
+      id: 1, 
+      name: 'Customer Portal', 
+      category: 'Web Application',
+      confidentiality: 3,
+      integrity: 3,
+      availability: 3,
+      risk_score: 3.0,
+      overall_risk_level: 'High',
+      status: 'Active',
+      created_at: new Date().toISOString(),
+      linked_assets: [1, 2],
+      asset_count: 2
+    },
+    { 
+      id: 2, 
+      name: 'Payment Gateway', 
+      category: 'API Service',
+      confidentiality: 4,
+      integrity: 4,
+      availability: 4,
+      risk_score: 4.0,
+      overall_risk_level: 'Critical',
+      status: 'Active',
+      created_at: new Date().toISOString(),
+      linked_assets: [2],
+      asset_count: 1
+    },
+    { 
+      id: 3, 
+      name: 'Internal API Services', 
+      category: 'API Service',
+      confidentiality: 3,
+      integrity: 3,
+      availability: 2,
+      risk_score: 2.6,
+      overall_risk_level: 'High',
+      status: 'Active',
+      created_at: new Date().toISOString(),
+      linked_assets: [1],
+      asset_count: 1
+    }
+  ];
+
+  // Populate stores
+  sampleAssets.forEach(asset => assetsStore.set(asset.id, asset));
+  sampleServices.forEach(service => servicesStore.set(service.id, service));
+  
+  // Set up asset-service links
+  assetServiceLinks.set(1, [1, 3]); // WEB-SRV-01 linked to Customer Portal and API Services
+  assetServiceLinks.set(2, [1, 2]); // DB-SRV-02 linked to Customer Portal and Payment Gateway
+  assetServiceLinks.set(3, []); // WS-ADMIN-03 not linked to any services
+}
+
+// Initialize data if stores are empty
+if (assetsStore.size === 0) {
+  initializeData();
+}
+
+// Data access functions
+async function getAssets() {
+  return Array.from(assetsStore.values());
 }
 
 async function getServices() {
-  return [
-    { id: 1, name: 'Customer Portal', assets: 23, risk: 'High' },
-    { id: 2, name: 'Payment Gateway', assets: 12, risk: 'Critical' },
-    { id: 3, name: 'API Services', assets: 45, risk: 'High' }
-  ];
+  return Array.from(servicesStore.values());
+}
+
+async function getAssetById(id: number) {
+  return assetsStore.get(id);
+}
+
+async function getServiceById(id: number) {
+  return servicesStore.get(id);
+}
+
+async function getAssetsForService(serviceId: number) {
+  const service = servicesStore.get(serviceId);
+  if (!service || !service.linked_assets) return [];
+  
+  return service.linked_assets.map((assetId: number) => assetsStore.get(assetId)).filter(Boolean);
+}
+
+async function getServicesForAsset(assetId: number) {
+  const linkedServiceIds = assetServiceLinks.get(assetId) || [];
+  return linkedServiceIds.map((serviceId: number) => servicesStore.get(serviceId)).filter(Boolean);
 }
 
 async function createAsset(assetData: any) {
-  // In a real application, this would save to database (D1, KV, etc.)
-  // For now, we'll simulate the asset creation with enhanced ARIA5 data
-  
   const asset = {
     id: Date.now(),
     
@@ -1091,21 +1385,21 @@ async function createAsset(assetData: any) {
     last_compliance_check: null,
     next_review_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
     
-    // Service linkage placeholder
+    // Service linkage
     linked_services: [],
     service_count: 0
   };
   
-  // Log asset creation for audit trail (in real app, this would be proper logging)
-  console.log(`ARIA5 Asset Created: ${asset.name} (ID: ${asset.id}) - Risk Level: ${asset.overall_risk_level}, Type: ${asset.type}`);
+  // Store in memory (in production, this would be D1 database)
+  assetsStore.set(asset.id, asset);
+  assetServiceLinks.set(asset.id, []);
+  
+  console.log(`ARIA5 Asset Created: ${asset.name} (ID: ${asset.id}) - Risk Level: ${asset.overall_risk_level}`);
   
   return asset;
 }
 
 async function createService(serviceData: any) {
-  // In a real application, this would save to database (D1, KV, etc.)
-  // For now, we'll simulate the service creation with enhanced ARIA5 data
-  
   const service = {
     id: Date.now(),
     
@@ -1139,7 +1433,7 @@ async function createService(serviceData: any) {
     updated_at: new Date().toISOString(),
     created_by: 'system', // In real app, this would be current user
     
-    // Asset linkage placeholder
+    // Asset linkage
     linked_assets: [],
     asset_count: 0,
     
@@ -1149,7 +1443,9 @@ async function createService(serviceData: any) {
     next_review_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() // 90 days from now
   };
   
-  // Log service creation for audit trail (in real app, this would be proper logging)
+  // Store in memory (in production, this would be D1 database)
+  servicesStore.set(service.id, service);
+  
   console.log(`ARIA5 Service Created: ${service.name} (ID: ${service.id}) - Risk Level: ${service.overall_risk_level}`);
   
   return service;
@@ -1523,6 +1819,150 @@ const renderAssetModal = () => html`
       }
     }
   </script>
+`;
+
+// Asset-Service Linking Modal
+const renderAssetServiceLinkModal = (asset: any, allServices: any[], linkedServiceIds: number[]) => html`
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
+       hx-target="this" 
+       hx-swap="outerHTML">
+    <div class="relative top-20 mx-auto p-6 border w-full max-w-2xl shadow-xl rounded-lg bg-white">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-link text-blue-600 mr-3"></i>
+              Link Asset to Services
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">Select services that use this asset: <strong>${asset.name}</strong></p>
+          </div>
+          <button hx-get="/operations/api/link/close" hx-target="#link-modal" hx-swap="innerHTML" 
+                  class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        
+        <form hx-post="/operations/api/assets/${asset.id}/link-services" 
+              hx-target="#link-modal" 
+              hx-swap="innerHTML">
+          
+          <div class="mb-6">
+            <h4 class="text-md font-medium text-gray-800 mb-4">Available Services</h4>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+              ${allServices.map(service => `
+                <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                  <input type="checkbox" name="services" value="${service.id}" 
+                         ${linkedServiceIds.includes(service.id) ? 'checked' : ''}
+                         class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                  <div class="ml-3 flex-1">
+                    <div class="text-sm font-medium text-gray-900">${service.name}</div>
+                    <div class="text-sm text-gray-500">${service.category} • Risk: ${service.overall_risk_level}</div>
+                  </div>
+                  <span class="px-2 py-1 text-xs font-medium rounded-full ${getRiskColor(service.overall_risk_level)}">
+                    ${service.overall_risk_level}
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+            
+            ${allServices.length === 0 ? `
+              <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-sitemap text-gray-300 text-3xl mb-2"></i>
+                <div>No services available. <a href="#" hx-get="/operations/api/services/new" hx-target="#service-modal" hx-swap="innerHTML" class="text-green-600 hover:text-green-800">Create a service first</a>.</div>
+              </div>
+            ` : ''}
+          </div>
+          
+          <div class="flex justify-end space-x-3 pt-4 border-t">
+            <button type="button" 
+                    hx-get="/operations/api/link/close" 
+                    hx-target="#link-modal" 
+                    hx-swap="innerHTML"
+                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center">
+              <i class="fas fa-link mr-2"></i>
+              Update Links
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+`;
+
+// Service-Asset Linking Modal  
+const renderServiceAssetLinkModal = (service: any, allAssets: any[]) => html`
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
+       hx-target="this" 
+       hx-swap="outerHTML">
+    <div class="relative top-20 mx-auto p-6 border w-full max-w-2xl shadow-xl rounded-lg bg-white">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-link text-green-600 mr-3"></i>
+              Link Service to Assets
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">Select assets that support this service: <strong>${service.name}</strong></p>
+          </div>
+          <button hx-get="/operations/api/link/close" hx-target="#link-modal" hx-swap="innerHTML" 
+                  class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        
+        <form hx-post="/operations/api/services/${service.id}/link-assets" 
+              hx-target="#link-modal" 
+              hx-swap="innerHTML">
+          
+          <div class="mb-6">
+            <h4 class="text-md font-medium text-gray-800 mb-4">Available Assets</h4>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+              ${allAssets.map(asset => `
+                <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                  <input type="checkbox" name="assets" value="${asset.id}" 
+                         ${service.linked_assets?.includes(asset.id) ? 'checked' : ''}
+                         class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                  <div class="ml-3 flex-1">
+                    <div class="text-sm font-medium text-gray-900">${asset.name}</div>
+                    <div class="text-sm text-gray-500">${asset.type} • ${asset.location} • Risk: ${asset.overall_risk_level}</div>
+                  </div>
+                  <span class="px-2 py-1 text-xs font-medium rounded-full ${getRiskColor(asset.overall_risk_level)}">
+                    ${asset.overall_risk_level}
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+            
+            ${allAssets.length === 0 ? `
+              <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-server text-gray-300 text-3xl mb-2"></i>
+                <div>No assets available. <a href="#" hx-get="/operations/api/assets/new" hx-target="#asset-modal" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Create an asset first</a>.</div>
+              </div>
+            ` : ''}
+          </div>
+          
+          <div class="flex justify-end space-x-3 pt-4 border-t">
+            <button type="button" 
+                    hx-get="/operations/api/link/close" 
+                    hx-target="#link-modal" 
+                    hx-swap="innerHTML"
+                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="px-6 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors flex items-center">
+              <i class="fas fa-link mr-2"></i>
+              Update Links
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 `;
 
 const renderDocumentUploadModal = () => html`
