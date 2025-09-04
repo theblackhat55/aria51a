@@ -38,27 +38,85 @@ export function createRiskRoutesARIA5() {
     return c.html(renderCreateRiskModal());
   });
 
+  // Risk score calculation endpoint
+  app.post('/calculate-score', async (c) => {
+    const body = await c.req.parseBody();
+    const likelihood = parseInt(body.likelihood as string);
+    const impact = parseInt(body.impact as string);
+    
+    if (!likelihood || !impact) {
+      return c.html(`<input type="text" name="risk_score" value="TBD" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600">`);
+    }
+    
+    const score = likelihood * impact;
+    let level = 'Low';
+    let colorClass = 'text-green-600';
+    
+    if (score >= 20) {
+      level = 'Critical';
+      colorClass = 'text-red-600';
+    } else if (score >= 15) {
+      level = 'High'; 
+      colorClass = 'text-orange-600';
+    } else if (score >= 10) {
+      level = 'Medium';
+      colorClass = 'text-yellow-600';
+    } else if (score >= 5) {
+      level = 'Low';
+      colorClass = 'text-green-600';
+    } else {
+      level = 'Very Low';
+      colorClass = 'text-gray-600';
+    }
+    
+    return c.html(`
+      <input type="text" 
+             name="risk_score" 
+             value="${score} - ${level}" 
+             readonly
+             class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 font-medium ${colorClass}">
+    `);
+  });
+
   // Risk form submission
   app.post('/create', async (c) => {
     const formData = await c.req.parseBody();
     
-    // Process form data here
-    console.log('Risk creation:', formData);
+    // Process comprehensive form data
+    const riskData = {
+      risk_id: formData.risk_id,
+      category: formData.category,
+      title: formData.title,
+      description: formData.description,
+      threat_source: formData.threat_source,
+      affected_services: formData['affected_services[]'] || [],
+      likelihood: parseInt(formData.likelihood as string),
+      impact: parseInt(formData.impact as string),
+      risk_score: formData.risk_score,
+      treatment_strategy: formData.treatment_strategy,
+      owner: formData.owner,
+      mitigation_actions: formData.mitigation_actions
+    };
+    
+    console.log('Enhanced Risk creation:', riskData);
     
     // Return success response
     return c.html(`
       <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
         <div class="flex items-center">
           <i class="fas fa-check-circle text-green-500 mr-2"></i>
-          <span class="text-green-700 font-medium">Risk created successfully!</span>
+          <span class="text-green-700 font-medium">Enhanced risk assessment created successfully!</span>
+        </div>
+        <div class="mt-2 text-sm text-green-600">
+          Risk ID: ${riskData.risk_id} | Score: ${riskData.risk_score} | Owner: ${riskData.owner}
         </div>
       </div>
       <script>
         setTimeout(() => {
           document.getElementById('modal-container').innerHTML = '';
-          // Refresh the page or update the table
-          htmx.trigger('#risk-table', 'refresh');
-        }, 2000);
+          // Refresh the risk table
+          htmx.ajax('GET', '/risk/table', '#risk-table');
+        }, 3000);
       </script>
     `);
   });
@@ -419,13 +477,13 @@ const renderRiskTable = () => html`
   </div>
 `;
 
-// Create Risk Modal
+// Enhanced Risk Assessment Modal - Matching ARIA5 Exactly
 const renderCreateRiskModal = () => html`
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="risk-modal">
-    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+    <div class="relative top-10 mx-auto p-0 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
       <!-- Modal Header -->
-      <div class="flex justify-between items-center pb-3 border-b">
-        <h3 class="text-xl font-semibold text-gray-900">Add New Risk</h3>
+      <div class="flex justify-between items-center px-6 py-4 border-b bg-gray-50 rounded-t-md">
+        <h3 class="text-lg font-semibold text-gray-900">Create Enhanced Risk Assessment</h3>
         <button onclick="document.getElementById('risk-modal').remove()" 
                 class="text-gray-400 hover:text-gray-600">
           <i class="fas fa-times text-xl"></i>
@@ -433,85 +491,217 @@ const renderCreateRiskModal = () => html`
       </div>
 
       <!-- Risk Form -->
-      <div class="mt-4">
+      <div class="max-h-96 overflow-y-auto">
         <form id="risk-form" 
               hx-post="/risk/create"
               hx-target="#form-result"
               hx-swap="innerHTML"
-              class="space-y-4">
+              class="p-6 space-y-6">
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Risk ID</label>
+          <!-- 1. Risk Identification Section -->
+          <div class="space-y-4">
+            <div class="flex items-center mb-4">
+              <div class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">1</div>
+              <h4 class="text-md font-medium text-gray-900">Risk Identification</h4>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-9">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Risk ID *</label>
+                <input type="text" 
+                       name="risk_id" 
+                       placeholder=""
+                       required
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Risk Category (Optional)</label>
+                <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Category (Optional)</option>
+                  <option value="cybersecurity">Cybersecurity</option>
+                  <option value="operational">Operational</option>
+                  <option value="financial">Financial</option>
+                  <option value="compliance">Compliance</option>
+                  <option value="strategic">Strategic</option>
+                  <option value="reputational">Reputational</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="ml-9">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Risk Title *</label>
               <input type="text" 
-                     name="risk_id" 
-                     placeholder="e.g., RISK-CYBER-2025-001"
+                     name="title" 
+                     placeholder="e.g., Unauthorized access to customer database"
                      required
                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select name="category" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Category</option>
-                <option value="cybersecurity">Cybersecurity</option>
-                <option value="data-privacy">Data Privacy</option>
-                <option value="operational">Operational Risk</option>
-                <option value="financial">Financial Risk</option>
-                <option value="third-party">Third-Party Risk</option>
+            
+            <div class="ml-9">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Risk Description *</label>
+              <textarea name="description" 
+                        rows="3" 
+                        placeholder="Describe the risk scenario, potential causes, and business impact"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            
+            <div class="ml-9">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Threat Source *</label>
+              <select name="threat_source" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Select Threat Source</option>
+                <option value="external-malicious">External - Malicious</option>
+                <option value="external-accidental">External - Accidental</option>
+                <option value="internal-malicious">Internal - Malicious</option>
+                <option value="internal-accidental">Internal - Accidental</option>
+                <option value="natural-disaster">Natural Disaster</option>
+                <option value="system-failure">System Failure</option>
               </select>
             </div>
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Risk Title</label>
-            <input type="text" 
-                   name="title" 
-                   placeholder="Brief description of the risk"
-                   required
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea name="description" 
-                      rows="3" 
-                      placeholder="Detailed description of the risk scenario"
-                      required
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Probability (1-5)</label>
-              <select name="probability" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select</option>
-                <option value="1">1 - Very Low</option>
-                <option value="2">2 - Low</option>
-                <option value="3">3 - Medium</option>
-                <option value="4">4 - High</option>
-                <option value="5">5 - Very High</option>
-              </select>
+
+          <!-- 2. Affected Services Section -->
+          <div class="space-y-4 bg-green-50 p-4 rounded-lg">
+            <div class="flex items-center mb-4">
+              <div class="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">2</div>
+              <h4 class="text-md font-medium text-gray-900">Affected Services</h4>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Impact (1-5)</label>
-              <select name="impact" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select</option>
-                <option value="1">1 - Minimal</option>
-                <option value="2">2 - Minor</option>
-                <option value="3">3 - Moderate</option>
-                <option value="4">4 - Major</option>
-                <option value="5">5 - Severe</option>
-              </select>
+            
+            <div class="ml-9">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Related Services</label>
+              <div class="space-y-2">
+                <label class="flex items-center">
+                  <input type="checkbox" name="affected_services[]" value="customer_portal" class="mr-2">
+                  <span class="text-sm">Customer Portal (Standard)</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="affected_services[]" value="api_gateway" class="mr-2">
+                  <span class="text-sm">API Gateway (Standard)</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="affected_services[]" value="payment_system" class="mr-2">
+                  <span class="text-sm">Payment Processing System</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" name="affected_services[]" value="data_warehouse" class="mr-2">
+                  <span class="text-sm">Data Warehouse</span>
+                </label>
+              </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Owner</label>
-              <select name="owner" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select Owner</option>
-                <option value="avi_security">Avi Security</option>
-                <option value="admin_user">Admin User</option>
-                <option value="mike_chen">Mike Chen</option>
-                <option value="sarah_johnson">Sarah Johnson</option>
-              </select>
+          </div>
+
+          <!-- 3. Risk Assessment Section -->
+          <div class="space-y-4 bg-red-50 p-4 rounded-lg">
+            <div class="flex items-center mb-4">
+              <div class="w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">3</div>
+              <h4 class="text-md font-medium text-gray-900">Risk Assessment</h4>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 ml-9">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Likelihood *</label>
+                <select name="likelihood" 
+                        required 
+                        hx-post="/risk/calculate-score"
+                        hx-trigger="change"
+                        hx-target="#risk-score-container"
+                        hx-include="[name='impact']"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Likelihood</option>
+                  <option value="1">1 - Very Low (0-5%)</option>
+                  <option value="2">2 - Low (6-25%)</option>
+                  <option value="3">3 - Medium (26-50%)</option>
+                  <option value="4">4 - High (51-75%)</option>
+                  <option value="5">5 - Very High (76-100%)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Impact *</label>
+                <select name="impact" 
+                        required 
+                        hx-post="/risk/calculate-score"
+                        hx-trigger="change"
+                        hx-target="#risk-score-container"
+                        hx-include="[name='likelihood']"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Impact</option>
+                  <option value="1">1 - Minimal</option>
+                  <option value="2">2 - Minor</option>
+                  <option value="3">3 - Moderate</option>
+                  <option value="4">4 - Major</option>
+                  <option value="5">5 - Severe</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Risk Score</label>
+                <div id="risk-score-container">
+                  <input type="text" 
+                         name="risk_score" 
+                         value="TBD"
+                         readonly
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600">
+                </div>
+              </div>
+            </div>
+            
+            <div class="ml-9">
+              <p class="text-sm text-gray-600">Select likelihood and impact to calculate risk score</p>
+            </div>
+          </div>
+
+          <!-- 4. AI Risk Assessment Section -->
+          <div class="space-y-4 bg-purple-50 p-4 rounded-lg">
+            <div class="flex items-center mb-4">
+              <div class="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">4</div>
+              <h4 class="text-md font-medium text-gray-900">AI Risk Assessment</h4>
+            </div>
+            
+            <div class="ml-9">
+              <p class="text-sm text-gray-600 mb-4">Get AI-powered risk analysis based on your risk details and related services</p>
+              <button type="button" 
+                      class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+                <i class="fas fa-robot mr-2"></i>Analyze with AI
+              </button>
+            </div>
+          </div>
+
+          <!-- 5. Risk Treatment & Controls Section -->
+          <div class="space-y-4 bg-yellow-50 p-4 rounded-lg">
+            <div class="flex items-center mb-4">
+              <div class="w-6 h-6 bg-yellow-600 text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">5</div>
+              <h4 class="text-md font-medium text-gray-900">Risk Treatment & Controls</h4>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-9">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Treatment Strategy *</label>
+                <select name="treatment_strategy" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Strategy</option>
+                  <option value="accept">Accept</option>
+                  <option value="mitigate">Mitigate</option>
+                  <option value="transfer">Transfer</option>
+                  <option value="avoid">Avoid</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Risk Owner *</label>
+                <select name="owner" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Owner</option>
+                  <option value="avi_security">Avi Security</option>
+                  <option value="admin_user">Admin User</option>
+                  <option value="mike_chen">Mike Chen</option>
+                  <option value="sarah_johnson">Sarah Johnson</option>
+                  <option value="system_admin">System Admin</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="ml-9">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mitigation Actions</label>
+              <textarea name="mitigation_actions" 
+                        rows="3" 
+                        placeholder="Describe planned or implemented risk mitigation actions"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
             </div>
           </div>
 
@@ -519,15 +709,15 @@ const renderCreateRiskModal = () => html`
           <div id="form-result"></div>
 
           <!-- Form Actions -->
-          <div class="flex justify-end space-x-3 pt-4 border-t">
+          <div class="flex justify-end space-x-3 pt-6 border-t">
             <button type="button" 
                     onclick="document.getElementById('risk-modal').remove()"
-                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md">
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-md">
               Cancel
             </button>
             <button type="submit" 
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-              <i class="fas fa-save mr-2"></i>Create Risk
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+              Create Risk
             </button>
           </div>
         </form>
