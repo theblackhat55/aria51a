@@ -7,14 +7,15 @@
 - **Status**: ✅ **PRODUCTION READY** - Fully migrated from JavaScript to HTMX+Hono with enhanced functionality
 
 ## Production URLs
-- **Production**: https://e64b85cd.aria51-htmx.pages.dev ✅ **FULLY FUNCTIONAL - ALL ISSUES FIXED**
-- **Alias URL**: https://aria5-1.aria51-htmx.pages.dev ✅ **ALL MODALS WORKING PERFECTLY**
+- **🚀 Latest Production**: https://9ed178d6.aria51-htmx.pages.dev ✅ **RISK MODAL HTMX REBUILD DEPLOYED**
+- **Alias URL**: https://aria5-1.aria51-htmx.pages.dev ✅ **COMPLETE FEATURE PARITY WITH ARIA5**
+- **Previous Build**: https://e64b85cd.aria51-htmx.pages.dev
 - **Original**: https://aria51-htmx.pages.dev
 - **Simple Login**: https://aria5-1.aria51-htmx.pages.dev/simple-login.html
-- **Health Check**: https://aria5-1.aria51-htmx.pages.dev/api/health
+- **Health Check**: https://aria5-1.aria51-htmx.pages.dev/health
 - **GitHub Repository**: https://github.com/theblackhat55/ARIA5-Local (ARIA5.1 branch)
 - **Development URL**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
-- **Enhanced Security Platform**: 🚀 **COMPLETE SUCCESS** - All authentication and modal issues resolved
+- **🎯 Risk Management**: https://aria5-1.aria51-htmx.pages.dev/risk ✅ **COMPLETELY REBUILT**
 
 ## Architecture Evolution
 - **Previous**: Mixed JavaScript frontend + Hono backend
@@ -347,7 +348,7 @@
 - **Authentication**: ✅ **FULLY WORKING** - JWT tokens, multiple credential formats
 - **API Coverage**: Complete enterprise-grade REST API (32K+ lines)
 - **Dashboard**: Real-time executive security operations interface
-- **Last Updated**: September 3, 2025 - Authentication System Fully Operational
+- **Last Updated**: September 4, 2025 - Risk Modal HTMX Rebuild Deployed ✅
 
 ### 🔧 Development Environment
 - **Local Development**: PM2 + Wrangler Pages Dev
