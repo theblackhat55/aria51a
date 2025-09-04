@@ -341,3 +341,279 @@ export function createComplianceRoutes() {
 
   return app;
 }
+
+// Framework Management Page
+function renderFrameworkManagement() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-3xl font-bold text-gray-900">Framework Management</h1>
+              <p class="text-gray-600 mt-2">Manage compliance frameworks and controls</p>
+            </div>
+            <div class="flex space-x-3">
+              <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                Import Framework
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Framework Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <!-- SOC 2 Framework -->
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-blue-600 text-xl"></i>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">SOC 2 Type II</h3>
+                <p class="text-sm text-gray-600">AICPA Trust Services</p>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Controls:</span>
+                <span class="font-medium">127 implemented</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Compliance:</span>
+                <span class="font-medium text-green-600">94%</span>
+              </div>
+            </div>
+            <a href="/compliance/frameworks/soc2" class="block w-full text-center bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors">
+              Manage Controls
+            </a>
+          </div>
+
+          <!-- ISO 27001 Framework -->
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-certificate text-green-600 text-xl"></i>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">ISO 27001</h3>
+                <p class="text-sm text-gray-600">Information Security</p>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Controls:</span>
+                <span class="font-medium">114 implemented</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Compliance:</span>
+                <span class="font-medium text-yellow-600">87%</span>
+              </div>
+            </div>
+            <a href="/compliance/frameworks/iso27001" class="block w-full text-center bg-green-50 text-green-600 py-2 rounded-lg hover:bg-green-100 transition-colors">
+              Manage Controls
+            </a>
+          </div>
+
+          <!-- Custom Framework -->
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-cog text-purple-600 text-xl"></i>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">Custom Frameworks</h3>
+                <p class="text-sm text-gray-600">Organization-specific</p>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Frameworks:</span>
+                <span class="font-medium">3 active</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Controls:</span>
+                <span class="font-medium">45 total</span>
+              </div>
+            </div>
+            <a href="/compliance/frameworks/custom" class="block w-full text-center bg-purple-50 text-purple-600 py-2 rounded-lg hover:bg-purple-100 transition-colors">
+              Manage Frameworks
+            </a>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Control Testing -->
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-vial text-orange-600"></i>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-lg font-semibold text-gray-900">Control Testing</h3>
+                <p class="text-sm text-gray-600">Test and validate control effectiveness</p>
+              </div>
+            </div>
+            <a href="/compliance/testing" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+              Start Testing <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+
+          <!-- Control Mapping -->
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-sitemap text-indigo-600"></i>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-lg font-semibold text-gray-900">Control Mapping</h3>
+                <p class="text-sm text-gray-600">Map controls across frameworks</p>
+              </div>
+            </div>
+            <a href="/compliance/mapping" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+              View Mappings <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Placeholder render functions for other compliance pages
+function renderSOC2TabContent() {
+  return html`<div class="p-4">SOC 2 Framework content loaded</div>`;
+}
+
+function renderCustomFrameworksTabContent() {
+  return html`<div class="p-4">Custom Frameworks content loaded</div>`;
+}
+
+function renderControlTestingTabContent() {
+  return html`<div class="p-4">Control Testing content loaded</div>`;
+}
+
+function renderControlMappingTabContent() {
+  return html`<div class="p-4">Control Mapping content loaded</div>`;
+}
+
+function renderSOC2ControlsPage() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">SOC 2 Controls</h1>
+        <div class="bg-white rounded-lg shadow p-6">
+          <p class="text-gray-600">SOC 2 controls management interface</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderISO27001Controls() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">ISO 27001 Controls</h1>
+        <div class="bg-white rounded-lg shadow p-6">
+          <p class="text-gray-600">ISO 27001 controls management interface</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCustomFrameworks() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Custom Frameworks</h1>
+        <div class="bg-white rounded-lg shadow p-6">
+          <p class="text-gray-600">Custom frameworks management interface</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderControlTesting() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Control Testing</h1>
+        <div class="bg-white rounded-lg shadow p-6">
+          <p class="text-gray-600">Control testing interface</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderControlMapping() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Control Mapping</h1>
+        <div class="bg-white rounded-lg shadow p-6">
+          <p class="text-gray-600">Control mapping interface</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderComplianceAssessments() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Compliance Assessments</h1>
+        <div class="bg-white rounded-lg shadow p-6">
+          <p class="text-gray-600">Compliance assessments interface</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSOAManagement() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Statement of Applicability</h1>
+        <div class="bg-white rounded-lg shadow p-6">
+          <p class="text-gray-600">SOA management interface</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderEvidenceManagement() {
+  return html`
+    <div class="min-h-screen bg-gray-50 py-12">
+      <div class="max-w-7xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Evidence Management</h1>
+        <div class="bg-white rounded-lg shadow p-6">
+          <p class="text-gray-600">Evidence management interface</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderControlViewModal(control: any) {
+  return html`<div class="p-4">Control ${control.id} view modal</div>`;
+}
+
+function renderControlEditModal(control: any) {
+  return html`<div class="p-4">Control ${control.id} edit modal</div>`;
+}
+
+// Mock SOC2 controls data
+const soc2Controls = [
+  { id: 'CC1.1', name: 'Control Environment', description: 'Sample control description' },
+  { id: 'CC2.1', name: 'Communication', description: 'Sample control description' }
+];
