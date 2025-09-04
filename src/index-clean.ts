@@ -10,7 +10,7 @@ import { getCookie } from 'hono/cookie';
 // Import clean route handlers
 import { createAuthRoutes } from './routes/auth-routes';
 import { createCleanDashboardRoutes } from './routes/dashboard-routes-clean';
-import { createRiskRoutesHTMX } from './routes/risk-routes-htmx';
+import { createRiskRoutesARIA5 } from './routes/risk-routes-aria5';
 import { createComplianceRoutes } from './routes/compliance-routes-complete';
 import { createOperationsRoutes } from './routes/operations-routes';
 import { createIntelligenceRoutes } from './routes/intelligence-routes';
@@ -174,7 +174,7 @@ app.get('/test/modal', (c) => {
 // Mount clean route groups
 const authRoutes = createAuthRoutes();
 const dashboardRoutes = createCleanDashboardRoutes();
-const riskRoutes = createRiskRoutesHTMX();
+const riskRoutes = createRiskRoutesARIA5();
 const complianceRoutes = createComplianceRoutes();
 const operationsRoutes = createOperationsRoutes();
 const intelligenceRoutes = createIntelligenceRoutes();
