@@ -299,6 +299,86 @@ export class GeminiProvider {
   }
 }
 
+// Cloudflare Workers AI Provider (Llama3 as fallback)
+export class CloudflareAIProvider {
+  private config: AIProviderConfig & { accountId?: string; apiToken?: string };
+
+  constructor(config: AIProviderConfig & { accountId?: string; apiToken?: string }) {
+    this.config = {
+      ...config,
+      baseUrl: config.baseUrl || 'https://api.cloudflare.com/client/v4',
+      model: config.model || '@cf/meta/llama-3.1-8b-instruct',
+      maxTokens: config.maxTokens || 2000,
+      temperature: config.temperature || 0.7
+    };
+  }
+
+  async chat(messages: AIMessage[]): Promise<AIResponse> {
+    try {
+      const url = `${this.config.baseUrl}/accounts/${this.config.accountId}/ai/run/${this.config.model}`;
+      
+      // Convert messages to Cloudflare format
+      const prompt = messages.map(m => {
+        if (m.role === 'system') return `System: ${m.content}`;
+        if (m.role === 'assistant') return `Assistant: ${m.content}`;
+        return `User: ${m.content}`;
+      }).join('\n\n');
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.config.apiToken || this.config.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: this.config.maxTokens,
+          temperature: this.config.temperature
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Cloudflare AI error: ${response.status} ${errorData}`);
+      }
+
+      const data = await response.json();
+      return {
+        content: data.result?.response || data.result?.content || '',
+        usage: {
+          prompt_tokens: data.result?.usage?.input_tokens,
+          completion_tokens: data.result?.usage?.output_tokens,
+          total_tokens: data.result?.usage?.total_tokens
+        },
+        model: this.config.model,
+        finish_reason: data.result?.finish_reason
+      };
+    } catch (error) {
+      console.error('Cloudflare AI error:', error);
+      throw new Error(`Cloudflare AI request failed: ${error.message}`);
+    }
+  }
+
+  async testConnection(): Promise<{ success: boolean; message: string; model?: string }> {
+    try {
+      const response = await this.chat([
+        { role: 'user', content: 'Hello, please respond with "Cloudflare AI connection successful"' }
+      ]);
+      
+      return {
+        success: true,
+        message: 'Cloudflare AI connection successful',
+        model: this.config.model
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Cloudflare AI connection failed: ${error.message}`
+      };
+    }
+  }
+}
+
 // Azure OpenAI Provider
 export class AzureOpenAIProvider {
   private config: AIProviderConfig & { deployment?: string; apiVersion?: string };
@@ -370,11 +450,12 @@ export class AzureOpenAIProvider {
 
 // Main AI Service Manager
 export class AIService {
-  private providers: Map<string, OpenAIProvider | AnthropicProvider | GeminiProvider | AzureOpenAIProvider> = new Map();
+  private providers: Map<string, OpenAIProvider | AnthropicProvider | GeminiProvider | AzureOpenAIProvider | CloudflareAIProvider> = new Map();
 
-  constructor(configs: Record<string, AIProviderConfig & { type: 'openai' | 'anthropic' | 'gemini' | 'azure-openai'; deployment?: string; apiVersion?: string }>) {
+  constructor(configs: Record<string, AIProviderConfig & { type: 'openai' | 'anthropic' | 'gemini' | 'azure-openai' | 'cloudflare'; deployment?: string; apiVersion?: string; accountId?: string; apiToken?: string }>) {
     for (const [name, config] of Object.entries(configs)) {
-      if (!config.apiKey) continue;
+      // For cloudflare, we can work without API key (using binding)
+      if (!config.apiKey && config.type !== 'cloudflare') continue;
 
       switch (config.type) {
         case 'openai':
@@ -388,6 +469,9 @@ export class AIService {
           break;
         case 'azure-openai':
           this.providers.set(name, new AzureOpenAIProvider(config));
+          break;
+        case 'cloudflare':
+          this.providers.set(name, new CloudflareAIProvider(config));
           break;
       }
     }
@@ -560,6 +644,18 @@ export function createAIService(env?: any): AIService | null {
       apiVersion: env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview'
     };
   }
+
+  // Cloudflare AI configuration (fallback - always available)
+  configs.cloudflare = {
+    type: 'cloudflare',
+    name: 'Cloudflare Llama3 (Fallback)',
+    apiKey: env?.CF_API_TOKEN || 'fallback',
+    accountId: env?.CF_ACCOUNT_ID,
+    apiToken: env?.CF_API_TOKEN,
+    model: env?.CF_AI_MODEL || '@cf/meta/llama-3.1-8b-instruct'
+  };
+
+  console.log(`AI Service initialized with ${Object.keys(configs).length} providers:`, Object.keys(configs));
 
   if (Object.keys(configs).length === 0) {
     console.warn('No AI provider configurations found. Configure at least one provider.');

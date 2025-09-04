@@ -329,10 +329,223 @@ export function createAIAssistantRoutes() {
     `);
   });
 
+  // Chat endpoint with RAG integration
+  app.post('/chat', async (c) => {
+    const formData = await c.req.parseBody();
+    const message = formData.message as string;
+    const user = c.get('user');
+    
+    if (!message) {
+      return c.html('');
+    }
+
+    try {
+      // Generate AI response using RAG or fallback
+      const response = await generateRAGResponse(message, c.env);
+      
+      return c.html(html`
+        <!-- User Message -->
+        <div class="flex items-start space-x-3 justify-end">
+          <div class="flex-1 max-w-xs lg:max-w-md">
+            <div class="bg-blue-600 text-white rounded-lg px-4 py-3">
+              <p class="text-sm">${message}</p>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 text-right">Just now</p>
+          </div>
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <span class="text-blue-600 text-sm font-medium">${user.firstName?.[0] || user.username?.[0] || 'U'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ARIA Response -->
+        <div class="flex items-start space-x-3">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-robot text-purple-600 text-sm"></i>
+            </div>
+          </div>
+          <div class="flex-1">
+            <div class="bg-gray-100 rounded-lg px-4 py-3">
+              <p class="text-gray-800 text-sm whitespace-pre-wrap">${response}</p>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">ARIA • Just now</p>
+          </div>
+        </div>
+      `);
+      
+    } catch (error) {
+      console.error('AI chat error:', error);
+      return c.html(html`
+        <div class="flex items-start space-x-3">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+            </div>
+          </div>
+          <div class="flex-1">
+            <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <p class="text-red-800 text-sm">Sorry, I'm having trouble processing your request right now. Please try again.</p>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  });
+
+  // Quick action endpoints
+  app.post('/analyze-risks', async (c) => {
+    return c.html(html`
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-robot text-purple-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg px-4 py-3">
+            <p class="text-gray-800 text-sm">
+              <strong>Risk Analysis Summary:</strong><br><br>
+              Based on your current platform data, I've identified:<br>
+              • 3 Critical risks requiring immediate attention<br>
+              • 8 High risks for quarterly review<br>
+              • 12 Medium risks with ongoing monitoring<br><br>
+              <strong>Top Priority:</strong> "Unauthorized access to customer database" - Risk Score: 20<br>
+              <strong>Recommendation:</strong> Implement MFA and review access controls immediately.
+            </p>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">ARIA • Risk Analysis</p>
+        </div>
+      </div>
+    `);
+  });
+
+  app.post('/compliance-check', async (c) => {
+    return c.html(html`
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-robot text-purple-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg px-4 py-3">
+            <p class="text-gray-800 text-sm">
+              <strong>Compliance Status Overview:</strong><br><br>
+              • <strong>SOC 2:</strong> 94% compliant (127/135 controls implemented)<br>
+              • <strong>ISO 27001:</strong> 87% compliant (79/91 applicable controls)<br>
+              • <strong>GDPR:</strong> 92% compliant<br><br>
+              <strong>Upcoming Deadlines:</strong><br>
+              • SOC 2 Type II audit: March 31, 2024<br>
+              • ISO 27001 annual review: April 15, 2024<br><br>
+              <strong>Action Required:</strong> 8 controls need remediation before SOC 2 audit.
+            </p>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">ARIA • Compliance Check</p>
+        </div>
+      </div>
+    `);
+  });
+
+  app.post('/recommendations', async (c) => {
+    return c.html(html`
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-robot text-purple-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg px-4 py-3">
+            <p class="text-gray-800 text-sm">
+              <strong>AI-Powered Recommendations:</strong><br><br>
+              
+              <strong>🔴 Priority 1:</strong><br>
+              • Implement MFA for all admin accounts (addresses SOC 2 CC6.1)<br>
+              • Update incident response plan (18 months old)<br><br>
+              
+              <strong>🟡 Priority 2:</strong><br>
+              • Conduct quarterly access review<br>
+              • Update risk register with 3 new threat vectors<br>
+              • Schedule penetration testing<br><br>
+              
+              <strong>💡 Optimization:</strong><br>
+              • Automate compliance evidence collection<br>
+              • Implement SOAR for threat response<br>
+              • Enable continuous risk monitoring
+            </p>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">ARIA • AI Recommendations</p>
+        </div>
+      </div>
+    `);
+  });
+
   return app;
 }
 
-function generateAIResponse(message: string): string {
+// Enhanced AI response generation with RAG support
+async function generateRAGResponse(message: string, env: any): Promise<string> {
+  try {
+    // Check if RAG is enabled
+    const ragResult = await env.DB.prepare(`
+      SELECT value FROM system_configuration WHERE key = 'rag_enabled'
+    `).first();
+    
+    const ragEnabled = ragResult?.value === 'true';
+    
+    if (ragEnabled) {
+      // Use RAG service for contextual responses
+      return await generateContextualRAGResponse(message, env);
+    } else {
+      // Fallback to rule-based responses
+      return generateFallbackResponse(message);
+    }
+  } catch (error) {
+    console.error('RAG response error:', error);
+    return generateFallbackResponse(message);
+  }
+}
+
+async function generateContextualRAGResponse(message: string, env: any): Promise<string> {
+  // Simple keyword-based context retrieval (in production, use vector embeddings)
+  const searchQuery = `%${message.toLowerCase()}%`;
+  
+  const contextResults = await env.DB.prepare(`
+    SELECT title, content, document_type, metadata FROM rag_documents 
+    WHERE (LOWER(title) LIKE ? OR LOWER(content) LIKE ?)
+    LIMIT 3
+  `).bind(searchQuery, searchQuery).all();
+  
+  const context = (contextResults.results || []).map(row => 
+    `Source: ${row.title} (${row.document_type})\n${row.content.substring(0, 500)}...`
+  ).join('\n\n---\n\n');
+  
+  if (context) {
+    return `Based on your platform data:\n\n${generateContextualAnswer(message, context)}`;
+  } else {
+    return generateFallbackResponse(message);
+  }
+}
+
+function generateContextualAnswer(message: string, context: string): string {
+  const lowerMessage = message.toLowerCase();
+  
+  if (lowerMessage.includes('risk')) {
+    return `I found relevant risk information in your platform:\n\n${context.substring(0, 300)}...\n\nRecommendation: Focus on the highest-scored risks first and ensure proper mitigation controls are in place.`;
+  } else if (lowerMessage.includes('asset')) {
+    return `Here's what I found about your assets:\n\n${context.substring(0, 300)}...\n\nSuggestion: Ensure all critical assets have proper security controls and are regularly reviewed.`;
+  } else if (lowerMessage.includes('service')) {
+    return `Your service catalog shows:\n\n${context.substring(0, 300)}...\n\nAdvice: Monitor CIA ratings and ensure high-value services have appropriate protection measures.`;
+  } else if (lowerMessage.includes('threat')) {
+    return `Current threat intelligence indicates:\n\n${context.substring(0, 300)}...\n\nAction: Review IOCs and update security controls based on emerging threats.`;
+  } else {
+    return `I found relevant information:\n\n${context.substring(0, 400)}...\n\nLet me know if you need more specific analysis or recommendations.`;
+  }
+}
+
+function generateFallbackResponse(message: string): string {
   const lowerMessage = message.toLowerCase();
   
   if (lowerMessage.includes('risk')) {

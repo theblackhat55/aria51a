@@ -29,6 +29,7 @@ import { apiIncidentResponseRoutes } from './routes/api-incident-response';
 // Import clean templates
 import { cleanLayout } from './templates/layout-clean';
 import { loginPage } from './templates/auth/login';
+import { landingPage } from './templates/landing';
 
 const app = new Hono();
 
@@ -51,19 +52,33 @@ app.get('/health', (c) => {
   });
 });
 
-// Home page - redirect based on auth
+// Landing page route
 app.get('/', async (c) => {
   const token = getCookie(c, 'aria_token');
   
-  if (!token) {
-    return c.redirect('/login');
+  // If authenticated, redirect to dashboard
+  if (token) {
+    return c.redirect('/dashboard');
   }
   
-  return c.redirect('/dashboard');
+  // Show landing page for unauthenticated users
+  return c.html(landingPage());
+});
+
+// Home route alias (for backward compatibility)
+app.get('/home', async (c) => {
+  return c.redirect('/');
 });
 
 // Login page
 app.get('/login', (c) => {
+  const token = getCookie(c, 'aria_token');
+  
+  // If already authenticated, redirect to dashboard
+  if (token) {
+    return c.redirect('/dashboard');
+  }
+  
   return c.html(loginPage());
 });
 

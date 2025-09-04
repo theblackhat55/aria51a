@@ -154,7 +154,13 @@ export const loginPage = () => html`
     </div>
     
     <!-- Footer -->
-    <div class="text-center mt-6">
+    <div class="text-center mt-6 space-y-2">
+      <div>
+        <a href="/" class="text-sm text-blue-600 hover:text-blue-500 font-medium">
+          <i class="fas fa-arrow-left mr-1"></i>
+          Back to Landing Page
+        </a>
+      </div>
       <p class="text-sm text-gray-600">
         © 2024 ARIA5.1 - Powered by HTMX + Hono
       </p>
@@ -168,6 +174,26 @@ export const loginPage = () => html`
       // Auto-submit for demo
       document.querySelector('form').requestSubmit();
     }
+    
+    // Check for demo parameter in URL and prefill credentials
+    document.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const demo = urlParams.get('demo');
+      
+      if (demo) {
+        switch(demo) {
+          case 'admin':
+            fillCredentials('admin', 'demo123');
+            break;
+          case 'avi_security':
+            fillCredentials('avi_security', 'demo123');
+            break;
+          case 'sjohnson':
+            fillCredentials('sjohnson', 'demo123');
+            break;
+        }
+      }
+    });
   </script>
 </body>
 </html>
