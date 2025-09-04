@@ -100,37 +100,104 @@ export function createOperationsRoutes() {
   app.post('/api/assets', async (c) => {
     try {
       const formData = await c.req.formData();
+      
+      // Enhanced ARIA5 asset data collection
       const assetData = {
+        // Basic asset information
         name: formData.get('name'),
         type: formData.get('type'),
+        operating_system: formData.get('operating_system'),
         location: formData.get('location'),
-        risk: formData.get('risk'),
-        status: 'Active'
+        asset_owner: formData.get('asset_owner'),
+        technical_custodian: formData.get('technical_custodian'),
+        
+        // Security assessment (CIA Triad)
+        confidentiality: formData.get('confidentiality'),
+        integrity: formData.get('integrity'),
+        availability: formData.get('availability'),
+        
+        // Technical & compliance configuration
+        network_zone: formData.get('network_zone'),
+        criticality: formData.get('criticality'),
+        compliance_requirements: formData.get('compliance_requirements'),
+        patch_management: formData.get('patch_management'),
+        backup_status: formData.get('backup_status'),
+        monitoring_level: formData.get('monitoring_level'),
+        
+        // Additional information
+        description: formData.get('description'),
+        
+        // Calculated risk score
+        risk_score: formData.get('risk_score'),
+        
+        // System fields
+        status: 'Active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
       const asset = await createAsset(assetData);
       
-      // Return success message and close modal
+      // Determine risk level for display
+      const riskScore = parseFloat(assetData.risk_score || '0');
+      let riskLevel, riskColor;
+      if (riskScore >= 3.5) {
+        riskLevel = 'Critical';
+        riskColor = 'text-red-600 bg-red-100';
+      } else if (riskScore >= 2.5) {
+        riskLevel = 'High';
+        riskColor = 'text-orange-600 bg-orange-100';
+      } else if (riskScore >= 1.5) {
+        riskLevel = 'Medium';
+        riskColor = 'text-yellow-600 bg-yellow-100';
+      } else {
+        riskLevel = 'Low';
+        riskColor = 'text-green-600 bg-green-100';
+      }
+      
+      // Return enhanced success message with asset details
       return c.html(html`
         <div class="fixed inset-0 bg-green-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-            <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Asset Added Successfully!</h3>
-            <p class="text-sm text-gray-600 mb-4">${assetData.name} has been added to the system.</p>
+          <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-md mx-4">
+            <i class="fas fa-check-circle text-green-500 text-5xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 mb-3">Asset Added Successfully!</h3>
+            
+            <div class="bg-gray-50 rounded-lg p-4 mb-4 text-left">
+              <div class="text-sm space-y-2">
+                <div><span class="font-medium">Asset:</span> ${assetData.name}</div>
+                <div><span class="font-medium">Type:</span> ${assetData.type || 'Not specified'}</div>
+                <div><span class="font-medium">Location:</span> ${assetData.location || 'Not specified'}</div>
+                <div><span class="font-medium">OS:</span> ${assetData.operating_system || 'Not specified'}</div>
+                <div class="flex items-center">
+                  <span class="font-medium mr-2">Risk Level:</span>
+                  <span class="px-2 py-1 rounded-full text-xs font-medium ${riskColor}">
+                    ${riskLevel} ${riskScore > 0 ? `(${riskScore.toFixed(1)}/4.0)` : ''}
+                  </span>
+                </div>
+                <div><span class="font-medium">CIA Rating:</span> C:${assetData.confidentiality}, I:${assetData.integrity}, A:${assetData.availability}</div>
+                <div><span class="font-medium">Criticality:</span> ${assetData.criticality || 'Medium'}</div>
+              </div>
+            </div>
+            
+            <p class="text-sm text-gray-600 mb-6">
+              The asset has been configured with ARIA5 security assessment and is now active in the system.
+            </p>
+            
             <button hx-get="/operations/api/assets/close" hx-target="#asset-modal" hx-swap="innerHTML"
-                    class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium transition-colors">
               Close
             </button>
           </div>
         </div>
       `);
     } catch (error) {
+      console.error('Asset creation error:', error);
       return c.html(html`
         <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
           <div class="flex">
             <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
             <div class="text-sm text-red-700">
-              Error adding asset. Please try again.
+              Error adding asset. Please check all required fields and try again.
             </div>
           </div>
         </div>
@@ -973,7 +1040,66 @@ async function getServices() {
 }
 
 async function createAsset(assetData: any) {
-  return { id: Date.now(), ...assetData, created: new Date().toISOString() };
+  // In a real application, this would save to database (D1, KV, etc.)
+  // For now, we'll simulate the asset creation with enhanced ARIA5 data
+  
+  const asset = {
+    id: Date.now(),
+    
+    // Basic asset information
+    name: assetData.name,
+    type: assetData.type || 'Other',
+    operating_system: assetData.operating_system || '',
+    location: assetData.location || '',
+    asset_owner: assetData.asset_owner || '',
+    technical_custodian: assetData.technical_custodian || '',
+    
+    // Security assessment (CIA Triad ratings 1-4 scale)
+    confidentiality: parseInt(assetData.confidentiality) || 1,
+    integrity: parseInt(assetData.integrity) || 1,
+    availability: parseInt(assetData.availability) || 1,
+    
+    // Technical & compliance configuration
+    network_zone: assetData.network_zone || '',
+    criticality: assetData.criticality || 'Medium',
+    compliance_requirements: assetData.compliance_requirements || 'none',
+    patch_management: assetData.patch_management || 'Manual',
+    backup_status: assetData.backup_status || 'None',
+    monitoring_level: assetData.monitoring_level || 'Basic',
+    
+    // Additional information
+    description: assetData.description || '',
+    
+    // Calculated risk assessment
+    risk_score: parseFloat(assetData.risk_score) || 1.0,
+    overall_risk_level: calculateRiskLevel(parseFloat(assetData.risk_score) || 1.0),
+    
+    // System metadata
+    status: 'Active',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    created_by: 'system', // In real app, this would be current user
+    
+    // Security status tracking
+    security_status: 'pending_assessment',
+    last_vulnerability_scan: null,
+    last_patch_update: null,
+    defender_onboarded: false,
+    
+    // Compliance status
+    compliance_status: 'pending_review',
+    last_compliance_check: null,
+    next_review_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days from now
+    
+    // Service linkage placeholder
+    linked_services: [],
+    service_count: 0
+  };
+  
+  // Log asset creation for audit trail (in real app, this would be proper logging)
+  console.log(`ARIA5 Asset Created: ${asset.name} (ID: ${asset.id}) - Risk Level: ${asset.overall_risk_level}, Type: ${asset.type}`);
+  
+  return asset;
 }
 
 async function createService(serviceData: any) {
@@ -1043,78 +1169,360 @@ const renderAssetModal = () => html`
        hx-target="this" 
        hx-swap="outerHTML"
        _="on click from elsewhere halt the event">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="relative top-10 mx-auto p-6 border w-full max-w-4xl shadow-xl rounded-lg bg-white">
       <div class="mt-3">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-900">Add New Asset</h3>
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-server text-blue-600 mr-3"></i>
+              Add New Asset - ARIA5 Configuration
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">Configure asset with comprehensive security assessment and ARIA5 compliance standards</p>
+          </div>
           <button hx-get="/operations/api/assets/close" hx-target="#asset-modal" hx-swap="innerHTML" 
-                  class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times"></i>
+                  class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+            <i class="fas fa-times text-lg"></i>
           </button>
         </div>
         
         <form hx-post="/operations/api/assets" 
               hx-target="#asset-modal" 
               hx-swap="innerHTML"
-              hx-indicator="#asset-loading">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Asset Name</label>
-            <input type="text" name="name" required 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              hx-indicator="#asset-loading"
+              onchange="calculateAssetRisk()">
+          
+          <!-- Basic Asset Information -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="space-y-4">
+              <h4 class="text-lg font-medium text-gray-800 border-b pb-2">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                Asset Information
+              </h4>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-tag mr-1"></i>Asset Name *
+                </label>
+                <input type="text" name="name" required 
+                       placeholder="e.g., WEB-SRV-01, DB-MAIN-02"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-desktop mr-1"></i>Asset Type *
+                </label>
+                <select name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Asset Type</option>
+                  <option value="Physical Server">Physical Server</option>
+                  <option value="Virtual Server">Virtual Server</option>
+                  <option value="Database Server">Database Server</option>
+                  <option value="Web Server">Web Server</option>
+                  <option value="Application Server">Application Server</option>
+                  <option value="Workstation">Workstation</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Mobile Device">Mobile Device</option>
+                  <option value="Network Switch">Network Switch</option>
+                  <option value="Router">Router</option>
+                  <option value="Firewall">Firewall</option>
+                  <option value="Load Balancer">Load Balancer</option>
+                  <option value="Storage Device">Storage Device</option>
+                  <option value="IoT Device">IoT Device</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-building mr-1"></i>Operating System
+                </label>
+                <select name="operating_system" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select OS</option>
+                  <option value="Windows Server 2022">Windows Server 2022</option>
+                  <option value="Windows Server 2019">Windows Server 2019</option>
+                  <option value="Windows 11">Windows 11</option>
+                  <option value="Windows 10">Windows 10</option>
+                  <option value="Ubuntu 22.04 LTS">Ubuntu 22.04 LTS</option>
+                  <option value="Ubuntu 20.04 LTS">Ubuntu 20.04 LTS</option>
+                  <option value="Red Hat Enterprise Linux">Red Hat Enterprise Linux</option>
+                  <option value="CentOS">CentOS</option>
+                  <option value="Debian">Debian</option>
+                  <option value="macOS">macOS</option>
+                  <option value="iOS">iOS</option>
+                  <option value="Android">Android</option>
+                  <option value="VMware ESXi">VMware ESXi</option>
+                  <option value="Cisco IOS">Cisco IOS</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-map-marker-alt mr-1"></i>Physical Location *
+                </label>
+                <select name="location" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Location</option>
+                  <option value="Primary Data Center">Primary Data Center</option>
+                  <option value="Secondary Data Center">Secondary Data Center</option>
+                  <option value="Cloud (AWS)">Cloud (AWS)</option>
+                  <option value="Cloud (Azure)">Cloud (Azure)</option>
+                  <option value="Cloud (GCP)">Cloud (GCP)</option>
+                  <option value="Cloud (Other)">Cloud (Other)</option>
+                  <option value="Head Office">Head Office</option>
+                  <option value="Branch Office">Branch Office</option>
+                  <option value="Remote Location">Remote Location</option>
+                  <option value="Mobile/Portable">Mobile/Portable</option>
+                  <option value="Home Office">Home Office</option>
+                  <option value="Third Party">Third Party</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-users mr-1"></i>Asset Owner
+                </label>
+                <input type="text" name="asset_owner" 
+                       placeholder="e.g., IT Operations, Finance Department"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-user-shield mr-1"></i>Technical Custodian
+                </label>
+                <input type="email" name="technical_custodian" 
+                       placeholder="admin@company.com"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+            
+            <!-- Security & Risk Assessment -->
+            <div class="space-y-4">
+              <h4 class="text-lg font-medium text-gray-800 border-b pb-2">
+                <i class="fas fa-shield-alt text-red-500 mr-2"></i>
+                Security Assessment
+              </h4>
+              
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <h5 class="font-medium text-blue-800 mb-2">
+                  <i class="fas fa-eye-slash mr-1"></i>Data Confidentiality *
+                </h5>
+                <p class="text-xs text-blue-700 mb-3">Sensitivity of data stored/processed on this asset</p>
+                <select name="confidentiality" id="asset_confidentiality" required 
+                        class="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Level</option>
+                  <option value="1">1 - Public (Publicly available information)</option>
+                  <option value="2">2 - Internal (Internal use only)</option>
+                  <option value="3">3 - Confidential (Sensitive business data)</option>
+                  <option value="4">4 - Restricted (Highly classified data)</option>
+                </select>
+              </div>
+              
+              <div class="bg-orange-50 p-4 rounded-lg">
+                <h5 class="font-medium text-orange-800 mb-2">
+                  <i class="fas fa-check-double mr-1"></i>Data Integrity *
+                </h5>
+                <p class="text-xs text-orange-700 mb-3">Impact if asset data is corrupted or tampered</p>
+                <select name="integrity" id="asset_integrity" required 
+                        class="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <option value="">Select Level</option>
+                  <option value="1">1 - Low (Minimal business impact)</option>
+                  <option value="2">2 - Medium (Moderate business impact)</option>
+                  <option value="3">3 - High (Significant business disruption)</option>
+                  <option value="4">4 - Critical (Severe business/safety impact)</option>
+                </select>
+              </div>
+              
+              <div class="bg-green-50 p-4 rounded-lg">
+                <h5 class="font-medium text-green-800 mb-2">
+                  <i class="fas fa-clock mr-1"></i>Availability Requirement *
+                </h5>
+                <p class="text-xs text-green-700 mb-3">Business impact if asset becomes unavailable</p>
+                <select name="availability" id="asset_availability" required 
+                        class="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="">Select Level</option>
+                  <option value="1">1 - Low (Can be down for days)</option>
+                  <option value="2">2 - Medium (Can be down for hours)</option>
+                  <option value="3">3 - High (Maximum 1 hour downtime)</option>
+                  <option value="4">4 - Critical (Near zero downtime required)</option>
+                </select>
+              </div>
+              
+              <!-- Overall Risk Score Display -->
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h5 class="font-medium text-gray-800 mb-2">
+                  <i class="fas fa-calculator mr-1"></i>Asset Risk Score
+                </h5>
+                <div id="asset-risk-display" class="text-2xl font-bold text-gray-400">
+                  Select CIA ratings to calculate
+                </div>
+                <div class="text-xs text-gray-600 mt-1">
+                  Calculated as: max(C, I, A) + weighted average
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Asset Type</label>
-            <select name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
-              <option value="">Select Type</option>
-              <option value="Server">Server</option>
-              <option value="Workstation">Workstation</option>
-              <option value="Network Device">Network Device</option>
-              <option value="Mobile Device">Mobile Device</option>
-            </select>
+          <!-- Technical & Compliance Details -->
+          <div class="border-t pt-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-800 mb-4">
+              <i class="fas fa-cogs text-purple-500 mr-2"></i>
+              Technical & Compliance Configuration
+            </h4>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Network Zone</label>
+                <select name="network_zone" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="">Select Zone</option>
+                  <option value="DMZ">DMZ (Demilitarized Zone)</option>
+                  <option value="Internal Network">Internal Network</option>
+                  <option value="Management Network">Management Network</option>
+                  <option value="Guest Network">Guest Network</option>
+                  <option value="Isolated Network">Isolated Network</option>
+                  <option value="Internet">Internet</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Asset Criticality</label>
+                <select name="criticality" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Compliance Requirements</label>
+                <select name="compliance_requirements" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="">Select Framework</option>
+                  <option value="ISO 27001">ISO 27001</option>
+                  <option value="NIST">NIST Framework</option>
+                  <option value="GDPR">GDPR</option>
+                  <option value="SOX">SOX</option>
+                  <option value="HIPAA">HIPAA</option>
+                  <option value="PCI DSS">PCI DSS</option>
+                  <option value="Multiple">Multiple Frameworks</option>
+                  <option value="None">None Required</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Patch Management</label>
+                <select name="patch_management" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="Automatic">Automatic</option>
+                  <option value="Scheduled">Scheduled</option>
+                  <option value="Manual">Manual</option>
+                  <option value="Delayed">Delayed</option>
+                  <option value="Not Managed">Not Managed</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Backup Status</label>
+                <select name="backup_status" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="Daily">Daily Backup</option>
+                  <option value="Weekly">Weekly Backup</option>
+                  <option value="Monthly">Monthly Backup</option>
+                  <option value="Real-time">Real-time Replication</option>
+                  <option value="None">No Backup</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Monitoring Level</label>
+                <select name="monitoring_level" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="Basic">Basic (Daily checks)</option>
+                  <option value="Standard">Standard (Hourly checks)</option>
+                  <option value="Enhanced">Enhanced (15-min intervals)</option>
+                  <option value="Real-time">Real-time (Continuous)</option>
+                  <option value="None">No Monitoring</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-sticky-note mr-1"></i>Asset Description & Notes
+              </label>
+              <textarea name="description" rows="3" 
+                        placeholder="Additional details about the asset, configuration notes, or special requirements"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
           </div>
           
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
-            <select name="location" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
-              <option value="">Select Location</option>
-              <option value="Data Center">Data Center</option>
-              <option value="Office">Office</option>
-              <option value="Remote">Remote</option>
-            </select>
-          </div>
+          <!-- Hidden field for calculated risk score -->
+          <input type="hidden" name="risk_score" id="asset_risk_value" value="">
           
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
-            <select name="risk" required class="w-full px-3 py-2 border border-gray-300 rounded-md">
-              <option value="">Select Risk Level</option>
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Critical">Critical</option>
-            </select>
-          </div>
-          
-          <div class="flex justify-end space-x-3">
+          <div class="flex justify-end space-x-3 pt-4 border-t">
             <button type="button" 
                     hx-get="/operations/api/assets/close" 
                     hx-target="#asset-modal" 
                     hx-swap="innerHTML"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">
+                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors">
               Cancel
             </button>
             <button type="submit" 
-                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md">
+                    class="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center">
               <span class="htmx-indicator" id="asset-loading">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
               </span>
-              Add Asset
+              <i class="fas fa-plus mr-2"></i>
+              Create Asset
             </button>
           </div>
         </form>
       </div>
     </div>
   </div>
+  
+  <script>
+    function calculateAssetRisk() {
+      const c = parseInt(document.getElementById('asset_confidentiality')?.value || '0');
+      const i = parseInt(document.getElementById('asset_integrity')?.value || '0');
+      const a = parseInt(document.getElementById('asset_availability')?.value || '0');
+      
+      if (c && i && a) {
+        // ARIA5 risk calculation: max value + weighted average
+        const maxRating = Math.max(c, i, a);
+        const weightedAvg = (c + i + a) / 3;
+        const overallScore = (maxRating * 0.6) + (weightedAvg * 0.4);
+        
+        // Risk level determination
+        let riskLevel, riskColor, riskBg;
+        if (overallScore >= 3.5) {
+          riskLevel = 'Critical';
+          riskColor = 'text-red-600';
+          riskBg = 'bg-red-100';
+        } else if (overallScore >= 2.5) {
+          riskLevel = 'High';
+          riskColor = 'text-orange-600';
+          riskBg = 'bg-orange-100';
+        } else if (overallScore >= 1.5) {
+          riskLevel = 'Medium';
+          riskColor = 'text-yellow-600';
+          riskBg = 'bg-yellow-100';
+        } else {
+          riskLevel = 'Low';
+          riskColor = 'text-green-600';
+          riskBg = 'bg-green-100';
+        }
+        
+        document.getElementById('asset-risk-display').innerHTML = \`
+          <div class="flex items-center space-x-2">
+            <span class="px-3 py-1 rounded-full text-sm font-medium \${riskBg} \${riskColor}">
+              \${riskLevel}
+            </span>
+            <span class="text-gray-600">(\${overallScore.toFixed(1)}/4.0)</span>
+          </div>
+        \`;
+        
+        document.getElementById('asset_risk_value').value = overallScore.toFixed(2);
+      }
+    }
+  </script>
 `;
 
 const renderDocumentUploadModal = () => html`
