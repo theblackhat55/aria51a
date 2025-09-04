@@ -12,7 +12,7 @@ import { createAuthRoutes } from './routes/auth-routes';
 import { createCleanDashboardRoutes } from './routes/dashboard-routes-clean';
 import { createRiskRoutesARIA5 } from './routes/risk-routes-aria5';
 import { createComplianceRoutes } from './routes/compliance-routes';
-import { createOperationsRoutes } from './routes/operations-routes';
+import { createOperationsVisionRoutes } from './routes/operations-routes-vision';
 import { createIntelligenceRoutes } from './routes/intelligence-routes';
 import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createAPIRoutes } from './routes/api-routes';
@@ -57,6 +57,132 @@ app.get('/', async (c) => {
 // Login page
 app.get('/login', (c) => {
   return c.html(loginPage());
+});
+
+// Simple login page for debugging authentication issues
+app.get('/simple-login.html', async (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARIA5.1 - Simple Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+  <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <div class="text-center">
+        <div class="mx-auto h-20 w-20 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 mb-6">
+          <i class="fas fa-shield-alt text-3xl text-white"></i>
+        </div>
+        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">ARIA5.1 Platform</h2>
+        <p class="mt-2 text-center text-sm text-gray-600">Service Intelligence & Asset Management</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-8">
+        <div id="login-messages"></div>
+        
+        <form hx-post="/auth/login" hx-target="#login-messages" hx-swap="innerHTML" class="space-y-6">
+          <div>
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+              <i class="fas fa-user mr-2"></i>Username
+            </label>
+            <input id="username" name="username" type="text" required 
+                   class="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:z-10 sm:text-sm"
+                   placeholder="Enter your username" value="">
+          </div>
+          
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+              <i class="fas fa-lock mr-2"></i>Password
+            </label>
+            <input id="password" name="password" type="password" required 
+                   class="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:z-10 sm:text-sm"
+                   placeholder="Enter your password">
+          </div>
+
+          <div>
+            <button type="submit" 
+                    class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200">
+              <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                <i class="fas fa-sign-in-alt text-indigo-300 group-hover:text-indigo-200"></i>
+              </span>
+              Sign In
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-8 border-t border-gray-200 pt-6">
+          <h3 class="text-sm font-medium text-gray-700 mb-4">
+            <i class="fas fa-users mr-2"></i>Demo Accounts
+          </h3>
+          <div class="space-y-3 text-sm">
+            <div class="bg-gray-50 rounded-lg p-3">
+              <div class="flex justify-between items-center">
+                <div>
+                  <strong class="text-gray-900">Admin User</strong>
+                  <div class="text-gray-600">Full system access</div>
+                </div>
+                <button onclick="fillCredentials('admin', 'demo123')"
+                        class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition">
+                  Use
+                </button>
+              </div>
+            </div>
+            
+            <div class="bg-gray-50 rounded-lg p-3">
+              <div class="flex justify-between items-center">
+                <div>
+                  <strong class="text-gray-900">Security Manager</strong>
+                  <div class="text-gray-600">Risk & service management</div>
+                </div>
+                <button onclick="fillCredentials('avi_security', 'demo123')"
+                        class="px-3 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200 transition">
+                  Use
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center text-sm text-gray-600">
+        <p>
+          <a href="/health" class="text-indigo-600 hover:text-indigo-500">System Health</a> |
+          <a href="/operations" class="text-indigo-600 hover:text-indigo-500">Operations Center</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function fillCredentials(username, password) {
+      document.getElementById('username').value = username;
+      document.getElementById('password').value = password;
+    }
+
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+      if (evt.detail.xhr.status === 200 && evt.detail.requestConfig.path === '/auth/login') {
+        const redirectUrl = evt.detail.xhr.getResponseHeader('HX-Redirect');
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+        }
+      }
+    });
+
+    document.body.addEventListener('loginSuccess', function() {
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
+    });
+  </script>
+</body>
+</html>
+  `);
 });
 
 // Test page to verify dropdowns work
@@ -176,7 +302,7 @@ const authRoutes = createAuthRoutes();
 const dashboardRoutes = createCleanDashboardRoutes();
 const riskRoutes = createRiskRoutesARIA5();
 const complianceRoutes = createComplianceRoutes();
-const operationsRoutes = createOperationsRoutes();
+const operationsRoutes = createOperationsVisionRoutes();
 const intelligenceRoutes = createIntelligenceRoutes();
 const adminRoutes = createAdminRoutesARIA5();
 const apiRoutes = createAPIRoutes();
