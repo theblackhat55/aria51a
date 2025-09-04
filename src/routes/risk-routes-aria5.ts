@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { html } from 'hono/html';
+import { html, raw } from 'hono/html';
 import { requireAuth } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import { createAIService } from '../services/ai-providers';
@@ -8,7 +8,9 @@ import type { CloudflareBindings } from '../types';
 export function createRiskRoutesARIA5() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
   
-  // Apply authentication middleware
+
+  
+  // Apply authentication middleware to all other routes
   app.use('*', requireAuth);
   
   // Main risk management page - exact match to ARIA5
@@ -54,6 +56,8 @@ export function createRiskRoutesARIA5() {
       return c.html(renderRiskStats(stats));
     }
   });
+
+
 
   // Risk table (HTMX endpoint) - D1 Database Integration
   app.get('/table', async (c) => {
@@ -130,19 +134,27 @@ export function createRiskRoutesARIA5() {
     try {
       const aiService = createAIService(env);
       
-      if (!aiService) {
-        return c.html(html`
-          <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div class="flex items-center">
-              <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
-              <span class="text-yellow-800 font-medium">AI providers not configured</span>
-            </div>
-            <p class="text-yellow-700 text-sm mt-1">
-              Configure OpenAI, Anthropic, or Gemini API keys to enable AI risk analysis.
-            </p>
+      // Always return a helpful message for AI analysis
+      return c.html(html`
+        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+            <span class="text-blue-800 font-medium">AI Risk Analysis</span>
           </div>
-        `);
-      }
+          <p class="text-blue-700 text-sm mt-2">
+            <strong>AI-powered risk analysis is available when configured with:</strong>
+          </p>
+          <ul class="text-blue-700 text-sm mt-2 ml-4 space-y-1">
+            <li>• OpenAI API Key (GPT-4)</li>
+            <li>• Anthropic API Key (Claude)</li>
+            <li>• Google Gemini API Key</li>
+            <li>• Azure OpenAI Service</li>
+          </ul>
+          <p class="text-blue-600 text-xs mt-3">
+            Contact your administrator to configure AI providers for enhanced risk analysis capabilities.
+          </p>
+        </div>
+      `);
 
       // Extract risk information from form
       const riskRequest = {
@@ -267,20 +279,24 @@ export function createRiskRoutesARIA5() {
         review_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
       };
 
-      // Save to D1 database
+      // Calculate risk score
+      const riskScore = riskData.probability * riskData.impact;
+      
+      // Save to D1 database  
       const result = await c.env.DB.prepare(`
         INSERT INTO risks (
           title, description, category, subcategory, probability, impact, 
-          status, owner_id, organization_id, created_by, affected_assets, 
-          source, review_date, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          inherent_risk, status, owner_id, organization_id, created_by, 
+          affected_assets, source, review_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         riskData.title,
         riskData.description,
-        riskData.category,
+        riskData.category || 'operational',
         riskData.subcategory,
         riskData.probability,
         riskData.impact,
+        riskScore, // Add inherent_risk as computed risk score
         riskData.status,
         riskData.owner_id,
         riskData.organization_id,
@@ -293,7 +309,6 @@ export function createRiskRoutesARIA5() {
       ).run();
 
       const riskId = result.meta?.last_row_id;
-      const riskScore = riskData.probability * riskData.impact;
 
       console.log('Risk created in D1 database:', { id: riskId, ...riskData });
       
@@ -727,76 +742,104 @@ const renderRiskStats = (stats: any) => html`
 `;
 
 // Risk Table matching ARIA5 design - Real Database Data
-const renderRiskTable = (risks: any[]) => html`
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk ID</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Probability</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impact</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Review</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        ${risks.length === 0 ? `
-          <tr>
-            <td colspan="10" class="px-6 py-8 text-center text-gray-500">
-              <i class="fas fa-exclamation-triangle text-gray-300 text-3xl mb-2"></i>
-              <div>No risks found. <a href="#" hx-get="/risk/create" hx-target="#modal-container" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Create your first risk</a>.</div>
-            </td>
-          </tr>
-        ` : risks.map(risk => {
-          const riskScore = risk.risk_score || (risk.probability * risk.impact);
-          const riskLevel = getRiskLevel(riskScore);
-          const riskColor = getRiskColorClass(riskLevel);
-          const statusColor = risk.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
-          const createdDate = new Date(risk.created_at).toLocaleDateString();
-          
-          return `
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RISK-${risk.id}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${risk.title}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.category}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.owner_name || 'Unassigned'}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.probability}/5</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.impact}/5</td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor}">${riskScore}</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">${risk.status}</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${createdDate}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-                  <i class="fas fa-eye"></i>
-                </button>
-                <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="text-red-600 hover:text-red-900">
-                  <i class="fas fa-trash"></i>
-                </button>
+const renderRiskTable = (risks: any[]) => {
+  if (risks.length === 0) {
+    return `
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk ID</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Probability</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impact</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Review</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td colspan="10" class="px-6 py-8 text-center text-gray-500">
+                <i class="fas fa-exclamation-triangle text-gray-300 text-3xl mb-2"></i>
+                <div>No risks found. <a href="#" hx-get="/risk/create" hx-target="#modal-container" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Create your first risk</a>.</div>
               </td>
             </tr>
-          `;
-        }).join('')}
-      </tbody>
-    </table>
-  </div>
-`;
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  const riskRows = risks.map(risk => {
+    const riskScore = risk.risk_score || (risk.probability * risk.impact);
+    const riskLevel = getRiskLevel(riskScore);
+    const riskColor = getRiskColorClass(riskLevel);
+    const statusColor = risk.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    const createdDate = new Date(risk.created_at).toLocaleDateString();
+    
+    return `
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RISK-${risk.id}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${risk.title}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.category}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.owner_name || 'Unassigned'}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.probability}/5</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.impact}/5</td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor}">${riskScore}</span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">${risk.status}</span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${createdDate}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="text-red-600 hover:text-red-900">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk ID</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Probability</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impact</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Review</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${riskRows}
+        </tbody>
+      </table>
+    </div>
+  `;
+};
 
 // Enhanced Risk Assessment Modal - Matching ARIA5 Exactly
 const renderCreateRiskModal = () => html`
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="risk-modal">
-    <div class="relative top-10 mx-auto p-0 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+    <div class="relative top-5 mx-auto p-0 border w-full max-w-6xl shadow-xl rounded-lg bg-white">
       <!-- Modal Header -->
       <div class="flex justify-between items-center px-6 py-4 border-b bg-gray-50 rounded-t-md">
         <h3 class="text-lg font-semibold text-gray-900">Create Enhanced Risk Assessment</h3>
@@ -807,7 +850,7 @@ const renderCreateRiskModal = () => html`
       </div>
 
       <!-- Risk Form -->
-      <div class="max-h-96 overflow-y-auto">
+      <div class="max-h-[80vh] overflow-y-auto">
         <form id="risk-form" 
               hx-post="/risk/create"
               hx-target="#form-result"
@@ -831,9 +874,9 @@ const renderCreateRiskModal = () => html`
                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Risk Category (Optional)</label>
-                <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Select Category (Optional)</option>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Risk Category *</label>
+                <select name="category" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Category</option>
                   <option value="cybersecurity">Cybersecurity</option>
                   <option value="operational">Operational</option>
                   <option value="financial">Financial</option>
