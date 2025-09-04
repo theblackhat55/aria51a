@@ -63,28 +63,57 @@ export function createAdminRoutesARIA5() {
     `);
   });
 
-  // Save AI Provider Configuration
+  // Save AI Provider Configuration - D1 Database Integration
   app.post('/ai-providers/:provider/save', async (c) => {
     const provider = c.req.param('provider');
     const formData = await c.req.parseBody();
     
-    // In real implementation, save to database/KV storage
-    console.log(`Saving ${provider} config:`, formData);
-    
-    return c.html(html`
-      <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-        <div class="flex items-center">
-          <i class="fas fa-check-circle text-green-500 mr-2"></i>
-          <span class="text-green-700 font-medium">${provider} configuration saved successfully!</span>
+    try {
+      // Save AI provider configuration to database
+      await c.env.DB.prepare(`
+        INSERT OR REPLACE INTO ai_configurations (
+          provider, api_key_encrypted, endpoint_url, model_name, 
+          max_tokens, temperature, is_active, organization_id, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        provider,
+        formData.api_key as string, // In production, encrypt this
+        formData.endpoint_url as string || null,
+        formData.model_name as string || null,
+        parseInt(formData.max_tokens as string) || 1000,
+        parseFloat(formData.temperature as string) || 0.7,
+        formData.is_active === 'true' ? 1 : 0,
+        1, // Default organization ID
+        new Date().toISOString()
+      ).run();
+
+      console.log(`AI provider ${provider} configuration saved to database`);
+      
+      return c.html(html`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">${provider} configuration saved successfully!</span>
+          </div>
         </div>
-      </div>
-      <script>
-        setTimeout(() => {
-          document.getElementById('modal-container').innerHTML = '';
-          htmx.ajax('GET', '/admin/ai-providers', '#main-content');
-        }, 2000);
-      </script>
-    `);
+        <script>
+          setTimeout(() => {
+            document.getElementById('modal-container').innerHTML = '';
+            htmx.ajax('GET', '/admin/ai-providers', '#main-content');
+          }, 2000);
+        </script>
+      `);
+    } catch (error) {
+      console.error(`Error saving ${provider} configuration:`, error);
+      return c.html(html`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">Failed to save ${provider} configuration</span>
+          </div>
+        </div>
+      `);
+    }
   });
 
   // RAG & Knowledge Management
@@ -100,37 +129,85 @@ export function createAdminRoutesARIA5() {
     );
   });
 
-  // Knowledge Base Upload
+  // Knowledge Base Upload - D1 Database Integration
   app.post('/knowledge/upload', async (c) => {
     const formData = await c.req.parseBody();
     
-    // Mock upload processing
-    return c.html(html`
-      <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div class="flex items-center">
-          <i class="fas fa-spinner fa-spin text-blue-500 mr-2"></i>
-          <span class="text-blue-700 font-medium">Processing document and building vector embeddings...</span>
+    try {
+      // Save document to RAG documents table
+      const result = await c.env.DB.prepare(`
+        INSERT INTO rag_documents (
+          title, content, document_type, embedding_status, 
+          metadata, uploaded_by, organization_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        formData.title as string || 'Untitled Document',
+        formData.content as string || '',
+        formData.document_type as string || 'text',
+        'processing',
+        JSON.stringify({
+          file_size: formData.file_size || 0,
+          source: 'admin_upload'
+        }),
+        2, // Default user ID
+        1  // Default organization ID
+      ).run();
+
+      console.log('Document uploaded to RAG knowledge base:', result.meta?.last_row_id);
+      
+      return c.html(html`
+        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-spinner fa-spin text-blue-500 mr-2"></i>
+            <span class="text-blue-700 font-medium">Processing document and building vector embeddings...</span>
+          </div>
         </div>
-      </div>
-      <script>
-        setTimeout(() => {
-          document.getElementById('upload-result').innerHTML = \`
-            <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div class="flex items-center">
-                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                <span class="text-green-700 font-medium">Document processed successfully! Added to knowledge base.</span>
+        <script>
+          setTimeout(() => {
+            document.getElementById('upload-result').innerHTML = \`
+              <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span class="text-green-700 font-medium">Document processed successfully! Added to knowledge base.</span>
+                </div>
               </div>
-            </div>
-          \`;
-          htmx.ajax('GET', '/admin/knowledge/list', '#knowledge-list');
-        }, 3000);
-      </script>
-    `);
+            \`;
+            htmx.ajax('GET', '/admin/knowledge/list', '#knowledge-list');
+          }, 3000);
+        </script>
+      `);
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      return c.html(html`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">Failed to upload document to knowledge base</span>
+          </div>
+        </div>
+      `);
+    }
   });
 
-  // Knowledge Base List
+  // Knowledge Base List - D1 Database Integration
   app.get('/knowledge/list', async (c) => {
-    return c.html(renderKnowledgeBaseList());
+    try {
+      const documentsResult = await c.env.DB.prepare(`
+        SELECT 
+          rd.*,
+          u.first_name || ' ' || u.last_name as uploaded_by_name
+        FROM rag_documents rd
+        LEFT JOIN users u ON rd.uploaded_by = u.id
+        ORDER BY rd.created_at DESC
+        LIMIT 20
+      `).all();
+      
+      const documents = documentsResult.results || [];
+      return c.html(renderKnowledgeBaseList(documents));
+    } catch (error) {
+      console.error('Error fetching knowledge base documents:', error);
+      return c.html(renderKnowledgeBaseList([]));
+    }
   });
 
   // Test RAG Query
@@ -984,112 +1061,95 @@ const renderKnowledgeManagementPage = () => html`
   </div>
 `;
 
-// Knowledge Base List
-const renderKnowledgeBaseList = () => html`
+// Knowledge Base List - D1 Database Integration
+const renderKnowledgeBaseList = (documents: any[] = []) => html`
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Embeddings</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Updated</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chunks</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded</th>
           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <i class="fas fa-file-pdf text-red-500 mr-3"></i>
-              <div>
-                <div class="text-sm font-medium text-gray-900">Security Policy v2.0</div>
-                <div class="text-sm text-gray-500">security, compliance, policy</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Policy</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2.4 MB</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
-              </div>
-              <span class="text-xs text-green-600">Ready</span>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 hours ago</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-            <button class="text-green-600 hover:text-green-900 mr-3">Re-process</button>
-            <button class="text-red-600 hover:text-red-900">Delete</button>
-          </td>
-        </tr>
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <i class="fas fa-file-alt text-blue-500 mr-3"></i>
-              <div>
-                <div class="text-sm font-medium text-gray-900">Risk Management Framework</div>
-                <div class="text-sm text-gray-500">risk, framework, assessment</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Framework</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1.8 MB</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                <div class="bg-yellow-500 h-2 rounded-full" style="width: 60%"></div>
-              </div>
-              <span class="text-xs text-yellow-600">Processing</span>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5 hours ago</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-            <button class="text-green-600 hover:text-green-900 mr-3">Re-process</button>
-            <button class="text-red-600 hover:text-red-900">Delete</button>
-          </td>
-        </tr>
-        <tr>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <i class="fas fa-file-word text-blue-600 mr-3"></i>
-              <div>
-                <div class="text-sm font-medium text-gray-900">Compliance Guidelines</div>
-                <div class="text-sm text-gray-500">compliance, guidelines, standards</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Guideline</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">950 KB</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
-              </div>
-              <span class="text-xs text-green-600">Ready</span>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1 day ago</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-            <button class="text-green-600 hover:text-green-900 mr-3">Re-process</button>
-            <button class="text-red-600 hover:text-red-900">Delete</button>
-          </td>
-        </tr>
+        ${documents.length === 0 ? `
+          <tr>
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+              <i class="fas fa-file-upload text-gray-300 text-3xl mb-2"></i>
+              <div>No documents found in knowledge base. Upload your first document above.</div>
+            </td>
+          </tr>
+        ` : documents.map((doc: any) => {
+          const fileIcon = getFileIcon(doc.document_type);
+          const statusColor = getStatusColor(doc.embedding_status);
+          const createdDate = new Date(doc.created_at).toLocaleDateString();
+          const metadata = doc.metadata ? JSON.parse(doc.metadata) : {};
+          
+          return `
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <i class="fas ${fileIcon.icon} ${fileIcon.color} mr-3"></i>
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">${doc.title}</div>
+                    <div class="text-sm text-gray-500">ID: ${doc.id}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                  ${doc.document_type || 'text'}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${doc.chunk_count || 0}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusColor}">
+                  ${doc.embedding_status || 'pending'}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${createdDate}<br>
+                <span class="text-xs text-gray-400">by ${doc.uploaded_by_name || 'Unknown'}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                <button class="text-green-600 hover:text-green-900 mr-3">Re-process</button>
+                <button class="text-red-600 hover:text-red-900">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('')}
       </tbody>
     </table>
   </div>
 `;
+
+// Helper functions for knowledge base rendering
+function getFileIcon(documentType: string) {
+  const iconMap: Record<string, {icon: string, color: string}> = {
+    'pdf': { icon: 'fa-file-pdf', color: 'text-red-500' },
+    'text': { icon: 'fa-file-alt', color: 'text-blue-500' },
+    'word': { icon: 'fa-file-word', color: 'text-blue-600' },
+    'excel': { icon: 'fa-file-excel', color: 'text-green-600' },
+    'powerpoint': { icon: 'fa-file-powerpoint', color: 'text-orange-600' },
+    'image': { icon: 'fa-file-image', color: 'text-purple-500' }
+  };
+  return iconMap[documentType] || { icon: 'fa-file', color: 'text-gray-500' };
+}
+
+function getStatusColor(status: string) {
+  const colorMap: Record<string, string> = {
+    'pending': 'bg-gray-100 text-gray-800',
+    'processing': 'bg-yellow-100 text-yellow-800',
+    'completed': 'bg-green-100 text-green-800',
+    'failed': 'bg-red-100 text-red-800'
+  };
+  return colorMap[status] || 'bg-gray-100 text-gray-800';
+}
 
 // Integrations Page
 const renderIntegrationsPage = () => html`

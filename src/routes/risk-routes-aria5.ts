@@ -24,14 +24,57 @@ export function createRiskRoutesARIA5() {
     );
   });
 
-  // Risk statistics (HTMX endpoint)
+  // Risk statistics (HTMX endpoint) - D1 Database Integration
   app.get('/stats', async (c) => {
-    return c.html(renderRiskStats());
+    try {
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN risk_score >= 20 THEN 1 ELSE 0 END) as critical,
+          SUM(CASE WHEN risk_score >= 12 AND risk_score < 20 THEN 1 ELSE 0 END) as high,
+          SUM(CASE WHEN risk_score >= 6 AND risk_score < 12 THEN 1 ELSE 0 END) as medium,
+          SUM(CASE WHEN risk_score < 6 THEN 1 ELSE 0 END) as low
+        FROM risks 
+        WHERE status = 'active'
+      `).first();
+
+      const stats = {
+        total: result?.total || 0,
+        critical: result?.critical || 0,
+        high: result?.high || 0,
+        medium: result?.medium || 0,
+        low: result?.low || 0
+      };
+
+      return c.html(renderRiskStats(stats));
+    } catch (error) {
+      console.error('Error fetching risk statistics:', error);
+      // Fallback to empty stats
+      const stats = { total: 0, critical: 0, high: 0, medium: 0, low: 0 };
+      return c.html(renderRiskStats(stats));
+    }
   });
 
-  // Risk table (HTMX endpoint)  
+  // Risk table (HTMX endpoint) - D1 Database Integration
   app.get('/table', async (c) => {
-    return c.html(renderRiskTable());
+    try {
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          r.*,
+          u.first_name || ' ' || u.last_name as owner_name
+        FROM risks r
+        LEFT JOIN users u ON r.owner_id = u.id
+        WHERE r.status = 'active'
+        ORDER BY r.risk_score DESC, r.created_at DESC
+        LIMIT 50
+      `).all();
+
+      const risks = result.results || [];
+      return c.html(renderRiskTable(risks));
+    } catch (error) {
+      console.error('Error fetching risk table data:', error);
+      return c.html(renderRiskTable([]));
+    }
   });
 
   // Create risk modal
@@ -202,50 +245,116 @@ export function createRiskRoutesARIA5() {
     }
   });
 
-  // Risk form submission
+  // Risk form submission - D1 Database Integration
   app.post('/create', async (c) => {
     const formData = await c.req.parseBody();
     
-    // Process comprehensive form data
-    const riskData = {
-      risk_id: formData.risk_id,
-      category: formData.category,
-      title: formData.title,
-      description: formData.description,
-      threat_source: formData.threat_source,
-      affected_services: formData['affected_services[]'] || [],
-      likelihood: parseInt(formData.likelihood as string),
-      impact: parseInt(formData.impact as string),
-      risk_score: formData.risk_score,
-      treatment_strategy: formData.treatment_strategy,
-      owner: formData.owner,
-      mitigation_actions: formData.mitigation_actions
-    };
-    
-    console.log('Enhanced Risk creation:', riskData);
-    
-    // Return success response
-    return c.html(`
-      <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-        <div class="flex items-center">
-          <i class="fas fa-check-circle text-green-500 mr-2"></i>
-          <span class="text-green-700 font-medium">Enhanced risk assessment created successfully!</span>
+    try {
+      // Process comprehensive form data
+      const riskData = {
+        title: formData.title as string,
+        description: formData.description as string || '',
+        category: formData.category as string || 'operational',
+        subcategory: formData.threat_source as string || '',
+        probability: parseInt(formData.likelihood as string) || 1,
+        impact: parseInt(formData.impact as string) || 1,
+        status: 'active',
+        owner_id: 2, // Default to Avi Security user
+        organization_id: 1, // Default organization
+        created_by: 2,
+        affected_assets: JSON.stringify(formData['affected_services[]'] || []),
+        source: formData.treatment_strategy as string || 'manual_assessment',
+        review_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+      };
+
+      // Save to D1 database
+      const result = await c.env.DB.prepare(`
+        INSERT INTO risks (
+          title, description, category, subcategory, probability, impact, 
+          status, owner_id, organization_id, created_by, affected_assets, 
+          source, review_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        riskData.title,
+        riskData.description,
+        riskData.category,
+        riskData.subcategory,
+        riskData.probability,
+        riskData.impact,
+        riskData.status,
+        riskData.owner_id,
+        riskData.organization_id,
+        riskData.created_by,
+        riskData.affected_assets,
+        riskData.source,
+        riskData.review_date,
+        new Date().toISOString(),
+        new Date().toISOString()
+      ).run();
+
+      const riskId = result.meta?.last_row_id;
+      const riskScore = riskData.probability * riskData.impact;
+
+      console.log('Risk created in D1 database:', { id: riskId, ...riskData });
+      
+      // Return success response
+      return c.html(`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">Risk assessment created successfully!</span>
+          </div>
+          <div class="mt-2 text-sm text-green-600">
+            Risk ID: ${riskId} | Title: ${riskData.title} | Score: ${riskScore} | Saved to Database
+          </div>
         </div>
-        <div class="mt-2 text-sm text-green-600">
-          Risk ID: ${riskData.risk_id} | Score: ${riskData.risk_score} | Owner: ${riskData.owner}
+        <script>
+          setTimeout(() => {
+            document.getElementById('modal-container').innerHTML = '';
+            // Refresh the risk table and dashboard stats
+            htmx.ajax('GET', '/risk/table', '#risk-table');
+            htmx.ajax('GET', '/dashboard/cards/risks', '#risk-card');
+          }, 3000);
+        </script>
+      `);
+    } catch (error) {
+      console.error('Error creating risk in database:', error);
+      
+      return c.html(`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">Error creating risk assessment</span>
+          </div>
+          <div class="mt-2 text-sm text-red-600">
+            Please check all required fields and try again. Error: ${error.message}
+          </div>
         </div>
-      </div>
-      <script>
-        setTimeout(() => {
-          document.getElementById('modal-container').innerHTML = '';
-          // Refresh the risk table
-          htmx.ajax('GET', '/risk/table', '#risk-table');
-        }, 3000);
-      </script>
-    `);
+      `);
+    }
   });
 
   return app;
+}
+
+// Helper Functions for Risk Management
+function getRiskLevel(score: number): string {
+  if (score >= 20) return 'Critical';
+  if (score >= 15) return 'High';
+  if (score >= 10) return 'Medium';
+  if (score >= 5) return 'Low';
+  return 'Very Low';
+}
+
+function getRiskColorClass(level: string): string {
+  const colorMap: Record<string, string> = {
+    'Critical': 'bg-red-100 text-red-800',
+    'High': 'bg-orange-100 text-orange-800',
+    'Medium': 'bg-yellow-100 text-yellow-800',
+    'Low': 'bg-green-100 text-green-800',
+    'Very Low': 'bg-gray-100 text-gray-800'
+  };
+  return colorMap[level] || 'bg-gray-100 text-gray-800';
 }
 
 // Main Risk Management Page - Matching ARIA5 Design Exactly
@@ -365,8 +474,8 @@ const renderARIA5RiskManagement = () => html`
   </div>
 `;
 
-// Risk Statistics Cards
-const renderRiskStats = () => html`
+// Risk Statistics Cards - Real Database Data
+const renderRiskStats = (stats: any) => html`
   <div class="bg-white rounded-lg shadow p-6">
     <div class="flex items-center">
       <div class="flex-shrink-0">
@@ -374,7 +483,7 @@ const renderRiskStats = () => html`
       </div>
       <div class="ml-4">
         <p class="text-sm font-medium text-gray-500">Critical Risks</p>
-        <p class="text-2xl font-semibold text-gray-900">2</p>
+        <p class="text-2xl font-semibold text-gray-900">${stats?.critical || 0}</p>
       </div>
     </div>
   </div>
@@ -386,7 +495,7 @@ const renderRiskStats = () => html`
       </div>
       <div class="ml-4">
         <p class="text-sm font-medium text-gray-500">High Risks</p>
-        <p class="text-2xl font-semibold text-gray-900">6</p>
+        <p class="text-2xl font-semibold text-gray-900">${stats?.high || 0}</p>
       </div>
     </div>
   </div>
@@ -397,8 +506,20 @@ const renderRiskStats = () => html`
         <i class="fas fa-check-circle text-2xl text-green-500"></i>
       </div>
       <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Overdue Reviews</p>
-        <p class="text-2xl font-semibold text-gray-900">3</p>
+        <p class="text-sm font-medium text-gray-500">Medium Risks</p>
+        <p class="text-2xl font-semibold text-gray-900">${stats?.medium || 0}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-lg shadow p-6">
+    <div class="flex items-center">
+      <div class="flex-shrink-0">
+        <i class="fas fa-info-circle text-2xl text-yellow-500"></i>
+      </div>
+      <div class="ml-4">
+        <p class="text-sm font-medium text-gray-500">Low Risks</p>
+        <p class="text-2xl font-semibold text-gray-900">${stats?.low || 0}</p>
       </div>
     </div>
   </div>
@@ -409,15 +530,15 @@ const renderRiskStats = () => html`
         <i class="fas fa-chart-line text-2xl text-blue-500"></i>
       </div>
       <div class="ml-4">
-        <p class="text-sm font-medium text-gray-500">Avg Risk Score</p>
-        <p class="text-2xl font-semibold text-gray-900">12.2</p>
+        <p class="text-sm font-medium text-gray-500">Total Risks</p>
+        <p class="text-2xl font-semibold text-gray-900">${stats?.total || 0}</p>
       </div>
     </div>
   </div>
 `;
 
-// Risk Table matching ARIA5 design
-const renderRiskTable = () => html`
+// Risk Table matching ARIA5 design - Real Database Data
+const renderRiskTable = (risks: any[]) => html`
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
@@ -435,167 +556,49 @@ const renderRiskTable = () => html`
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RISK-CYBER-2025-001</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Ransomware Attack Risk</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Cybersecurity</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Avi Security</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">4/5</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5/5</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">20</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Active</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Apr 15</td>
-          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-eye"></i>
-            </button>
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="text-red-600 hover:text-red-900">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-        
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">DMT-RISK-2024-001</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Data Breach Risk</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Cybersecurity</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Avi Security</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">4/5</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">5/5</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">20</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Active</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Dec 15</td>
-          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-eye"></i>
-            </button>
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="text-red-600 hover:text-red-900">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RISK-CYBER-2025-002</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Unauthorized Database Access</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Cybersecurity</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Avi Security</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3/5</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">4/5</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">12</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Active</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Apr 20</td>
-          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-eye"></i>
-            </button>
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="text-red-600 hover:text-red-900">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">DMT-RISK-2024-005</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Vendor Risk Incident</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Third-Party Risk</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mike Chen</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3/5</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">4/5</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">12</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Active</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Nov 15</td>
-          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-eye"></i>
-            </button>
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="text-red-600 hover:text-red-900">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RISK-OPS-2025-002</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">GDPR Compliance Gap</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Data Privacy</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Sarah Johnson</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3/5</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3/5</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">9</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Active</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">May 31</td>
-          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-eye"></i>
-            </button>
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="text-red-600 hover:text-red-900">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RISK-OPS-2025-001</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Key Personnel Departure</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Data Privacy</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Admin User</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">-</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">-</span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
-          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-eye"></i>
-            </button>
-            <button class="text-indigo-600 hover:text-indigo-900 mr-3">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="text-red-600 hover:text-red-900">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
+        ${risks.length === 0 ? `
+          <tr>
+            <td colspan="10" class="px-6 py-8 text-center text-gray-500">
+              <i class="fas fa-exclamation-triangle text-gray-300 text-3xl mb-2"></i>
+              <div>No risks found. <a href="#" hx-get="/risk/create" hx-target="#modal-container" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Create your first risk</a>.</div>
+            </td>
+          </tr>
+        ` : risks.map(risk => {
+          const riskScore = risk.risk_score || (risk.probability * risk.impact);
+          const riskLevel = getRiskLevel(riskScore);
+          const riskColor = getRiskColorClass(riskLevel);
+          const statusColor = risk.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+          const createdDate = new Date(risk.created_at).toLocaleDateString();
+          
+          return `
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RISK-${risk.id}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${risk.title}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.category}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.owner_name || 'Unassigned'}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.probability}/5</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.impact}/5</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor}">${riskScore}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">${risk.status}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${createdDate}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="text-red-600 hover:text-red-900">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('')}
       </tbody>
     </table>
   </div>
