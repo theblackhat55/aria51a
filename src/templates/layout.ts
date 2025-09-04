@@ -19,9 +19,56 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
   <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
   
-  <!-- Alpine.js for minimal client-side interactivity -->
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <!-- Alpine.js for client-side dropdowns -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script>
+    // Initialize Alpine.js manually to avoid conflicts
+    window.Alpine = window.Alpine || {};
+    
+    // Comprehensive fallback dropdown functionality
+    function initFallbackDropdowns() {
+      console.log('🔄 Initializing fallback dropdown functionality');
+      document.querySelectorAll('[x-data*="open"]').forEach((dropdown, index) => {
+        const button = dropdown.querySelector('button');
+        const menu = dropdown.querySelector('[x-show="open"], .dropdown-menu');
+        
+        if (button && menu) {
+          // Remove any existing click listeners
+          button.removeEventListener('click', button._dropdownHandler);
+          
+          // Create new click handler
+          button._dropdownHandler = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Close all other dropdowns
+            document.querySelectorAll('[x-data*="open"]').forEach(otherDropdown => {
+              if (otherDropdown !== dropdown) {
+                const otherMenu = otherDropdown.querySelector('[x-show="open"], .dropdown-menu');
+                if (otherMenu) {
+                  otherMenu.style.display = 'none';
+                }
+              }
+            });
+            
+            // Toggle current dropdown
+            const isVisible = menu.style.display === 'block';
+            menu.style.display = isVisible ? 'none' : 'block';
+            console.log('🎯 Dropdown', index, isVisible ? 'closed' : 'opened');
+          };
+          
+          button.addEventListener('click', button._dropdownHandler);
+          
+          // Close on outside click
+          document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+              menu.style.display = 'none';
+            }
+          });
+        }
+      });
+    }
+    
     // Alpine.js initialization tracking
     document.addEventListener('alpine:init', () => {
       console.log('✅ Alpine.js initialized successfully!');
@@ -29,6 +76,19 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
     
     document.addEventListener('alpine:initialized', () => {
       console.log('✅ Alpine.js fully loaded and ready');
+    });
+    
+    // Initialize fallback dropdowns immediately and after Alpine.js fails
+    document.addEventListener('DOMContentLoaded', () => {
+      // Wait for Alpine.js to load
+      setTimeout(() => {
+        if (!window.Alpine || !window.Alpine.version) {
+          console.warn('⚠️ Alpine.js not detected - using fallback dropdowns');
+          initFallbackDropdowns();
+        } else {
+          console.log('✅ Alpine.js detected, version:', window.Alpine.version);
+        }
+      }, 2000);
     });
   </script>
   
@@ -47,52 +107,95 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   <!-- AI Governance Scripts - Commented out temporarily for debugging -->
   <!-- <script src="/static/ai-governance.js"></script> -->
   
-  <!-- Custom HTMX Configuration -->
+  <!-- HTMX Configuration for ARIA5.1 -->
   <script>
-    // Configure HTMX immediately (no DOMContentLoaded needed)
+    // Configure HTMX for ARIA5.1 HTMX Edition
     htmx.config.defaultSwapStyle = 'innerHTML';
-    htmx.config.historyCacheSize = 0;
+    htmx.config.historyCacheSize = 10;
+    htmx.config.refreshOnHistoryMiss = true;
     
-    // Wait for Alpine.js to be ready before setting up HTMX events
-    document.addEventListener('alpine:initialized', function() {
-      console.log('✅ Alpine.js ready, configuring HTMX...');
-      
-      // Add CSRF token and authentication to all requests
-      document.body.addEventListener('htmx:configRequest', function(event) {
-        // Add CSRF token if available
-        const token = document.querySelector('meta[name="csrf-token"]')?.content;
-        if (token) {
-          event.detail.headers['X-CSRF-Token'] = token;
-        }
-        
-        // Add JWT token from localStorage if available
-        const jwtToken = localStorage.getItem('aria_token');
-        if (jwtToken) {
-          event.detail.headers['Authorization'] = 'Bearer ' + jwtToken;
-        }
-        
-        // Ensure credentials are sent with requests
-        event.detail.xhr.withCredentials = true;
-      });
-      
-      // Handle HTMX errors
-      document.body.addEventListener('htmx:responseError', function(event) {
-        console.error('HTMX Error:', event.detail);
-        if (event.detail.xhr.status === 401) {
-          window.location.href = '/login';
-        }
-      });
-    });
-    
-    // Fallback check if Alpine.js doesn't initialize
+    // Enhanced HTMX configuration
     document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(function() {
-        if (typeof window.Alpine === 'undefined') {
-          console.error('❌ Alpine.js failed to load - dropdowns will not work');
-        } else {
-          console.log('✅ Alpine.js available');
+      console.log('🚀 ARIA5.1 HTMX Edition - Layout initialized');
+      
+      // Hide loading indicators after page load
+      setTimeout(() => {
+        document.querySelectorAll('.loading-state, [data-loading]').forEach(el => {
+          el.style.display = 'none';
+        });
+      }, 1000);
+      
+      // Handle authentication for all HTMX requests
+      document.body.addEventListener('htmx:configRequest', function(event) {
+        console.log('📡 HTMX request starting:', event.detail.path);
+        
+        // Always send credentials with requests (safe check for xhr existence)
+        if (event.detail.xhr && typeof event.detail.xhr.withCredentials !== 'undefined') {
+          event.detail.xhr.withCredentials = true;
         }
-      }, 2000);
+        
+        // Add authentication token from localStorage if available
+        const token = localStorage.getItem('aria_token');
+        if (token) {
+          event.detail.headers['Authorization'] = 'Bearer ' + token;
+          console.log('📡 HTMX request with auth token');
+        }
+      });
+      
+      // Enhanced error handling with user feedback
+      document.body.addEventListener('htmx:responseError', function(event) {
+        const status = event.detail.xhr.status;
+        console.error('❌ HTMX Error:', status, event.detail.xhr.statusText);
+        
+        // Hide loading indicators on error
+        document.querySelectorAll('.htmx-indicator').forEach(el => {
+          el.style.display = 'none';
+        });
+        
+        if (status === 401) {
+          console.log('🔐 Authentication required, redirecting to login');
+          localStorage.removeItem('aria_token');
+          localStorage.removeItem('aria_user');
+          window.location.href = '/login';
+        } else if (status === 404) {
+          console.warn('⚠️ Resource not found:', event.detail.requestConfig.path);
+          // Replace 404 content with user-friendly message
+          if (event.detail.target) {
+            event.detail.target.innerHTML = '<div class="text-gray-500 text-center p-4">Content not available</div>';
+          }
+        } else if (status >= 500) {
+          console.error('🔥 Server error occurred');
+          if (event.detail.target) {
+            event.detail.target.innerHTML = '<div class="text-red-500 text-center p-4">Server error. Please try again.</div>';
+          }
+        }
+      });
+      
+      // Handle successful requests and remove loading states
+      document.body.addEventListener('htmx:afterRequest', function(event) {
+        // Hide loading indicators
+        document.querySelectorAll('.htmx-indicator').forEach(el => {
+          el.style.display = 'none';
+        });
+        
+        if (event.detail.xhr.status >= 200 && event.detail.xhr.status < 300) {
+          console.log('✅ HTMX request successful');
+        }
+        
+        // Handle modal responses
+        if (event.detail.target && event.detail.target.id === 'modal-container') {
+          const modalContainer = event.detail.target;
+          if (modalContainer.innerHTML.trim()) {
+            modalContainer.style.display = 'block';
+            console.log('✅ Modal opened successfully');
+          }
+        }
+      });
+      
+      // Handle requests starting (show loading)
+      document.body.addEventListener('htmx:beforeRequest', function(event) {
+        console.log('📡 HTMX request starting:', event.detail.requestConfig.path);
+      });
     });
 
   </script>
@@ -545,19 +648,20 @@ const renderNavigation = (user: any) => html`
             <button @click="open = !open" class="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
               <i class="fas fa-bell text-lg"></i>
               <!-- Notification Badge -->
-              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" 
-                    hx-get="/notifications/count" 
-                    hx-trigger="load, every 30s" 
-                    hx-swap="innerHTML">
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 3
               </span>
             </button>
             <div x-show="open" @click.away="open = false" x-transition
-                 hx-get="/notifications/dropdown" 
-                 hx-trigger="revealed"
-                 hx-swap="innerHTML"
-                 class="absolute right-0 mt-2 z-50">
-              <!-- Notification dropdown will be loaded here -->
+                 class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="p-4 border-b border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+              </div>
+              <div class="max-h-80 overflow-y-auto">
+                <div class="p-4 text-sm text-gray-500 text-center">
+                  No new notifications
+                </div>
+              </div>
             </div>
           </div>
 

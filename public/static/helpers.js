@@ -141,6 +141,11 @@
 
     const modal = document.createElement('div');
     modal.className = 'bg-white rounded-xl shadow-xl w-11/12 md:w-2/3 lg:w-1/2 max-h-[85vh] overflow-auto';
+    
+    // Prevent clicks inside modal from bubbling up
+    modal.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
 
     const header = document.createElement('div');
     header.className = 'px-6 py-4 border-b flex items-center justify-between';
@@ -152,7 +157,11 @@
     // Add event listener for close button
     const closeBtn = header.querySelector('#modal-close-btn');
     if (closeBtn) {
-      closeBtn.addEventListener('click', closeUniversalModal);
+      closeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeUniversalModal();
+      });
     }
 
     const body = document.createElement('div');
@@ -168,12 +177,31 @@
       b.textContent = btn.text || 'OK';
       if (btn.onclick) {
         if (typeof btn.onclick === 'function') {
-          b.addEventListener('click', btn.onclick);
+          b.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            btn.onclick(e);
+          });
         } else if (typeof btn.onclick === 'string') {
-          b.setAttribute('onclick', btn.onclick);
+          // For string onclick handlers, wrap them
+          b.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              // Execute the string as a function
+              const func = new Function('event', btn.onclick);
+              func(e);
+            } catch (error) {
+              console.error('Error executing onclick handler:', error);
+            }
+          });
         }
       } else {
-        b.addEventListener('click', closeUniversalModal);
+        b.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          closeUniversalModal();
+        });
       }
       footer.appendChild(b);
     });
@@ -186,6 +214,8 @@
     // Add overlay click to close (click outside modal)
     wrapper.addEventListener('click', (e) => {
       if (e.target === wrapper) {
+        e.preventDefault();
+        e.stopPropagation();
         closeUniversalModal();
       }
     });
@@ -206,6 +236,23 @@
     closeUniversalModal(); // ensure single instance
     const m = createModal(title, contentHTML, buttons);
     document.body.appendChild(m);
+    
+    // Ensure all links inside the modal don't trigger navigation issues
+    setTimeout(() => {
+      const modalContent = m.querySelector('.bg-white');
+      if (modalContent) {
+        modalContent.querySelectorAll('a, button').forEach(element => {
+          if (!element.hasAttribute('data-modal-handled')) {
+            element.setAttribute('data-modal-handled', 'true');
+            element.addEventListener('click', (e) => {
+              // Allow normal links to work but prevent bubbling
+              e.stopPropagation();
+            });
+          }
+        });
+      }
+    }, 0);
+    
     return m;
   }
 

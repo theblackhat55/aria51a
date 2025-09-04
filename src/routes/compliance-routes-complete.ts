@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { requireAuth } from './auth-routes';
-import { baseLayout } from '../templates/layout';
+import { cleanLayout } from '../templates/layout-clean';
 import { DatabaseService } from '../lib/database';
 import type { CloudflareBindings } from '../types';
 
@@ -15,7 +15,7 @@ export function createComplianceRoutes() {
   app.get('/', async (c) => {
     const user = c.get('user');
     return c.html(
-      baseLayout({
+      cleanLayout({
         title: 'Compliance Management',
         user,
         content: renderComplianceDashboard()
@@ -27,7 +27,7 @@ export function createComplianceRoutes() {
   app.get('/frameworks', async (c) => {
     const user = c.get('user');
     return c.html(
-      baseLayout({
+      cleanLayout({
         title: 'Compliance Frameworks',
         user,
         content: renderFrameworksPage()
@@ -73,7 +73,7 @@ export function createComplianceRoutes() {
   app.get('/soa', async (c) => {
     const user = c.get('user');
     return c.html(
-      baseLayout({
+      cleanLayout({
         title: 'Statement of Applicability',
         user,
         content: renderSoAPage()
@@ -112,7 +112,7 @@ export function createComplianceRoutes() {
   app.get('/evidence', async (c) => {
     const user = c.get('user');
     return c.html(
-      baseLayout({
+      cleanLayout({
         title: 'Evidence Management',
         user,
         content: renderEvidencePage()
@@ -158,7 +158,7 @@ export function createComplianceRoutes() {
   app.get('/assessments', async (c) => {
     const user = c.get('user');
     return c.html(
-      baseLayout({
+      cleanLayout({
         title: 'Compliance Assessments',
         user,
         content: renderAssessmentsPage()
@@ -204,7 +204,7 @@ export function createComplianceRoutes() {
     const assessment = await getAssessmentById(db, id);
     
     return c.html(
-      baseLayout({
+      cleanLayout({
         title: `Assessment: ${assessment.name}`,
         user,
         content: renderAssessmentDetails(assessment)

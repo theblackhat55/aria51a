@@ -7,13 +7,13 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [
     build({
-      entry: 'src/index.ts', // Updated to use main index file
+      entry: 'src/index.ts', // Points to HTMX version
       outputDir: 'dist',
       minify: true
     }),
     devServer({
       adapter,
-      entry: 'src/index.ts' // Updated to use main index file
+      entry: 'src/index.ts' // Points to HTMX version
     })
   ],
   

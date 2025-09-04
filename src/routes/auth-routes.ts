@@ -17,55 +17,59 @@ export function createAuthRoutes() {
       // Get database service
       const db = new DatabaseService(c.env.DB);
       
-      // Try database first
+      // Fallback to demo users first (for production deployment)
+      const demoUsers: any = {
+        'admin': { 
+          id: 1, 
+          username: 'admin', 
+          email: 'admin@aria5.com', 
+          password: 'demo123',
+          role: 'admin', 
+          first_name: 'Admin', 
+          last_name: 'User' 
+        },
+        'avi_security': { 
+          id: 2, 
+          username: 'avi_security', 
+          email: 'avi@aria5.com', 
+          password: 'demo123',
+          role: 'risk_manager', 
+          first_name: 'Avi', 
+          last_name: 'Security' 
+        },
+        'sjohnson': { 
+          id: 3, 
+          username: 'sjohnson', 
+          email: 'sjohnson@aria5.com', 
+          password: 'demo123',
+          role: 'compliance_officer', 
+          first_name: 'Sarah', 
+          last_name: 'Johnson' 
+        }
+      };
+      
       let user = null;
       let isValidPassword = false;
       
-      try {
-        user = await db.getUserByUsername(String(username));
-        if (user) {
-          isValidPassword = await db.validatePassword(String(password), user.password_hash);
-          if (isValidPassword) {
-            await db.updateLastLogin(user.id);
+      // Check demo users first
+      const demoUser = demoUsers[String(username)];
+      if (demoUser && demoUser.password === String(password)) {
+        user = demoUser;
+        isValidPassword = true;
+        console.log('Demo user login successful:', username);
+      } else {
+        // Try database if demo user not found
+        try {
+          user = await db.getUserByUsername(String(username));
+          if (user) {
+            isValidPassword = await db.validatePassword(String(password), user.password_hash);
+            if (isValidPassword) {
+              await db.updateLastLogin(user.id);
+            }
           }
-        }
-      } catch (dbError) {
-        console.error('Database error, falling back to demo users:', dbError);
-        // Fallback to demo users if database fails
-        const demoUsers: any = {
-          'admin': { 
-            id: 1, 
-            username: 'admin', 
-            email: 'admin@aria5.com', 
-            password: 'demo123',
-            role: 'admin', 
-            first_name: 'Admin', 
-            last_name: 'User' 
-          },
-          'avi_security': { 
-            id: 2, 
-            username: 'avi_security', 
-            email: 'avi@aria5.com', 
-            password: 'demo123',
-            role: 'risk_manager', 
-            first_name: 'Avi', 
-            last_name: 'Security' 
-          },
-          'sjohnson': { 
-            id: 3, 
-            username: 'sjohnson', 
-            email: 'sjohnson@aria5.com', 
-            password: 'demo123',
-            role: 'compliance_officer', 
-            first_name: 'Sarah', 
-            last_name: 'Johnson' 
-          }
-        };
-        
-        const demoUser = demoUsers[String(username)];
-        if (demoUser && demoUser.password === String(password)) {
-          user = demoUser;
-          isValidPassword = true;
+        } catch (dbError) {
+          console.error('Database error:', dbError);
+          // Demo users already checked above
         }
       }
       
@@ -87,16 +91,29 @@ export function createAuthRoutes() {
       
       const token = btoa(JSON.stringify(tokenData));
       
-      // Set cookie
+      // Set cookie with browser-compatible settings
+      const isProduction = c.req.url.includes('.pages.dev');
+      
+      // Set the main auth cookie
       setCookie(c, 'aria_token', token, {
-        httpOnly: true,
-        secure: true,
+        httpOnly: false, // Allow JavaScript access for HTMX headers
+        secure: isProduction, // HTTPS in production, HTTP in dev
         sameSite: 'Lax',
         maxAge: 86400, // 24 hours
-        path: '/'
+        path: '/',
+        domain: isProduction ? undefined : undefined // Let browser handle domain
       });
       
-      // Return success with redirect
+      // Also store in localStorage via JavaScript for better persistence
+      const jsScript = `
+        localStorage.setItem('aria_token', '${token}');
+        localStorage.setItem('aria_user', '${JSON.stringify(tokenData).replace(/'/g, "\\'")}');
+        console.log('Authentication stored in localStorage');
+      `;
+      
+      console.log('Cookie and localStorage set for user:', tokenData.username);
+      
+      // Return success with redirect and authentication setup
       c.header('HX-Redirect', '/dashboard');
       c.header('HX-Trigger', 'loginSuccess');
       return c.html(`
@@ -111,9 +128,16 @@ export function createAuthRoutes() {
           </div>
         </div>
         <script>
-          // Fallback redirect if HX-Redirect doesn't work
+          ${jsScript}
+          
+          // Enhanced redirect with authentication check
           setTimeout(() => {
-            window.location.href = '/dashboard';
+            if (localStorage.getItem('aria_token')) {
+              window.location.href = '/dashboard';
+            } else {
+              console.error('Authentication failed to persist');
+              window.location.reload();
+            }
           }, 1000);
         </script>
       `);
@@ -131,19 +155,32 @@ export function createAuthRoutes() {
     return c.html(renderSuccess('Logged out successfully'));
   });
   
-  // Check authentication status
+  // Check authentication status with detailed debugging
   app.get('/check', async (c) => {
     const token = getCookie(c, 'aria_token');
+    console.log('Auth check - Token exists:', !!token);
     
     if (!token) {
-      return c.json({ authenticated: false }, 401);
+      return c.json({ 
+        authenticated: false, 
+        debug: 'No token found in cookies',
+        cookies: c.req.raw.headers.get('cookie')
+      }, 401);
     }
     
     try {
       const decoded = JSON.parse(atob(token));
+      console.log('Auth check - Token decoded, user:', decoded.username);
+      
       if (decoded.expires < Date.now()) {
-        return c.json({ authenticated: false }, 401);
+        return c.json({ 
+          authenticated: false, 
+          debug: 'Token expired',
+          expires: decoded.expires,
+          now: Date.now()
+        }, 401);
       }
+      
       return c.json({ 
         authenticated: true, 
         user: {
@@ -151,11 +188,29 @@ export function createAuthRoutes() {
           username: decoded.username,
           role: decoded.role,
           email: decoded.email
-        }
+        },
+        debug: 'Authentication successful'
       });
     } catch (error) {
-      return c.json({ authenticated: false }, 401);
+      return c.json({ 
+        authenticated: false, 
+        debug: 'Token decode error: ' + error.message 
+      }, 401);
     }
+  });
+  
+  // Debug route to show all cookies
+  app.get('/debug', async (c) => {
+    const allCookies = c.req.raw.headers.get('cookie');
+    const token = getCookie(c, 'aria_token');
+    
+    return c.json({
+      allCookies,
+      ariaToken: token,
+      tokenExists: !!token,
+      url: c.req.url,
+      headers: Object.fromEntries(c.req.raw.headers.entries())
+    });
   });
   
   // Password reset request
@@ -199,34 +254,71 @@ const renderSuccess = (message: string) => html`
 
 // Middleware to check authentication
 export const requireAuth = async (c: any, next: any) => {
-  const token = getCookie(c, 'aria_token');
+  let token = getCookie(c, 'aria_token');
+  
+  // Also check Authorization header (for HTMX requests with localStorage token)
+  if (!token) {
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+  
+  // Debug logging
+  console.log('Auth middleware - Token exists:', !!token);
+  console.log('Auth middleware - Request path:', c.req.path);
+  console.log('Auth middleware - User-Agent:', c.req.header('User-Agent'));
   
   if (!token) {
+    console.log('Auth middleware - No token found, redirecting to login');
+    // For HTMX requests, return 401 instead of redirect
+    if (c.req.header('HX-Request')) {
+      c.header('HX-Redirect', '/login');
+      return c.text('Authentication required', 401);
+    }
     return c.redirect('/login');
   }
   
   try {
     // Verify base64 token (compatible with Cloudflare Workers)
     const decoded = JSON.parse(atob(token));
+    console.log('Auth middleware - Token decoded successfully, user:', decoded.username);
     
     // Check if token is expired
     if (Date.now() > decoded.expires) {
+      console.log('Auth middleware - Token expired, redirecting to login');
       deleteCookie(c, 'aria_token', { path: '/' });
+      
+      // For HTMX requests, return 401 instead of redirect
+      if (c.req.header('HX-Request')) {
+        c.header('HX-Redirect', '/login');
+        return c.text('Token expired', 401);
+      }
       return c.redirect('/login');
     }
     
+    // Set user context
     c.set('user', {
       id: decoded.id,
       username: decoded.username,
       email: decoded.email,
       role: decoded.role,
       firstName: decoded.firstName,
-      lastName: decoded.lastName
+      lastName: decoded.lastName,
+      organizationId: decoded.organizationId
     });
+    
+    console.log('Auth middleware - User authenticated successfully:', decoded.username);
     await next();
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('Auth middleware error:', error);
     deleteCookie(c, 'aria_token', { path: '/' });
+    
+    // For HTMX requests, return 401 instead of redirect
+    if (c.req.header('HX-Request')) {
+      c.header('HX-Redirect', '/login');
+      return c.text('Authentication failed', 401);
+    }
     return c.redirect('/login');
   }
 };

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { requireAuth } from './auth-routes';
-import { baseLayout } from '../templates/layout';
+import { cleanLayout } from '../templates/layout-clean';
 import { DatabaseService } from '../lib/database';
 import type { CloudflareBindings } from '../types';
 
@@ -20,7 +20,7 @@ export function createRiskRoutes() {
     const category = c.req.query('category') || '';
     
     return c.html(
-      baseLayout({
+      cleanLayout({
         title: 'Risk Management',
         user,
         content: renderRisksPage()
@@ -160,7 +160,7 @@ const renderRisksPage = () => html`
           <i class="fas fa-download mr-2"></i>Export
         </button>
         <button 
-          hx-get="/risk/risks/create" 
+          hx-get="/risk/create" 
           hx-target="#modal-container" 
           hx-swap="innerHTML"
           class="btn-primary">
@@ -178,7 +178,7 @@ const renderRisksPage = () => html`
             name="search"
             placeholder="Search risks..." 
             class="form-input"
-            hx-get="/risk/risks/table"
+            hx-get="/risk/table"
             hx-trigger="keyup changed delay:500ms"
             hx-target="#risk-table-container"
             hx-include="[name='status'], [name='category']"
@@ -187,7 +187,7 @@ const renderRisksPage = () => html`
         <select 
           name="status" 
           class="form-select"
-          hx-get="/risk/risks/table"
+          hx-get="/risk/table"
           hx-trigger="change"
           hx-target="#risk-table-container"
           hx-include="[name='search'], [name='category']">
@@ -200,7 +200,7 @@ const renderRisksPage = () => html`
         <select 
           name="category" 
           class="form-select"
-          hx-get="/risk/risks/table"
+          hx-get="/risk/table"
           hx-trigger="change"
           hx-target="#risk-table-container"
           hx-include="[name='search'], [name='status']">
@@ -229,7 +229,7 @@ const renderRisksPage = () => html`
         <h3 class="text-lg font-medium text-gray-900">Risk Register</h3>
       </div>
       <div id="risk-table-container" 
-           hx-get="/risk/risks/table" 
+           hx-get="/risk/table" 
            hx-trigger="load, riskCreated from:body, riskUpdated from:body, riskDeleted from:body">
         <!-- Table will be loaded here -->
       </div>
@@ -385,7 +385,7 @@ const renderCreateRiskModal = () => html`
     <div class="fixed inset-0 z-50 overflow-y-auto">
       <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
         <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
-          <form hx-post="/risk/risks" hx-target="#modal-result">
+          <form hx-post="/risk" hx-target="#modal-result">
             <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
               <div class="sm:flex sm:items-start">
                 <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
