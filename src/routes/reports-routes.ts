@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { requireAuth } from './auth-routes';
 import { baseLayout } from '../templates/layout';
-import { DatabaseService } from '../lib/database';
+import { ReportService } from '../services/report-generator';
 import type { CloudflareBindings } from '../types';
 
 export function createReportsRoutes() {
@@ -26,26 +26,93 @@ export function createReportsRoutes() {
   // Generate risk report
   app.post('/generate/risk', async (c) => {
     const formData = await c.req.parseBody();
-    const format = formData.format || 'pdf';
+    const format = formData.format as string || 'pdf';
     
     try {
-      // Generate report (mock implementation)
-      const reportUrl = await generateRiskReport(format);
-      return c.html(`
+      // Get sample risk data (in production, fetch from database)
+      const sampleRisks = [
+        {
+          id: 'RISK-001',
+          title: 'Data Breach Through SQL Injection',
+          description: 'Potential for unauthorized database access through application vulnerabilities',
+          category: 'Security',
+          owner: 'Security Team',
+          likelihood: 3,
+          impact: 5,
+          risk_score: 15,
+          treatment_strategy: 'mitigate',
+          status: 'active',
+          created_date: '2024-01-15',
+          last_updated: '2024-09-04'
+        },
+        {
+          id: 'RISK-002',
+          title: 'Service Disruption Due to DDoS',
+          description: 'Potential service availability issues from distributed denial of service attacks',
+          category: 'Operational',
+          owner: 'IT Operations',
+          likelihood: 2,
+          impact: 4,
+          risk_score: 8,
+          treatment_strategy: 'mitigate',
+          status: 'active',
+          created_date: '2024-02-01',
+          last_updated: '2024-08-30'
+        },
+        {
+          id: 'RISK-003',
+          title: 'Insider Threat - Privileged Access Misuse',
+          description: 'Risk of malicious or accidental misuse of privileged system access',
+          category: 'Security',
+          owner: 'HR & Security',
+          likelihood: 2,
+          impact: 5,
+          risk_score: 10,
+          treatment_strategy: 'mitigate',
+          status: 'active',
+          created_date: '2024-01-30',
+          last_updated: '2024-09-01'
+        }
+      ];
+
+      let report;
+      if (format === 'excel' || format === 'csv') {
+        report = await ReportService.generateExcelReport('risk', sampleRisks);
+      } else {
+        report = await ReportService.generatePDFReport('risk', sampleRisks);
+      }
+
+      // Create blob URL for download
+      const base64Content = btoa(String.fromCharCode(...report.content));
+      const downloadUrl = `data:${report.contentType};base64,${base64Content}`;
+
+      return c.html(html`
         <div class="bg-green-50 border-l-4 border-green-500 p-4">
           <div class="flex items-center">
             <i class="fas fa-check-circle text-green-500 mr-2"></i>
             <div>
               <p class="text-green-700 font-medium">Risk report generated successfully!</p>
-              <a href="${reportUrl}" target="_blank" class="text-green-600 underline text-sm">Download Report</a>
+              <p class="text-green-600 text-sm">Report size: ${(report.size / 1024).toFixed(1)} KB | Format: ${format.toUpperCase()}</p>
+              <a href="${downloadUrl}" 
+                 download="${report.filename}"
+                 class="inline-block mt-2 bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700">
+                <i class="fas fa-download mr-1"></i>Download ${report.filename}
+              </a>
             </div>
           </div>
         </div>
       `);
     } catch (error) {
-      return c.html(`
+      console.error('Report generation error:', error);
+      return c.html(html`
         <div class="bg-red-50 border-l-4 border-red-500 p-4">
-          <p class="text-red-700">Error generating report: ${error.message}</p>
+          <div class="flex items-center">
+            <i class="fas fa-times-circle text-red-500 mr-2"></i>
+            <div>
+              <p class="text-red-700 font-medium">Error generating report</p>
+              <p class="text-red-600 text-sm">${error.message}</p>
+            </div>
+          </div>
         </div>
       `);
     }
@@ -186,6 +253,45 @@ export function createReportsRoutes() {
     return c.json(data);
   });
   
+  // Test report generation endpoint
+  app.post('/test-generation', async (c) => {
+    try {
+      const testResults = await ReportService.testReportGeneration();
+      
+      return c.html(html`
+        <div class="space-y-4">
+          <div class="p-4 ${testResults.pdf.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-${testResults.pdf.success ? 'check-circle text-green-500' : 'times-circle text-red-500'} mr-2"></i>
+              <span class="font-medium">PDF Generation: ${testResults.pdf.success ? 'Success' : 'Failed'}</span>
+            </div>
+            <p class="text-sm mt-1">${testResults.pdf.message}</p>
+            ${testResults.pdf.size ? html`<p class="text-xs text-gray-600 mt-1">Size: ${(testResults.pdf.size / 1024).toFixed(1)} KB</p>` : ''}
+          </div>
+          
+          <div class="p-4 ${testResults.excel.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-${testResults.excel.success ? 'check-circle text-green-500' : 'times-circle text-red-500'} mr-2"></i>
+              <span class="font-medium">Excel/CSV Generation: ${testResults.excel.success ? 'Success' : 'Failed'}</span>
+            </div>
+            <p class="text-sm mt-1">${testResults.excel.message}</p>
+            ${testResults.excel.size ? html`<p class="text-xs text-gray-600 mt-1">Size: ${(testResults.excel.size / 1024).toFixed(1)} KB</p>` : ''}
+          </div>
+        </div>
+      `);
+    } catch (error) {
+      console.error('Report test error:', error);
+      return c.html(html`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-times-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">Test failed: ${error.message}</span>
+          </div>
+        </div>
+      `);
+    }
+  });
+
   return app;
 }
 

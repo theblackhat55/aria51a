@@ -343,8 +343,8 @@ const renderNavigation = (user: any) => html`
               <i class="fas fa-shield-alt text-white"></i>
             </div>
             <div>
-              <h1 class="text-xl font-semibold text-gray-900">ARIA5.1</h1>
-              <p class="text-xs text-gray-500">HTMX Edition</p>
+              <h1 class="text-xl font-semibold text-gray-900">ARIA5-Ubuntu</h1>
+              <p class="text-xs text-gray-500">Phase 1 & 2 Complete</p>
             </div>
           </a>
         </div>
@@ -497,8 +497,15 @@ const renderNavigation = (user: any) => html`
                  @click.away="open = false"
                  class="absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
               <div class="py-2">
+                <a href="/operations" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-shield-alt w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Operations Center</div>
+                    <div class="text-xs text-gray-500">Microsoft Defender & security operations</div>
+                  </div>
+                </a>
                 <a href="/assets" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
-                  <i class="fas fa-server w-5 text-blue-500 mr-3"></i>
+                  <i class="fas fa-server w-5 text-green-500 mr-3"></i>
                   <div>
                     <div class="font-medium">Asset Management</div>
                     <div class="text-xs text-gray-500">IT assets & infrastructure</div>
@@ -514,8 +521,8 @@ const renderNavigation = (user: any) => html`
                 <a href="/notifications" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
                   <i class="fas fa-bell w-5 text-yellow-500 mr-3"></i>
                   <div>
-                    <div class="font-medium">Notification Center</div>
-                    <div class="text-xs text-gray-500">System alerts & communications</div>
+                    <div class="font-medium">Real-time Notifications</div>
+                    <div class="text-xs text-gray-500">Live WebSocket alerts & messaging</div>
                   </div>
                 </a>
                 <a href="/keys" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
@@ -580,6 +587,14 @@ const renderNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Issue tracking & resolution</div>
                   </div>
                 </a>
+                <div class="border-t border-gray-100"></div>
+                <a href="/search" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors">
+                  <i class="fas fa-search w-5 text-indigo-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Global Search</div>
+                    <div class="text-xs text-gray-500">Full-text search across platform</div>
+                  </div>
+                </a>
               </div>
             </div>
           </div>
@@ -631,8 +646,23 @@ const renderNavigation = (user: any) => html`
                 <a href="/admin/logs" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors">
                   <i class="fas fa-file-alt w-5 text-green-500 mr-3"></i>
                   <div>
-                    <div class="font-medium">Audit Logs</div>
-                    <div class="text-xs text-gray-500">System audit trail</div>
+                    <div class="font-medium">Advanced Audit Logs</div>
+                    <div class="text-xs text-gray-500">Comprehensive compliance logging</div>
+                  </div>
+                </a>
+                <div class="border-t border-gray-100"></div>
+                <a href="/rbac" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+                  <i class="fas fa-shield-alt w-5 text-red-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">RBAC Management</div>
+                    <div class="text-xs text-gray-500">Role-based access control</div>
+                  </div>
+                </a>
+                <a href="/2fa" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition-colors">
+                  <i class="fas fa-lock w-5 text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Two-Factor Auth</div>
+                    <div class="text-xs text-gray-500">TOTP & security management</div>
                   </div>
                 </a>
               </div>

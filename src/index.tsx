@@ -22,6 +22,12 @@ import aiGovernanceRoutes from './routes/ai-governance-routes';
 import documentsRoutes from './routes/documents-routes';
 import notificationsRoutes from './routes/notifications-routes';
 import keysRoutes from './routes/keys-routes';
+// Phase 1 & 2 Implementation - Advanced Enterprise Features
+import createOperationsDefenderRoutes from './routes/operations-defender';
+import createTwoFactorRoutes from './routes/auth-2fa-routes';
+import { rbacRoutes } from './routes/rbac-routes';
+import { searchRoutes } from './routes/search-routes';
+import { websocketRoutes } from './routes/websocket-routes';
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -112,6 +118,24 @@ app.route('/notifications', notificationsRoutes);
 
 // Secure Key Management routes
 app.route('/keys', keysRoutes);
+
+// Phase 1 & 2 Implementation Routes - Advanced Enterprise Features
+// Operations with Microsoft Defender integration
+const operationsDefenderRoutes = createOperationsDefenderRoutes();
+app.route('/operations', operationsDefenderRoutes);
+
+// Two-Factor Authentication management
+const twoFactorRoutes = createTwoFactorRoutes();
+app.route('/2fa', twoFactorRoutes);
+
+// Role-Based Access Control (RBAC) system
+app.route('/', rbacRoutes);
+
+// Global Search functionality
+app.route('/', searchRoutes);
+
+// Real-time WebSocket notifications
+app.route('/', websocketRoutes);
 
 // Assessments redirect to compliance
 app.get('/assessments', (c) => c.redirect('/compliance/assessments'));

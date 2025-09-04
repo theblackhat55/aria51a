@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { requireAuth } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
+import { createAIService } from '../services/ai-providers';
 import type { CloudflareBindings } from '../types';
 
 export function createRiskRoutesARIA5() {
@@ -76,6 +77,129 @@ export function createRiskRoutesARIA5() {
              readonly
              class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 font-medium ${colorClass}">
     `);
+  });
+
+  // AI Risk Analysis endpoint
+  app.post('/analyze-ai', async (c) => {
+    const { env } = c;
+    const formData = await c.req.parseBody();
+    
+    try {
+      const aiService = createAIService(env);
+      
+      if (!aiService) {
+        return c.html(html`
+          <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+              <span class="text-yellow-800 font-medium">AI providers not configured</span>
+            </div>
+            <p class="text-yellow-700 text-sm mt-1">
+              Configure OpenAI, Anthropic, or Gemini API keys to enable AI risk analysis.
+            </p>
+          </div>
+        `);
+      }
+
+      // Extract risk information from form
+      const riskRequest = {
+        title: formData.title as string || 'Untitled Risk',
+        description: formData.description as string || 'No description provided',
+        category: formData.category as string,
+        affectedServices: Array.isArray(formData['affected_services[]']) 
+          ? formData['affected_services[]'] as string[]
+          : formData['affected_services[]'] ? [formData['affected_services[]'] as string] : [],
+        existingControls: []
+      };
+
+      // Show loading state first
+      const loadingHtml = html`
+        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-spinner fa-spin text-blue-500 mr-2"></i>
+            <span class="text-blue-700 font-medium">Analyzing risk with AI...</span>
+          </div>
+          <p class="text-blue-600 text-sm mt-1">This may take a few moments.</p>
+        </div>
+      `;
+
+      // Perform AI analysis
+      const analysis = await aiService.analyzeRisk(riskRequest);
+      
+      return c.html(html`
+        <div class="space-y-4">
+          <!-- Risk Assessment Results -->
+          <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center mb-3">
+              <i class="fas fa-check-circle text-green-500 mr-2"></i>
+              <span class="text-green-700 font-medium">AI Analysis Complete</span>
+            </div>
+            
+            <!-- Risk Score Assessment -->
+            <div class="bg-white rounded p-3 mb-3">
+              <h4 class="font-semibold text-gray-900 mb-2">Risk Assessment</h4>
+              <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-600">Likelihood:</span>
+                  <span class="ml-1 font-medium">${analysis.riskAssessment.likelihood}/5</span>
+                </div>
+                <div>
+                  <span class="text-gray-600">Impact:</span>
+                  <span class="ml-1 font-medium">${analysis.riskAssessment.impact}/5</span>
+                </div>
+                <div>
+                  <span class="text-gray-600">Risk Score:</span>
+                  <span class="ml-1 font-medium">${analysis.riskAssessment.riskScore}/25</span>
+                </div>
+              </div>
+              <p class="text-gray-700 text-sm mt-2">${analysis.riskAssessment.reasoning}</p>
+            </div>
+
+            <!-- Control Suggestions -->
+            <div class="bg-white rounded p-3 mb-3">
+              <h4 class="font-semibold text-gray-900 mb-2">Recommended Controls</h4>
+              <div class="space-y-2">
+                ${analysis.controlSuggestions.slice(0, 3).map(control => html`
+                  <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div>
+                      <span class="font-medium text-sm">${control.framework} ${control.controlId}</span>
+                      <p class="text-xs text-gray-600">${control.controlName}</p>
+                    </div>
+                    <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                      ${control.relevance}/10
+                    </span>
+                  </div>
+                `)}
+              </div>
+            </div>
+
+            <!-- Mitigation Strategies -->
+            <div class="bg-white rounded p-3">
+              <h4 class="font-semibold text-gray-900 mb-2">Mitigation Strategies</h4>
+              <ul class="text-sm text-gray-700 space-y-1">
+                ${analysis.mitigationStrategies.slice(0, 3).map(strategy => html`
+                  <li class="flex items-start">
+                    <i class="fas fa-arrow-right text-gray-400 mr-2 mt-1 text-xs"></i>
+                    ${strategy}
+                  </li>
+                `)}
+              </ul>
+            </div>
+          </div>
+        </div>
+      `);
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      return c.html(html`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-times-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">AI analysis failed</span>
+          </div>
+          <p class="text-red-600 text-sm mt-1">${error.message}</p>
+        </div>
+      `);
+    }
   });
 
   // Risk form submission
@@ -659,9 +783,14 @@ const renderCreateRiskModal = () => html`
             <div class="ml-9">
               <p class="text-sm text-gray-600 mb-4">Get AI-powered risk analysis based on your risk details and related services</p>
               <button type="button" 
+                      hx-post="/risk/analyze-ai"
+                      hx-target="#ai-analysis-result"
+                      hx-swap="innerHTML"
+                      hx-include="[name='title'], [name='description'], [name='category'], [name='affected_services[]']"
                       class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
                 <i class="fas fa-robot mr-2"></i>Analyze with AI
               </button>
+              <div id="ai-analysis-result" class="mt-4"></div>
             </div>
           </div>
 
