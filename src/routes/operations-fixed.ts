@@ -3,7 +3,6 @@ import { html, raw } from 'hono/html';
 import { requireAuth } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import type { CloudflareBindings } from '../types';
-import { getCookie } from 'hono/cookie';
 
 export function createOperationsRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -13,9 +12,7 @@ export function createOperationsRoutes() {
   
   // Main operations dashboard
   app.get('/', async (c) => {
-    const userEmail = getCookie(c, 'user_email');
-    const userRole = getCookie(c, 'user_role');
-    const user = { username: userEmail?.split('@')[0] || 'User', role: userRole, email: userEmail };
+    const user = c.get('user');
     
     return c.html(
       cleanLayout({
@@ -28,9 +25,7 @@ export function createOperationsRoutes() {
   
   // Asset Management
   app.get('/assets', async (c) => {
-    const userEmail = getCookie(c, 'user_email');
-    const userRole = getCookie(c, 'user_role');
-    const user = { username: userEmail?.split('@')[0] || 'User', role: userRole, email: userEmail };
+    const user = c.get('user');
     
     return c.html(
       cleanLayout({
@@ -43,9 +38,7 @@ export function createOperationsRoutes() {
   
   // Service Management
   app.get('/services', async (c) => {
-    const userEmail = getCookie(c, 'user_email');
-    const userRole = getCookie(c, 'user_role');
-    const user = { username: userEmail?.split('@')[0] || 'User', role: userRole, email: userEmail };
+    const user = c.get('user');
     
     return c.html(
       cleanLayout({
@@ -58,9 +51,7 @@ export function createOperationsRoutes() {
   
   // Document Management
   app.get('/documents', async (c) => {
-    const userEmail = getCookie(c, 'user_email');
-    const userRole = getCookie(c, 'user_role');
-    const user = { username: userEmail?.split('@')[0] || 'User', role: userRole, email: userEmail };
+    const user = c.get('user');
     
     return c.html(
       cleanLayout({
@@ -73,9 +64,7 @@ export function createOperationsRoutes() {
 
   // Microsoft Defender Integration
   app.get('/defender', async (c) => {
-    const userEmail = getCookie(c, 'user_email');
-    const userRole = getCookie(c, 'user_role');
-    const user = { username: userEmail?.split('@')[0] || 'User', role: userRole, email: userEmail };
+    const user = c.get('user');
     
     return c.html(
       cleanLayout({

@@ -568,10 +568,204 @@ function renderControlMapping() {
 function renderComplianceAssessments() {
   return html`
     <div class="min-h-screen bg-gray-50 py-12">
-      <div class="max-w-7xl mx-auto px-4">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">Compliance Assessments</h1>
-        <div class="bg-white rounded-lg shadow p-6">
-          <p class="text-gray-600">Compliance assessments interface</p>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-3xl font-bold text-gray-900">Compliance Assessments</h1>
+              <p class="text-gray-600 mt-2">Manage and track compliance assessment activities</p>
+            </div>
+            <div class="flex space-x-3">
+              <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                New Assessment
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assessment Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-clipboard-check text-2xl text-blue-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Total Assessments</p>
+                <p class="text-2xl font-semibold text-gray-900">12</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-clock text-2xl text-yellow-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">In Progress</p>
+                <p class="text-2xl font-semibold text-gray-900">3</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-check-circle text-2xl text-green-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Completed</p>
+                <p class="text-2xl font-semibold text-gray-900">8</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Overdue</p>
+                <p class="text-2xl font-semibold text-gray-900">1</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assessment Types -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-blue-600 text-xl"></i>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">SOC 2 Assessment</h3>
+                <p class="text-sm text-gray-600">Type II Examination</p>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Progress:</span>
+                <span class="font-medium">85%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: 85%"></div>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Due Date:</span>
+                <span class="font-medium">Mar 31, 2024</span>
+              </div>
+            </div>
+            <button class="w-full bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors">
+              Continue Assessment
+            </button>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-certificate text-green-600 text-xl"></i>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">ISO 27001 Assessment</h3>
+                <p class="text-sm text-gray-600">Certification Audit</p>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Progress:</span>
+                <span class="font-medium">60%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-green-600 h-2 rounded-full" style="width: 60%"></div>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Due Date:</span>
+                <span class="font-medium">Apr 15, 2024</span>
+              </div>
+            </div>
+            <button class="w-full bg-green-50 text-green-600 py-2 rounded-lg hover:bg-green-100 transition-colors">
+              Continue Assessment
+            </button>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center mb-4">
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-balance-scale text-purple-600 text-xl"></i>
+              </div>
+              <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">GDPR Assessment</h3>
+                <p class="text-sm text-gray-600">Privacy Impact</p>
+              </div>
+            </div>
+            <div class="space-y-2 mb-4">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Progress:</span>
+                <span class="font-medium">95%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-purple-600 h-2 rounded-full" style="width: 95%"></div>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Due Date:</span>
+                <span class="font-medium text-red-600">Overdue</span>
+              </div>
+            </div>
+            <button class="w-full bg-purple-50 text-purple-600 py-2 rounded-lg hover:bg-purple-100 transition-colors">
+              Complete Assessment
+            </button>
+          </div>
+        </div>
+
+        <!-- Recent Assessment Activity -->
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Recent Assessment Activity</h3>
+          </div>
+          <div class="divide-y divide-gray-200">
+            <div class="px-6 py-4 flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-900">SOC 2 Control CC6.1 - Evidence Updated</p>
+                  <p class="text-sm text-gray-500">System access controls documentation reviewed</p>
+                </div>
+              </div>
+              <span class="text-sm text-gray-500">2 hours ago</span>
+            </div>
+            <div class="px-6 py-4 flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-file-alt text-blue-600"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-900">ISO 27001 Risk Assessment - Draft Completed</p>
+                  <p class="text-sm text-gray-500">Information security risk assessment submitted for review</p>
+                </div>
+              </div>
+              <span class="text-sm text-gray-500">1 day ago</span>
+            </div>
+            <div class="px-6 py-4 flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-900">GDPR Assessment - Remediation Required</p>
+                  <p class="text-sm text-gray-500">Data processing activities need additional documentation</p>
+                </div>
+              </div>
+              <span class="text-sm text-gray-500">3 days ago</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -581,10 +775,223 @@ function renderComplianceAssessments() {
 function renderSOAManagement() {
   return html`
     <div class="min-h-screen bg-gray-50 py-12">
-      <div class="max-w-7xl mx-auto px-4">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">Statement of Applicability</h1>
-        <div class="bg-white rounded-lg shadow p-6">
-          <p class="text-gray-600">SOA management interface</p>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-3xl font-bold text-gray-900">Statement of Applicability (SoA)</h1>
+              <p class="text-gray-600 mt-2">ISO 27001 controls selection and justification</p>
+            </div>
+            <div class="flex space-x-3">
+              <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-download mr-2"></i>
+                Export SoA
+              </button>
+              <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-edit mr-2"></i>
+                Update SoA
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SoA Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-shield-alt text-2xl text-green-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Applicable Controls</p>
+                <p class="text-2xl font-semibold text-gray-900">87</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-times-circle text-2xl text-red-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Not Applicable</p>
+                <p class="text-2xl font-semibold text-gray-900">27</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-check-circle text-2xl text-blue-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Implemented</p>
+                <p class="text-2xl font-semibold text-gray-900">79</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-2xl text-yellow-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">To Implement</p>
+                <p class="text-2xl font-semibold text-gray-900">8</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control Categories -->
+        <div class="bg-white rounded-lg shadow mb-8">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">ISO 27001:2022 Control Categories</h3>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Organizational Controls -->
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-lg font-semibold text-gray-900">Organizational Controls</h4>
+                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">37/37</span>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Information Security Policies</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Information Security Roles</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Supplier Relationships</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Information Security in Project Management</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- People Controls -->
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-lg font-semibold text-gray-900">People Controls</h4>
+                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">8/8</span>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Screening</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Terms and Conditions of Employment</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Information Security Awareness</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Disciplinary Process</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Physical Controls -->
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-lg font-semibold text-gray-900">Physical Controls</h4>
+                  <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm font-medium">12/14</span>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Physical Security Perimeters</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Physical Entry</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Protection Against Environmental Threats</span>
+                    <span class="text-red-600 font-medium">✗ Not Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Equipment Maintenance</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Technological Controls -->
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-lg font-semibold text-gray-900">Technological Controls</h4>
+                  <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">30/34</span>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Access Control Management</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Cryptography</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Systems Security</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                  <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Network Security Management</span>
+                    <span class="text-green-600 font-medium">✓ Applicable</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SoA Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-edit text-blue-600"></i>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-lg font-semibold text-gray-900">Update Justifications</h3>
+                <p class="text-sm text-gray-600">Review and update control applicability</p>
+              </div>
+            </div>
+            <button class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+              Edit SoA Matrix <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-file-export text-green-600"></i>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-lg font-semibold text-gray-900">Generate Report</h3>
+                <p class="text-sm text-gray-600">Export formal SoA document</p>
+              </div>
+            </div>
+            <button class="inline-flex items-center text-green-600 hover:text-green-800 font-medium">
+              Download Report <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -594,10 +1001,296 @@ function renderSOAManagement() {
 function renderEvidenceManagement() {
   return html`
     <div class="min-h-screen bg-gray-50 py-12">
-      <div class="max-w-7xl mx-auto px-4">
-        <h1 class="text-3xl font-bold text-gray-900 mb-8">Evidence Management</h1>
-        <div class="bg-white rounded-lg shadow p-6">
-          <p class="text-gray-600">Evidence management interface</p>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-3xl font-bold text-gray-900">Evidence Management</h1>
+              <p class="text-gray-600 mt-2">Manage compliance evidence and documentation</p>
+            </div>
+            <div class="flex space-x-3">
+              <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-upload mr-2"></i>
+                Upload Evidence
+              </button>
+              <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                <i class="fas fa-link mr-2"></i>
+                Link Evidence
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-folder text-2xl text-blue-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Total Evidence</p>
+                <p class="text-2xl font-semibold text-gray-900">342</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-link text-2xl text-green-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Linked to Controls</p>
+                <p class="text-2xl font-semibold text-gray-900">298</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-clock text-2xl text-yellow-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Pending Review</p>
+                <p class="text-2xl font-semibold text-gray-900">23</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Expired</p>
+                <p class="text-2xl font-semibold text-gray-900">7</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence Categories -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          <!-- Evidence by Type -->
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-900">Evidence by Type</h3>
+            </div>
+            <div class="p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-file-alt text-blue-500 mr-3"></i>
+                  <span class="text-gray-700">Policies & Procedures</span>
+                </div>
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">89</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-chart-bar text-green-500 mr-3"></i>
+                  <span class="text-gray-700">Reports & Analytics</span>
+                </div>
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">67</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-certificate text-purple-500 mr-3"></i>
+                  <span class="text-gray-700">Certificates</span>
+                </div>
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium">34</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-cog text-orange-500 mr-3"></i>
+                  <span class="text-gray-700">System Configurations</span>
+                </div>
+                <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium">78</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-users text-indigo-500 mr-3"></i>
+                  <span class="text-gray-700">Training Records</span>
+                </div>
+                <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-sm font-medium">45</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Evidence by Framework -->
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-900">Evidence by Framework</h3>
+            </div>
+            <div class="p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-shield-alt text-blue-500 mr-3"></i>
+                  <span class="text-gray-700">SOC 2</span>
+                </div>
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">156</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-certificate text-green-500 mr-3"></i>
+                  <span class="text-gray-700">ISO 27001</span>
+                </div>
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">142</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-balance-scale text-purple-500 mr-3"></i>
+                  <span class="text-gray-700">GDPR</span>
+                </div>
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium">67</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fas fa-credit-card text-red-500 mr-3"></i>
+                  <span class="text-gray-700">PCI DSS</span>
+                </div>
+                <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm font-medium">23</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-900">Recent Activity</h3>
+            </div>
+            <div class="p-6 space-y-4">
+              <div class="flex items-start">
+                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-upload text-green-600 text-sm"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-medium text-gray-900">Security Policy v2.1</p>
+                  <p class="text-xs text-gray-500">Uploaded 2 hours ago</p>
+                </div>
+              </div>
+              <div class="flex items-start">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-link text-blue-600 text-sm"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-medium text-gray-900">Linked to SOC 2 CC6.1</p>
+                  <p class="text-xs text-gray-500">Linked 4 hours ago</p>
+                </div>
+              </div>
+              <div class="flex items-start">
+                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-check text-purple-600 text-sm"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-medium text-gray-900">Access Review Q4 Approved</p>
+                  <p class="text-xs text-gray-500">Approved 1 day ago</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evidence List -->
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">Evidence Repository</h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded-md text-sm">
+                <option>All Types</option>
+                <option>Policies</option>
+                <option>Reports</option>
+                <option>Certificates</option>
+              </select>
+              <select class="px-3 py-1 border border-gray-300 rounded-md text-sm">
+                <option>All Frameworks</option>
+                <option>SOC 2</option>
+                <option>ISO 27001</option>
+                <option>GDPR</option>
+              </select>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evidence</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Framework</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Controls</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">Information Security Policy v2.1</div>
+                        <div class="text-sm text-gray-500">security-policy-v2.1.pdf</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Policy</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SOC 2, ISO 27001</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CC6.1, A.5.1.1</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Current
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 hours ago</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+                      <i class="fas fa-download"></i>
+                    </button>
+                    <button class="text-red-600 hover:text-red-900">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <i class="fas fa-chart-bar text-blue-500 mr-3"></i>
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">Q4 Access Review Report</div>
+                        <div class="text-sm text-gray-500">access-review-q4-2023.xlsx</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Report</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SOC 2</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CC6.2, CC6.3</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      Reviewed
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1 day ago</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+                      <i class="fas fa-download"></i>
+                    </button>
+                    <button class="text-red-600 hover:text-red-900">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
