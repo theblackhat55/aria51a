@@ -344,7 +344,7 @@ const renderNavigation = (user: any) => html`
             </div>
             <div>
               <h1 class="text-xl font-semibold text-gray-900">ARIA5-Ubuntu</h1>
-              <p class="text-xs text-gray-500">Phase 1 & 2 Complete</p>
+              <p class="text-xs text-gray-500">Phase 1-4 Enterprise Platform</p>
             </div>
           </a>
         </div>
@@ -599,6 +599,126 @@ const renderNavigation = (user: any) => html`
             </div>
           </div>
           
+          <!-- Advanced Analytics Dropdown (Phase 3) -->
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.away="open = false" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-cyan-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-chart-pie mr-1"></i>
+              <span>Advanced Analytics</span>
+              <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+            </button>
+            <div x-show="open" 
+                 x-cloak
+                 x-transition:enter="dropdown-enter" 
+                 x-transition:enter-active="dropdown-enter-active"
+                 x-transition:leave="dropdown-leave" 
+                 x-transition:leave-active="dropdown-leave-active"
+                 @click.away="open = false"
+                 class="absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                  Machine Learning
+                </div>
+                <a href="/analytics" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-700 transition-colors">
+                  <i class="fas fa-brain w-5 text-cyan-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">ML Analytics Dashboard</div>
+                    <div class="text-xs text-gray-500">AI-powered risk insights</div>
+                  </div>
+                </a>
+                <a href="/analytics/predictions" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-700 transition-colors">
+                  <i class="fas fa-crystal-ball w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Risk Predictions</div>
+                    <div class="text-xs text-gray-500">Machine learning risk forecasting</div>
+                  </div>
+                </a>
+                <a href="/analytics/trends" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-700 transition-colors">
+                  <i class="fas fa-trending-up w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Trend Analysis</div>
+                    <div class="text-xs text-gray-500">Statistical trend modeling</div>
+                  </div>
+                </a>
+                <a href="/analytics/anomalies" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-cyan-50 hover:text-cyan-700 transition-colors">
+                  <i class="fas fa-exclamation-circle w-5 text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Anomaly Detection</div>
+                    <div class="text-xs text-gray-500">Outlier identification & analysis</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Automation Dropdown (Phase 4) -->
+          <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.away="open = false" class="nav-item flex items-center space-x-1 text-gray-700 hover:text-amber-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
+              <i class="fas fa-magic mr-1"></i>
+              <span>Automation</span>
+              <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+            </button>
+            <div x-show="open" 
+                 x-cloak
+                 x-transition:enter="dropdown-enter" 
+                 x-transition:enter-active="dropdown-enter-active"
+                 x-transition:leave="dropdown-leave" 
+                 x-transition:leave-active="dropdown-leave-active"
+                 @click.away="open = false"
+                 class="absolute left-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                  Threat Intelligence
+                </div>
+                <a href="/threat-intel" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition-colors">
+                  <i class="fas fa-search w-5 text-red-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Threat Intelligence Hub</div>
+                    <div class="text-xs text-gray-500">IOC management & correlation</div>
+                  </div>
+                </a>
+                <a href="/threat-intel/hunting" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition-colors">
+                  <i class="fas fa-crosshairs w-5 text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Threat Hunting</div>
+                    <div class="text-xs text-gray-500">Advanced query builder & templates</div>
+                  </div>
+                </a>
+                <a href="/threat-intel/correlation" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition-colors">
+                  <i class="fas fa-project-diagram w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Correlation Analysis</div>
+                    <div class="text-xs text-gray-500">Automated threat correlation</div>
+                  </div>
+                </a>
+                <div class="border-t border-gray-100"></div>
+                <div class="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Incident Response (SOAR)
+                </div>
+                <a href="/incident-response" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition-colors">
+                  <i class="fas fa-fire-extinguisher w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Incident Response Center</div>
+                    <div class="text-xs text-gray-500">Automated incident orchestration</div>
+                  </div>
+                </a>
+                <a href="/incident-response/workflows" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition-colors">
+                  <i class="fas fa-sitemap w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Response Workflows</div>
+                    <div class="text-xs text-gray-500">Playbook automation & execution</div>
+                  </div>
+                </a>
+                <a href="/incident-response/metrics" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 transition-colors">
+                  <i class="fas fa-tachometer-alt w-5 text-indigo-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Performance Metrics</div>
+                    <div class="text-xs text-gray-500">MTTR, success rates & analytics</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+          
           <!-- AI Assistant -->
           <a href="/ai" class="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
             <i class="fas fa-robot text-blue-600 mr-1"></i>
@@ -725,6 +845,9 @@ const renderNavigation = (user: any) => html`
         <a href="/compliance/frameworks" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Compliance</a>
         <a href="/assets" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Assets</a>
         <a href="/reports" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Reports</a>
+        <a href="/analytics" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">ML Analytics</a>
+        <a href="/threat-intel" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Threat Intelligence</a>
+        <a href="/incident-response" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Incident Response</a>
         <a href="/ai" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">ARIA Assistant</a>
         <a href="/settings" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Settings</a>
         ${user?.role === 'admin' ? html`<a href="/admin" class="block px-4 py-2 text-sm hover:bg-gray-100 rounded">Admin</a>` : ''}

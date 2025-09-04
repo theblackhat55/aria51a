@@ -18,6 +18,14 @@ import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createAPIRoutes } from './routes/api-routes';
 import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 
+// Phase 3 & 4 Implementation Routes - Advanced Analytics & Enterprise Scale
+import { mlAnalyticsRoutes } from './routes/ml-analytics';
+import { threatIntelRoutes } from './routes/threat-intelligence';
+import { incidentResponseRoutes } from './routes/incident-response';
+import { apiAnalyticsRoutes } from './routes/api-analytics';
+import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
+import { apiIncidentResponseRoutes } from './routes/api-incident-response';
+
 // Import clean templates
 import { cleanLayout } from './templates/layout-clean';
 import { loginPage } from './templates/auth/login';
@@ -317,6 +325,16 @@ app.route('/intelligence', intelligenceRoutes);
 app.route('/admin', adminRoutes);
 app.route('/api', apiRoutes);
 app.route('/ai', aiRoutes);
+
+// Phase 3 & 4 Routes - Advanced Analytics & Enterprise Scale
+app.route('/analytics', mlAnalyticsRoutes);
+app.route('/threat-intel', threatIntelRoutes);
+app.route('/incident-response', incidentResponseRoutes);
+
+// Phase 3 & 4 API Routes
+app.route('/api/analytics', apiAnalyticsRoutes);
+app.route('/api/threat-intel', apiThreatIntelRoutes);
+app.route('/api/incident-response', apiIncidentResponseRoutes);
 
 // Clean 404 handler - NO full page layout to prevent injection
 app.notFound((c) => {

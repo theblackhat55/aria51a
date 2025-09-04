@@ -137,6 +137,24 @@ app.route('/', searchRoutes);
 // Real-time WebSocket notifications
 app.route('/', websocketRoutes);
 
+// Phase 3 & 4 Implementation Routes - Advanced Analytics & Enterprise Scale
+import { mlAnalyticsRoutes } from './routes/ml-analytics';
+import { threatIntelRoutes } from './routes/threat-intelligence';
+import { incidentResponseRoutes } from './routes/incident-response';
+import { apiAnalyticsRoutes } from './routes/api-analytics';
+import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
+import { apiIncidentResponseRoutes } from './routes/api-incident-response';
+
+// Phase 3 & 4 UI Routes - ML Analytics, Threat Intelligence, Incident Response
+app.route('/analytics', mlAnalyticsRoutes);
+app.route('/threat-intel', threatIntelRoutes);
+app.route('/incident-response', incidentResponseRoutes);
+
+// Phase 3 & 4 API Routes
+app.route('/api/ml-analytics', apiAnalyticsRoutes);
+app.route('/api/threat-intelligence', apiThreatIntelRoutes);
+app.route('/api/incident-response', apiIncidentResponseRoutes);
+
 // Assessments redirect to compliance
 app.get('/assessments', (c) => c.redirect('/compliance/assessments'));
 
