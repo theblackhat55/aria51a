@@ -14,13 +14,93 @@ export function createCleanDashboardRoutes() {
   app.get('/', async (c) => {
     const user = c.get('user');
     
-    // Use realistic compliance statistics
-    const stats = {
-      risks: { total: 45, critical: 8, high: 12, medium: 15, low: 10 },
-      compliance: { score: 79, frameworks: 2, controls: 178, soc2: 81, iso27001: 76 },
-      incidents: { open: 3, resolved: 12, total: 15 },
-      kris: { alerts: 5, breached: 2, monitored: 25 }
+    // Fetch real data from D1 database
+    let stats = {
+      risks: { total: 0, critical: 0, high: 0, medium: 0, low: 0 },
+      compliance: { score: 0, frameworks: 0, controls: 0, soc2: 0, iso27001: 0 },
+      incidents: { open: 0, resolved: 0, total: 0 },
+      kris: { alerts: 0, breached: 0, monitored: 0 }
     };
+
+    try {
+      // Get real risk statistics
+      const risksResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN risk_score >= 20 THEN 1 ELSE 0 END) as critical,
+          SUM(CASE WHEN risk_score >= 12 AND risk_score < 20 THEN 1 ELSE 0 END) as high,
+          SUM(CASE WHEN risk_score >= 6 AND risk_score < 12 THEN 1 ELSE 0 END) as medium,
+          SUM(CASE WHEN risk_score < 6 THEN 1 ELSE 0 END) as low
+        FROM risks 
+        WHERE status = 'active'
+      `).first();
+
+      if (risksResult) {
+        stats.risks = {
+          total: risksResult.total || 0,
+          critical: risksResult.critical || 0,
+          high: risksResult.high || 0,
+          medium: risksResult.medium || 0,
+          low: risksResult.low || 0
+        };
+      }
+
+      // Get compliance framework count
+      const frameworksResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM compliance_frameworks WHERE is_active = 1').first();
+      stats.compliance.frameworks = frameworksResult?.count || 0;
+
+      // Calculate compliance score based on implemented controls
+      const complianceResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total_controls,
+          SUM(CASE WHEN implementation_status = 'implemented' THEN 1 ELSE 0 END) as implemented_controls
+        FROM soa 
+        WHERE is_applicable = 1
+      `).first();
+
+      if (complianceResult && complianceResult.total_controls > 0) {
+        stats.compliance.score = Math.round((complianceResult.implemented_controls / complianceResult.total_controls) * 100);
+        stats.compliance.controls = complianceResult.total_controls;
+      }
+
+      // Get incident statistics  
+      const incidentsResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open,
+          SUM(CASE WHEN status IN ('resolved', 'closed') THEN 1 ELSE 0 END) as resolved
+        FROM incidents
+      `).first();
+
+      if (incidentsResult) {
+        stats.incidents = {
+          open: incidentsResult.open || 0,
+          resolved: incidentsResult.resolved || 0,
+          total: incidentsResult.total || 0
+        };
+      }
+
+      // Get KRI statistics
+      const krisResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as monitored,
+          SUM(CASE WHEN current_value > threshold_value THEN 1 ELSE 0 END) as breached
+        FROM kris 
+        WHERE status = 'active'
+      `).first();
+
+      if (krisResult) {
+        stats.kris = {
+          alerts: krisResult.breached || 0,
+          breached: krisResult.breached || 0,
+          monitored: krisResult.monitored || 0
+        };
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard statistics:', error);
+      // Fall back to default values if database error
+    }
     
     return c.html(
       cleanLayout({
@@ -31,25 +111,110 @@ export function createCleanDashboardRoutes() {
     );
   });
   
-  // Individual card refresh endpoints (static data)
+  // Individual card refresh endpoints (real data)
   app.get('/cards/risks', async (c) => {
-    const stats = { total: 45, critical: 8, high: 12, medium: 15, low: 10 };
-    return c.html(renderRiskCard(stats));
+    try {
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN risk_score >= 20 THEN 1 ELSE 0 END) as critical,
+          SUM(CASE WHEN risk_score >= 12 AND risk_score < 20 THEN 1 ELSE 0 END) as high,
+          SUM(CASE WHEN risk_score >= 6 AND risk_score < 12 THEN 1 ELSE 0 END) as medium,
+          SUM(CASE WHEN risk_score < 6 THEN 1 ELSE 0 END) as low
+        FROM risks 
+        WHERE status = 'active'
+      `).first();
+
+      const stats = {
+        total: result?.total || 0,
+        critical: result?.critical || 0,
+        high: result?.high || 0,
+        medium: result?.medium || 0,
+        low: result?.low || 0
+      };
+      return c.html(renderRiskCard(stats));
+    } catch (error) {
+      console.error('Error fetching risk stats:', error);
+      const stats = { total: 0, critical: 0, high: 0, medium: 0, low: 0 };
+      return c.html(renderRiskCard(stats));
+    }
   });
   
   app.get('/cards/compliance', async (c) => {
-    const stats = { score: 79, frameworks: 2, controls: 178, soc2: 81, iso27001: 76 };
-    return c.html(renderComplianceCard(stats));
+    try {
+      const frameworksResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM compliance_frameworks WHERE is_active = 1').first();
+      const complianceResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total_controls,
+          SUM(CASE WHEN implementation_status = 'implemented' THEN 1 ELSE 0 END) as implemented_controls
+        FROM soa 
+        WHERE is_applicable = 1
+      `).first();
+
+      let score = 0;
+      if (complianceResult && complianceResult.total_controls > 0) {
+        score = Math.round((complianceResult.implemented_controls / complianceResult.total_controls) * 100);
+      }
+
+      const stats = { 
+        score: score, 
+        frameworks: frameworksResult?.count || 0, 
+        controls: complianceResult?.total_controls || 0, 
+        soc2: score, 
+        iso27001: score 
+      };
+      return c.html(renderComplianceCard(stats));
+    } catch (error) {
+      console.error('Error fetching compliance stats:', error);
+      const stats = { score: 0, frameworks: 0, controls: 0, soc2: 0, iso27001: 0 };
+      return c.html(renderComplianceCard(stats));
+    }
   });
   
   app.get('/cards/incidents', async (c) => {
-    const stats = { open: 3, resolved: 12, total: 15 };
-    return c.html(renderIncidentCard(stats));
+    try {
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open,
+          SUM(CASE WHEN status IN ('resolved', 'closed') THEN 1 ELSE 0 END) as resolved
+        FROM incidents
+      `).first();
+
+      const stats = { 
+        open: result?.open || 0, 
+        resolved: result?.resolved || 0, 
+        total: result?.total || 0 
+      };
+      return c.html(renderIncidentCard(stats));
+    } catch (error) {
+      console.error('Error fetching incident stats:', error);
+      const stats = { open: 0, resolved: 0, total: 0 };
+      return c.html(renderIncidentCard(stats));
+    }
   });
   
   app.get('/cards/kris', async (c) => {
-    const stats = { alerts: 5, breached: 2, monitored: 25 };
-    return c.html(renderKRICard(stats));
+    try {
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as monitored,
+          SUM(CASE WHEN current_value > threshold_value THEN 1 ELSE 0 END) as breached
+        FROM kris 
+        WHERE status = 'active'
+      `).first();
+
+      const stats = { 
+        alerts: result?.breached || 0, 
+        breached: result?.breached || 0, 
+        monitored: result?.monitored || 0 
+      };
+      return c.html(renderKRICard(stats));
+    } catch (error) {
+      console.error('Error fetching KRI stats:', error);
+      const stats = { alerts: 0, breached: 0, monitored: 0 };
+      return c.html(renderKRICard(stats));
+    }
   });
   
   return app;
