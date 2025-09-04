@@ -201,9 +201,9 @@ export function createOperationsRoutes() {
   });
 
   app.get('/api/services', async (c) => {
-    // Query actual services from D1 - since schema doesn't have services table, we'll create a basic implementation
-    const assets = await getAssets(c.env.DB);
-    return c.html(renderServiceRows([])); // Empty for now, will implement proper services table
+    // Get actual services from assets table where category='service'
+    const services = await getServices(c.env.DB);
+    return c.html(renderServiceRows(services));
   });
 
   app.post('/api/assets', async (c) => {
@@ -319,32 +319,91 @@ export function createOperationsRoutes() {
     try {
       const formData = await c.req.formData();
       
-      // For now, services will be stored as risks with special category
+      // Enhanced ARIA5 service data collection - store in assets table with category='service'
       const serviceData = {
-        title: formData.get('name'),
+        // Basic service information
+        name: formData.get('name'),
+        type: formData.get('type'),
+        category: 'service', // This marks it as a service in the assets table
+        location: formData.get('location'), // Business Department
+        owner_id: formData.get('owner_id') ? parseInt(formData.get('owner_id')) : null,
         description: formData.get('description'),
-        category: 'service',
-        probability: parseInt(formData.get('confidentiality')) || 1,
-        impact: parseInt(formData.get('integrity')) || 1,
+        
+        // Business Impact Assessment (stored in extended metadata)
+        confidentiality: formData.get('confidentiality'),
+        integrity: formData.get('integrity'),  
+        availability: formData.get('availability'),
+        
+        // Service Level Requirements
+        criticality: formData.get('criticality'),
+        rto: formData.get('rto'),
+        rpo: formData.get('rpo'),
+        
+        // Calculated risk score
+        service_risk_score: formData.get('service_risk_score'),
+        
+        // Dependencies and links (JSON strings)
+        linked_assets: formData.get('linked_assets') || '[]',
+        linked_risks: formData.get('linked_risks') || '[]',
+        
+        // System fields  
         status: 'active',
         organization_id: 1, // Default org
-        created_by: 1 // Default user
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
-      const service = await createService(c.env.DB, serviceData);
+      // Create service as asset with category='service'
+      const service = await createAsset(c.env.DB, serviceData);
+      
+      // Determine risk level for display
+      const riskScore = parseFloat(serviceData.service_risk_score || '0');
+      let riskLevel, riskColor;
+      if (riskScore >= 3.5) {
+        riskLevel = 'Critical';
+        riskColor = 'text-red-600 bg-red-100';
+      } else if (riskScore >= 2.5) {
+        riskLevel = 'High'; 
+        riskColor = 'text-orange-600 bg-orange-100';
+      } else if (riskScore >= 1.5) {
+        riskLevel = 'Medium';
+        riskColor = 'text-yellow-600 bg-yellow-100';  
+      } else {
+        riskLevel = 'Low';
+        riskColor = 'text-green-600 bg-green-100';
+      }
       
       return c.html(html`
         <div class="fixed inset-0 bg-green-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-md mx-4">
+          <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-lg mx-4">
             <i class="fas fa-check-circle text-green-500 text-5xl mb-4"></i>
             <h3 class="text-xl font-semibold text-gray-900 mb-3">Service Added Successfully!</h3>
             
+            <div class="bg-gray-50 rounded-lg p-4 mb-4 text-left">
+              <div class="text-sm space-y-2">
+                <div><span class="font-medium">Service:</span> ${serviceData.name}</div>
+                <div><span class="font-medium">Category:</span> ${serviceData.type || 'Not specified'}</div>
+                <div><span class="font-medium">Department:</span> ${serviceData.location || 'Not specified'}</div>
+                <div><span class="font-medium">Criticality:</span> ${serviceData.criticality || 'Medium'}</div>
+                <div class="flex items-center">
+                  <span class="font-medium mr-2">Business Impact:</span>
+                  <span class="px-2 py-1 rounded-full text-xs font-medium ${riskColor}">
+                    ${riskLevel} ${riskScore > 0 ? `(${riskScore.toFixed(1)}/4.0)` : ''}
+                  </span>
+                </div>
+                <div><span class="font-medium">CIA Rating:</span> C:${serviceData.confidentiality}, I:${serviceData.integrity}, A:${serviceData.availability}</div>
+                ${serviceData.rto ? `<div><span class="font-medium">RTO:</span> ${serviceData.rto}</div>` : ''}
+                ${serviceData.rpo ? `<div><span class="font-medium">RPO:</span> ${serviceData.rpo}</div>` : ''}
+              </div>
+            </div>
+            
             <p class="text-sm text-gray-600 mb-6">
-              The service has been configured with ARIA5 compliance standards and is now active in the system.
+              The service has been configured with comprehensive business impact assessment and is ready to be linked to assets and risks.
             </p>
             
             <button hx-get="/operations/api/services/close" hx-target="#service-modal" hx-swap="innerHTML"
                     class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium transition-colors">
+              <i class="fas fa-check mr-2"></i>
               Close
             </button>
           </div>
@@ -358,6 +417,7 @@ export function createOperationsRoutes() {
             <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
             <div class="text-sm text-red-700">
               Error adding service. Please check all required fields and try again.
+              <br><small>Error: ${error.message}</small>
             </div>
           </div>
         </div>
@@ -447,6 +507,18 @@ export function createOperationsRoutes() {
   app.get('/api/assets/for-risk', async (c) => {
     const assets = await getAssets(c.env.DB);
     return c.json({ success: true, assets });
+  });
+
+  // Asset linking modal for services
+  app.get('/api/link/assets-to-service', async (c) => {
+    const assets = await getAssets(c.env.DB);
+    return c.html(renderAssetLinkingModal(assets));
+  });
+
+  // Risk linking modal for services
+  app.get('/api/link/risks-to-service', async (c) => {
+    const risks = await getRisks(c.env.DB);
+    return c.html(renderRiskLinkingModal(risks));
   });
 
   return app;
@@ -775,11 +847,12 @@ const renderServiceManagement = () => html`
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-200" hx-get="/operations/api/services" hx-trigger="load">
+              <!-- Loading placeholder -->
               <tr>
                 <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                  <i class="fas fa-sitemap text-gray-300 text-3xl mb-2"></i>
-                  <div>No services found. <a href="#" hx-get="/operations/api/services/new" hx-target="#service-modal" hx-swap="innerHTML" class="text-green-600 hover:text-green-800">Add your first service</a>.</div>
+                  <i class="fas fa-spinner fa-spin text-gray-300 text-2xl mb-2"></i>
+                  <div>Loading services...</div>
                 </td>
               </tr>
             </tbody>
@@ -1000,10 +1073,10 @@ async function getAssets(db: D1Database) {
 
 async function getServices(db: D1Database) {
   try {
-    // For now, get risks that are marked as services
+    // Get services from assets table where category = 'service'
     const result = await db.prepare(`
-      SELECT * FROM risks 
-      WHERE category = 'service' 
+      SELECT * FROM assets 
+      WHERE category = 'service' AND status = 'active'
       ORDER BY created_at DESC
     `).all();
     
@@ -1123,39 +1196,104 @@ function renderServiceRows(services: any[]) {
     `;
   }
   
-  return services.map(service => `
-    <tr>
+  return services.map(service => {
+    // Parse linked assets and risks from JSON
+    const linkedAssets = service.linked_assets ? JSON.parse(service.linked_assets) : [];
+    const linkedRisks = service.linked_risks ? JSON.parse(service.linked_risks) : [];
+    
+    // Calculate CIA display values
+    const confidentiality = service.confidentiality || 1;
+    const integrity = service.integrity || 1; 
+    const availability = service.availability || 1;
+    
+    // Calculate service risk level
+    const serviceRiskScore = parseFloat(service.service_risk_score || '0');
+    let riskLevel, riskColor;
+    if (serviceRiskScore >= 3.5) {
+      riskLevel = 'Critical';
+      riskColor = 'bg-red-100 text-red-800';
+    } else if (serviceRiskScore >= 2.5) {
+      riskLevel = 'High';
+      riskColor = 'bg-orange-100 text-orange-800';
+    } else if (serviceRiskScore >= 1.5) {
+      riskLevel = 'Medium'; 
+      riskColor = 'bg-yellow-100 text-yellow-800';
+    } else {
+      riskLevel = 'Low';
+      riskColor = 'bg-green-100 text-green-800';
+    }
+    
+    return `
+    <tr class="hover:bg-gray-50">
       <td class="px-6 py-4 whitespace-nowrap">
         <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-sitemap text-green-600 text-lg mr-3"></i>
+          </div>
           <div>
-            <div class="text-sm font-medium text-gray-900">${service.title}</div>
-            <div class="text-sm text-gray-500">${service.description || 'No description'}</div>
+            <div class="text-sm font-medium text-gray-900">${service.name}</div>
+            <div class="text-sm text-gray-500">${service.type || 'Service'} • ${service.location || 'Unknown Dept'}</div>
+            ${service.description ? `<div class="text-xs text-gray-400 mt-1">${service.description.substring(0, 80)}${service.description.length > 80 ? '...' : ''}</div>` : ''}
           </div>
         </div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
-        <span class="text-sm text-gray-900">0</span>
-        <div class="text-xs text-gray-500">linked</div>
+        <span class="text-sm font-medium text-gray-900">${linkedAssets.length}</span>
+        <div class="text-xs text-gray-500">assets linked</div>
+        ${linkedRisks.length > 0 ? `<div class="text-xs text-red-600">${linkedRisks.length} risks</div>` : ''}
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
         <div class="text-xs space-y-1">
-          <div>C: <span class="font-medium text-gray-600">${service.probability || 1}</span></div>
-          <div>I: <span class="font-medium text-gray-600">${service.impact || 1}</span></div>
-          <div>A: <span class="font-medium text-gray-600">${(service.probability + service.impact) / 2 || 1}</span></div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+            C: <span class="font-medium text-gray-600 ml-1">${confidentiality}</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+            I: <span class="font-medium text-gray-600 ml-1">${integrity}</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+            A: <span class="font-medium text-gray-600 ml-1">${availability}</span>
+          </div>
         </div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap">
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-          Medium
-        </span>
+        <div class="flex flex-col items-start">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor} mb-1">
+            ${riskLevel}
+          </span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            service.criticality === 'Critical' ? 'bg-red-100 text-red-800' :
+            service.criticality === 'High' ? 'bg-orange-100 text-orange-800' :
+            service.criticality === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+            'bg-green-100 text-green-800'
+          }">
+            ${service.criticality || 'Medium'} Priority
+          </span>
+        </div>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <button class="text-green-600 hover:text-green-900 mr-3">Link Assets</button>
-        <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-        <button class="text-red-600 hover:text-red-900">Delete</button>
+        <div class="flex flex-col space-y-1">
+          <button class="text-purple-600 hover:text-purple-900 text-left" 
+                  hx-get="/operations/api/link/assets-to-service?service_id=${service.id}" 
+                  hx-target="#link-modal" 
+                  hx-swap="innerHTML">
+            <i class="fas fa-link mr-1"></i>Assets
+          </button>
+          <button class="text-red-600 hover:text-red-900 text-left"
+                  hx-get="/operations/api/link/risks-to-service?service_id=${service.id}" 
+                  hx-target="#link-modal" 
+                  hx-swap="innerHTML">
+            <i class="fas fa-shield-alt mr-1"></i>Risks
+          </button>
+          <button class="text-blue-600 hover:text-blue-900 text-left">
+            <i class="fas fa-edit mr-1"></i>Edit
+          </button>
+        </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`
+  }).join('');
 }
 
 function renderDocumentRows() {
@@ -1487,45 +1625,292 @@ const renderServiceModal = () => html`
        hx-target="this" 
        hx-swap="outerHTML"
        _="on click from elsewhere halt the event">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="relative top-5 mx-auto p-6 border w-full max-w-6xl shadow-xl rounded-lg bg-white">
       <div class="mt-3">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-900">Add New Service</h3>
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-sitemap text-green-600 mr-3"></i>
+              Add New Service - ARIA5 Configuration
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">Configure organizational service with comprehensive business impact assessment and asset dependencies</p>
+          </div>
           <button hx-get="/operations/api/services/close" hx-target="#service-modal" hx-swap="innerHTML" 
-                  class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times"></i>
+                  class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+            <i class="fas fa-times text-lg"></i>
           </button>
         </div>
         
         <form hx-post="/operations/api/services" 
               hx-target="#service-modal" 
               hx-swap="innerHTML"
-              hx-indicator="#service-loading">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Service Name</label>
-            <input type="text" name="name" required 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+              hx-indicator="#service-loading"
+              onchange="calculateServiceRisk()">
+          
+          <!-- Service Information Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- Basic Service Information -->
+            <div class="space-y-4">
+              <h4 class="text-lg font-medium text-gray-800 border-b pb-2">
+                <i class="fas fa-info-circle text-green-500 mr-2"></i>
+                Service Information
+              </h4>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-tag mr-1"></i>Service Name *
+                </label>
+                <input type="text" name="name" required 
+                       placeholder="e.g., Customer Portal, Payment Processing, HR System"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-layer-group mr-1"></i>Service Category *
+                </label>
+                <select name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="">Select Service Category</option>
+                  <option value="Business Critical">Business Critical Service</option>
+                  <option value="Customer Facing">Customer Facing Service</option>
+                  <option value="Internal Operations">Internal Operations Service</option>
+                  <option value="Financial">Financial Service</option>
+                  <option value="HR & Admin">HR & Administrative Service</option>
+                  <option value="IT Infrastructure">IT Infrastructure Service</option>
+                  <option value="Security">Security Service</option>
+                  <option value="Compliance">Compliance & Audit Service</option>
+                  <option value="Communication">Communication Service</option>
+                  <option value="Data & Analytics">Data & Analytics Service</option>
+                  <option value="Development">Development & Testing Service</option>
+                  <option value="Backup & Recovery">Backup & Recovery Service</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-building mr-1"></i>Business Department *
+                </label>
+                <select name="location" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="">Select Department</option>
+                  <option value="IT Operations">IT Operations</option>
+                  <option value="Customer Service">Customer Service</option>
+                  <option value="Sales & Marketing">Sales & Marketing</option>
+                  <option value="Finance & Accounting">Finance & Accounting</option>
+                  <option value="Human Resources">Human Resources</option>
+                  <option value="Legal & Compliance">Legal & Compliance</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Research & Development">Research & Development</option>
+                  <option value="Executive Management">Executive Management</option>
+                  <option value="Quality Assurance">Quality Assurance</option>
+                  <option value="Procurement">Procurement</option>
+                  <option value="External/Third Party">External/Third Party</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-users mr-1"></i>Service Owner
+                </label>
+                <select name="owner_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="">Select Owner</option>
+                  <option value="1">Admin User (admin)</option>
+                  <option value="2">Security Manager (avi_security)</option>
+                  <option value="3">Compliance Officer (compliance_user)</option>
+                  <option value="4">Operations Manager (ops_manager)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-align-left mr-1"></i>Service Description
+                </label>
+                <textarea name="description" rows="3" 
+                          placeholder="Describe the service, its purpose, and key functionality"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+              </div>
+            </div>
+            
+            <!-- Business Impact Assessment -->
+            <div class="space-y-4">
+              <h4 class="text-lg font-medium text-gray-800 border-b pb-2">
+                <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+                Business Impact Assessment
+              </h4>
+              
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <h5 class="font-medium text-blue-800 mb-2">
+                  <i class="fas fa-eye-slash mr-1"></i>Confidentiality Impact *
+                </h5>
+                <p class="text-xs text-blue-700 mb-3">Impact if service data is disclosed to unauthorized parties</p>
+                <select name="confidentiality" id="service_confidentiality" required 
+                        class="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Impact Level</option>
+                  <option value="1">1 - Low (Public information, minimal impact)</option>
+                  <option value="2">2 - Medium (Internal data, moderate impact)</option>
+                  <option value="3">3 - High (Sensitive data, significant impact)</option>
+                  <option value="4">4 - Critical (Highly confidential, severe impact)</option>
+                </select>
+              </div>
+              
+              <div class="bg-orange-50 p-4 rounded-lg">
+                <h5 class="font-medium text-orange-800 mb-2">
+                  <i class="fas fa-check-double mr-1"></i>Integrity Impact *
+                </h5>
+                <p class="text-xs text-orange-700 mb-3">Impact if service data is modified or corrupted</p>
+                <select name="integrity" id="service_integrity" required 
+                        class="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <option value="">Select Impact Level</option>
+                  <option value="1">1 - Low (Minor business impact)</option>
+                  <option value="2">2 - Medium (Moderate business disruption)</option>
+                  <option value="3">3 - High (Significant operational impact)</option>
+                  <option value="4">4 - Critical (Severe business/safety impact)</option>
+                </select>
+              </div>
+              
+              <div class="bg-green-50 p-4 rounded-lg">
+                <h5 class="font-medium text-green-800 mb-2">
+                  <i class="fas fa-clock mr-1"></i>Availability Impact *
+                </h5>
+                <p class="text-xs text-green-700 mb-3">Business impact if service becomes unavailable</p>
+                <select name="availability" id="service_availability" required 
+                        class="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="">Select Impact Level</option>
+                  <option value="1">1 - Low (Can be down for days)</option>
+                  <option value="2">2 - Medium (Can be down for hours)</option>
+                  <option value="3">3 - High (Maximum 1 hour downtime)</option>
+                  <option value="4">4 - Critical (Near zero downtime required)</option>
+                </select>
+              </div>
+              
+              <!-- Service Risk Score Display -->
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h5 class="font-medium text-gray-800 mb-2">
+                  <i class="fas fa-calculator mr-1"></i>Service Risk Score
+                </h5>
+                <div id="service-risk-display" class="text-2xl font-bold text-gray-400">
+                  Select CIA ratings to calculate
+                </div>
+                <div class="text-xs text-gray-600 mt-1">
+                  Calculated as: max(C, I, A) + weighted average
+                </div>
+              </div>
+            </div>
+            
+            <!-- Service Level & Dependencies -->
+            <div class="space-y-4">
+              <h4 class="text-lg font-medium text-gray-800 border-b pb-2">
+                <i class="fas fa-cogs text-purple-500 mr-2"></i>
+                Service Level & Dependencies
+              </h4>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-star mr-1"></i>Service Criticality *
+                </label>
+                <select name="criticality" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <option value="">Select Criticality</option>
+                  <option value="Critical">Critical - Mission Essential</option>
+                  <option value="High">High - Business Important</option>
+                  <option value="Medium">Medium - Business Supporting</option>
+                  <option value="Low">Low - Administrative</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-clock mr-1"></i>Recovery Time Objective (RTO)
+                </label>
+                <select name="rto" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <option value="">Select RTO</option>
+                  <option value="< 15 minutes">< 15 minutes (Immediate)</option>
+                  <option value="15-60 minutes">15-60 minutes (Very High)</option>
+                  <option value="1-4 hours">1-4 hours (High)</option>
+                  <option value="4-24 hours">4-24 hours (Medium)</option>
+                  <option value="1-3 days">1-3 days (Low)</option>
+                  <option value="> 3 days">> 3 days (Very Low)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-history mr-1"></i>Recovery Point Objective (RPO)
+                </label>
+                <select name="rpo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                  <option value="">Select RPO</option>
+                  <option value="0 minutes (Synchronous)">0 minutes (Synchronous)</option>
+                  <option value="< 15 minutes">< 15 minutes</option>
+                  <option value="15-60 minutes">15-60 minutes</option>
+                  <option value="1-4 hours">1-4 hours</option>
+                  <option value="4-24 hours">4-24 hours</option>
+                  <option value="> 24 hours">> 24 hours</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-server mr-1"></i>Dependent Assets
+                </label>
+                <div class="bg-gray-50 p-3 rounded-md min-h-[100px]" id="asset-dependencies">
+                  <p class="text-sm text-gray-500 text-center py-4">
+                    <i class="fas fa-link mr-1"></i>
+                    Click "Link Assets" button below to add asset dependencies
+                  </p>
+                </div>
+                <button type="button" 
+                        hx-get="/operations/api/link/assets-to-service" 
+                        hx-target="#link-modal" 
+                        hx-swap="innerHTML"
+                        class="mt-2 w-full px-3 py-2 text-sm border border-purple-300 text-purple-600 hover:bg-purple-50 rounded-md flex items-center justify-center">
+                  <i class="fas fa-link mr-2"></i>
+                  Link Assets to Service
+                </button>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-exclamation-triangle mr-1"></i>Associated Risks
+                </label>
+                <div class="bg-gray-50 p-3 rounded-md min-h-[60px]" id="risk-associations">
+                  <p class="text-sm text-gray-500 text-center py-2">
+                    <i class="fas fa-shield-alt mr-1"></i>
+                    Click "Link Risks" button below to associate risks
+                  </p>
+                </div>
+                <button type="button" 
+                        hx-get="/operations/api/link/risks-to-service" 
+                        hx-target="#link-modal" 
+                        hx-swap="innerHTML"
+                        class="mt-2 w-full px-3 py-2 text-sm border border-red-300 text-red-600 hover:bg-red-50 rounded-md flex items-center justify-center">
+                  <i class="fas fa-shield-alt mr-2"></i>
+                  Link Risks to Service
+                </button>
+              </div>
+            </div>
           </div>
           
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-            <textarea name="description" rows="3" 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
-          </div>
+          <!-- Hidden fields for calculated values -->
+          <input type="hidden" name="category" value="service">
+          <input type="hidden" name="service_risk_score" id="service_risk_value" value="">
+          <input type="hidden" name="linked_assets" id="linked_assets_input" value="">
+          <input type="hidden" name="linked_risks" id="linked_risks_input" value="">
           
-          <div class="flex justify-end space-x-3">
+          <!-- Form Actions -->
+          <div class="flex justify-end space-x-3 pt-4 border-t">
             <button type="button" 
                     hx-get="/operations/api/services/close" 
                     hx-target="#service-modal" 
                     hx-swap="innerHTML"
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">
+                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">
+              <i class="fas fa-times mr-2"></i>
               Cancel
             </button>
             <button type="submit" 
-                    class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md flex items-center">
+                    class="px-6 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md flex items-center">
               <span class="htmx-indicator" id="service-loading">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
               </span>
+              <i class="fas fa-plus mr-2"></i>
               Create Service
             </button>
           </div>
@@ -1533,6 +1918,57 @@ const renderServiceModal = () => html`
       </div>
     </div>
   </div>
+  
+  <!-- Service Risk Calculation Script -->
+  <script>
+    function calculateServiceRisk() {
+      const confidentiality = document.getElementById('service_confidentiality')?.value;
+      const integrity = document.getElementById('service_integrity')?.value;
+      const availability = document.getElementById('service_availability')?.value;
+      
+      if (confidentiality && integrity && availability) {
+        const c = parseFloat(confidentiality);
+        const i = parseFloat(integrity);
+        const a = parseFloat(availability);
+        
+        // Calculate overall service risk score (max + weighted average)
+        const maxScore = Math.max(c, i, a);
+        const avgScore = (c + i + a) / 3;
+        const overallScore = (maxScore * 0.6) + (avgScore * 0.4);
+        
+        // Service risk level determination
+        let riskLevel, riskColor, riskBg;
+        if (overallScore >= 3.5) {
+          riskLevel = 'Critical';
+          riskColor = 'text-red-600';
+          riskBg = 'bg-red-100';
+        } else if (overallScore >= 2.5) {
+          riskLevel = 'High';
+          riskColor = 'text-orange-600';
+          riskBg = 'bg-orange-100';
+        } else if (overallScore >= 1.5) {
+          riskLevel = 'Medium';
+          riskColor = 'text-yellow-600';
+          riskBg = 'bg-yellow-100';
+        } else {
+          riskLevel = 'Low';
+          riskColor = 'text-green-600';
+          riskBg = 'bg-green-100';
+        }
+        
+        document.getElementById('service-risk-display').innerHTML = \`
+          <div class="flex items-center space-x-2">
+            <span class="px-3 py-1 rounded-full text-sm font-medium \${riskBg} \${riskColor}">
+              \${riskLevel}
+            </span>
+            <span class="text-gray-600">(\${overallScore.toFixed(1)}/4.0)</span>
+          </div>
+        \`;
+        
+        document.getElementById('service_risk_value').value = overallScore.toFixed(2);
+      }
+    }
+  </script>
 `;
 
 const renderDocumentUploadModal = () => html`
@@ -1605,4 +2041,313 @@ const renderDocumentUploadModal = () => html`
       </div>
     </div>
   </div>
+`;
+
+// Helper function to get risks from database
+async function getRisks(db: D1Database) {
+  try {
+    const result = await db.prepare(`
+      SELECT * FROM risks 
+      WHERE status = 'active' 
+      ORDER BY created_at DESC
+    `).all();
+    
+    return result.results || [];
+  } catch (error) {
+    console.error('Error fetching risks:', error);
+    return [];
+  }
+}
+
+// Asset Linking Modal for Services
+const renderAssetLinkingModal = (assets: any[]) => html`
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
+       hx-target="this" 
+       hx-swap="outerHTML"
+       _="on click from elsewhere halt the event">
+    <div class="relative top-10 mx-auto p-6 border w-full max-w-4xl shadow-xl rounded-lg bg-white">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-link text-purple-600 mr-3"></i>
+              Link Assets to Service
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">Select assets that this service depends on</p>
+          </div>
+          <button hx-get="/operations/api/link/close" hx-target="#link-modal" hx-swap="innerHTML" 
+                  class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        
+        <div class="mb-6">
+          <input type="text" id="asset-search" placeholder="Search assets..." 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500"
+                 onkeyup="filterAssets()">
+        </div>
+        
+        <div class="max-h-96 overflow-y-auto">
+          ${assets.length > 0 ? 
+            assets.map(asset => html`
+              <div class="asset-item border border-gray-200 rounded-lg p-4 mb-3 hover:bg-gray-50">
+                <div class="flex items-center">
+                  <input type="checkbox" id="asset-${asset.id}" value="${asset.id}" 
+                         class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded mr-3">
+                  <label for="asset-${asset.id}" class="flex-1 cursor-pointer">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <div class="font-medium text-gray-900">${asset.name}</div>
+                        <div class="text-sm text-gray-600">${asset.type || 'Unknown Type'} • ${asset.location || 'No Location'}</div>
+                      </div>
+                      <div class="text-right">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          asset.criticality === 'Critical' ? 'bg-red-100 text-red-800' :
+                          asset.criticality === 'High' ? 'bg-orange-100 text-orange-800' :
+                          asset.criticality === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }">
+                          ${asset.criticality || 'Medium'}
+                        </span>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            `).join('') :
+            `<div class="text-center py-8">
+              <i class="fas fa-server text-gray-300 text-3xl mb-2"></i>
+              <p class="text-gray-500">No assets found</p>
+            </div>`
+          }
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
+          <button type="button" 
+                  hx-get="/operations/api/link/close" 
+                  hx-target="#link-modal" 
+                  hx-swap="innerHTML"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">
+            Cancel
+          </button>
+          <button type="button" 
+                  onclick="linkSelectedAssets()"
+                  class="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md">
+            <i class="fas fa-link mr-2"></i>
+            Link Selected Assets
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function filterAssets() {
+      const search = document.getElementById('asset-search').value.toLowerCase();
+      const items = document.querySelectorAll('.asset-item');
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(search) ? 'block' : 'none';
+      });
+    }
+    
+    function linkSelectedAssets() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+      const selectedAssets = Array.from(checkboxes).map(cb => ({
+        id: cb.value,
+        name: cb.closest('.asset-item').querySelector('.font-medium').textContent
+      }));
+      
+      // Update the service form with selected assets
+      const assetsContainer = document.getElementById('asset-dependencies');
+      if (selectedAssets.length > 0) {
+        assetsContainer.innerHTML = selectedAssets.map(asset => 
+          '<div class="flex items-center justify-between bg-purple-50 p-2 rounded mb-1">' +
+            '<span class="text-sm"><i class="fas fa-server mr-2 text-purple-600"></i>' + asset.name + '</span>' +
+            '<button type="button" onclick="removeAsset(' + asset.id + ')" class="text-red-600 hover:text-red-800">' +
+              '<i class="fas fa-times text-xs"></i>' +
+            '</button>' +
+           '</div>'
+        ).join('');
+      } else {
+        assetsContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">No assets selected</p>';
+      }
+      
+      // Update hidden input
+      document.getElementById('linked_assets_input').value = JSON.stringify(selectedAssets);
+      
+      // Close modal
+      document.getElementById('link-modal').innerHTML = '';
+    }
+    
+    function removeAsset(assetId) {
+      // Remove from UI and update hidden input
+      const current = JSON.parse(document.getElementById('linked_assets_input').value || '[]');
+      const updated = current.filter(asset => asset.id != assetId);
+      document.getElementById('linked_assets_input').value = JSON.stringify(updated);
+      
+      // Refresh display
+      const assetsContainer = document.getElementById('asset-dependencies');
+      if (updated.length > 0) {
+        assetsContainer.innerHTML = updated.map(asset => 
+          '<div class="flex items-center justify-between bg-purple-50 p-2 rounded mb-1">' +
+            '<span class="text-sm"><i class="fas fa-server mr-2 text-purple-600"></i>' + asset.name + '</span>' +
+            '<button type="button" onclick="removeAsset(' + asset.id + ')" class="text-red-600 hover:text-red-800">' +
+              '<i class="fas fa-times text-xs"></i>' +
+            '</button>' +
+           '</div>'
+        ).join('');
+      } else {
+        assetsContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">No assets selected</p>';
+      }
+    }
+  </script>
+`;
+
+// Risk Linking Modal for Services  
+const renderRiskLinkingModal = (risks: any[]) => html`
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
+       hx-target="this" 
+       hx-swap="outerHTML"
+       _="on click from elsewhere halt the event">
+    <div class="relative top-10 mx-auto p-6 border w-full max-w-4xl shadow-xl rounded-lg bg-white">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-shield-alt text-red-600 mr-3"></i>
+              Link Risks to Service
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">Select risks that are associated with this service</p>
+          </div>
+          <button hx-get="/operations/api/link/close" hx-target="#link-modal" hx-swap="innerHTML" 
+                  class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        
+        <div class="mb-6">
+          <input type="text" id="risk-search" placeholder="Search risks..." 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500"
+                 onkeyup="filterRisks()">
+        </div>
+        
+        <div class="max-h-96 overflow-y-auto">
+          ${risks.length > 0 ? 
+            risks.map(risk => html`
+              <div class="risk-item border border-gray-200 rounded-lg p-4 mb-3 hover:bg-gray-50">
+                <div class="flex items-center">
+                  <input type="checkbox" id="risk-${risk.id}" value="${risk.id}" 
+                         class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded mr-3">
+                  <label for="risk-${risk.id}" class="flex-1 cursor-pointer">
+                    <div class="flex items-center justify-between">
+                      <div class="flex-1 mr-4">
+                        <div class="font-medium text-gray-900">${risk.title}</div>
+                        <div class="text-sm text-gray-600">${risk.category || 'Unknown Category'}</div>
+                        ${risk.description ? `<div class="text-xs text-gray-500 mt-1">${risk.description.substring(0, 100)}...</div>` : ''}
+                      </div>
+                      <div class="text-right">
+                        <div class="flex items-center space-x-2">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            risk.risk_score >= 20 ? 'bg-red-100 text-red-800' :
+                            risk.risk_score >= 12 ? 'bg-orange-100 text-orange-800' :
+                            risk.risk_score >= 6 ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }">
+                            Score: ${risk.risk_score || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            `).join('') :
+            `<div class="text-center py-8">
+              <i class="fas fa-shield-alt text-gray-300 text-3xl mb-2"></i>
+              <p class="text-gray-500">No risks found</p>
+            </div>`
+          }
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
+          <button type="button" 
+                  hx-get="/operations/api/link/close" 
+                  hx-target="#link-modal" 
+                  hx-swap="innerHTML"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">
+            Cancel
+          </button>
+          <button type="button" 
+                  onclick="linkSelectedRisks()"
+                  class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">
+            <i class="fas fa-shield-alt mr-2"></i>
+            Link Selected Risks
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function filterRisks() {
+      const search = document.getElementById('risk-search').value.toLowerCase();
+      const items = document.querySelectorAll('.risk-item');
+      items.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(search) ? 'block' : 'none';
+      });
+    }
+    
+    function linkSelectedRisks() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+      const selectedRisks = Array.from(checkboxes).map(cb => ({
+        id: cb.value,
+        title: cb.closest('.risk-item').querySelector('.font-medium').textContent
+      }));
+      
+      // Update the service form with selected risks
+      const risksContainer = document.getElementById('risk-associations');
+      if (selectedRisks.length > 0) {
+        risksContainer.innerHTML = selectedRisks.map(risk => 
+          '<div class="flex items-center justify-between bg-red-50 p-2 rounded mb-1">' +
+            '<span class="text-sm"><i class="fas fa-shield-alt mr-2 text-red-600"></i>' + risk.title + '</span>' +
+            '<button type="button" onclick="removeRisk(' + risk.id + ')" class="text-red-600 hover:text-red-800">' +
+              '<i class="fas fa-times text-xs"></i>' +
+            '</button>' +
+           '</div>'
+        ).join('');
+      } else {
+        risksContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-2">No risks selected</p>';
+      }
+      
+      // Update hidden input
+      document.getElementById('linked_risks_input').value = JSON.stringify(selectedRisks);
+      
+      // Close modal
+      document.getElementById('link-modal').innerHTML = '';
+    }
+    
+    function removeRisk(riskId) {
+      // Remove from UI and update hidden input
+      const current = JSON.parse(document.getElementById('linked_risks_input').value || '[]');
+      const updated = current.filter(risk => risk.id != riskId);
+      document.getElementById('linked_risks_input').value = JSON.stringify(updated);
+      
+      // Refresh display
+      const risksContainer = document.getElementById('risk-associations');
+      if (updated.length > 0) {
+        risksContainer.innerHTML = updated.map(risk => 
+          '<div class="flex items-center justify-between bg-red-50 p-2 rounded mb-1">' +
+            '<span class="text-sm"><i class="fas fa-shield-alt mr-2 text-red-600"></i>' + risk.title + '</span>' +
+            '<button type="button" onclick="removeRisk(' + risk.id + ')" class="text-red-600 hover:text-red-800">' +
+              '<i class="fas fa-times text-xs"></i>' +
+            '</button>' +
+           '</div>'
+        ).join('');
+      } else {
+        risksContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-2">No risks selected</p>';
+      }
+    }
+  </script>
 `;
