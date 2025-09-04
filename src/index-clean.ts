@@ -12,7 +12,7 @@ import { createAuthRoutes } from './routes/auth-routes';
 import { createCleanDashboardRoutes } from './routes/dashboard-routes-clean';
 import { createRiskRoutesARIA5 } from './routes/risk-routes-aria5';
 import { createComplianceRoutes } from './routes/compliance-routes';
-import { createOperationsVisionRoutes } from './routes/operations-routes-vision';
+import { createOperationsRoutes } from './routes/operations-fixed';
 import { createIntelligenceRoutes } from './routes/intelligence-routes';
 import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createAPIRoutes } from './routes/api-routes';
@@ -310,7 +310,7 @@ const authRoutes = createAuthRoutes();
 const dashboardRoutes = createCleanDashboardRoutes();
 const riskRoutes = createRiskRoutesARIA5();
 const complianceRoutes = createComplianceRoutes();
-const operationsRoutes = createOperationsVisionRoutes();
+const operationsRoutes = createOperationsRoutes();
 const intelligenceRoutes = createIntelligenceRoutes();
 const adminRoutes = createAdminRoutesARIA5();
 const apiRoutes = createAPIRoutes();
@@ -321,6 +321,15 @@ app.route('/dashboard', dashboardRoutes);
 app.route('/risk', riskRoutes);
 app.route('/compliance', complianceRoutes);
 app.route('/operations', operationsRoutes);
+
+// Direct asset and document routes
+app.get('/assets', async (c) => {
+  return c.redirect('/operations/assets');
+});
+
+app.get('/documents', async (c) => {
+  return c.redirect('/operations/documents');
+});
 app.route('/intelligence', intelligenceRoutes);
 app.route('/admin', adminRoutes);
 app.route('/api', apiRoutes);
