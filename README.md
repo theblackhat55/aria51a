@@ -70,7 +70,9 @@ All form submissions now properly save to the D1 database and dashboard displays
 - **Multiple hunt results** with findings and statistics
 
 ## 🔗 Production URLs
-- **🚀 Latest Development**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev ✅ **DATABASE INTEGRATION COMPLETE**
+- **🚀 Latest Production**: https://37c99877.aria51-htmx.pages.dev ✅ **DATABASE INTEGRATION COMPLETE - LIVE**
+- **🚀 Alternative URL**: https://aria5-1.aria51-htmx.pages.dev ✅ **DATABASE INTEGRATION COMPLETE - LIVE**
+- **🚀 Development**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev ✅ **DATABASE INTEGRATION COMPLETE**
 - **🚀 Previous Production**: https://abfbf1ed.aria51-htmx.pages.dev ✅ **PHASE 1-4 COMPLETE**
 - **GitHub Repository**: https://github.com/username/ARIA5-Ubuntu (Enterprise Edition)
 
@@ -121,9 +123,12 @@ All modules now properly save form data to D1 database:
 
 ## 🚀 Deployment Status
 
-### ✅ **Development Environment - Verified Working**
-- **Local URL**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
+### ✅ **Production Environment - Verified Working**
+- **Production URL**: https://37c99877.aria51-htmx.pages.dev
+- **Alternative URL**: https://aria5-1.aria51-htmx.pages.dev
 - **Status**: ✅ **LIVE - DATABASE INTEGRATION COMPLETE**
+- **Platform**: Cloudflare Workers + Pages
+- **Database**: Cloudflare D1 SQLite with complete schema
 - **Build**: ✅ **Successful** (`npm run build`)
 - **Server**: ✅ **Running** (PM2 with ecosystem.config.cjs)
 - **Database**: ✅ **Connected** (Local D1 with migrations applied)
@@ -140,7 +145,7 @@ All modules now properly save form data to D1 database:
 ## 🛠️ User Guide
 
 ### **Getting Started**
-1. **Access Platform**: Visit https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
+1. **Access Platform**: Visit https://37c99877.aria51-htmx.pages.dev (Production) or https://aria5-1.aria51-htmx.pages.dev (Alternative)
 2. **Authentication**: 
    - Username: `admin` / Password: `demo123`
 3. **Test Database Integration**:
