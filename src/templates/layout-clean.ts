@@ -350,6 +350,14 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Policies, procedures & documents</div>
                   </div>
                 </a>
+                <div class="border-t border-gray-200 my-2"></div>
+                <a href="/admin" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-cog w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Admin Settings</div>
+                    <div class="text-xs text-gray-500">System configuration & management</div>
+                  </div>
+                </a>
               </div>
             </div>
           </div>

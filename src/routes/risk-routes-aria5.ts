@@ -334,6 +334,195 @@ export function createRiskRoutesARIA5() {
     }
   });
 
+  // Risk Assessments page route - Missing route that was causing 404
+  app.get('/assessments', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'Risk Assessments',
+        user,
+        content: html`
+          <div class="min-h-screen bg-gray-50 py-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <!-- Header -->
+              <div class="mb-8">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Risk Assessments</h1>
+                    <p class="text-gray-600 mt-2">Comprehensive risk assessment and analysis tools</p>
+                  </div>
+                  <div class="flex space-x-3">
+                    <button hx-get="/risk/create" 
+                            hx-target="#modal-container" 
+                            hx-swap="innerHTML"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                      <i class="fas fa-plus mr-2"></i>
+                      New Assessment
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Assessment Categories -->
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+                  <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-shield-alt text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="text-lg font-semibold text-gray-900">Cybersecurity</h3>
+                      <p class="text-sm text-gray-600">Security-related risks</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-2xl font-bold text-red-600" id="cyber-count">0</span>
+                    <p class="text-xs text-gray-500">Active Risks</p>
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+                  <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-cogs text-blue-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="text-lg font-semibold text-gray-900">Operational</h3>
+                      <p class="text-sm text-gray-600">Business operations</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-2xl font-bold text-blue-600" id="operational-count">0</span>
+                    <p class="text-xs text-gray-500">Active Risks</p>
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+                  <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-balance-scale text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="text-lg font-semibold text-gray-900">Compliance</h3>
+                      <p class="text-sm text-gray-600">Regulatory compliance</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-2xl font-bold text-green-600" id="compliance-count">0</span>
+                    <p class="text-xs text-gray-500">Active Risks</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Risk Assessment Matrix -->
+              <div class="bg-white rounded-lg shadow mb-8">
+                <div class="px-6 py-4 border-b border-gray-200">
+                  <h3 class="text-lg font-medium text-gray-900">Risk Assessment Matrix</h3>
+                </div>
+                <div class="p-6">
+                  <div class="overflow-x-auto">
+                    <table class="w-full">
+                      <thead>
+                        <tr class="border-b">
+                          <th class="text-left py-2 px-3 text-sm font-medium text-gray-700">Impact →<br>Likelihood ↓</th>
+                          <th class="text-center py-2 px-3 text-sm font-medium text-gray-700 bg-green-50">Very Low<br>(1)</th>
+                          <th class="text-center py-2 px-3 text-sm font-medium text-gray-700 bg-yellow-50">Low<br>(2)</th>
+                          <th class="text-center py-2 px-3 text-sm font-medium text-gray-700 bg-orange-50">Medium<br>(3)</th>
+                          <th class="text-center py-2 px-3 text-sm font-medium text-gray-700 bg-red-50">High<br>(4)</th>
+                          <th class="text-center py-2 px-3 text-sm font-medium text-gray-700 bg-red-100">Very High<br>(5)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="border-b">
+                          <td class="py-2 px-3 text-sm font-medium text-gray-700 bg-red-100">Very High (5)</td>
+                          <td class="py-2 px-3 text-center text-sm bg-yellow-100">5</td>
+                          <td class="py-2 px-3 text-center text-sm bg-orange-100">10</td>
+                          <td class="py-2 px-3 text-center text-sm bg-red-100">15</td>
+                          <td class="py-2 px-3 text-center text-sm bg-red-200">20</td>
+                          <td class="py-2 px-3 text-center text-sm bg-red-300">25</td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="py-2 px-3 text-sm font-medium text-gray-700 bg-red-50">High (4)</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">4</td>
+                          <td class="py-2 px-3 text-center text-sm bg-yellow-100">8</td>
+                          <td class="py-2 px-3 text-center text-sm bg-orange-100">12</td>
+                          <td class="py-2 px-3 text-center text-sm bg-red-100">16</td>
+                          <td class="py-2 px-3 text-center text-sm bg-red-200">20</td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="py-2 px-3 text-sm font-medium text-gray-700 bg-orange-50">Medium (3)</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">3</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">6</td>
+                          <td class="py-2 px-3 text-center text-sm bg-yellow-100">9</td>
+                          <td class="py-2 px-3 text-center text-sm bg-orange-100">12</td>
+                          <td class="py-2 px-3 text-center text-sm bg-red-100">15</td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="py-2 px-3 text-sm font-medium text-gray-700 bg-yellow-50">Low (2)</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">2</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">4</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">6</td>
+                          <td class="py-2 px-3 text-center text-sm bg-yellow-100">8</td>
+                          <td class="py-2 px-3 text-center text-sm bg-orange-100">10</td>
+                        </tr>
+                        <tr>
+                          <td class="py-2 px-3 text-sm font-medium text-gray-700 bg-green-50">Very Low (1)</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">1</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">2</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">3</td>
+                          <td class="py-2 px-3 text-center text-sm bg-green-100">4</td>
+                          <td class="py-2 px-3 text-center text-sm bg-yellow-100">5</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="mt-4 flex items-center space-x-6 text-sm">
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 bg-green-100 rounded mr-2"></div>
+                      <span>Low Risk (1-6)</span>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 bg-yellow-100 rounded mr-2"></div>
+                      <span>Medium Risk (8-10)</span>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 bg-orange-100 rounded mr-2"></div>
+                      <span>High Risk (12-15)</span>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 bg-red-100 rounded mr-2"></div>
+                      <span>Critical Risk (16-25)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recent Assessments -->
+              <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                  <h3 class="text-lg font-medium text-gray-900">Recent Risk Assessments</h3>
+                  <a href="/risk" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All →</a>
+                </div>
+                
+                <div id="recent-assessments"
+                     hx-get="/risk/table"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                  <!-- Loading placeholder -->
+                  <div class="p-8 text-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p class="text-gray-600 mt-2">Loading recent assessments...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      })
+    );
+  });
+
   return app;
 }
 

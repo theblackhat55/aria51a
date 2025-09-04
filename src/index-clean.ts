@@ -330,6 +330,11 @@ app.get('/assets', async (c) => {
 app.get('/documents', async (c) => {
   return c.redirect('/operations/documents');
 });
+
+// Reports route - redirect to intelligence reports
+app.get('/reports', async (c) => {
+  return c.redirect('/intelligence/reports');
+});
 app.route('/intelligence', intelligenceRoutes);
 app.route('/admin', adminRoutes);
 app.route('/api', apiRoutes);
