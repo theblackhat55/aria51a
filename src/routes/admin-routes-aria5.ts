@@ -3,7 +3,7 @@ import { html } from 'hono/html';
 import { requireAuth, requireAdmin } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import type { CloudflareBindings } from '../types';
-import { generateCSRFToken, setCSRFToken, verifyCSRFToken } from '../lib/security.js';
+import { setCSRFToken } from '../middleware/auth-middleware';
 
 export function createAdminRoutesARIA5() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();

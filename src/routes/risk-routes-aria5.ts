@@ -3,7 +3,7 @@ import { html, raw } from 'hono/html';
 import { requireAuth } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import { createAIService } from '../services/ai-providers';
-import { setCSRFToken } from '../middleware/auth-middleware';
+import { setCSRFToken, authMiddleware } from '../middleware/auth-middleware';
 import type { CloudflareBindings } from '../types';
 
 export function createRiskRoutesARIA5() {
@@ -339,7 +339,7 @@ export function createRiskRoutesARIA5() {
 
 
   // Create risk modal (with CSRF protection)
-  app.get('/create', async (c) => {
+  app.get('/create', authMiddleware, async (c) => {
     const csrfToken = setCSRFToken(c);
     return c.html(renderCreateRiskModal(csrfToken));
   });
@@ -511,7 +511,7 @@ Be practical and actionable in your analysis.`;
   });
 
   // Create risk submission - CONSOLIDATED SINGLE ROUTE
-  app.post('/create', async (c) => {
+  app.post('/create', authMiddleware, async (c) => {
     try {
       // Parse form data with robust error handling
       const formData = await c.req.parseBody();
