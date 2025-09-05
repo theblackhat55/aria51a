@@ -158,11 +158,19 @@ export function createAuthRoutes() {
             WHERE id = ?
           `).bind(failedAttempts, user.id).run();
 
-          // Log failed attempt
-          await c.env.DB.prepare(`
-            INSERT INTO audit_logs (user_id, action, resource_type, ip_address, user_agent, timestamp)
-            VALUES (?, 'failed_login', 'authentication', ?, ?, datetime('now'))
-          `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
+          // Log failed attempt (compatible with both local and production schemas)
+          try {
+            await c.env.DB.prepare(`
+              INSERT INTO audit_logs (user_id, action, resource_type, ip_address, user_agent, timestamp)
+              VALUES (?, 'failed_login', 'authentication', ?, ?, datetime('now'))
+            `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
+          } catch (error) {
+            // Fallback for local development schema
+            await c.env.DB.prepare(`
+              INSERT INTO audit_logs (user_id, action, entity_type, ip_address, user_agent, created_at)
+              VALUES (?, 'failed_login', 'authentication', ?, ?, datetime('now'))
+            `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
+          }
 
           return c.html(html`
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
@@ -185,11 +193,19 @@ export function createAuthRoutes() {
           WHERE id = ?
         `).bind(user.id).run();
 
-        // Log successful login
-        await c.env.DB.prepare(`
-          INSERT INTO audit_logs (user_id, action, resource_type, ip_address, user_agent, timestamp)
-          VALUES (?, 'successful_login', 'authentication', ?, ?, datetime('now'))
-        `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
+        // Log successful login (compatible with both local and production schemas)
+        try {
+          await c.env.DB.prepare(`
+            INSERT INTO audit_logs (user_id, action, resource_type, ip_address, user_agent, timestamp)
+            VALUES (?, 'successful_login', 'authentication', ?, ?, datetime('now'))
+          `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
+        } catch (error) {
+          // Fallback for local development schema
+          await c.env.DB.prepare(`
+            INSERT INTO audit_logs (user_id, action, entity_type, ip_address, user_agent, created_at)
+            VALUES (?, 'successful_login', 'authentication', ?, ?, datetime('now'))
+          `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
+        }
 
       } catch (error) {
         console.error('Authentication error:', error);
@@ -228,19 +244,34 @@ export function createAuthRoutes() {
       // Create secure JWT
       const jwt = await generateJWT(tokenData, getJWTSecret(c.env));
       
-      // Create session record
+      // Create session record (compatible with both local and production schemas)
       const sessionId = crypto.randomUUID();
-      await c.env.DB.prepare(`
-        INSERT INTO user_sessions (session_token, user_id, session_data, csrf_token, ip_address, user_agent, expires_at)
-        VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+24 hours'))
-      `).bind(
-        sessionId, 
-        user.id, 
-        JSON.stringify(tokenData), 
-        csrfToken, 
-        clientIP, 
-        c.req.header('User-Agent') || ''
-      ).run();
+      try {
+        await c.env.DB.prepare(`
+          INSERT INTO user_sessions (session_token, user_id, session_data, csrf_token, ip_address, user_agent, expires_at)
+          VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+24 hours'))
+        `).bind(
+          sessionId, 
+          user.id, 
+          JSON.stringify(tokenData), 
+          csrfToken, 
+          clientIP, 
+          c.req.header('User-Agent') || ''
+        ).run();
+      } catch (error) {
+        // Fallback for local development schema
+        await c.env.DB.prepare(`
+          INSERT INTO user_sessions (id, user_id, session_data, csrf_token, ip_address, user_agent, expires_at, is_active)
+          VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+24 hours'), 1)
+        `).bind(
+          sessionId, 
+          user.id, 
+          JSON.stringify(tokenData), 
+          csrfToken, 
+          clientIP, 
+          c.req.header('User-Agent') || ''
+        ).run();
+      }
       
       // Set secure cookies
       const isProduction = c.req.url.includes('.pages.dev') || c.req.url.includes('https://');
@@ -332,10 +363,10 @@ export function createAuthRoutes() {
     }
     
     try {
-      const decoded = JSON.parse(atob(token));
-      console.log('Auth check - Token decoded, user:', decoded.username);
+      const decoded = await verifyJWT(token, getJWTSecret(c.env));
+      console.log('Auth check - JWT verified, user:', decoded.username);
       
-      if (decoded.expires < Date.now()) {
+      if (decoded.exp && decoded.exp * 1000 < Date.now()) {
         return c.json({ 
           authenticated: false, 
           debug: 'Token expired',
@@ -443,12 +474,12 @@ export const requireAuth = async (c: any, next: any) => {
   }
   
   try {
-    // Verify base64 token (compatible with Cloudflare Workers)
-    const decoded = JSON.parse(atob(token));
-    console.log('Auth middleware - Token decoded successfully, user:', decoded.username);
+    // Verify JWT token
+    const decoded = await verifyJWT(token, getJWTSecret(c.env));
+    console.log('Auth middleware - JWT verified successfully, user:', decoded.username);
     
-    // Check if token is expired
-    if (Date.now() > decoded.expires) {
+    // Check if token is expired (JWT exp is in seconds, Date.now() is in milliseconds)
+    if (decoded.exp && decoded.exp * 1000 < Date.now()) {
       console.log('Auth middleware - Token expired, redirecting to login');
       deleteCookie(c, 'aria_token', { path: '/' });
       
