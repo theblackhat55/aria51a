@@ -1135,7 +1135,7 @@ const renderARIA5RiskManagement = () => html`
             <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
               <i class="fas fa-download mr-2"></i>Export  
             </button>
-            <button hx-get="/risk/add"
+            <button hx-get="/risk/create"
                     hx-target="#modal-container"
                     hx-swap="innerHTML"
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
@@ -1321,7 +1321,7 @@ const renderRiskTable = (risks: any[]) => {
             <tr>
               <td colspan="10" class="px-6 py-8 text-center text-gray-500">
                 <i class="fas fa-exclamation-triangle text-gray-300 text-3xl mb-2"></i>
-                <div>No risks found. <a href="#" hx-get="/risk/add" hx-target="#modal-container" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Create your first risk</a>.</div>
+                <div>No risks found. <a href="#" hx-get="/risk/create" hx-target="#modal-container" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Create your first risk</a>.</div>
               </td>
             </tr>
           </tbody>
