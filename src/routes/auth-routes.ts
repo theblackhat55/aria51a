@@ -160,7 +160,7 @@ export function createAuthRoutes() {
 
           // Log failed attempt
           await c.env.DB.prepare(`
-            INSERT INTO audit_logs (user_id, action, entity_type, ip_address, user_agent, created_at)
+            INSERT INTO audit_logs (user_id, action, resource_type, ip_address, user_agent, timestamp)
             VALUES (?, 'failed_login', 'authentication', ?, ?, datetime('now'))
           `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
 
@@ -187,7 +187,7 @@ export function createAuthRoutes() {
 
         // Log successful login
         await c.env.DB.prepare(`
-          INSERT INTO audit_logs (user_id, action, entity_type, ip_address, user_agent, created_at)
+          INSERT INTO audit_logs (user_id, action, resource_type, ip_address, user_agent, timestamp)
           VALUES (?, 'successful_login', 'authentication', ?, ?, datetime('now'))
         `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
 
@@ -200,7 +200,7 @@ export function createAuthRoutes() {
                 <i class="fas fa-exclamation-circle text-red-500"></i>
               </div>
               <div class="ml-3">
-                <p class="text-sm text-red-700">Authentication service temporarily unavailable</p>
+                <p class="text-sm text-red-700">An error occurred during authentication. Please try again.</p>
               </div>
             </div>
           </div>
@@ -231,7 +231,7 @@ export function createAuthRoutes() {
       // Create session record
       const sessionId = crypto.randomUUID();
       await c.env.DB.prepare(`
-        INSERT INTO user_sessions (id, user_id, session_data, csrf_token, ip_address, user_agent, expires_at)
+        INSERT INTO user_sessions (session_token, user_id, session_data, csrf_token, ip_address, user_agent, expires_at)
         VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+24 hours'))
       `).bind(
         sessionId, 
@@ -307,7 +307,7 @@ export function createAuthRoutes() {
       
     } catch (error) {
       console.error('Login error:', error);
-      return c.html(renderError('An error occurred during login'), 500);
+      return c.html(renderError(`Login success error: ${error.message || error.toString()}`), 500);
     }
   });
   
