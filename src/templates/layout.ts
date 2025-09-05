@@ -424,6 +424,21 @@ const renderNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Monitor risk metrics</div>
                   </div>
                 </a>
+                <hr class="my-2 border-gray-200">
+                <a href="/risk/enhanced-dashboard" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-700 transition-colors">
+                  <i class="fas fa-project-diagram w-5 text-indigo-600 mr-3"></i>
+                  <div>
+                    <div class="font-medium text-indigo-700">Enhanced Risk Framework</div>
+                    <div class="text-xs text-indigo-500">Threat sources → Assets flow</div>
+                  </div>
+                </a>
+                <a href="/risk/enhanced-wizard" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-700 transition-colors">
+                  <i class="fas fa-magic w-5 text-purple-600 mr-3"></i>
+                  <div>
+                    <div class="font-medium text-purple-700">Risk Assessment Wizard</div>
+                    <div class="text-xs text-purple-500">Comprehensive risk analysis</div>
+                  </div>
+                </a>
                 <a href="/incidents" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors">
                   <i class="fas fa-fire w-5 text-red-500 mr-3"></i>
                   <div>
