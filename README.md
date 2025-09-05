@@ -125,6 +125,7 @@
 - **Security Events**: Failed authentication, rate limiting, account lockouts
 
 ## 🔗 Production URLs
+- **🚀 LATEST ENHANCED CHATBOT**: https://267698fb.aria51-htmx.pages.dev ✅ **ENHANCED ARIA5.1 CHATBOT DEPLOYED**
 - **🚀 ENHANCED PLATFORM**: https://e00f0338.aria51-htmx.pages.dev ✅ **COMPLETE RISK MANAGEMENT FRAMEWORK**
 - **🚀 PRIMARY PRODUCTION**: https://2ed2f708.aria51-htmx.pages.dev ✅ **COMPLETE RAG + FLOATING AI ASSISTANT**
 - **🚀 SECURITY-HARDENED PRODUCTION**: https://aria51-htmx.pages.dev ✅ **ENTERPRISE SECURITY DEPLOYED**
@@ -180,27 +181,61 @@ API key management system deployed with secure features:
    - **Session Management**: Multiple logins tracked with IP addresses
    - **Role-Based Access**: Admin-only sections properly protected
 
-### **🤖 Floating ARIA Chatbot Experience**
-**Testing the AI-Powered Assistant:**
-1. **Access Floating Chatbot**: 
-   - Click the blue robot icon in bottom-right corner of any page
-   - Chat window opens with welcome message and quick actions
-2. **Quick Actions Available**:
-   - **Password Policy**: "What are the password requirements?"
-   - **Create Risk**: "How do I create a new risk?"
-   - **ISO 27001**: "What ISO 27001 controls do we need?"
-   - **Incidents**: "How does incident response work?"
-3. **Natural Language Questions**:
-   - Type questions about policies, procedures, or platform usage
-   - Example: "How do I upload evidence for compliance?"
-   - ARIA responds using uploaded documentation and policies
-4. **Real-time AI Responses**:
-   - Contextual answers using RAG system with 61,000+ characters of documentation
-   - Platform navigation guidance and risk management workflows
-   - Policy explanations and compliance requirements
-5. **Always Available**:
-   - Floating chatbot visible on every authenticated page
-   - Instant access without navigation to separate AI assistant page
+### **🤖 Enhanced ARIA5.1 Chatbot Experience - DRAMATICALLY IMPROVED**
+**🎉 NEW ENHANCED CHATBOT FEATURES (September 5, 2025):**
+
+#### **🌟 Advanced UI/UX Design**
+- ✨ **Modern Gradient Widget**: Beautiful blue gradient button with pulse animations
+- 🔔 **Smart Notifications**: Red notification badge with unread message count  
+- 💫 **Smooth Animations**: Professional slide-in/slide-out panel transitions
+- 🎨 **Enhanced Styling**: Rounded corners, shadows, and gradient backgrounds
+
+#### **🧠 Context-Aware Intelligence**
+- 💾 **Conversation History**: Local storage saves last 50 conversations automatically
+- 🎯 **Context Tracking**: Smart context detection (risk_management, compliance, security, general)
+- 📝 **Message Formatting**: Enhanced text with risk level highlighting (HIGH, MEDIUM, LOW)
+- ⏰ **Timestamps**: Professional message bubbles with time indicators
+
+#### **⚡ Quick Action Buttons**  
+- 🔴 **Risk Analysis**: "Analyze my current risk landscape"
+- 🟢 **Compliance**: "Check our compliance status"
+- 🔵 **Controls**: "Recommend security controls"
+- 🟣 **New Risk**: "Help me create a new risk assessment"
+
+#### **🎯 Advanced Input Features**
+- 📏 **Character Counter**: Real-time counter (0/500) with color coding
+- 📐 **Auto-Resize Textarea**: Intelligent height adjustment up to 120px
+- ⌨️ **Keyboard Shortcuts**: Enter to send, Shift+Enter for new line
+- 🎤 **Voice Input Support**: Web Speech API integration (browser dependent)
+- 🔄 **Smart Send Button**: Dynamic enable/disable based on input content
+
+#### **💬 Enhanced Message Experience**
+- 👤 **Professional User Messages**: Blue gradient bubbles with timestamps
+- 🤖 **AI Assistant Messages**: White bubbles with blue robot icon and confidence indicators
+- ⚡ **Typing Indicator**: Animated dots showing "ARIA is typing..."
+- 🔗 **Link Detection**: Automatic URL conversion to clickable links
+- 🎨 **Risk Highlighting**: Color-coded HIGH (red), MEDIUM (yellow), LOW (green) badges
+
+#### **🚀 Advanced Features**
+- 🗑️ **Clear Chat**: Confirmation dialog to clear conversation history
+- ➖ **Minimize Function**: Minimize to notification for space saving
+- 📱 **Responsive Design**: Works perfectly on desktop, tablet, and mobile
+- 🔔 **Activity Monitor**: Notification reminders after 5 minutes inactivity
+- 💾 **Persistent Storage**: Conversation history survives browser restarts
+
+**🎯 Experience the Enhanced Chatbot:**
+1. **Visit**: https://267698fb.aria51-htmx.pages.dev (Latest Enhanced Version)
+2. **Login**: Use admin/demo123 or demo buttons  
+3. **Find the Chatbot**: Look for the gradient blue robot button (bottom-right)
+4. **Click to Open**: Enjoy the beautiful new interface with animations
+5. **Try Quick Actions**: Click the colored action buttons for instant prompts
+6. **Type Messages**: Experience auto-resize, character counter, and enhanced formatting
+7. **Voice Input**: Try the microphone button (if supported by browser)
+8. **Minimize/Restore**: Test the minimize function with notifications
+
+**🚀 Comparison: Old vs Enhanced**
+- **Old**: Basic chat interface, simple messages, no history
+- **New**: Professional gradient UI, context awareness, conversation memory, quick actions, typing indicators, voice support, character counter, enhanced formatting, smooth animations, and much more!
 
 ### **Complete AI-Enhanced Platform Features**
 - **Floating AI Assistant**: Bottom-right positioned chatbot on every page with quick actions
