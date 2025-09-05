@@ -57,13 +57,32 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
     
     /* Modal positioning and overlay fixes */
     #modal-container {
-      position: relative;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       z-index: 9999;
+      pointer-events: none; /* Allow clicks through empty space */
+    }
+    
+    #modal-container > * {
+      pointer-events: auto; /* Re-enable clicks on modal content */
     }
     
     #modal-container .fixed {
       position: fixed !important;
       z-index: 9999 !important;
+    }
+    
+    /* Hide empty modal container */
+    #modal-container:empty {
+      display: none;
+    }
+    
+    /* Show modal container when it has content */
+    #modal-container:not(:empty) {
+      display: block;
     }
     
     /* Prevent body scroll when modal is open */
@@ -252,16 +271,38 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         }
       });
       
-      // Re-initialize dropdowns after HTMX content swaps
+      // Handle modal open/close events
       document.body.addEventListener('htmx:afterSwap', function(event) {
         console.log('🔄 Re-initializing dropdowns after HTMX swap');
         window.ARIA5.initDropdowns();
+        
+        // Check if modal content was loaded
+        const modalContainer = document.getElementById('modal-container');
+        if (modalContainer && modalContainer.innerHTML.trim() !== '') {
+          document.body.classList.add('modal-open');
+          console.log('🔓 Modal opened, body scroll disabled');
+        }
       });
       
       // Also re-initialize after settle (for animations)
       document.body.addEventListener('htmx:afterSettle', function(event) {
         console.log('🔄 Re-initializing dropdowns after HTMX settle');
         window.ARIA5.initDropdowns();
+        
+        // Add click handler to close modal when clicking backdrop
+        const modalContainer = document.getElementById('modal-container');
+        if (modalContainer && modalContainer.innerHTML.trim() !== '') {
+          const backdrop = modalContainer.querySelector('.bg-gray-500.bg-opacity-75');
+          if (backdrop) {
+            backdrop.addEventListener('click', function(e) {
+              if (e.target === backdrop) {
+                modalContainer.innerHTML = '';
+                document.body.classList.remove('modal-open');
+                console.log('🔒 Modal closed via backdrop click');
+              }
+            });
+          }
+        }
       });
       
       console.log('✅ ARIA5.1 Clean Layout - Ready');
@@ -480,7 +521,7 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">View and manage risks</div>
                   </div>
                 </a>
-                <a href="/risk/create" hx-get="/risk/create" hx-target="#modal-container" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700">
+                <a href="/risk/add" hx-get="/risk/add" hx-target="#modal-container" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700">
                   <i class="fas fa-plus w-5 text-orange-500 mr-3"></i>
                   <div>
                     <div class="font-medium">New Risk</div>
