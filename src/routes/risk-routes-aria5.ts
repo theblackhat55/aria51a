@@ -494,68 +494,81 @@ Be practical and actionable in your analysis.`;
       // Parse AI structured data from analysis
       const aiData = parseAIAnalysis(analysis);
       
-      // Return JavaScript to fill the existing form fields
+      // Return safe HTML with JSON data and a simple script
+      const safeAiData = {
+        probability: aiData.probability || 3,
+        impact: aiData.impact || 3,
+        treatmentStrategy: (aiData.treatmentStrategy || 'mitigate').toLowerCase(),
+        mitigationActions: (aiData.mitigationActions || '').replace(/['"]/g, '')
+      };
+      
       return c.html(html`
         <div id="ai-form-filler">
+          <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-check-circle text-green-500 mr-2"></i>
+              <span class="text-green-700 font-medium">Form Updated!</span>
+            </div>
+            <p class="text-green-600 text-sm mt-1">Risk assessment fields have been filled with AI recommendations.</p>
+          </div>
+          
+          <script type="application/json" id="ai-data">${JSON.stringify(safeAiData)}</script>
           <script>
-            // Fill the existing form with AI data without replacing the entire form
-            function fillFormWithAIData() {
-              console.log('🤖 Filling form with AI data...');
-              
-              // Fill likelihood/probability field
-              const likelihoodField = document.querySelector('select[name="likelihood"], select[name="probability"]');
-              if (likelihoodField && ${aiData.probability}) {
-                likelihoodField.value = '${aiData.probability}';
-                console.log('📊 Set likelihood to:', '${aiData.probability}');
+            (function() {
+              try {
+                console.log('🤖 Filling form with AI data...');
+                
+                // Get AI data from JSON script tag
+                const aiDataElement = document.getElementById('ai-data');
+                if (!aiDataElement) {
+                  console.error('AI data not found');
+                  return;
+                }
+                
+                const aiData = JSON.parse(aiDataElement.textContent);
+                console.log('📊 AI Data:', aiData);
+                
+                // Fill likelihood/probability field
+                const likelihoodField = document.querySelector('select[name="likelihood"], select[name="probability"]');
+                if (likelihoodField && aiData.probability) {
+                  likelihoodField.value = String(aiData.probability);
+                  console.log('✅ Set likelihood to:', aiData.probability);
+                }
+                
+                // Fill impact field
+                const impactField = document.querySelector('select[name="impact"]');
+                if (impactField && aiData.impact) {
+                  impactField.value = String(aiData.impact);
+                  console.log('✅ Set impact to:', aiData.impact);
+                }
+                
+                // Fill treatment strategy field
+                const treatmentField = document.querySelector('select[name="treatment_strategy"]');
+                if (treatmentField && aiData.treatmentStrategy) {
+                  treatmentField.value = aiData.treatmentStrategy;
+                  console.log('✅ Set treatment strategy to:', aiData.treatmentStrategy);
+                }
+                
+                // Fill mitigation actions field
+                const mitigationField = document.querySelector('textarea[name="mitigation_actions"]');
+                if (mitigationField && aiData.mitigationActions) {
+                  mitigationField.value = aiData.mitigationActions;
+                  console.log('✅ Set mitigation actions');
+                }
+                
+                // Trigger risk score calculation
+                if (likelihoodField) {
+                  const changeEvent = new Event('change', { bubbles: true });
+                  likelihoodField.dispatchEvent(changeEvent);
+                  console.log('✅ Triggered risk score calculation');
+                }
+                
+                console.log('✅ Form filling complete');
+                
+              } catch (error) {
+                console.error('❌ Error filling form:', error);
               }
-              
-              // Fill impact field
-              const impactField = document.querySelector('select[name="impact"]');
-              if (impactField && ${aiData.impact}) {
-                impactField.value = '${aiData.impact}';
-                console.log('💥 Set impact to:', '${aiData.impact}');
-              }
-              
-              // Fill treatment strategy field
-              const treatmentField = document.querySelector('select[name="treatment_strategy"]');
-              if (treatmentField && '${aiData.treatmentStrategy}') {
-                treatmentField.value = '${aiData.treatmentStrategy.toLowerCase()}';
-                console.log('🛡️ Set treatment strategy to:', '${aiData.treatmentStrategy.toLowerCase()}');
-              }
-              
-              // Fill mitigation actions field
-              const mitigationField = document.querySelector('textarea[name="mitigation_actions"]');
-              if (mitigationField && '${aiData.mitigationActions}') {
-                mitigationField.value = \`${aiData.mitigationActions.replace(/'/g, "\\'")}\`;
-                console.log('📝 Set mitigation actions');
-              }
-              
-              // Trigger risk score calculation
-              const likelihoodEvent = new Event('change', { bubbles: true });
-              if (likelihoodField) {
-                likelihoodField.dispatchEvent(likelihoodEvent);
-              }
-              
-              // Show success message
-              const aiResult = document.getElementById('ai-analysis-result');
-              if (aiResult) {
-                const existingContent = aiResult.innerHTML;
-                aiResult.innerHTML = existingContent + \`
-                  <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div class="flex items-center">
-                      <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                      <span class="text-green-700 font-medium">Form Updated!</span>
-                    </div>
-                    <p class="text-green-600 text-sm mt-1">Risk assessment fields have been filled with AI recommendations.</p>
-                  </div>
-                \`;
-              }
-              
-              console.log('✅ Form filling complete');
-            }
-            
-            // Execute the form filling
-            fillFormWithAIData();
+            })();
           </script>
         </div>
       `);
