@@ -521,7 +521,7 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">View and manage risks</div>
                   </div>
                 </a>
-                <a href="/risk/add" hx-get="/risk/add" hx-target="#modal-container" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700">
+                <a href="/risk/create" hx-get="/risk/create" hx-target="#modal-container" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700">
                   <i class="fas fa-plus w-5 text-orange-500 mr-3"></i>
                   <div>
                     <div class="font-medium">New Risk</div>
