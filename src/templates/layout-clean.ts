@@ -14,9 +14,27 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title} - ARIA5.1</title>
   
+
+  
   <!-- Essential CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- Preload Font Awesome -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+  
+  <style>
+    /* Ensure Font Awesome loads properly */
+    .fas, .far, .fab, .fal {
+      font-family: "Font Awesome 6 Free" !important;
+      font-weight: 900;
+      display: inline-block;
+      font-style: normal;
+      font-variant: normal;
+      text-rendering: auto;
+      line-height: 1;
+    }
+  </style>
   
   <!-- HTMX -->
   <script src="https://unpkg.com/htmx.org@1.9.10"></script>
@@ -186,6 +204,153 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       });
       
       console.log('✅ ARIA5.1 Clean Layout - Ready');
+    });
+  </script>
+
+  <!-- AI Assistant Chatbot Widget -->
+  <div id="chatbot-widget" class="fixed bottom-6 right-6 z-50">
+    <!-- Chatbot Toggle Button -->
+    <button id="chatbot-toggle" 
+            class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center group">
+      <i class="fas fa-robot text-xl group-hover:scale-110 transition-transform"></i>
+    </button>
+    
+    <!-- Chatbot Panel -->
+    <div id="chatbot-panel" 
+         class="hidden absolute bottom-16 right-0 w-96 h-[500px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col">
+      <!-- Header -->
+      <div class="bg-blue-600 text-white p-4 rounded-t-lg flex items-center justify-between">
+        <div class="flex items-center">
+          <i class="fas fa-robot mr-2"></i>
+          <span class="font-medium">AI Risk Assistant</span>
+          <span class="ml-2 text-xs bg-blue-500 px-2 py-1 rounded">Powered by Cloudflare AI</span>
+        </div>
+        <button id="chatbot-close" class="hover:bg-blue-500 rounded p-1">
+          <i class="fas fa-times text-sm"></i>
+        </button>
+      </div>
+      
+      <!-- Messages Area -->
+      <div id="chatbot-messages" class="flex-1 p-4 overflow-y-auto space-y-3">
+        <div class="bg-gray-100 rounded-lg p-3 text-sm">
+          <div class="flex items-center mb-1">
+            <i class="fas fa-robot text-blue-600 mr-2"></i>
+            <span class="font-medium text-gray-800">AI Assistant</span>
+          </div>
+          <p class="text-gray-700">
+            Hello! I'm your AI Risk Management Assistant. I can help you with:
+          </p>
+          <ul class="mt-2 text-gray-600 text-xs space-y-1">
+            <li>• Risk analysis and assessment</li>
+            <li>• Compliance guidance</li>
+            <li>• Control recommendations</li>
+            <li>• Best practices advice</li>
+          </ul>
+          <p class="text-gray-600 text-xs mt-2">How can I assist you today?</p>
+        </div>
+      </div>
+      
+      <!-- Input Area -->
+      <div class="border-t border-gray-200 p-4">
+        <form id="chatbot-form" class="flex space-x-2">
+          <input type="text" 
+                 id="chatbot-input" 
+                 placeholder="Ask about risk management..." 
+                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <button type="submit" 
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+            <i class="fas fa-paper-plane text-sm"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Chatbot Widget Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggle = document.getElementById('chatbot-toggle');
+      const panel = document.getElementById('chatbot-panel');
+      const close = document.getElementById('chatbot-close');
+      const form = document.getElementById('chatbot-form');
+      const input = document.getElementById('chatbot-input');
+      const messages = document.getElementById('chatbot-messages');
+      
+      // Toggle chatbot
+      toggle.addEventListener('click', () => {
+        panel.classList.toggle('hidden');
+        if (!panel.classList.contains('hidden')) {
+          input.focus();
+        }
+      });
+      
+      // Close chatbot
+      close.addEventListener('click', () => {
+        panel.classList.add('hidden');
+      });
+      
+      // Handle form submission
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = input.value.trim();
+        if (!query) return;
+        
+        // Add user message
+        addMessage(query, 'user');
+        input.value = '';
+        
+        // Add loading indicator
+        const loadingId = addMessage('Thinking...', 'assistant', true);
+        
+        try {
+          // Call AI assistant API
+          const response = await fetch('/ai/chat-json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: query })
+          });
+          
+          const data = await response.json();
+          
+          // Remove loading message
+          document.getElementById(loadingId).remove();
+          
+          // Add AI response
+          addMessage(data.response || 'Sorry, I could not process your request.', 'assistant');
+        } catch (error) {
+          // Remove loading message
+          document.getElementById(loadingId).remove();
+          addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+        }
+      });
+      
+      function addMessage(text, sender, isLoading = false) {
+        const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const isUser = sender === 'user';
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.id = messageId;
+        messageDiv.className = isUser 
+          ? 'bg-blue-600 text-white rounded-lg p-3 text-sm ml-8' 
+          : 'bg-gray-100 rounded-lg p-3 text-sm mr-8';
+        
+        if (!isUser) {
+          messageDiv.innerHTML = \`
+            <div class="flex items-center mb-1">
+              <i class="fas fa-robot text-blue-600 mr-2"></i>
+              <span class="font-medium text-gray-800">AI Assistant</span>
+            </div>
+            <p class="text-gray-700">\${isLoading ? '<i class="fas fa-spinner fa-spin mr-1"></i>' + text : text}</p>
+          \`;
+        } else {
+          messageDiv.innerHTML = \`<p>\${text}</p>\`;
+        }
+        
+        messages.appendChild(messageDiv);
+        messages.scrollTop = messages.scrollHeight;
+        
+        return messageId;
+      }
     });
   </script>
 </body>

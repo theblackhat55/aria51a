@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "aria51-enterprise",
+  "name": "aria51-htmx",
   "compatibility_date": "2025-01-01",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
@@ -33,6 +33,11 @@
   //   }
   // ],
   
+  // AI Workers binding for Cloudflare AI
+  "ai": {
+    "binding": "AI"
+  },
+
   // Environment Variables
   "vars": {
     "API_RATE_LIMIT": "1000",

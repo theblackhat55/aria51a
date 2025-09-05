@@ -75,18 +75,24 @@ export function createAPIRoutes() {
     
     try {
       if (db) {
+        // Generate unique risk ID
+        const riskId = `RISK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
         const result = await db.prepare(
-          `INSERT INTO risks (title, description, category, likelihood, impact, risk_score, owner, status, created_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?)
+          `INSERT INTO risks (risk_id, title, description, category_id, probability, impact, risk_score, owner_id, status, risk_type, organization_id, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)
            RETURNING id`
         ).bind(
+          riskId,
           body.title,
           body.description,
-          body.category,
-          body.likelihood,
+          body.category || 1, // Default to category_id 1 if not provided
+          body.likelihood || body.probability,
           body.impact,
-          (body.likelihood * body.impact),
-          body.owner || user?.name,
+          (body.likelihood || body.probability || 1) * (body.impact || 1),
+          user?.id, // Use user ID as owner
+          body.risk_type || 'operational', // Default risk type
+          user?.organizationId || 1, // Default organization
           user?.id
         ).run();
         

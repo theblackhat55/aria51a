@@ -7,7 +7,7 @@ import type { CloudflareBindings } from '../types';
 export function createCleanDashboardRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
   
-  // Apply authentication middleware to all routes
+  // PRODUCTION: Proper authentication middleware
   app.use('*', requireAuth);
   
   // Main dashboard page
@@ -252,7 +252,7 @@ const renderCleanDashboard = (stats: any, user: any) => html`
           </div>
           <div class="hidden lg:block">
             <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <i class="fas fa-shield-alt text-6xl text-white"></i>
+              <i class="fas fa-shield-halved text-6xl text-white"></i>
             </div>
           </div>
         </div>
@@ -375,7 +375,7 @@ const renderCleanDashboard = (stats: any, user: any) => html`
           
           <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
             <div class="flex items-center space-x-3">
-              <i class="fas fa-shield-alt text-yellow-600"></i>
+              <i class="fas fa-shield-halved text-yellow-600"></i>
               <div>
                 <p class="text-sm font-medium text-gray-900">Security Scan</p>
                 <p class="text-xs text-gray-500">Last: 2 hours ago</p>
@@ -386,7 +386,7 @@ const renderCleanDashboard = (stats: any, user: any) => html`
           
           <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
             <div class="flex items-center space-x-3">
-              <i class="fas fa-cloud-upload-alt text-green-600"></i>
+              <i class="fas fa-cloud-arrow-up text-green-600"></i>
               <div>
                 <p class="text-sm font-medium text-gray-900">Backups</p>
                 <p class="text-xs text-gray-500">Last: 6 hours ago</p>
@@ -468,7 +468,7 @@ const renderComplianceCard = (stats: any) => html`
         </div>
         <div class="flex items-center space-x-2 mb-2">
           <div class="flex items-center space-x-1">
-            <i class="fas fa-shield-alt text-blue-600 text-xs"></i>
+            <i class="fas fa-shield-halved text-blue-600 text-xs"></i>
             <span class="text-xs text-gray-700">SOC 2</span>
           </div>
           <div class="flex items-center space-x-1">

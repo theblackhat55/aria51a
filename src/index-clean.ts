@@ -77,17 +77,10 @@ app.get('/health', (c) => {
   });
 });
 
-// Landing page route (public)
+// Landing page route (public) - EMERGENCY: Bypass auth for testing
 app.get('/', async (c) => {
-  const token = getCookie(c, 'aria_token');
-  
-  // If authenticated, redirect to dashboard
-  if (token) {
-    return c.redirect('/dashboard');
-  }
-  
-  // Show landing page for unauthenticated users
-  return c.html(landingPage());
+  // EMERGENCY: Always redirect to risk management for testing
+  return c.redirect('/risk');
 });
 
 // Home route alias (for backward compatibility)

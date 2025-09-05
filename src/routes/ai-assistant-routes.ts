@@ -363,6 +363,42 @@ export function createAIAssistantRoutes() {
     `);
   });
 
+  // JSON Chat API for chatbot widget
+  app.post('/chat-json', async (c) => {
+    try {
+      const body = await c.req.json();
+      const message = body.message;
+      
+      if (!message) {
+        return c.json({ error: 'Message is required' }, 400);
+      }
+
+      // Use Cloudflare AI for chatbot responses
+      const prompt = `You are ARIA, an AI Risk Management Assistant. You help users with governance, risk, compliance, and security matters. 
+
+User question: ${message}
+
+Provide a helpful, professional response focused on risk management, compliance, or security best practices. Keep it concise and actionable.`;
+
+      const aiResponse = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 512
+      });
+
+      return c.json({ 
+        response: aiResponse.response || 'I apologize, but I could not process your request at this moment. Please try again.',
+        model: 'Cloudflare AI (Llama 3.1 8B)'
+      });
+
+    } catch (error) {
+      console.error('JSON Chat error:', error);
+      return c.json({ 
+        response: 'I apologize, but I encountered an error. Please try again.',
+        error: true 
+      }, 500);
+    }
+  });
+
   return app;
 }
 
