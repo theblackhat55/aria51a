@@ -447,13 +447,13 @@ Be practical and actionable in your analysis.`;
               <span class="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded">Powered by Cloudflare AI</span>
             </div>
             <button 
-              hx-post="/risk/update-from-ai"
+              hx-post="/risk/fill-from-ai"
               hx-vals='{"analysis": "${analysis.replace(/"/g, '\\"').replace(/\n/g, '\\n')}", "title": "${riskTitle}", "description": "${riskDescription}", "category": "${riskCategory}"}'
-              hx-target="#risk-form-container"
+              hx-target="#ai-form-filler"
               hx-swap="innerHTML"
               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
               <i class="fas fa-magic mr-1"></i>
-              Update Risk Form
+              Fill Form with AI Data
             </button>
           </div>
           <div class="text-gray-800 whitespace-pre-line text-sm leading-relaxed">
@@ -482,8 +482,8 @@ Be practical and actionable in your analysis.`;
     }
   });
 
-  // Update risk form with AI data
-  app.post('/update-from-ai', async (c) => {
+  // Fill existing risk form with AI data (no form replacement)
+  app.post('/fill-from-ai', async (c) => {
     try {
       const formData = await c.req.parseBody();
       const analysis = formData.analysis as string;
@@ -494,26 +494,92 @@ Be practical and actionable in your analysis.`;
       // Parse AI structured data from analysis
       const aiData = parseAIAnalysis(analysis);
       
-      // Return updated form with AI data pre-filled
-      return c.html(renderCreateRiskModalWithAIData({
-        title,
-        description, 
-        category,
-        aiData
-      }));
+      // Return JavaScript to fill the existing form fields
+      return c.html(html`
+        <div id="ai-form-filler">
+          <script>
+            // Fill the existing form with AI data without replacing the entire form
+            function fillFormWithAIData() {
+              console.log('🤖 Filling form with AI data...');
+              
+              // Fill likelihood/probability field
+              const likelihoodField = document.querySelector('select[name="likelihood"], select[name="probability"]');
+              if (likelihoodField && ${aiData.probability}) {
+                likelihoodField.value = '${aiData.probability}';
+                console.log('📊 Set likelihood to:', '${aiData.probability}');
+              }
+              
+              // Fill impact field
+              const impactField = document.querySelector('select[name="impact"]');
+              if (impactField && ${aiData.impact}) {
+                impactField.value = '${aiData.impact}';
+                console.log('💥 Set impact to:', '${aiData.impact}');
+              }
+              
+              // Fill treatment strategy field
+              const treatmentField = document.querySelector('select[name="treatment_strategy"]');
+              if (treatmentField && '${aiData.treatmentStrategy}') {
+                treatmentField.value = '${aiData.treatmentStrategy.toLowerCase()}';
+                console.log('🛡️ Set treatment strategy to:', '${aiData.treatmentStrategy.toLowerCase()}');
+              }
+              
+              // Fill mitigation actions field
+              const mitigationField = document.querySelector('textarea[name="mitigation_actions"]');
+              if (mitigationField && '${aiData.mitigationActions}') {
+                mitigationField.value = \`${aiData.mitigationActions.replace(/'/g, "\\'")}\`;
+                console.log('📝 Set mitigation actions');
+              }
+              
+              // Trigger risk score calculation
+              const likelihoodEvent = new Event('change', { bubbles: true });
+              if (likelihoodField) {
+                likelihoodField.dispatchEvent(likelihoodEvent);
+              }
+              
+              // Show success message
+              const aiResult = document.getElementById('ai-analysis-result');
+              if (aiResult) {
+                const existingContent = aiResult.innerHTML;
+                aiResult.innerHTML = existingContent + \`
+                  <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center">
+                      <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                      <span class="text-green-700 font-medium">Form Updated!</span>
+                    </div>
+                    <p class="text-green-600 text-sm mt-1">Risk assessment fields have been filled with AI recommendations.</p>
+                  </div>
+                \`;
+              }
+              
+              console.log('✅ Form filling complete');
+            }
+            
+            // Execute the form filling
+            fillFormWithAIData();
+          </script>
+        </div>
+      `);
 
     } catch (error) {
-      console.error('Error updating form with AI data:', error);
+      console.error('Error filling form with AI data:', error);
       return c.html(html`
-        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div class="flex items-center">
-            <i class="fas fa-times-circle text-red-500 mr-2"></i>
-            <span class="text-red-700 font-medium">Failed to update form</span>
+        <div id="ai-form-filler">
+          <div class="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-times-circle text-red-500 mr-2"></i>
+              <span class="text-red-700 font-medium">Failed to fill form</span>
+            </div>
+            <p class="text-red-600 text-sm mt-1">${error.message}</p>
           </div>
-          <p class="text-red-600 text-sm mt-1">${error.message}</p>
         </div>
       `);
     }
+  });
+
+  // Keep the old endpoint for backwards compatibility but redirect to new behavior
+  app.post('/update-from-ai', async (c) => {
+    // Redirect to the new fill-from-ai endpoint
+    return c.redirect('/risk/fill-from-ai');
   });
 
   // Create risk submission - CONSOLIDATED SINGLE ROUTE
@@ -1585,6 +1651,7 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
                 <i class="fas fa-robot mr-2"></i>Analyze with AI
               </button>
               <div id="ai-analysis-result" class="mt-4"></div>
+              <div id="ai-form-filler" class="hidden"></div>
             </div>
           </div>
 
