@@ -309,7 +309,7 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
     });
   </script>
 
-  <!-- Enhanced AI Assistant Chatbot Widget -->
+  <!-- Enhanced AI Assistant Chatbot Widget (Testing: Show on all pages) -->
   <div id="chatbot-widget" class="fixed bottom-6 right-6 z-50">
     <!-- Notification Badge -->
     <div id="chatbot-notification" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
@@ -645,7 +645,13 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       bindEvents() {
         // Toggle chatbot
         if (this.toggle) {
-          this.toggle.addEventListener('click', () => this.toggleChat());
+          console.log('🎯 Binding click event to chatbot toggle button');
+          this.toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Chatbot toggle button clicked!');
+            this.toggleChat();
+          });
           console.log('✅ Chatbot toggle button event bound');
         } else {
           console.error('❌ Chatbot toggle button not found - cannot bind click event');
@@ -681,6 +687,7 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       }
       
       toggleChat() {
+        console.log('🔄 toggleChat called, current state:', this.isOpen ? 'open' : 'closed');
         if (this.isOpen) {
           this.closeChat();
         } else {
@@ -689,6 +696,12 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       }
       
       openChat() {
+        console.log('🚀 openChat called, panel element:', this.panel ? 'found' : 'not found');
+        if (!this.panel) {
+          console.error('❌ Panel element not found in openChat');
+          return;
+        }
+        
         this.panel.classList.remove('hidden');
         this.panel.classList.add('show');
         this.panel.classList.remove('hide');
@@ -696,14 +709,19 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         
         // Focus input after animation
         setTimeout(() => {
-          this.input.focus();
+          if (this.input) {
+            this.input.focus();
+          }
           this.hideNotification();
         }, 100);
         
         // Update icon
-        document.getElementById('chatbot-icon').className = 'fas fa-comment text-xl group-hover:scale-110 transition-all duration-300 z-10';
+        const icon = document.getElementById('chatbot-icon');
+        if (icon) {
+          icon.className = 'fas fa-comment text-xl group-hover:scale-110 transition-all duration-300 z-10';
+        }
         
-        console.log('💬 Chatbot opened');
+        console.log('💬 Chatbot opened successfully');
       }
       
       closeChat() {
@@ -1088,10 +1106,27 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       }
     }
 
-    // Initialize Enhanced Chatbot
+    // Initialize Enhanced Chatbot (Testing: Always initialize)
     document.addEventListener('DOMContentLoaded', function() {
-      window.ariaChatbot = new EnhancedChatbot();
-      console.log('🚀 Enhanced ARIA Chatbot ready');
+      console.log('🔍 Checking for chatbot elements...');
+      const chatbotWidget = document.getElementById('chatbot-widget');
+      const chatbotToggle = document.getElementById('chatbot-toggle');
+      console.log('🤖 Chatbot widget:', chatbotWidget ? 'found' : 'not found');
+      console.log('🔘 Chatbot toggle:', chatbotToggle ? 'found' : 'not found');
+      
+      if (chatbotWidget && chatbotToggle) {
+        console.log('🎯 Initializing Enhanced Chatbot...');
+        window.ariaChatbot = new EnhancedChatbot();
+        console.log('🚀 Enhanced ARIA Chatbot ready (testing mode)');
+      } else {
+        console.warn('⚠️ Chatbot elements not found, skipping initialization');
+        console.log('🔍 Available elements:', {
+          widget: !!document.getElementById('chatbot-widget'),
+          toggle: !!document.getElementById('chatbot-toggle'),
+          panel: !!document.getElementById('chatbot-panel'),
+          input: !!document.getElementById('chatbot-input')
+        });
+      }
     });
   </script>
 </body>
