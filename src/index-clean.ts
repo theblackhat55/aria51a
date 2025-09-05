@@ -18,6 +18,7 @@ import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createAPIRoutes } from './routes/api-routes';
 import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 import { createApiKeyRoutes } from './routes/api-key-routes';
+import { createPolicyManagementRoutes } from './routes/policy-management-routes';
 
 // Import security middleware
 import { authMiddleware, requireRole, requireAdmin, csrfMiddleware } from './middleware/auth-middleware';
@@ -354,6 +355,7 @@ const adminRoutes = createAdminRoutesARIA5();
 const apiRoutes = createAPIRoutes();
 const aiRoutes = createAIAssistantRoutes();
 const apiKeyRoutes = createApiKeyRoutes();
+const policyRoutes = createPolicyManagementRoutes();
 
 // Public routes (no authentication required)
 app.route('/auth', authRoutes);
@@ -405,6 +407,10 @@ app.route('/api/keys', apiKeyRoutes);
 // AI Assistant routes (require authentication)
 app.use('/ai/*', authMiddleware);
 app.route('/ai', aiRoutes);
+
+// Policy Management routes (require authentication)
+app.use('/policies/*', authMiddleware);
+app.route('/policies', policyRoutes);
 
 // Phase 3 & 4 Routes - Advanced Analytics & Enterprise Scale (protected)
 app.use('/analytics/*', authMiddleware);

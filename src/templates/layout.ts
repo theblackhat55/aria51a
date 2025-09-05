@@ -328,6 +328,8 @@ export const baseLayout = ({ title, content, user }: LayoutProps) => html`
   
   <!-- Global modal container for HTMX modals -->
   <div id="modal-container"></div>
+  
+  ${user ? renderFloatingChatbot() : ''}
 </body>
 </html>
 `;
@@ -516,6 +518,13 @@ const renderNavigation = (user: any) => html`
                   <div>
                     <div class="font-medium">Document Management</div>
                     <div class="text-xs text-gray-500">Policies, procedures & documents</div>
+                  </div>
+                </a>
+                <a href="/policies" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-shield-alt w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Policy Management</div>
+                    <div class="text-xs text-gray-500">Upload, search & manage security policies</div>
                   </div>
                 </a>
                 <a href="/notifications" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
@@ -854,4 +863,272 @@ const renderNavigation = (user: any) => html`
       </div>
     </div>
   </div>
+`;
+
+// Floating ARIA Chatbot Widget
+const renderFloatingChatbot = () => html`
+  <!-- Floating ARIA Chatbot -->
+  <div id="aria-floating-chat" class="fixed bottom-6 right-6 z-50">
+    <!-- Chat Toggle Button -->
+    <div id="aria-chat-toggle" class="relative">
+      <button onclick="toggleAriaChat()" 
+              class="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 relative">
+        <i class="fas fa-robot text-xl"></i>
+        <!-- Notification Badge -->
+        <span id="aria-notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">!</span>
+      </button>
+    </div>
+    
+    <!-- Chat Window -->
+    <div id="aria-chat-window" class="absolute bottom-16 right-0 w-96 h-128 bg-white rounded-lg shadow-2xl border border-gray-200 hidden">
+      <!-- Chat Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-robot text-lg"></i>
+            <div>
+              <h3 class="font-semibold">ARIA Assistant</h3>
+              <p class="text-blue-100 text-xs">AI-Powered Risk Intelligence</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2 py-1 bg-green-500 text-white text-xs rounded-full">
+              <i class="fas fa-circle text-xs mr-1"></i>Online
+            </span>
+            <button onclick="toggleAriaChat()" class="text-white hover:text-gray-200">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chat Messages -->
+      <div id="aria-chat-messages" class="flex-1 p-4 h-80 overflow-y-auto bg-gray-50">
+        <!-- Welcome Message -->
+        <div class="mb-4">
+          <div class="flex items-start space-x-2">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-robot text-blue-600 text-sm"></i>
+            </div>
+            <div class="flex-1">
+              <div class="bg-white rounded-lg px-3 py-2 shadow-sm">
+                <p class="text-sm text-gray-800">
+                  <strong>Hello! I'm ARIA,</strong> your AI Risk Intelligence Assistant. 
+                  I can help you with:
+                </p>
+                <ul class="mt-2 text-sm text-gray-600 space-y-1">
+                  <li>• Security policies and procedures</li>
+                  <li>• Risk management guidance</li>
+                  <li>• Compliance requirements</li>
+                  <li>• Platform navigation help</li>
+                </ul>
+                <p class="mt-2 text-xs text-gray-500">Ask me anything about risk management!</p>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">ARIA • Just now</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Quick Action Buttons -->
+        <div class="mb-4 space-y-2">
+          <p class="text-xs text-gray-500 font-medium">Quick Actions:</p>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="sendQuickMessage('What are the password requirements?')" 
+                    class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs hover:bg-blue-200">
+              Password Policy
+            </button>
+            <button onclick="sendQuickMessage('How do I create a new risk?')" 
+                    class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs hover:bg-green-200">
+              Create Risk
+            </button>
+            <button onclick="sendQuickMessage('What ISO 27001 controls do we need?')" 
+                    class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs hover:bg-purple-200">
+              ISO 27001
+            </button>
+            <button onclick="sendQuickMessage('How does incident response work?')" 
+                    class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs hover:bg-red-200">
+              Incidents
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chat Input -->
+      <div class="p-4 border-t bg-white rounded-b-lg">
+        <form id="aria-chat-form" class="flex space-x-2">
+          <input type="text" 
+                 id="aria-chat-input"
+                 placeholder="Ask ARIA about policies, risks, or compliance..." 
+                 class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </form>
+        <p class="text-xs text-gray-400 mt-2">
+          Powered by RAG & AI • Connected to your policies
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Chat Styles & Scripts -->
+  <style>
+    #aria-chat-window {
+      height: 32rem; /* h-128 equivalent */
+    }
+    
+    .chat-message-user {
+      background: #3B82F6;
+      color: white;
+      margin-left: 2rem;
+    }
+    
+    .chat-message-aria {
+      background: white;
+      color: #374151;
+      margin-right: 2rem;
+    }
+    
+    .animate-bounce-slow {
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    .fade-in-scale {
+      animation: fadeIn 0.2s ease-out;
+    }
+  </style>
+
+  <script>
+    let ariaChatOpen = false;
+    
+    function toggleAriaChat() {
+      const chatWindow = document.getElementById('aria-chat-window');
+      const chatToggle = document.getElementById('aria-chat-toggle');
+      
+      ariaChatOpen = !ariaChatOpen;
+      
+      if (ariaChatOpen) {
+        chatWindow.classList.remove('hidden');
+        chatWindow.classList.add('fade-in-scale');
+        document.getElementById('aria-chat-input').focus();
+      } else {
+        chatWindow.classList.add('hidden');
+        chatWindow.classList.remove('fade-in-scale');
+      }
+    }
+    
+    function sendQuickMessage(message) {
+      document.getElementById('aria-chat-input').value = message;
+      sendAriaMessage();
+    }
+    
+    function sendAriaMessage() {
+      const input = document.getElementById('aria-chat-input');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      // Add user message to chat
+      addMessageToChat(message, 'user');
+      
+      // Clear input
+      input.value = '';
+      
+      // Send to ARIA backend
+      fetch('/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'message=' + encodeURIComponent(message)
+      })
+      .then(response => response.text())
+      .then(html => {
+        // Extract ARIA response from HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const ariaResponse = doc.querySelector('.bg-gray-100 p');
+        
+        if (ariaResponse) {
+          addMessageToChat(ariaResponse.textContent, 'aria');
+        } else {
+          addMessageToChat('I''m sorry, I''m having trouble processing your request right now. Please try again or visit the full AI Assistant page.', 'aria');
+        }
+      })
+      .catch(error => {
+        console.error('ARIA chat error:', error);
+        addMessageToChat('Sorry, I''m experiencing technical difficulties. Please try again later.', 'aria');
+      });
+    }
+    
+    function addMessageToChat(message, sender) {
+      const messagesContainer = document.getElementById('aria-chat-messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'mb-4';
+      
+      const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      if (sender === 'user') {
+        messageDiv.innerHTML = \`
+          <div class="flex items-start space-x-2 justify-end">
+            <div class="flex-1 max-w-xs">
+              <div class="bg-blue-600 text-white rounded-lg px-3 py-2 text-sm">
+                \${message}
+              </div>
+              <p class="text-xs text-gray-400 mt-1 text-right">You • \${timestamp}</p>
+            </div>
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-user text-blue-600 text-sm"></i>
+            </div>
+          </div>
+        \`;
+      } else {
+        messageDiv.innerHTML = \`
+          <div class="flex items-start space-x-2">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-robot text-blue-600 text-sm"></i>
+            </div>
+            <div class="flex-1">
+              <div class="bg-white rounded-lg px-3 py-2 shadow-sm">
+                <p class="text-sm text-gray-800">\${message}</p>
+              </div>
+              <p class="text-xs text-gray-400 mt-1">ARIA • \${timestamp}</p>
+            </div>
+          </div>
+        \`;
+      }
+      
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    // Handle form submission
+    document.addEventListener('DOMContentLoaded', function() {
+      const chatForm = document.getElementById('aria-chat-form');
+      if (chatForm) {
+        chatForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          sendAriaMessage();
+        });
+      }
+    });
+    
+    // Auto-focus input when chat opens
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('#aria-chat-toggle')) {
+        setTimeout(() => {
+          const input = document.getElementById('aria-chat-input');
+          if (input && !document.getElementById('aria-chat-window').classList.contains('hidden')) {
+            input.focus();
+          }
+        }, 100);
+      }
+    });
+  </script>
 `;
