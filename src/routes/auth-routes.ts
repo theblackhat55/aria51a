@@ -15,7 +15,10 @@ import {
   generateCSRFToken
 } from '../lib/security.js';
 
-const JWT_SECRET = 'aria5-production-jwt-secret-2024-change-in-production-32-chars-minimum';
+// JWT secret should be set via environment variable in production
+function getJWTSecret(env: any): string {
+  return env?.JWT_SECRET || 'aria5-production-jwt-secret-2024-change-in-production-32-chars-minimum';
+}
 
 export function createAuthRoutes() {
   const app = new Hono();
@@ -223,7 +226,7 @@ export function createAuthRoutes() {
       const csrfToken = await generateCSRFToken();
       
       // Create secure JWT
-      const jwt = await generateJWT(tokenData, JWT_SECRET);
+      const jwt = await generateJWT(tokenData, getJWTSecret(c.env));
       
       // Create session record
       const sessionId = crypto.randomUUID();

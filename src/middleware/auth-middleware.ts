@@ -7,7 +7,10 @@ import { getCookie } from 'hono/cookie';
 import { verifyJWT, getSecurityHeaders } from '../lib/security.js';
 import { html } from 'hono/html';
 
-const JWT_SECRET = 'aria5-production-jwt-secret-2024-change-in-production-32-chars-minimum';
+// JWT secret should be set via environment variable in production
+function getJWTSecret(env: any): string {
+  return env?.JWT_SECRET || 'aria5-production-jwt-secret-2024-change-in-production-32-chars-minimum';
+}
 
 export interface AuthUser {
   id: number;
@@ -39,7 +42,7 @@ export async function authMiddleware(c: any, next: any) {
     }
 
     // Verify JWT token
-    const payload = await verifyJWT(token, JWT_SECRET);
+    const payload = await verifyJWT(token, getJWTSecret(c.env));
     
     if (!payload) {
       // Invalid token - redirect to login
@@ -162,7 +165,7 @@ export async function apiAuthMiddleware(c: any, next: any) {
     }
 
     // Verify JWT token
-    const payload = await verifyJWT(token, JWT_SECRET);
+    const payload = await verifyJWT(token, getJWTSecret(c.env));
     
     if (!payload) {
       return c.json({ error: 'Invalid or expired token' }, 401);
@@ -283,7 +286,7 @@ export async function optionalAuthMiddleware(c: any, next: any) {
     const token = getCookie(c, 'aria_token');
     
     if (token) {
-      const payload = await verifyJWT(token, JWT_SECRET);
+      const payload = await verifyJWT(token, getJWTSecret(c.env));
       if (payload) {
         c.set('user', payload as AuthUser);
       }
