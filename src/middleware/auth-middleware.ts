@@ -12,7 +12,46 @@ function getJWTSecret(env: any): string {
 export async function authMiddleware(c: Context, next: Next) {
   const token = getCookie(c, 'aria_token');
   
+  // Check if this is an HTMX request
+  const isHTMXRequest = c.req.header('hx-request') === 'true';
+  
   if (!token) {
+    if (isHTMXRequest) {
+      // Return error modal for HTMX requests
+      return c.html(`
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+          <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                  <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                      <h3 class="text-lg font-semibold leading-6 text-gray-900">Authentication Required</h3>
+                      <div class="mt-2">
+                        <p class="text-sm text-gray-500">Your session has expired. Please log in again.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                  <button onclick="window.location.href='/login'" 
+                          class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
+                    Go to Login
+                  </button>
+                  <button onclick="document.getElementById('modal-container').innerHTML = ''" 
+                          class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
     return c.redirect('/login');
   }
 
@@ -20,7 +59,42 @@ export async function authMiddleware(c: Context, next: Next) {
     const secret = getJWTSecret(c.env);
     const payload = await verifyJWT(token, secret);
     
-    if (!payload || !payload.userId) {
+    if (!payload || !payload.id) {
+      if (isHTMXRequest) {
+        return c.html(`
+          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+            <div class="fixed inset-0 z-50 overflow-y-auto">
+              <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                  <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                      <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                      </div>
+                      <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                        <h3 class="text-lg font-semibold leading-6 text-gray-900">Invalid Session</h3>
+                        <div class="mt-2">
+                          <p class="text-sm text-gray-500">Your session is invalid. Please log in again.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button onclick="window.location.href='/login'" 
+                            class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
+                      Go to Login
+                    </button>
+                    <button onclick="document.getElementById('modal-container').innerHTML = ''" 
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `);
+      }
       return c.redirect('/login');
     }
 
@@ -29,9 +103,44 @@ export async function authMiddleware(c: Context, next: Next) {
       SELECT id, username, email, first_name, last_name, role, is_active
       FROM users 
       WHERE id = ? AND is_active = 1
-    `).bind(payload.userId).first();
+    `).bind(payload.id).first();
 
     if (!user) {
+      if (isHTMXRequest) {
+        return c.html(`
+          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+            <div class="fixed inset-0 z-50 overflow-y-auto">
+              <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                  <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                      <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-user-slash text-red-600"></i>
+                      </div>
+                      <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                        <h3 class="text-lg font-semibold leading-6 text-gray-900">User Not Found</h3>
+                        <div class="mt-2">
+                          <p class="text-sm text-gray-500">Your user account is inactive or not found.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button onclick="window.location.href='/login'" 
+                            class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
+                      Go to Login
+                    </button>
+                    <button onclick="document.getElementById('modal-container').innerHTML = ''" 
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `);
+      }
       return c.redirect('/login');
     }
 
@@ -41,6 +150,41 @@ export async function authMiddleware(c: Context, next: Next) {
     await next();
   } catch (error) {
     console.error('Auth middleware error:', error);
+    if (isHTMXRequest) {
+      return c.html(`
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+          <div class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                  <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <i class="fas fa-exclamation-circle text-red-600"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                      <h3 class="text-lg font-semibold leading-6 text-gray-900">Authentication Error</h3>
+                      <div class="mt-2">
+                        <p class="text-sm text-gray-500">An error occurred during authentication. Please try again.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                  <button onclick="window.location.href='/login'" 
+                          class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
+                    Go to Login
+                  </button>
+                  <button onclick="document.getElementById('modal-container').innerHTML = ''" 
+                          class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
     return c.redirect('/login');
   }
 }
