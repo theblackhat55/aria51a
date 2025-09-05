@@ -13,7 +13,13 @@
 - ✅ **Professional UI**: Full-width modal with structured sections and validation
 - ✅ **CSRF Protection**: Token generation and validation fully functional
 - ✅ **Modal Error Handling**: Proper error modals for authentication failures
-- 🚀 **Production URL**: https://c3ef8687.aria51-htmx.pages.dev
+- 🚀 **Production URL**: https://d8ae31f2.aria51-htmx.pages.dev
+
+**🔧 Consistency Fix (All Add Risk buttons unified):**
+- ✅ **Main menu Risk → New Risk**: Enhanced form (/risk/create)
+- ✅ **Risk page Add Risk button**: Enhanced form (/risk/create) 
+- ✅ **"Create your first risk" link**: Enhanced form (/risk/create)
+- ✅ **Unified experience**: All entry points use same enhanced assessment form
 
 **🎯 Previous Fixes (Layout & Modal):**
 - ✅ **Add Risk Modal Layout**: Fixed layout disruption - modal now renders as proper overlay
