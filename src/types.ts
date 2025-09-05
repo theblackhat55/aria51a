@@ -293,7 +293,7 @@ export interface Workflow {
 export interface AIInsight {
   id: number;
   insight_type: 'risk_prediction' | 'anomaly_detection' | 'trend_analysis';
-  resource_type: 'risk' | 'control' | 'compliance';
+  entity_type: 'risk' | 'control' | 'compliance';
   resource_id?: number;
   confidence_score: number;
   insight_data?: string; // JSON

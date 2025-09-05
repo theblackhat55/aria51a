@@ -2,9 +2,20 @@ import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { DatabaseService } from '../lib/database';
-// import jwt from 'jsonwebtoken'; // Not compatible with Cloudflare Workers - removed
+import { 
+  hashPassword, 
+  verifyPassword, 
+  generateJWT, 
+  verifyJWT, 
+  checkRateLimit,
+  sanitizeInput,
+  isValidEmail,
+  validatePasswordStrength,
+  getSecurityHeaders,
+  generateCSRFToken
+} from '../lib/security.js';
 
-// const JWT_SECRET = process.env.JWT_SECRET || 'aria5-htmx-secret-key-change-in-production'; // Not needed for base64 tokens
+const JWT_SECRET = 'aria5-production-jwt-secret-2024-change-in-production-32-chars-minimum';
 
 export function createAuthRoutes() {
   const app = new Hono();
@@ -12,75 +23,192 @@ export function createAuthRoutes() {
   // Login endpoint - returns HTMX partial or redirect
   app.post('/login', async (c) => {
     try {
-      const { username, password } = await c.req.parseBody();
+      const formData = await c.req.parseBody();
+      const username = sanitizeInput(formData.username as string);
+      const password = formData.password as string;
+      
+      if (!username || !password) {
+        return c.html(html`
+          <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-red-500"></i>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-red-700">Username and password are required</p>
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      // Rate limiting check
+      const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+      const rateLimit = checkRateLimit(`login:${clientIP}`, 5, 15); // 5 attempts per 15 minutes
+      
+      if (!rateLimit.allowed) {
+        const resetTime = new Date(rateLimit.resetTime).toLocaleTimeString();
+        return c.html(html`
+          <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <i class="fas fa-lock text-red-500"></i>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-red-700">Too many failed login attempts. Try again after ${resetTime}</p>
+              </div>
+            </div>
+          </div>
+        `);
+      }
       
       // Get database service
       const db = new DatabaseService(c.env.DB);
       
-      // Fallback to demo users first (for production deployment)
-      const demoUsers: any = {
-        'admin': { 
-          id: 1, 
-          username: 'admin', 
-          email: 'admin@aria5.com', 
-          password: 'demo123',
-          role: 'admin', 
-          first_name: 'Admin', 
-          last_name: 'User' 
-        },
-        'avi_security': { 
-          id: 2, 
-          username: 'avi_security', 
-          email: 'avi@aria5.com', 
-          password: 'demo123',
-          role: 'risk_manager', 
-          first_name: 'Avi', 
-          last_name: 'Security' 
-        },
-        'sjohnson': { 
-          id: 3, 
-          username: 'sjohnson', 
-          email: 'sjohnson@aria5.com', 
-          password: 'demo123',
-          role: 'compliance_officer', 
-          first_name: 'Sarah', 
-          last_name: 'Johnson' 
-        }
-      };
-      
       let user = null;
       let isValidPassword = false;
       
-      // Check demo users first
-      const demoUser = demoUsers[String(username)];
-      if (demoUser && demoUser.password === String(password)) {
-        user = demoUser;
-        isValidPassword = true;
-        console.log('Demo user login successful:', username);
-      } else {
-        // Try database if demo user not found - temporarily simplified for production
-        try {
-          if (c.env?.DB) {
-            user = await db.getUserByUsername(String(username));
-            if (user) {
-              // Simplified password validation to avoid base64 errors
-              if (user.password_hash === String(password) || String(password) === 'demo123') {
-                isValidPassword = true;
-                await db.updateLastLogin(user.id);
-              }
-            }
-          }
-        } catch (dbError) {
-          console.error('Database error (non-critical for demo):', dbError);
-          // Demo users already checked above, continue with demo-only mode
+      try {
+        // Get user from database
+        user = await c.env.DB.prepare(`
+          SELECT id, username, email, password_hash, password_salt, first_name, last_name, 
+                 role, organization_id, is_active, failed_login_attempts, locked_until
+          FROM users 
+          WHERE username = ? OR email = ?
+        `).bind(username, username).first();
+        
+        if (!user) {
+          return c.html(html`
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-exclamation-circle text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-red-700">Invalid username or password</p>
+                </div>
+              </div>
+            </div>
+          `, 401);
         }
+
+        // Check if account is active
+        if (!user.is_active) {
+          return c.html(html`
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-lock text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-red-700">Account is disabled. Contact administrator.</p>
+                </div>
+              </div>
+            </div>
+          `, 401);
+        }
+
+        // Check if account is locked
+        if (user.locked_until && new Date(user.locked_until) > new Date()) {
+          const unlockTime = new Date(user.locked_until).toLocaleTimeString();
+          return c.html(html`
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-lock text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-red-700">Account locked until ${unlockTime}. Too many failed attempts.</p>
+                </div>
+              </div>
+            </div>
+          `, 401);
+        }
+
+        // Verify password
+        if (user.password_salt) {
+          // New secure password format
+          isValidPassword = await verifyPassword(password, user.password_hash, user.password_salt);
+        } else {
+          // Legacy/demo password format - migrate to secure format
+          if (user.password_hash === password || password === 'demo123') {
+            isValidPassword = true;
+            // Migrate to secure password format
+            const { hash, salt } = await hashPassword(password);
+            await c.env.DB.prepare(`
+              UPDATE users 
+              SET password_hash = ?, password_salt = ?, password_changed_at = datetime('now')
+              WHERE id = ?
+            `).bind(hash, salt, user.id).run();
+          }
+        }
+
+        if (!isValidPassword) {
+          // Increment failed attempts
+          const failedAttempts = (user.failed_login_attempts || 0) + 1;
+          const shouldLock = failedAttempts >= 5;
+          
+          await c.env.DB.prepare(`
+            UPDATE users 
+            SET failed_login_attempts = ?, 
+                locked_until = ${shouldLock ? "datetime('now', '+15 minutes')" : 'NULL'}
+            WHERE id = ?
+          `).bind(failedAttempts, user.id).run();
+
+          // Log failed attempt
+          await c.env.DB.prepare(`
+            INSERT INTO audit_logs (user_id, action, entity_type, ip_address, user_agent, created_at)
+            VALUES (?, 'failed_login', 'authentication', ?, ?, datetime('now'))
+          `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
+
+          return c.html(html`
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-exclamation-circle text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-red-700">Invalid username or password. ${5 - failedAttempts} attempts remaining.</p>
+                </div>
+              </div>
+            </div>
+          `, 401);
+        }
+
+        // Reset failed attempts on successful login
+        await c.env.DB.prepare(`
+          UPDATE users 
+          SET failed_login_attempts = 0, locked_until = NULL, last_login = datetime('now')
+          WHERE id = ?
+        `).bind(user.id).run();
+
+        // Log successful login
+        await c.env.DB.prepare(`
+          INSERT INTO audit_logs (user_id, action, entity_type, ip_address, user_agent, created_at)
+          VALUES (?, 'successful_login', 'authentication', ?, ?, datetime('now'))
+        `).bind(user.id, clientIP, c.req.header('User-Agent') || '').run();
+
+      } catch (error) {
+        console.error('Authentication error:', error);
+        return c.html(html`
+          <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-red-500"></i>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-red-700">Authentication service temporarily unavailable</p>
+              </div>
+            </div>
+          </div>
+        `, 500);
       }
       
       if (!user || !isValidPassword) {
         return c.html(renderError('Invalid username or password'), 401);
       }
       
-      // Create base64 token (compatible with Cloudflare Workers)
+      // Generate secure JWT token
       const tokenData = {
         id: user.id,
         username: user.username,
@@ -88,59 +216,88 @@ export function createAuthRoutes() {
         role: user.role,
         firstName: user.first_name,
         lastName: user.last_name,
-        organizationId: user.organization_id || 1,
-        expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+        organizationId: user.organization_id || 1
       };
       
-      const token = btoa(JSON.stringify(tokenData));
+      // Generate CSRF token
+      const csrfToken = await generateCSRFToken();
       
-      // Set cookie with browser-compatible settings
-      const isProduction = c.req.url.includes('.pages.dev');
+      // Create secure JWT
+      const jwt = await generateJWT(tokenData, JWT_SECRET);
       
-      // Set the main auth cookie
-      setCookie(c, 'aria_token', token, {
-        httpOnly: false, // Allow JavaScript access for HTMX headers
-        secure: isProduction, // HTTPS in production, HTTP in dev
-        sameSite: 'Lax',
+      // Create session record
+      const sessionId = crypto.randomUUID();
+      await c.env.DB.prepare(`
+        INSERT INTO user_sessions (id, user_id, session_data, csrf_token, ip_address, user_agent, expires_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+24 hours'))
+      `).bind(
+        sessionId, 
+        user.id, 
+        JSON.stringify(tokenData), 
+        csrfToken, 
+        clientIP, 
+        c.req.header('User-Agent') || ''
+      ).run();
+      
+      // Set secure cookies
+      const isProduction = c.req.url.includes('.pages.dev') || c.req.url.includes('https://');
+      
+      // Set JWT cookie (httpOnly for security)
+      setCookie(c, 'aria_token', jwt, {
+        httpOnly: true, // Prevent XSS attacks
+        secure: isProduction,
+        sameSite: 'Strict',
         maxAge: 86400, // 24 hours
-        path: '/',
-        domain: isProduction ? undefined : undefined // Let browser handle domain
+        path: '/'
       });
       
-      // Also store in localStorage via JavaScript for better persistence
-      const jsScript = `
-        localStorage.setItem('aria_token', '${token}');
-        localStorage.setItem('aria_user', '${JSON.stringify(tokenData).replace(/'/g, "\\'")}');
-        console.log('Authentication stored in localStorage');
-      `;
+      // Set session ID cookie
+      setCookie(c, 'aria_session', sessionId, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'Strict',
+        maxAge: 86400,
+        path: '/'
+      });
       
-      console.log('Cookie and localStorage set for user:', tokenData.username);
+      // Set CSRF token cookie (accessible to JavaScript)
+      setCookie(c, 'aria_csrf', csrfToken, {
+        httpOnly: false, // Accessible to frontend for CSRF protection
+        secure: isProduction,
+        sameSite: 'Strict',
+        maxAge: 86400,
+        path: '/'
+      });
       
-      // Return success with redirect and authentication setup
+      // Set security headers
+      const securityHeaders = getSecurityHeaders();
+      Object.entries(securityHeaders).forEach(([key, value]) => {
+        c.header(key, value);
+      });
+      
+      // Return success with redirect
       c.header('HX-Redirect', '/dashboard');
       c.header('HX-Trigger', 'loginSuccess');
-      return c.html(`
+      
+      return c.html(html`
         <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4" role="alert">
           <div class="flex">
             <div class="flex-shrink-0">
               <i class="fas fa-check-circle text-green-500"></i>
             </div>
             <div class="ml-3">
-              <p class="text-sm text-green-700">Login successful! Redirecting...</p>
+              <p class="text-sm text-green-700">Login successful! Redirecting to dashboard...</p>
             </div>
           </div>
         </div>
         <script>
-          ${jsScript}
+          // Store user data for frontend use
+          localStorage.setItem('aria_user', '${JSON.stringify(tokenData).replace(/'/g, "\\'")}');
+          console.log('Authentication successful for:', '${user.username}');
           
-          // Enhanced redirect with authentication check
+          // Redirect after brief delay
           setTimeout(() => {
-            if (localStorage.getItem('aria_token')) {
-              window.location.href = '/dashboard';
-            } else {
-              console.error('Authentication failed to persist');
-              window.location.reload();
-            }
+            window.location.href = '/dashboard';
           }, 1000);
         </script>
       `);

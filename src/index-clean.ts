@@ -17,6 +17,10 @@ import { createIntelligenceRoutes } from './routes/intelligence-routes';
 import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createAPIRoutes } from './routes/api-routes';
 import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
+import { createApiKeyRoutes } from './routes/api-key-routes';
+
+// Import security middleware
+import { authMiddleware, requireRole, requireAdmin, csrfMiddleware } from './middleware/auth-middleware';
 
 // Phase 3 & 4 Implementation Routes - Advanced Analytics & Enterprise Scale
 import { mlAnalyticsRoutes } from './routes/ml-analytics';
@@ -33,10 +37,29 @@ import { landingPage } from './templates/landing';
 
 const app = new Hono();
 
-// Middleware
+// Security middleware (applied to all routes)
 app.use('*', logger());
-app.use('*', cors());
-app.use('*', secureHeaders());
+app.use('*', cors({
+  origin: ['https://aria51.pages.dev', 'https://*.aria51.pages.dev'],
+  credentials: true
+}));
+app.use('*', secureHeaders({
+  contentSecurityPolicy: {
+    defaultSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://unpkg.com"],
+    imgSrc: ["'self'", "data:", "https:"],
+    fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+    connectSrc: ["'self'"]
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// CSRF protection for state-changing operations
+app.use('/auth/logout', csrfMiddleware);
+app.use('/admin/*', csrfMiddleware);
+app.use('/api/users/*', csrfMiddleware);
+app.use('/api/keys/*', csrfMiddleware);
 
 // Serve static files
 app.get('/static/*', serveStatic({ root: './' }));
@@ -52,7 +75,7 @@ app.get('/health', (c) => {
   });
 });
 
-// Landing page route
+// Landing page route (public)
 app.get('/', async (c) => {
   const token = getCookie(c, 'aria_token');
   
@@ -70,7 +93,7 @@ app.get('/home', async (c) => {
   return c.redirect('/');
 });
 
-// Login page
+// Login page (public)
 app.get('/login', (c) => {
   const token = getCookie(c, 'aria_token');
   
@@ -320,7 +343,7 @@ app.get('/test/modal', (c) => {
   `);
 });
 
-// Mount clean route groups
+// Mount route groups with authentication
 const authRoutes = createAuthRoutes();
 const dashboardRoutes = createCleanDashboardRoutes();
 const riskRoutes = createRiskRoutesARIA5();
@@ -330,39 +353,77 @@ const intelligenceRoutes = createIntelligenceRoutes();
 const adminRoutes = createAdminRoutesARIA5();
 const apiRoutes = createAPIRoutes();
 const aiRoutes = createAIAssistantRoutes();
+const apiKeyRoutes = createApiKeyRoutes();
 
+// Public routes (no authentication required)
 app.route('/auth', authRoutes);
+
+// Protected routes (require authentication)
+app.use('/dashboard/*', authMiddleware);
 app.route('/dashboard', dashboardRoutes);
+
+app.use('/risk/*', authMiddleware);
 app.route('/risk', riskRoutes);
+
+app.use('/compliance/*', authMiddleware);
 app.route('/compliance', complianceRoutes);
+
+app.use('/operations/*', authMiddleware);
 app.route('/operations', operationsRoutes);
 
-// Direct asset and document routes
-app.get('/assets', async (c) => {
+// Direct asset and document routes (protected)
+app.get('/assets', authMiddleware, async (c) => {
   return c.redirect('/operations/assets');
 });
 
-app.get('/documents', async (c) => {
+app.get('/documents', authMiddleware, async (c) => {
   return c.redirect('/operations/documents');
 });
 
-// Reports route - redirect to intelligence reports
-app.get('/reports', async (c) => {
+// Intelligence routes (require authentication)
+app.use('/intelligence/*', authMiddleware);
+app.route('/intelligence', intelligenceRoutes);
+
+// Reports route - redirect to intelligence reports (protected)
+app.get('/reports', authMiddleware, async (c) => {
   return c.redirect('/intelligence/reports');
 });
-app.route('/intelligence', intelligenceRoutes);
+
+// Admin routes (require admin role)
+app.use('/admin/*', authMiddleware);
+app.use('/admin/*', requireAdmin);
 app.route('/admin', adminRoutes);
+
+// API routes (require authentication)
+app.use('/api/*', authMiddleware);
 app.route('/api', apiRoutes);
+
+// API Key management routes (require authentication)
+app.use('/api/keys/*', authMiddleware);
+app.route('/api/keys', apiKeyRoutes);
+
+// AI Assistant routes (require authentication)
+app.use('/ai/*', authMiddleware);
 app.route('/ai', aiRoutes);
 
-// Phase 3 & 4 Routes - Advanced Analytics & Enterprise Scale
+// Phase 3 & 4 Routes - Advanced Analytics & Enterprise Scale (protected)
+app.use('/analytics/*', authMiddleware);
 app.route('/analytics', mlAnalyticsRoutes);
+
+app.use('/threat-intel/*', authMiddleware);
 app.route('/threat-intel', threatIntelRoutes);
+
+app.use('/incident-response/*', authMiddleware);
 app.route('/incident-response', incidentResponseRoutes);
 
-// Phase 3 & 4 API Routes
+// Phase 3 & 4 API Routes (protected)
+app.use('/api/analytics/*', authMiddleware);
 app.route('/api/analytics', apiAnalyticsRoutes);
+
+app.use('/api/threat-intel/*', authMiddleware);
 app.route('/api/threat-intel', apiThreatIntelRoutes);
+
+app.use('/api/incident-response/*', authMiddleware);
 app.route('/api/incident-response', apiIncidentResponseRoutes);
 
 // Clean 404 handler - NO full page layout to prevent injection
