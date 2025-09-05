@@ -20,6 +20,7 @@ import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 import { createApiKeyRoutes } from './routes/api-key-routes';
 import { createPolicyManagementRoutes } from './routes/policy-management-routes';
 import { enhancedRiskRoutes } from './routes/enhanced-risk-routes';
+import { createRiskControlRoutes } from './routes/risk-control-routes';
 
 // Import security middleware
 import { authMiddleware, requireRole, requireAdmin, csrfMiddleware } from './middleware/auth-middleware';
@@ -361,6 +362,11 @@ app.route('/dashboard', dashboardRoutes);
 app.use('/risk/*', authMiddleware);
 app.route('/risk', riskRoutes);
 app.route('/risk', enhancedRiskRoutes);
+
+// Risk-Control Mapping Routes
+app.use('/risk-controls/*', authMiddleware);
+const riskControlRoutes = createRiskControlRoutes();
+app.route('/risk-controls', riskControlRoutes);
 
 app.use('/compliance/*', authMiddleware);
 app.route('/compliance', complianceRoutes);

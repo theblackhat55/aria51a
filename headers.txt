@@ -1,0 +1,25 @@
+HTTP/1.1 200 OK
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=UTF-8
+Access-Control-Allow-Origin: true
+Set-Cookie: aria_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsImVtYWlsIjoiYWRtaW5AYXJpYTUuY29tIiwicm9sZSI6ImFkbWluIiwiZmlyc3ROYW1lIjoiQWRtaW4iLCJsYXN0TmFtZSI6IlVzZXIiLCJvcmdhbml6YXRpb25JZCI6MSwiaWF0IjoxNzU3MTAzMjgyLCJleHAiOjE3NTcxODk2ODIsImlzcyI6ImFyaWE1LXBsYXRmb3JtIiwiYXVkIjoiYXJpYTUtdXNlcnMifQ.o1z4rWF5WGq%2FhfrI04UtJEVseuSrmPzREfeeQG27t38; Max-Age=86400; Path=/; HttpOnly; SameSite=Strict
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+Vary: Origin
+Access-Control-Allow-Credentials: true
+Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+HX-Redirect: /dashboard
+HX-Trigger: loginSuccess
+Origin-Agent-Cluster: ?1
+Permissions-Policy: geolocation=(), microphone=(), camera=()
+Referrer-Policy: strict-origin-when-cross-origin
+Set-Cookie: aria_session=f6ef1b99-bab6-47ae-86a9-8f668322c681; Max-Age=86400; Path=/; HttpOnly; SameSite=Strict
+Set-Cookie: aria_csrf=31af1bbbb556dbbf235092284d197c24be462fa33f4fd747; Max-Age=86400; Path=/; SameSite=Strict
+X-Content-Type-Options: nosniff
+X-DNS-Prefetch-Control: off
+X-Download-Options: noopen
+X-Frame-Options: DENY
+X-Permitted-Cross-Domain-Policies: none
+X-XSS-Protection: 0
+

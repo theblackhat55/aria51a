@@ -23,14 +23,14 @@ export function createCleanDashboardRoutes() {
     };
 
     try {
-      // Get real risk statistics
+      // Get real risk statistics - fix: use probability * impact instead of risk_score
       const risksResult = await c.env.DB.prepare(`
         SELECT 
           COUNT(*) as total,
-          SUM(CASE WHEN risk_score >= 20 THEN 1 ELSE 0 END) as critical,
-          SUM(CASE WHEN risk_score >= 12 AND risk_score < 20 THEN 1 ELSE 0 END) as high,
-          SUM(CASE WHEN risk_score >= 6 AND risk_score < 12 THEN 1 ELSE 0 END) as medium,
-          SUM(CASE WHEN risk_score < 6 THEN 1 ELSE 0 END) as low
+          SUM(CASE WHEN (probability * impact) >= 20 THEN 1 ELSE 0 END) as critical,
+          SUM(CASE WHEN (probability * impact) >= 12 AND (probability * impact) < 20 THEN 1 ELSE 0 END) as high,
+          SUM(CASE WHEN (probability * impact) >= 6 AND (probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
+          SUM(CASE WHEN (probability * impact) < 6 THEN 1 ELSE 0 END) as low
         FROM risks 
         WHERE status = 'active'
       `).first();
@@ -117,10 +117,10 @@ export function createCleanDashboardRoutes() {
       const result = await c.env.DB.prepare(`
         SELECT 
           COUNT(*) as total,
-          SUM(CASE WHEN risk_score >= 20 THEN 1 ELSE 0 END) as critical,
-          SUM(CASE WHEN risk_score >= 12 AND risk_score < 20 THEN 1 ELSE 0 END) as high,
-          SUM(CASE WHEN risk_score >= 6 AND risk_score < 12 THEN 1 ELSE 0 END) as medium,
-          SUM(CASE WHEN risk_score < 6 THEN 1 ELSE 0 END) as low
+          SUM(CASE WHEN (probability * impact) >= 20 THEN 1 ELSE 0 END) as critical,
+          SUM(CASE WHEN (probability * impact) >= 12 AND (probability * impact) < 20 THEN 1 ELSE 0 END) as high,
+          SUM(CASE WHEN (probability * impact) >= 6 AND (probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
+          SUM(CASE WHEN (probability * impact) < 6 THEN 1 ELSE 0 END) as low
         FROM risks 
         WHERE status = 'active'
       `).first();

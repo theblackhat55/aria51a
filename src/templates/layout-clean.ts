@@ -1209,6 +1209,13 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Risk evaluations</div>
                   </div>
                 </a>
+                <a href="/risk-controls" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700">
+                  <i class="fas fa-link w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Risk-Control Mapping</div>
+                    <div class="text-xs text-gray-500">AI-powered control linkage</div>
+                  </div>
+                </a>
               </div>
             </div>
           </div>
