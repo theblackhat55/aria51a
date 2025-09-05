@@ -901,15 +901,15 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         let formatted = this.escapeHtml(text);
         
         // Convert URLs to links
-        formatted = formatted.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-600 hover:underline">$1</a>');
+        formatted = formatted.replace(new RegExp('(https?:\\/\\/[^\\s]+)', 'g'), '<a href="$1" target="_blank" class="text-blue-600 hover:underline">$1</a>');
         
         // Convert line breaks
-        formatted = formatted.replace(/\n/g, '<br>');
+        formatted = formatted.replace(new RegExp('\\n', 'g'), '<br>');
         
         // Highlight important terms
-        formatted = formatted.replace(/\b(HIGH|CRITICAL|URGENT)\b/gi, '<span class="bg-red-100 text-red-800 px-1 rounded">$1</span>');
-        formatted = formatted.replace(/\b(LOW|INFORMATIONAL)\b/gi, '<span class="bg-green-100 text-green-800 px-1 rounded">$1</span>');
-        formatted = formatted.replace(/\b(MEDIUM|WARNING)\b/gi, '<span class="bg-yellow-100 text-yellow-800 px-1 rounded">$1</span>');
+        formatted = formatted.replace(new RegExp('\\b(HIGH|CRITICAL|URGENT)\\b', 'gi'), '<span class="bg-red-100 text-red-800 px-1 rounded">$1</span>');
+        formatted = formatted.replace(new RegExp('\\b(LOW|INFORMATIONAL)\\b', 'gi'), '<span class="bg-green-100 text-green-800 px-1 rounded">$1</span>');
+        formatted = formatted.replace(new RegExp('\\b(MEDIUM|WARNING)\\b', 'gi'), '<span class="bg-yellow-100 text-yellow-800 px-1 rounded">$1</span>');
         
         return formatted;
       }
