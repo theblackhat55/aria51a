@@ -1405,11 +1405,10 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
               hx-post="/risk/create"
               hx-target="#form-result"
               hx-swap="innerHTML"
-              hx-headers='{"X-CSRF-Token": "${csrfToken || ''}"}'
               class="p-6 space-y-6">
           
           <!-- CSRF Token -->
-          ${csrfToken ? `<input type="hidden" name="csrf_token" value="${csrfToken}">` : ''}
+          <input type="hidden" name="csrf_token" value="${csrfToken || ''}"
           
           <!-- 1. Risk Identification Section -->
           <div class="space-y-4">

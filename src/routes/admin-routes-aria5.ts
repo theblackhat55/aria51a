@@ -3,6 +3,7 @@ import { html } from 'hono/html';
 import { requireAuth, requireAdmin } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import type { CloudflareBindings } from '../types';
+import { generateCSRFToken, setCSRFToken, verifyCSRFToken } from '../lib/security.js';
 
 export function createAdminRoutesARIA5() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -394,7 +395,8 @@ export function createAdminRoutesARIA5() {
 
   // User Creation Modal
   app.get('/users/create', async (c) => {
-    return c.html(renderCreateUserModal());
+    const csrfToken = setCSRFToken(c);
+    return c.html(renderCreateUserModal(csrfToken));
   });
 
   // Create User
@@ -3244,7 +3246,7 @@ const renderEditUserModal = (user: any) => html`
 `;
 
 // Create User Modal
-const renderCreateUserModal = () => html`
+const renderCreateUserModal = (csrfToken?: string) => html`
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4">
       <div class="flex justify-between items-center p-6 border-b">
@@ -3255,6 +3257,8 @@ const renderCreateUserModal = () => html`
       </div>
       
       <form hx-post="/admin/users/create" hx-target="#create-result">
+        <!-- CSRF Token -->
+        <input type="hidden" name="csrf_token" value="${csrfToken || ''}"
         <div class="p-6 space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
