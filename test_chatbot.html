@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Chatbot on Dashboard</title>
+</head>
+<body>
+    <script>
+        // Simulate login by setting tokens in localStorage
+        localStorage.setItem('aria_token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsImVtYWlsIjoiYWRtaW5AYXJpYTUuY29tIiwicm9sZSI6ImFkbWluIiwiZmlyc3ROYW1lIjoiQWRtaW4iLCJsYXN0TmFtZSI6IlVzZXIiLCJvcmdhbml6YXRpb25JZCI6MSwiaWF0IjoxNzU3MDk4ODg1LCJleHAiOjE3NTcxODUyODUsImlzcyI6ImFyaWE1LXBsYXRmb3JtIiwiYXVkIjoiYXJpYTUtdXNlcnMifQ.0Vt%2Fh5RV5l3gwJ88h7CSucD8VgV2hxKhlV6ZDXDaWHQ');
+        
+        // Set cookies manually
+        document.cookie = 'aria_session=4e6188e7-61b2-4870-ba8e-84429953ee7b; path=/; domain=3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev';
+        document.cookie = 'aria_csrf=30974cdd13543d99c88787a8b3445694c380ab84db4f9d42; path=/; domain=3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev';
+        
+        // Redirect to dashboard
+        setTimeout(function() {
+            window.location.href = 'https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev/dashboard';
+        }, 1000);
+    </script>
+</body>
+</html>

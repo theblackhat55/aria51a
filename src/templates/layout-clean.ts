@@ -614,18 +614,52 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         this.notification = document.getElementById('chatbot-notification');
         this.notificationCount = document.getElementById('notification-count');
         
-        console.log('🤖 Enhanced ARIA Chatbot initialized');
+        // Debug: Check if all elements were found
+        const elements = {
+          toggle: this.toggle,
+          panel: this.panel,
+          close: this.close,
+          minimize: this.minimize,
+          form: this.form,
+          input: this.input,
+          messages: this.messages,
+          sendButton: this.sendButton
+        };
+        
+        let missingElements = [];
+        Object.keys(elements).forEach(key => {
+          if (!elements[key]) {
+            missingElements.push(key);
+          }
+        });
+        
+        if (missingElements.length > 0) {
+          console.error('❌ Missing chatbot elements:', missingElements);
+        } else {
+          console.log('✅ All chatbot elements found successfully');
+        }
+        
+        console.log('🤖 Enhanced ARIA Chatbot initialized on authenticated page');
       }
       
       bindEvents() {
         // Toggle chatbot
-        this.toggle.addEventListener('click', () => this.toggleChat());
+        if (this.toggle) {
+          this.toggle.addEventListener('click', () => this.toggleChat());
+          console.log('✅ Chatbot toggle button event bound');
+        } else {
+          console.error('❌ Chatbot toggle button not found - cannot bind click event');
+        }
         
         // Close chatbot
-        this.close.addEventListener('click', () => this.closeChat());
+        if (this.close) {
+          this.close.addEventListener('click', () => this.closeChat());
+        }
         
         // Minimize chatbot
-        this.minimize.addEventListener('click', () => this.minimizeChat());
+        if (this.minimize) {
+          this.minimize.addEventListener('click', () => this.minimizeChat());
+        }
         
         // Form submission
         this.form.addEventListener('submit', (e) => this.handleSubmission(e));
