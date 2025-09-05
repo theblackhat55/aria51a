@@ -1740,17 +1740,21 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
 
         try {
           // Extract structured data using regex patterns
-          const probabilityMatch = analysis.match(/PROBABILITY_SCORE:\s*(\d+)/i);
+          const probabilityRegex = new RegExp('PROBABILITY_SCORE:\\\\s*(\\\\d+)', 'i');
+          const probabilityMatch = analysis.match(probabilityRegex);
           if (probabilityMatch) aiData.probability = parseInt(probabilityMatch[1]);
 
-          const impactMatch = analysis.match(/IMPACT_SCORE:\s*(\d+)/i);
+          const impactRegex = new RegExp('IMPACT_SCORE:\\\\s*(\\\\d+)', 'i');
+          const impactMatch = analysis.match(impactRegex);
           if (impactMatch) aiData.impact = parseInt(impactMatch[1]);
 
-          const strategyMatch = analysis.match(/TREATMENT_STRATEGY:\s*([^\n]+)/i);
+          const strategyRegex = new RegExp('TREATMENT_STRATEGY:\\\\s*([^\\\\n]+)', 'i');
+          const strategyMatch = analysis.match(strategyRegex);
           if (strategyMatch) aiData.treatmentStrategy = strategyMatch[1].trim().toLowerCase();
 
-          const actionsMatch = analysis.match(/MITIGATION_ACTIONS:\s*([^\n]+)/i);
-          if (actionsMatch) aiData.mitigationActions = actionsMatch[1].trim().replace(/;/g, '\n');
+          const actionsRegex = new RegExp('MITIGATION_ACTIONS:\\\\s*([^\\\\n]+)', 'i');
+          const actionsMatch = analysis.match(actionsRegex);
+          if (actionsMatch) aiData.mitigationActions = actionsMatch[1].trim().replace(/;/g, '\\n');
         } catch (error) {
           console.error('Error parsing AI analysis:', error);
         }
