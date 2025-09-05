@@ -54,6 +54,22 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
     /* Ensure dropdowns are hidden by default */
     .dropdown-menu { display: none; }
     .dropdown-menu.show { display: block; }
+    
+    /* Modal positioning and overlay fixes */
+    #modal-container {
+      position: relative;
+      z-index: 9999;
+    }
+    
+    #modal-container .fixed {
+      position: fixed !important;
+      z-index: 9999 !important;
+    }
+    
+    /* Prevent body scroll when modal is open */
+    body.modal-open {
+      overflow: hidden;
+    }
   </style>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
@@ -89,6 +105,12 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       dropdowns.forEach((dropdown, index) => {
         const button = dropdown.querySelector('[data-dropdown-button]');
         const menu = dropdown.querySelector('[data-dropdown-menu]');
+        
+        // Skip if elements don't exist
+        if (!button || !menu) {
+          console.log('⚠️ Dropdown elements missing for dropdown', index);
+          return;
+        }
         
         if (!button || !menu) {
           console.warn('⚠️ Dropdown', index, 'missing button or menu');
@@ -179,6 +201,30 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
               event.detail.headers['X-CSRF-Token'] = csrfInput.value;
             }
           }
+        }
+      });
+      
+      // Modal management
+      document.body.addEventListener('htmx:afterSwap', function(event) {
+        const target = event.target;
+        if (target && target.id === 'modal-container') {
+          const modal = target.querySelector('.fixed.inset-0');
+          if (modal) {
+            // Modal opened - prevent body scroll
+            document.body.classList.add('modal-open');
+          } else if (target.innerHTML.trim() === '') {
+            // Modal closed - restore body scroll
+            document.body.classList.remove('modal-open');
+          }
+        }
+      });
+      
+      // Close modal when clicking outside
+      document.addEventListener('click', function(event) {
+        const modalContainer = document.getElementById('modal-container');
+        if (modalContainer && event.target === modalContainer.querySelector('.fixed.inset-0')) {
+          modalContainer.innerHTML = '';
+          document.body.classList.remove('modal-open');
         }
       });
       

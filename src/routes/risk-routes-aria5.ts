@@ -344,6 +344,12 @@ export function createRiskRoutesARIA5() {
     return c.html(renderCreateRiskModal(csrfToken));
   });
 
+  // Simple Add Risk modal for quick actions
+  app.get('/add', authMiddleware, async (c) => {
+    const csrfToken = setCSRFToken(c);
+    return c.html(renderSimpleAddRiskModal(csrfToken));
+  });
+
   // Risk score calculation endpoint
   app.post('/calculate-score', async (c) => {
     const body = await c.req.parseBody();
@@ -1129,7 +1135,7 @@ const renderARIA5RiskManagement = () => html`
             <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
               <i class="fas fa-download mr-2"></i>Export  
             </button>
-            <button hx-get="/risk/create"
+            <button hx-get="/risk/add"
                     hx-target="#modal-container"
                     hx-swap="innerHTML"
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
@@ -1315,7 +1321,7 @@ const renderRiskTable = (risks: any[]) => {
             <tr>
               <td colspan="10" class="px-6 py-8 text-center text-gray-500">
                 <i class="fas fa-exclamation-triangle text-gray-300 text-3xl mb-2"></i>
-                <div>No risks found. <a href="#" hx-get="/risk/create" hx-target="#modal-container" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Create your first risk</a>.</div>
+                <div>No risks found. <a href="#" hx-get="/risk/add" hx-target="#modal-container" hx-swap="innerHTML" class="text-blue-600 hover:text-blue-800">Create your first risk</a>.</div>
               </td>
             </tr>
           </tbody>
@@ -1638,6 +1644,83 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+`;
+
+// Simple Add Risk Modal (compact version for quick actions)
+const renderSimpleAddRiskModal = (csrfToken?: string) => html`
+  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+    <div class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+          <form hx-post="/risk/risks" hx-target="#modal-result">
+            <!-- CSRF Token -->
+            <input type="hidden" name="csrf_token" value="${csrfToken || ''}">
+            
+            <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+              <div class="sm:flex sm:items-start">
+                <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                  <h3 class="text-lg font-semibold leading-6 text-gray-900 mb-4">Add New Risk</h3>
+                  
+                  <div id="modal-result"></div>
+                  
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700">Risk Title</label>
+                      <input type="text" name="title" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700">Description</label>
+                      <textarea name="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700">Category</label>
+                        <select name="category" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                          <option value="cybersecurity">Cybersecurity</option>
+                          <option value="operational">Operational</option>
+                          <option value="financial">Financial</option>
+                          <option value="compliance">Compliance</option>
+                          <option value="strategic">Strategic</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700">Owner</label>
+                        <input type="text" name="owner" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                      </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700">Probability (1-5)</label>
+                        <input type="number" name="probability" min="1" max="5" value="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                      </div>
+                      
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700">Impact (1-5)</label>
+                        <input type="number" name="impact" min="1" max="5" value="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+              <button type="submit" class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
+                Add Risk
+              </button>
+              <button type="button" onclick="document.getElementById('modal-container').innerHTML = ''" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
