@@ -447,10 +447,11 @@ Be practical and actionable in your analysis.`;
               <span class="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded">Powered by Cloudflare AI</span>
             </div>
             <button 
-              hx-post="/risk/fill-from-ai"
-              hx-vals='{"analysis": "${analysis.replace(/"/g, '\\"').replace(/\n/g, '\\n')}", "title": "${riskTitle}", "description": "${riskDescription}", "category": "${riskCategory}"}'
-              hx-target="#ai-form-filler"
-              hx-swap="innerHTML"
+              id="fill-ai-form-btn"
+              data-analysis="${analysis.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}"
+              data-title="${riskTitle.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}"
+              data-description="${riskDescription.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}"
+              data-category="${riskCategory.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}"
               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
               <i class="fas fa-magic mr-1"></i>
               Fill Form with AI Data
@@ -1726,6 +1727,139 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
         </form>
       </div>
     </div>
+    
+    <script>
+      // Helper function to parse AI analysis for structured data
+      function parseAIAnalysisData(analysis) {
+        const aiData = {
+          probability: 3,
+          impact: 3,
+          treatmentStrategy: 'mitigate',
+          mitigationActions: ''
+        };
+
+        try {
+          // Extract structured data using regex patterns
+          const probabilityMatch = analysis.match(/PROBABILITY_SCORE:\s*(\d+)/i);
+          if (probabilityMatch) aiData.probability = parseInt(probabilityMatch[1]);
+
+          const impactMatch = analysis.match(/IMPACT_SCORE:\s*(\d+)/i);
+          if (impactMatch) aiData.impact = parseInt(impactMatch[1]);
+
+          const strategyMatch = analysis.match(/TREATMENT_STRATEGY:\s*([^\n]+)/i);
+          if (strategyMatch) aiData.treatmentStrategy = strategyMatch[1].trim().toLowerCase();
+
+          const actionsMatch = analysis.match(/MITIGATION_ACTIONS:\s*([^\n]+)/i);
+          if (actionsMatch) aiData.mitigationActions = actionsMatch[1].trim().replace(/;/g, '\n');
+        } catch (error) {
+          console.error('Error parsing AI analysis:', error);
+        }
+
+        return aiData;
+      }
+      
+      // Add event listener for AI form filling button using event delegation
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'fill-ai-form-btn') {
+          e.preventDefault();
+          
+          try {
+            console.log('🤖 Filling form with AI data...');
+            
+            // Get data from button attributes
+            const analysis = e.target.getAttribute('data-analysis');
+            const title = e.target.getAttribute('data-title');
+            const description = e.target.getAttribute('data-description');
+            const category = e.target.getAttribute('data-category');
+            
+            if (!analysis) {
+              console.error('No analysis data found');
+              return;
+            }
+            
+            // Parse AI data
+            const aiData = parseAIAnalysisData(analysis);
+            console.log('📊 Parsed AI Data:', aiData);
+            
+            // Fill likelihood field
+            const likelihoodField = document.querySelector('select[name="likelihood"]');
+            if (likelihoodField && aiData.probability) {
+              likelihoodField.value = String(aiData.probability);
+              console.log('✅ Set likelihood to:', aiData.probability);
+            }
+            
+            // Fill impact field
+            const impactField = document.querySelector('select[name="impact"]');
+            if (impactField && aiData.impact) {
+              impactField.value = String(aiData.impact);
+              console.log('✅ Set impact to:', aiData.impact);
+            }
+            
+            // Fill treatment strategy field
+            const treatmentField = document.querySelector('select[name="treatment_strategy"]');
+            if (treatmentField && aiData.treatmentStrategy) {
+              // Map strategy to form values
+              const strategyMap = {
+                'accept': 'accept',
+                'mitigate': 'mitigate', 
+                'transfer': 'transfer',
+                'avoid': 'avoid'
+              };
+              const mappedStrategy = strategyMap[aiData.treatmentStrategy] || 'mitigate';
+              treatmentField.value = mappedStrategy;
+              console.log('✅ Set treatment strategy to:', mappedStrategy);
+            }
+            
+            // Fill mitigation actions field
+            const mitigationField = document.querySelector('textarea[name="mitigation_actions"]');
+            if (mitigationField && aiData.mitigationActions) {
+              mitigationField.value = aiData.mitigationActions;
+              console.log('✅ Set mitigation actions');
+            }
+            
+            // Trigger risk score calculation
+            if (likelihoodField) {
+              const changeEvent = new Event('change', { bubbles: true });
+              likelihoodField.dispatchEvent(changeEvent);
+              console.log('✅ Triggered risk score calculation');
+            }
+            
+            // Show success message in AI analysis result area
+            const aiResult = document.getElementById('ai-analysis-result');
+            if (aiResult) {
+              const successMsg = document.createElement('div');
+              successMsg.className = 'mt-3 p-3 bg-green-50 border border-green-200 rounded-lg';
+              successMsg.innerHTML = 
+                '<div class="flex items-center">' +
+                  '<i class="fas fa-check-circle text-green-500 mr-2"></i>' +
+                  '<span class="text-green-700 font-medium">Form Updated!</span>' +
+                '</div>' +
+                '<p class="text-green-600 text-sm mt-1">Risk assessment fields have been filled with AI recommendations.</p>';
+              aiResult.appendChild(successMsg);
+            }
+            
+            console.log('✅ Form filling complete');
+            
+          } catch (error) {
+            console.error('❌ Error filling form:', error);
+            
+            // Show error message
+            const aiResult = document.getElementById('ai-analysis-result');
+            if (aiResult) {
+              const errorMsg = document.createElement('div');
+              errorMsg.className = 'mt-3 p-3 bg-red-50 border border-red-200 rounded-lg';
+              errorMsg.innerHTML = 
+                '<div class="flex items-center">' +
+                  '<i class="fas fa-times-circle text-red-500 mr-2"></i>' +
+                  '<span class="text-red-700 font-medium">Error filling form</span>' +
+                '</div>' +
+                '<p class="text-red-600 text-sm mt-1">' + error.message + '</p>';
+              aiResult.appendChild(errorMsg);
+            }
+          }
+        }
+      });
+    </script>
   </div>
 `;
 
