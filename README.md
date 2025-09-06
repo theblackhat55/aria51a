@@ -26,6 +26,7 @@
 - **Risk register management** with mitigation tracking
 - **Impact & probability matrices** for comprehensive analysis
 - **Real-time risk monitoring** and alert system
+- **Mobile-responsive risk dashboard** with touch-friendly controls
 
 ### 🔍 Threat Intelligence
 - **IOC & threat feed management** with automated ingestion
@@ -38,6 +39,7 @@
 - **Automated evidence collection** and assessment scheduling
 - **Compliance reporting** with audit trail functionality
 - **Control effectiveness monitoring**
+- **Mobile-optimized framework cards** with responsive layouts
 
 ### 🧠 AI & RAG Analytics
 - **Cloudflare Llama3 AI** integration with intelligent fallback
@@ -50,6 +52,7 @@
 - **Service management** with CIA (Confidentiality, Integrity, Availability) assessments
 - **Security controls tracking** and effectiveness monitoring
 - **Operational dashboards** with real-time status updates
+- **Mobile-responsive operations dashboard** with optimized stat cards
 
 ## 🏗️ Architecture
 
@@ -128,7 +131,14 @@ npm run test                 # Test local server
 
 ## 🌍 Live Demo
 
-**Production URL**: [https://aria51-htmx.pages.dev](https://aria51-htmx.pages.dev)
+**Production URL**: [https://b2074e3e.aria51.pages.dev](https://b2074e3e.aria51.pages.dev)
+
+### 📱 Mobile-Optimized Features
+- **Responsive hamburger menu** with smooth animations
+- **Touch-friendly interface** with optimized button sizes  
+- **Mobile-first design** across all pages
+- **Progressive disclosure** - essential info prioritized on small screens
+- **Responsive tables** with collapsible columns for mobile
 
 ### Demo Accounts
 - **Administrator**: `admin / demo123`
