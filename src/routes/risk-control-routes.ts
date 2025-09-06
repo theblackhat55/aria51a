@@ -19,7 +19,7 @@ export function createRiskControlRoutes() {
     
     try {
       // Get risk-control mapping statistics  
-      // Use risks_simple for production compatibility (Cloudflare Pages)
+      // Use risks table for production compatibility (Cloudflare Pages)
       const stats = await c.env.DB.prepare(`
         SELECT 
           COUNT(DISTINCT r.id) as total_risks,
@@ -27,28 +27,29 @@ export function createRiskControlRoutes() {
           COUNT(DISTINCT CASE WHEN rcm.id IS NULL THEN r.id END) as unmapped_risks,
           AVG(rcm.effectiveness_rating) as avg_effectiveness,
           AVG(rcm.mapping_confidence) as avg_confidence
-        FROM risks_simple r
+        FROM risks r
         LEFT JOIN risk_control_mappings rcm ON r.id = rcm.risk_id
         WHERE r.status = 'active'
       `).first();
 
       // Get detailed risk-control mappings
-      // Use risks_simple for production compatibility (Cloudflare Pages) 
+      // Use risks table for production compatibility (Cloudflare Pages) 
       const mappings = await c.env.DB.prepare(`
         SELECT 
           r.id as risk_id,
           r.title as risk_title,
-          r.category as risk_category,
+          rc.name as risk_category,
           (r.probability * r.impact) as risk_score,
           COUNT(rcm.id) as control_count,
           AVG(rcm.effectiveness_rating) as avg_effectiveness,
           AVG(rcm.mapping_confidence) as avg_confidence,
           GROUP_CONCAT(cf.name, ', ') as frameworks
-        FROM risks_simple r
+        FROM risks r
+        LEFT JOIN risk_categories rc ON r.category_id = rc.id
         LEFT JOIN risk_control_mappings rcm ON r.id = rcm.risk_id
         LEFT JOIN compliance_frameworks cf ON rcm.framework_id = cf.id
         WHERE r.status = 'active'
-        GROUP BY r.id, r.title, r.category, r.probability, r.impact
+        GROUP BY r.id, r.title, rc.name, r.probability, r.impact
         ORDER BY risk_score DESC
       `).all();
 

@@ -389,7 +389,9 @@ export function createCleanDashboardRoutes() {
         services: services
       };
 
-      return c.html(renderSystemHealthServices(systemHealth.services));
+      return new Response(renderSystemHealthServices(systemHealth.services), {
+        headers: { 'Content-Type': 'text/html' }
+      });
     } catch (error) {
       console.error('Error fetching system health:', error);
       return c.html('<div class="text-red-600 p-4">Failed to load system health</div>', 500);

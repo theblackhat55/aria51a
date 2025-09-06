@@ -512,13 +512,127 @@ export function createOperationsRoutes() {
   // Asset linking modal for services
   app.get('/api/link/assets-to-service', async (c) => {
     const assets = await getAssets(c.env.DB);
-    return c.html(renderAssetLinkingModal(assets));
+    return new Response(renderAssetLinkingModal(assets), {
+      headers: { 'Content-Type': 'text/html' }
+    });
   });
 
   // Risk linking modal for services
   app.get('/api/link/risks-to-service', async (c) => {
     const risks = await getRisks(c.env.DB);
-    return c.html(renderRiskLinkingModal(risks));
+    return new Response(renderRiskLinkingModal(risks), {
+      headers: { 'Content-Type': 'text/html' }
+    });
+  });
+
+  // Edit service endpoint
+  app.get('/api/services/:id/edit', async (c) => {
+    const serviceId = c.req.param('id');
+    const service = await getServiceById(c.env.DB, serviceId);
+    if (!service) {
+      return new Response('<div class="p-4 text-red-600">Service not found</div>', {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+    return new Response(renderServiceEditModal(service), {
+      headers: { 'Content-Type': 'text/html' }
+    });
+  });
+
+  // Delete confirmation modal
+  app.get('/api/services/:id/delete-confirm', async (c) => {
+    const serviceId = c.req.param('id');
+    const service = await getServiceById(c.env.DB, serviceId);
+    if (!service) {
+      return new Response('<div class="p-4 text-red-600">Service not found</div>', {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+    
+    // Check if service has linked assets or risks
+    const linkedAssets = service.linked_assets ? JSON.parse(service.linked_assets) : [];
+    const linkedRisks = service.linked_risks ? JSON.parse(service.linked_risks) : [];
+    
+    return new Response(renderServiceDeleteModal(service, linkedAssets, linkedRisks), {
+      headers: { 'Content-Type': 'text/html' }
+    });
+  });
+
+  // Update service endpoint
+  app.post('/api/services/:id', async (c) => {
+    try {
+      const serviceId = c.req.param('id');
+      const formData = await c.req.formData();
+      
+      const serviceData = {
+        name: formData.get('name'),
+        type: formData.get('type'),
+        description: formData.get('description'),
+        location: formData.get('location'),
+        asset_owner: formData.get('asset_owner'),
+        technical_custodian: formData.get('technical_custodian'),
+        confidentiality: parseInt(formData.get('confidentiality') as string) || 1,
+        integrity: parseInt(formData.get('integrity') as string) || 1,
+        availability: parseInt(formData.get('availability') as string) || 1,
+        criticality: formData.get('criticality'),
+        updated_at: new Date().toISOString()
+      };
+      
+      await updateService(c.env.DB, serviceId, serviceData);
+      
+      // Return updated service row
+      const services = await getServices(c.env.DB);
+      return new Response(renderServiceRows(services), {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    } catch (error) {
+      console.error('Error updating service:', error);
+      return new Response('<div class="p-4 text-red-600">Error updating service</div>', {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+  });
+
+  // Close service modal endpoint
+  app.get('/api/services/close', async (c) => {
+    return new Response('', {
+      headers: { 'Content-Type': 'text/html' }
+    });
+  });
+
+  // Delete service endpoint
+  app.delete('/api/services/:id', async (c) => {
+    try {
+      const serviceId = c.req.param('id');
+      
+      // First check if service exists and has linked items
+      const service = await getServiceById(c.env.DB, serviceId);
+      if (!service) {
+        return c.json({ error: 'Service not found' }, 404);
+      }
+      
+      const linkedAssets = service.linked_assets ? JSON.parse(service.linked_assets) : [];
+      const linkedRisks = service.linked_risks ? JSON.parse(service.linked_risks) : [];
+      
+      if (linkedAssets.length > 0 || linkedRisks.length > 0) {
+        return c.json({ 
+          error: 'Cannot delete service with linked assets or risks. Please unlink all items first.',
+          linkedAssets: linkedAssets.length,
+          linkedRisks: linkedRisks.length 
+        }, 400);
+      }
+      
+      await deleteService(c.env.DB, serviceId);
+      
+      // Return updated service list
+      const services = await getServices(c.env.DB);
+      return new Response(renderServiceRows(services), {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      return c.json({ error: 'Error deleting service' }, 500);
+    }
   });
 
   return app;
@@ -1287,8 +1401,17 @@ function renderServiceRows(services: any[]) {
                   hx-swap="innerHTML">
             <i class="fas fa-shield-alt mr-1"></i>Risks
           </button>
-          <button class="text-blue-600 hover:text-blue-900 text-left">
+          <button class="text-blue-600 hover:text-blue-900 text-left"
+                  hx-get="/operations/api/services/${service.id}/edit" 
+                  hx-target="#service-modal" 
+                  hx-swap="innerHTML">
             <i class="fas fa-edit mr-1"></i>Edit
+          </button>
+          <button class="text-red-600 hover:text-red-900 text-left"
+                  hx-get="/operations/api/services/${service.id}/delete-confirm" 
+                  hx-target="#service-modal" 
+                  hx-swap="innerHTML">
+            <i class="fas fa-trash mr-1"></i>Delete
           </button>
         </div>
       </td>
@@ -2351,3 +2474,326 @@ const renderRiskLinkingModal = (risks: any[]) => html`
     }
   </script>
 `;
+// Helper function to get service by ID
+async function getServiceById(db: any, serviceId: string) {
+  try {
+    const result = await db.prepare(`
+      SELECT * FROM assets 
+      WHERE id = ? AND (type = 'service' OR type = 'Service')
+    `).bind(serviceId).first();
+    return result;
+  } catch (error) {
+    console.error('Error fetching service by ID:', error);
+    return null;
+  }
+}
+
+// Helper function to update service
+async function updateService(db: any, serviceId: string, serviceData: any) {
+  try {
+    await db.prepare(`
+      UPDATE assets SET 
+        name = ?,
+        type = ?,
+        description = ?,
+        location = ?,
+        asset_owner = ?,
+        technical_custodian = ?,
+        confidentiality = ?,
+        integrity = ?,
+        availability = ?,
+        criticality = ?,
+        updated_at = ?
+      WHERE id = ?
+    `).bind(
+      serviceData.name,
+      serviceData.type,
+      serviceData.description,
+      serviceData.location,
+      serviceData.asset_owner,
+      serviceData.technical_custodian,
+      serviceData.confidentiality,
+      serviceData.integrity,
+      serviceData.availability,
+      serviceData.criticality,
+      serviceData.updated_at,
+      serviceId
+    ).run();
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating service:', error);
+    throw error;
+  }
+}
+
+// Helper function to delete service
+async function deleteService(db: any, serviceId: string) {
+  try {
+    await db.prepare(`
+      DELETE FROM assets 
+      WHERE id = ? AND (type = 'service' OR type = 'Service')
+    `).bind(serviceId).run();
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting service:', error);
+    throw error;
+  }
+}
+
+// Service Edit Modal
+const renderServiceEditModal = (service: any) => html`
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
+       hx-target="this" 
+       hx-swap="outerHTML"
+       _="on click from elsewhere halt the event">
+    <div class="relative top-10 mx-auto p-6 border w-full max-w-2xl shadow-xl rounded-lg bg-white">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-edit text-blue-600 mr-3"></i>
+              Edit Service
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">Update service information and CIA ratings</p>
+          </div>
+          <button hx-get="/operations/api/services/close" hx-target="#service-modal" hx-swap="innerHTML" 
+                  class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        
+        <form hx-post="/operations/api/services/${service.id}" 
+              hx-target="#service-modal" 
+              hx-swap="innerHTML"
+              hx-on::after-request="if(event.detail.xhr.status === 200) { 
+                document.getElementById('service-modal').innerHTML = '';
+                htmx.trigger(document.querySelector('tbody'), 'htmx:load');
+              }">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Service Name *</label>
+              <input type="text" name="name" value="${service.name || ''}" required
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
+              <select name="type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                <option value="Web Application" ${service.type === 'Web Application' ? 'selected' : ''}>Web Application</option>
+                <option value="Database Service" ${service.type === 'Database Service' ? 'selected' : ''}>Database Service</option>
+                <option value="API Service" ${service.type === 'API Service' ? 'selected' : ''}>API Service</option>
+                <option value="Authentication Service" ${service.type === 'Authentication Service' ? 'selected' : ''}>Authentication Service</option>
+                <option value="File Service" ${service.type === 'File Service' ? 'selected' : ''}>File Service</option>
+                <option value="Communication Service" ${service.type === 'Communication Service' ? 'selected' : ''}>Communication Service</option>
+                <option value="Infrastructure Service" ${service.type === 'Infrastructure Service' ? 'selected' : ''}>Infrastructure Service</option>
+                <option value="Business Application" ${service.type === 'Business Application' ? 'selected' : ''}>Business Application</option>
+                <option value="Other" ${service.type === 'Other' ? 'selected' : ''}>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea name="description" rows="3" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">${service.description || ''}</textarea>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Location/Department</label>
+              <input type="text" name="location" value="${service.location || ''}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Service Owner</label>
+              <input type="text" name="asset_owner" value="${service.asset_owner || ''}"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Technical Custodian</label>
+            <input type="text" name="technical_custodian" value="${service.technical_custodian || ''}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <!-- CIA Triad Assessment -->
+          <div class="mt-6 border-t pt-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">CIA Triad Assessment</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-lock text-blue-500 mr-1"></i>
+                  Confidentiality
+                </label>
+                <select name="confidentiality" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+                  <option value="1" ${service.confidentiality == 1 ? 'selected' : ''}>1 - Public</option>
+                  <option value="2" ${service.confidentiality == 2 ? 'selected' : ''}>2 - Internal</option>
+                  <option value="3" ${service.confidentiality == 3 ? 'selected' : ''}>3 - Confidential</option>
+                  <option value="4" ${service.confidentiality == 4 ? 'selected' : ''}>4 - Restricted</option>
+                  <option value="5" ${service.confidentiality == 5 ? 'selected' : ''}>5 - Top Secret</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-shield-alt text-orange-500 mr-1"></i>
+                  Integrity
+                </label>
+                <select name="integrity" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500">
+                  <option value="1" ${service.integrity == 1 ? 'selected' : ''}>1 - Low</option>
+                  <option value="2" ${service.integrity == 2 ? 'selected' : ''}>2 - Basic</option>
+                  <option value="3" ${service.integrity == 3 ? 'selected' : ''}>3 - Medium</option>
+                  <option value="4" ${service.integrity == 4 ? 'selected' : ''}>4 - High</option>
+                  <option value="5" ${service.integrity == 5 ? 'selected' : ''}>5 - Critical</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-clock text-green-500 mr-1"></i>
+                  Availability
+                </label>
+                <select name="availability" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500">
+                  <option value="1" ${service.availability == 1 ? 'selected' : ''}>1 - Low (95%)</option>
+                  <option value="2" ${service.availability == 2 ? 'selected' : ''}>2 - Basic (98%)</option>
+                  <option value="3" ${service.availability == 3 ? 'selected' : ''}>3 - Medium (99%)</option>
+                  <option value="4" ${service.availability == 4 ? 'selected' : ''}>4 - High (99.9%)</option>
+                  <option value="5" ${service.availability == 5 ? 'selected' : ''}>5 - Critical (99.99%)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Business Criticality</label>
+            <select name="criticality" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+              <option value="Low" ${service.criticality === 'Low' ? 'selected' : ''}>Low</option>
+              <option value="Medium" ${service.criticality === 'Medium' ? 'selected' : ''}>Medium</option>
+              <option value="High" ${service.criticality === 'High' ? 'selected' : ''}>High</option>
+              <option value="Critical" ${service.criticality === 'Critical' ? 'selected' : ''}>Critical</option>
+            </select>
+          </div>
+
+          <div class="mt-8 flex justify-end space-x-3">
+            <button type="button" 
+                    hx-get="/operations/api/services/close" 
+                    hx-target="#service-modal" 
+                    hx-swap="innerHTML"
+                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
+              <i class="fas fa-save mr-2"></i>
+              Update Service
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+`;
+
+// Service Delete Confirmation Modal
+const renderServiceDeleteModal = (service: any, linkedAssets: any[], linkedRisks: any[]) => {
+  const hasLinkedItems = linkedAssets.length > 0 || linkedRisks.length > 0;
+  
+  return html`
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
+         hx-target="this" 
+         hx-swap="outerHTML"
+         _="on click from elsewhere halt the event">
+      <div class="relative top-10 mx-auto p-6 border w-full max-w-lg shadow-xl rounded-lg bg-white">
+        <div class="mt-3">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-trash text-red-600 mr-3"></i>
+                Delete Service
+              </h3>
+            </div>
+            <button hx-get="/operations/api/services/close" hx-target="#service-modal" hx-swap="innerHTML" 
+                    class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+              <i class="fas fa-times text-lg"></i>
+            </button>
+          </div>
+          
+          ${hasLinkedItems ? html`
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+              <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-400 mt-0.5 mr-3"></i>
+                <div>
+                  <h4 class="text-sm font-medium text-yellow-800 mb-2">Cannot Delete Service</h4>
+                  <p class="text-sm text-yellow-700 mb-3">
+                    This service cannot be deleted because it has linked items that must be unlinked first:
+                  </p>
+                  <ul class="text-sm text-yellow-700 space-y-1">
+                    ${linkedAssets.length > 0 ? html`<li>• ${linkedAssets.length} linked assets</li>` : ''}
+                    ${linkedRisks.length > 0 ? html`<li>• ${linkedRisks.length} linked risks</li>` : ''}
+                  </ul>
+                  <p class="text-sm text-yellow-700 mt-3">
+                    Please unlink all assets and risks from this service before attempting to delete it.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end">
+              <button type="button" 
+                      hx-get="/operations/api/services/close" 
+                      hx-target="#service-modal" 
+                      hx-swap="innerHTML"
+                      class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Close
+              </button>
+            </div>
+          ` : html`
+            <div class="mb-6">
+              <p class="text-gray-700 mb-4">
+                Are you sure you want to delete the service <strong>"${service.name}"</strong>?
+              </p>
+              <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-start">
+                  <i class="fas fa-exclamation-triangle text-red-400 mt-0.5 mr-3"></i>
+                  <div>
+                    <h4 class="text-sm font-medium text-red-800 mb-1">This action cannot be undone</h4>
+                    <p class="text-sm text-red-700">
+                      The service and all its configuration will be permanently removed from the system.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+              <button type="button" 
+                      hx-get="/operations/api/services/close" 
+                      hx-target="#service-modal" 
+                      hx-swap="innerHTML"
+                      class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Cancel
+              </button>
+              <button type="button" 
+                      hx-delete="/operations/api/services/${service.id}"
+                      hx-target="#service-modal" 
+                      hx-swap="innerHTML"
+                      hx-on::after-request="if(event.detail.xhr.status === 200) { 
+                        document.getElementById('service-modal').innerHTML = '';
+                        htmx.trigger(document.querySelector('tbody'), 'htmx:load');
+                      }"
+                      class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center">
+                <i class="fas fa-trash mr-2"></i>
+                Delete Service
+              </button>
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+};
