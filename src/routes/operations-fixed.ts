@@ -512,7 +512,8 @@ export function createOperationsRoutes() {
   // Asset linking modal for services
   app.get('/api/link/assets-to-service', async (c) => {
     const assets = await getAssets(c.env.DB);
-    return new Response(renderAssetLinkingModal(assets), {
+    const modalHtml = renderAssetLinkingModal(assets);
+    return new Response(modalHtml.toString(), {
       headers: { 'Content-Type': 'text/html' }
     });
   });
@@ -520,7 +521,8 @@ export function createOperationsRoutes() {
   // Risk linking modal for services
   app.get('/api/link/risks-to-service', async (c) => {
     const risks = await getRisks(c.env.DB);
-    return new Response(renderRiskLinkingModal(risks), {
+    const modalHtml = renderRiskLinkingModal(risks);
+    return new Response(modalHtml.toString(), {
       headers: { 'Content-Type': 'text/html' }
     });
   });
@@ -534,7 +536,8 @@ export function createOperationsRoutes() {
         headers: { 'Content-Type': 'text/html' }
       });
     }
-    return new Response(renderServiceEditModal(service), {
+    const modalHtml = renderServiceEditModal(service);
+    return new Response(modalHtml.toString(), {
       headers: { 'Content-Type': 'text/html' }
     });
   });
@@ -553,7 +556,8 @@ export function createOperationsRoutes() {
     const linkedAssets = service.linked_assets ? JSON.parse(service.linked_assets) : [];
     const linkedRisks = service.linked_risks ? JSON.parse(service.linked_risks) : [];
     
-    return new Response(renderServiceDeleteModal(service, linkedAssets, linkedRisks), {
+    const modalHtml = renderServiceDeleteModal(service, linkedAssets, linkedRisks);
+    return new Response(modalHtml.toString(), {
       headers: { 'Content-Type': 'text/html' }
     });
   });
