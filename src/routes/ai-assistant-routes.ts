@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { requireAuth } from './auth-routes';
-import { baseLayout } from '../templates/layout';
+import { cleanLayout } from '../templates/layout-clean';
 
 import type { CloudflareBindings } from '../types';
 
@@ -15,7 +15,7 @@ export function createAIAssistantRoutes() {
   app.get('/', async (c) => {
     const user = c.get('user');
     return c.html(
-      baseLayout({
+      cleanLayout({
         title: 'ARIA Assistant',
         user,
         content: html`
@@ -185,7 +185,7 @@ export function createAIAssistantRoutes() {
                     <div class="space-y-3">
                       <div class="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
                         <p class="text-sm font-medium text-yellow-800">High Risk Alert</p>
-                        <p class="text-xs text-yellow-600 mt-1">3 critical risks require immediate attention</p>
+                        <p class="text-xs text-yellow-600 mt-1">1 critical risk requires immediate attention</p>
                       </div>
                       <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
                         <p class="text-sm font-medium text-blue-800">Compliance Update</p>
@@ -289,11 +289,12 @@ export function createAIAssistantRoutes() {
             <p class="text-gray-800 text-sm">
               <strong>Risk Analysis Summary:</strong><br><br>
               Based on your current platform data, I've identified:<br>
-              • 3 Critical risks requiring immediate attention<br>
-              • 8 High risks for quarterly review<br>
-              • 12 Medium risks with ongoing monitoring<br><br>
-              <strong>Top Priority:</strong> "Unauthorized access to customer database" - Risk Score: 20<br>
-              <strong>Recommendation:</strong> Implement MFA and review access controls immediately.
+              • 1 Critical risk requiring immediate attention<br>
+              • 0 High risks for quarterly review<br>
+              • 3 Medium risks with ongoing monitoring<br>
+              • 1 Low risk with routine monitoring<br><br>
+              <strong>Top Priority:</strong> "Data Breach Risk" - Risk Score: 20<br>
+              <strong>Recommendation:</strong> Implement data classification and encryption controls immediately.
             </p>
           </div>
           <p class="text-xs text-gray-500 mt-1">ARIA • Risk Analysis</p>
@@ -314,13 +315,13 @@ export function createAIAssistantRoutes() {
           <div class="bg-gray-100 rounded-lg px-4 py-3">
             <p class="text-gray-800 text-sm">
               <strong>Compliance Status Overview:</strong><br><br>
-              • <strong>SOC 2:</strong> 94% compliant (127/135 controls implemented)<br>
-              • <strong>ISO 27001:</strong> 87% compliant (79/91 applicable controls)<br>
+              • <strong>SOC 2:</strong> 89% compliant (15/17 controls implemented)<br>
+              • <strong>ISO 27001:</strong> 82% compliant (18/22 applicable controls)<br>
               • <strong>GDPR:</strong> 92% compliant<br><br>
               <strong>Upcoming Deadlines:</strong><br>
               • SOC 2 Type II audit: March 31, 2024<br>
               • ISO 27001 annual review: April 15, 2024<br><br>
-              <strong>Action Required:</strong> 8 controls need remediation before SOC 2 audit.
+              <strong>Action Required:</strong> 2 SOC 2 controls and 4 ISO 27001 controls need remediation.
             </p>
           </div>
           <p class="text-xs text-gray-500 mt-1">ARIA • Compliance Check</p>
@@ -466,7 +467,7 @@ function generateFallbackResponse(message: string): string {
   const lowerMessage = message.toLowerCase();
   
   if (lowerMessage.includes('risk')) {
-    return "Based on your current risk landscape, I recommend focusing on cybersecurity risks first. You have 3 critical risks that need immediate attention, particularly around data protection and access controls.";
+    return "Based on your current risk landscape, I recommend focusing on cybersecurity risks first. You have 1 critical risk that needs immediate attention, plus 3 medium-level risks requiring ongoing monitoring. Focus on data protection and access controls first.";
   } else if (lowerMessage.includes('compliance')) {
     return "Your compliance posture looks good overall. ISO 27001 assessment is due in 7 days - I suggest prioritizing the remaining control implementations. Your GDPR compliance is strong at 92%.";
   } else if (lowerMessage.includes('security')) {
