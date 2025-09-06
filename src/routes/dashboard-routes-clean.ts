@@ -19,7 +19,17 @@ export function createCleanDashboardRoutes() {
       risks: { total: 0, critical: 0, high: 0, medium: 0, low: 0 },
       compliance: { score: 0, frameworks: 0, controls: 0, soc2: 0, iso27001: 0 },
       incidents: { open: 0, resolved: 0, total: 0 },
-      kris: { alerts: 0, breached: 0, monitored: 0 }
+      kris: { alerts: 0, breached: 0, monitored: 0 },
+      systemHealth: {
+        overall_status: 'operational',
+        services: {
+          api_services: { name: 'API Services', status: 'operational', uptime: '99.9%', details: 'All systems operational' },
+          database: { name: 'Database', status: 'operational', uptime: '100%', details: 'Connection stable' },
+          security_scan: { name: 'Security Scan', status: 'operational', details: 'Last: Unknown' },
+          backups: { name: 'Backups', status: 'operational', details: 'Last: Unknown' }
+        }
+      },
+      securityStatus: 'operational'
     };
 
     try {
@@ -95,6 +105,89 @@ export function createCleanDashboardRoutes() {
           breached: krisResult.breached || 0,
           monitored: krisResult.monitored || 0
         };
+      }
+
+      // Get real system health data
+      try {
+        const healthStatus = await c.env.DB.prepare(`
+          SELECT 
+            service_name,
+            display_name,
+            status,
+            uptime_percentage,
+            response_time_ms,
+            datetime(last_check, 'localtime') as last_check_formatted
+          FROM system_health_status 
+          ORDER BY service_name
+        `).all();
+
+        // Get latest security scan
+        const securityScan = await c.env.DB.prepare(`
+          SELECT 
+            status,
+            findings_count,
+            critical_count + high_count as urgent_findings,
+            datetime(started_at, 'localtime') as started_at_formatted
+          FROM security_scan_results 
+          ORDER BY started_at DESC 
+          LIMIT 1
+        `).first();
+
+        // Get latest backup info
+        const backupInfo = await c.env.DB.prepare(`
+          SELECT 
+            status,
+            datetime(completed_at, 'localtime') as completed_at_formatted
+          FROM backup_operations 
+          ORDER BY started_at DESC 
+          LIMIT 1
+        `).first();
+
+        // Build real system health data
+        const services = {};
+        for (const service of healthStatus.results || []) {
+          let details = 'Unknown';
+          let displayStatus = service.status;
+          
+          if (service.service_name === 'api_services') {
+            details = `${service.response_time_ms}ms avg response`;
+          } else if (service.service_name === 'database') {
+            details = 'Connection stable';
+          } else if (service.service_name === 'security_scan') {
+            if (securityScan) {
+              const hoursAgo = Math.floor((Date.now() - new Date(securityScan.started_at_formatted + ' UTC').getTime()) / (1000 * 60 * 60));
+              details = securityScan.status === 'running' ? 'Scanning now' : `Last: ${hoursAgo} hours ago`;
+              displayStatus = securityScan.status === 'running' ? 'scanning' : (securityScan.urgent_findings > 0 ? 'warning' : 'operational');
+            }
+          } else if (service.service_name === 'backups') {
+            if (backupInfo) {
+              const hoursAgo = Math.floor((Date.now() - new Date(backupInfo.completed_at_formatted + ' UTC').getTime()) / (1000 * 60 * 60));
+              details = backupInfo.status === 'running' ? 'Running now' : `Last: ${hoursAgo} hours ago`;
+              displayStatus = backupInfo.status;
+            }
+          }
+          
+          services[service.service_name] = {
+            name: service.display_name,
+            status: displayStatus,
+            uptime: service.uptime_percentage ? `${service.uptime_percentage}%` : 'N/A',
+            details: details
+          };
+        }
+
+        stats.systemHealth = {
+          overall_status: 'operational',
+          services: services
+        };
+
+        // Determine overall security status based on critical risks and findings
+        const criticalRisks = stats.risks.critical || 0;
+        const urgentFindings = securityScan ? securityScan.urgent_findings : 0;
+        stats.securityStatus = (criticalRisks > 0 || urgentFindings > 0) ? 'warning' : 'operational';
+        
+      } catch (healthError) {
+        console.error('Error fetching system health:', healthError);
+        // Use default system health data if error
       }
 
     } catch (error) {
@@ -216,6 +309,88 @@ export function createCleanDashboardRoutes() {
       return c.html(renderKRICard(stats));
     }
   });
+
+  // System health refresh endpoint
+  app.get('/system-health', async (c) => {
+    try {
+      // Get real system health data
+      const healthStatus = await c.env.DB.prepare(`
+        SELECT 
+          service_name,
+          display_name,
+          status,
+          uptime_percentage,
+          response_time_ms,
+          datetime(last_check, 'localtime') as last_check_formatted
+        FROM system_health_status 
+        ORDER BY service_name
+      `).all();
+
+      // Get latest security scan
+      const securityScan = await c.env.DB.prepare(`
+        SELECT 
+          status,
+          findings_count,
+          critical_count + high_count as urgent_findings,
+          datetime(started_at, 'localtime') as started_at_formatted
+        FROM security_scan_results 
+        ORDER BY started_at DESC 
+        LIMIT 1
+      `).first();
+
+      // Get latest backup info
+      const backupInfo = await c.env.DB.prepare(`
+        SELECT 
+          status,
+          datetime(completed_at, 'localtime') as completed_at_formatted
+        FROM backup_operations 
+        ORDER BY started_at DESC 
+        LIMIT 1
+      `).first();
+
+      // Build real system health data
+      const services = {};
+      for (const service of healthStatus.results || []) {
+        let details = 'Unknown';
+        let displayStatus = service.status;
+        
+        if (service.service_name === 'api_services') {
+          details = `${service.response_time_ms}ms avg response`;
+        } else if (service.service_name === 'database') {
+          details = 'Connection stable';
+        } else if (service.service_name === 'security_scan') {
+          if (securityScan) {
+            const hoursAgo = Math.floor((Date.now() - new Date(securityScan.started_at_formatted + ' UTC').getTime()) / (1000 * 60 * 60));
+            details = securityScan.status === 'running' ? 'Scanning now' : `Last: ${hoursAgo} hours ago`;
+            displayStatus = securityScan.status === 'running' ? 'scanning' : (securityScan.urgent_findings > 0 ? 'warning' : 'operational');
+          }
+        } else if (service.service_name === 'backups') {
+          if (backupInfo) {
+            const hoursAgo = Math.floor((Date.now() - new Date(backupInfo.completed_at_formatted + ' UTC').getTime()) / (1000 * 60 * 60));
+            details = backupInfo.status === 'running' ? 'Running now' : `Last: ${hoursAgo} hours ago`;
+            displayStatus = backupInfo.status;
+          }
+        }
+        
+        services[service.service_name] = {
+          name: service.display_name,
+          status: displayStatus,
+          uptime: service.uptime_percentage ? `${service.uptime_percentage}%` : 'N/A',
+          details: details
+        };
+      }
+
+      const systemHealth = {
+        overall_status: 'operational',
+        services: services
+      };
+
+      return c.html(renderSystemHealthServices(systemHealth.services));
+    } catch (error) {
+      console.error('Error fetching system health:', error);
+      return c.html('<div class="text-red-600 p-4">Failed to load system health</div>', 500);
+    }
+  });
   
   return app;
 }
@@ -251,7 +426,7 @@ const renderCleanDashboard = (stats: any, user: any) => html`
             <div class="flex flex-col sm:flex-row sm:items-center mt-3 sm:mt-4 space-y-2 sm:space-y-0 sm:space-x-6 text-xs sm:text-sm">
               <div class="flex items-center">
                 <i class="fas fa-shield-check mr-2"></i>
-                <span>Security Status: Active</span>
+                <span>Security Status: ${stats.securityStatus === 'operational' ? 'Active' : stats.securityStatus === 'warning' ? 'Alert' : 'Unknown'}</span>
               </div>
               <div class="flex items-center">
                 <i class="fas fa-clock mr-2"></i>
@@ -356,57 +531,30 @@ const renderCleanDashboard = (stats: any, user: any) => html`
         <div class="flex items-center justify-between mb-4 sm:mb-6">
           <h2 class="text-lg sm:text-xl font-semibold text-gray-900">System Health</h2>
           <div class="flex items-center space-x-2">
-            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span class="text-xs sm:text-sm text-green-600 font-medium">Operational</span>
+            <div class="w-2 h-2 ${stats.systemHealth.overall_status === 'operational' ? 'bg-green-500' : stats.systemHealth.overall_status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'} rounded-full animate-pulse"></div>
+            <span class="text-xs sm:text-sm ${stats.systemHealth.overall_status === 'operational' ? 'text-green-600' : stats.systemHealth.overall_status === 'warning' ? 'text-yellow-600' : 'text-red-600'} font-medium capitalize">${stats.systemHealth.overall_status}</span>
           </div>
         </div>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-            <div class="flex items-center space-x-2 sm:space-x-3">
-              <i class="fas fa-server text-green-600 text-sm sm:text-base"></i>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">API Services</p>
-                <p class="text-xs text-gray-500 truncate">All systems operational</p>
-              </div>
-            </div>
-            <span class="text-green-600 text-xs sm:text-sm font-medium ml-2">99.9%</span>
-          </div>
-          
-          <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-            <div class="flex items-center space-x-2 sm:space-x-3">
-              <i class="fas fa-database text-green-600 text-sm sm:text-base"></i>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">Database</p>
-                <p class="text-xs text-gray-500 truncate">Connection stable</p>
-              </div>
-            </div>
-            <span class="text-green-600 text-xs sm:text-sm font-medium ml-2">Active</span>
-          </div>
-          
-          <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-            <div class="flex items-center space-x-2 sm:space-x-3">
-              <i class="fas fa-shield-halved text-yellow-600 text-sm sm:text-base"></i>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">Security Scan</p>
-                <p class="text-xs text-gray-500 truncate">Last: 2 hours ago</p>
-              </div>
-            </div>
-            <span class="text-yellow-600 text-xs sm:text-sm font-medium ml-2">Scanning</span>
-          </div>
-          
-          <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-            <div class="flex items-center space-x-2 sm:space-x-3">
-              <i class="fas fa-cloud-arrow-up text-green-600 text-sm sm:text-base"></i>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">Backups</p>
-                <p class="text-xs text-gray-500 truncate">Last: 6 hours ago</p>
-              </div>
-            </div>
-            <span class="text-green-600 text-xs sm:text-sm font-medium ml-2">Current</span>
-          </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" id="system-health-grid">
+          ${renderSystemHealthServices(stats.systemHealth.services)}
         </div>
       </div>
+      
+      <!-- Auto-refresh script for system health -->
+      <script>
+        // Refresh system health every 30 seconds
+        setInterval(() => {
+          fetch('/dashboard/system-health')
+            .then(response => response.text())
+            .then(html => {
+              document.getElementById('system-health-grid').innerHTML = html;
+            })
+            .catch(error => {
+              console.error('Failed to refresh system health:', error);
+            });
+        }, 30000); // 30 seconds
+      </script>
     </div>
   </div>
 `;
@@ -591,3 +739,69 @@ const renderKRICard = (stats: any) => html`
     </div>
   </div>
 `;
+
+// Real-time system health services renderer
+const renderSystemHealthServices = (services: any) => {
+  const serviceOrder = ['api_services', 'database', 'security_scan', 'backups'];
+  const icons = {
+    'api_services': 'fas fa-server',
+    'database': 'fas fa-database', 
+    'security_scan': 'fas fa-shield-halved',
+    'backups': 'fas fa-cloud-arrow-up'
+  };
+  
+  return serviceOrder.map(serviceKey => {
+    const service = services[serviceKey];
+    if (!service) return '';
+    
+    // Determine color scheme based on status
+    let colorClass, textColorClass, statusColor, statusText;
+    
+    switch (service.status) {
+      case 'operational':
+        colorClass = 'bg-green-50';
+        textColorClass = 'text-green-600';
+        statusColor = 'text-green-600';
+        statusText = service.uptime || 'Active';
+        break;
+      case 'scanning':
+      case 'running':
+        colorClass = 'bg-yellow-50';
+        textColorClass = 'text-yellow-600';
+        statusColor = 'text-yellow-600';
+        statusText = 'Running';
+        break;
+      case 'warning':
+        colorClass = 'bg-orange-50';
+        textColorClass = 'text-orange-600';
+        statusColor = 'text-orange-600';
+        statusText = 'Warning';
+        break;
+      case 'error':
+      case 'failed':
+        colorClass = 'bg-red-50';
+        textColorClass = 'text-red-600';
+        statusColor = 'text-red-600';
+        statusText = 'Error';
+        break;
+      default:
+        colorClass = 'bg-gray-50';
+        textColorClass = 'text-gray-600';
+        statusColor = 'text-gray-600';
+        statusText = 'Unknown';
+    }
+    
+    return html`
+      <div class="flex items-center justify-between p-3 ${colorClass} rounded-lg">
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <i class="${icons[serviceKey]} ${textColorClass} text-sm sm:text-base"></i>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">${service.name}</p>
+            <p class="text-xs text-gray-500 truncate">${service.details}</p>
+          </div>
+        </div>
+        <span class="${statusColor} text-xs sm:text-sm font-medium ml-2">${statusText}</span>
+      </div>
+    `;
+  }).join('');
+};

@@ -17,6 +17,7 @@ import { createOperationsRoutes } from './routes/operations-fixed';
 import { createIntelligenceRoutes } from './routes/intelligence-routes';
 import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createRiskControlRoutes } from './routes/risk-control-routes';
+import { createSystemHealthRoutes } from './routes/system-health-routes';
 
 // Import security middleware
 import { authMiddleware, requireRole, requireAdmin, csrfMiddleware } from './middleware/auth-middleware';
@@ -247,6 +248,9 @@ app.get('/reports', (c) => {
 
 // Risk Controls (requires authentication)
 app.route('/risk-controls', createRiskControlRoutes());
+
+// System Health API (requires authentication)
+app.route('/api/system-health', createSystemHealthRoutes());
 
 // 404 handler
 app.notFound((c) => {
