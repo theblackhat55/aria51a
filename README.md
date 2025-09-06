@@ -11,6 +11,16 @@
 
 ## 🌟 Key Features
 
+### 📊 Real-Time System Health Monitoring
+- **Live system status dashboard** with real-time data from database
+- **API performance tracking** with response time metrics and uptime monitoring
+- **Database connection monitoring** with live connection status indicators
+- **Security scan tracking** with actual scan results and findings count
+- **Backup operation monitoring** with real backup job status and completion times
+- **Auto-refresh widgets** updating every 30 seconds for real-time visibility
+- **Color-coded status indicators** (operational/warning/error) with proper alerts
+- **No more dummy data** - all metrics sourced from production database tables
+
 ### 🤖 Enhanced AI Chatbot
 - **Object-oriented architecture** with `EnhancedChatbot` class
 - **Context-aware conversations** with localStorage history persistence
@@ -65,12 +75,17 @@
 - **Authentication**: JWT-based with secure session management
 
 ### Database Schema
-- **Complete database schema** with 15+ migrations
+- **Complete database schema** with 17+ migrations
 - **User management** with role-based access control
 - **Risk assessment** tables with comprehensive tracking
 - **Compliance frameworks** and control mappings
 - **Threat intelligence** IOC and campaign data
 - **AI assistant** knowledge base and conversation history
+- **System health monitoring** tables for real-time metrics:
+  - `system_health_status` - Current service status & uptime
+  - `api_performance_metrics` - API response time tracking
+  - `security_scan_results` - Security scan findings & status
+  - `backup_operations` - Backup job tracking & results
 
 ## 🚀 Quick Start
 
@@ -131,7 +146,21 @@ npm run test                 # Test local server
 
 ## 🌍 Live Demo
 
-**Production URL**: [https://c34ae150.aria51.pages.dev](https://c34ae150.aria51.pages.dev)
+**Production URL**: [https://cf5e202a.aria51.pages.dev](https://cf5e202a.aria51.pages.dev)
+
+### ✅ Recent Fixes (September 2025)
+- **Dashboard Data Issue RESOLVED**: Dashboard now displays actual risk and incident statistics from production database
+  - Previously showed 0 risks/incidents despite data existing
+  - Production database now properly populated with sample data (4 risks, 4 incidents)
+- **System Health HTML Rendering FIXED**: System Health section now displays properly formatted components
+  - Fixed HTML escaping issue in `renderSystemHealthServices` function
+  - No more raw HTML code display, proper component rendering
+- **Both fixes deployed and verified** in production environment at URL above
+
+### 📊 System Health APIs
+- **System Health Status**: `/api/system-health/status`
+- **Dashboard Metrics**: `/dashboard/system-health`
+- **All system health widgets display real-time data** from production database
 
 ### 📱 Advanced Mobile-Optimized Features
 - **Intuitive card-based navigation** with gradient backgrounds and visual hierarchy
@@ -213,6 +242,9 @@ ARIA5-HTMX/
 - **Efficient caching** with KV storage
 - **Optimized database queries** with proper indexing
 - **Lazy loading** for improved page performance
+- **Real-time monitoring** with database-backed system health metrics
+- **Live dashboard updates** with 30-second auto-refresh cycles
+- **Production-grade monitoring** with actual API performance tracking
 
 ## 🤝 Contributing
 

@@ -111,6 +111,60 @@ app.get('/health', (c) => {
   });
 });
 
+// Debug endpoint for dashboard metrics (public for testing)
+app.get('/debug/dashboard-stats', async (c) => {
+  try {
+    // Test basic database connectivity
+    const risksResult = await c.env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN (probability * impact) >= 20 THEN 1 ELSE 0 END) as critical,
+        SUM(CASE WHEN (probability * impact) >= 12 AND (probability * impact) < 20 THEN 1 ELSE 0 END) as high,
+        SUM(CASE WHEN (probability * impact) >= 6 AND (probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
+        SUM(CASE WHEN (probability * impact) < 6 THEN 1 ELSE 0 END) as low
+      FROM risks 
+      WHERE status = 'active'
+    `).first();
+
+    const incidentsResult = await c.env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) as open,
+        SUM(CASE WHEN status IN ('resolved', 'closed') THEN 1 ELSE 0 END) as resolved
+      FROM incidents
+    `).first();
+
+    return c.json({
+      timestamp: new Date().toISOString(),
+      debug: 'Dashboard stats test',
+      risks: {
+        raw: risksResult,
+        processed: {
+          total: Number(risksResult?.total) || 0,
+          critical: Number(risksResult?.critical) || 0,
+          high: Number(risksResult?.high) || 0,
+          medium: Number(risksResult?.medium) || 0,
+          low: Number(risksResult?.low) || 0
+        }
+      },
+      incidents: {
+        raw: incidentsResult,
+        processed: {
+          open: Number(incidentsResult?.open) || 0,
+          resolved: Number(incidentsResult?.resolved) || 0,
+          total: Number(incidentsResult?.total) || 0
+        }
+      }
+    });
+  } catch (error) {
+    return c.json({
+      error: 'Failed to fetch debug stats',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
+});
+
 // PUBLIC ROUTES (No authentication required)
 
 // Landing page

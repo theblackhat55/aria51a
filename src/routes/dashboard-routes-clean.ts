@@ -47,12 +47,13 @@ export function createCleanDashboardRoutes() {
 
       if (risksResult) {
         stats.risks = {
-          total: risksResult.total || 0,
-          critical: risksResult.critical || 0,
-          high: risksResult.high || 0,
-          medium: risksResult.medium || 0,
-          low: risksResult.low || 0
+          total: Number(risksResult.total) || 0,
+          critical: Number(risksResult.critical) || 0,
+          high: Number(risksResult.high) || 0,
+          medium: Number(risksResult.medium) || 0,
+          low: Number(risksResult.low) || 0
         };
+        console.log('Dashboard stats - risks loaded:', stats.risks);
       }
 
       // Get compliance framework count
@@ -69,8 +70,9 @@ export function createCleanDashboardRoutes() {
       `).first();
 
       if (complianceResult && complianceResult.total_controls > 0) {
-        stats.compliance.score = Math.round((complianceResult.implemented_controls / complianceResult.total_controls) * 100);
-        stats.compliance.controls = complianceResult.total_controls;
+        stats.compliance.score = Math.round((Number(complianceResult.implemented_controls) / Number(complianceResult.total_controls)) * 100);
+        stats.compliance.controls = Number(complianceResult.total_controls);
+        console.log('Dashboard stats - compliance loaded:', stats.compliance);
       }
 
       // Get incident statistics  
@@ -84,10 +86,11 @@ export function createCleanDashboardRoutes() {
 
       if (incidentsResult) {
         stats.incidents = {
-          open: incidentsResult.open || 0,
-          resolved: incidentsResult.resolved || 0,
-          total: incidentsResult.total || 0
+          open: Number(incidentsResult.open) || 0,
+          resolved: Number(incidentsResult.resolved) || 0,
+          total: Number(incidentsResult.total) || 0
         };
+        console.log('Dashboard stats - incidents loaded:', stats.incidents);
       }
 
       // Get KRI statistics
@@ -101,10 +104,11 @@ export function createCleanDashboardRoutes() {
 
       if (krisResult) {
         stats.kris = {
-          alerts: krisResult.breached || 0,
-          breached: krisResult.breached || 0,
-          monitored: krisResult.monitored || 0
+          alerts: Number(krisResult.breached) || 0,
+          breached: Number(krisResult.breached) || 0,
+          monitored: Number(krisResult.monitored) || 0
         };
+        console.log('Dashboard stats - KRIs loaded:', stats.kris);
       }
 
       // Get real system health data
@@ -750,9 +754,11 @@ const renderSystemHealthServices = (services: any) => {
     'backups': 'fas fa-cloud-arrow-up'
   };
   
-  return serviceOrder.map(serviceKey => {
+  let servicesHTML = '';
+  
+  for (const serviceKey of serviceOrder) {
     const service = services[serviceKey];
-    if (!service) return '';
+    if (!service) continue;
     
     // Determine color scheme based on status
     let colorClass, textColorClass, statusColor, statusText;
@@ -791,7 +797,7 @@ const renderSystemHealthServices = (services: any) => {
         statusText = 'Unknown';
     }
     
-    return html`
+    servicesHTML += `
       <div class="flex items-center justify-between p-3 ${colorClass} rounded-lg">
         <div class="flex items-center space-x-2 sm:space-x-3">
           <i class="${icons[serviceKey]} ${textColorClass} text-sm sm:text-base"></i>
@@ -803,5 +809,7 @@ const renderSystemHealthServices = (services: any) => {
         <span class="${statusColor} text-xs sm:text-sm font-medium ml-2">${statusText}</span>
       </div>
     `;
-  }).join('');
+  }
+  
+  return servicesHTML;
 };
