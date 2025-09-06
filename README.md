@@ -153,9 +153,19 @@ npm run test                 # Test local server
   - Previously showed 0 risks/incidents despite data existing
   - Production database now properly populated with sample data (4 risks, 4 incidents)
 - **System Health HTML Rendering FIXED**: System Health section now displays properly formatted components
-  - Fixed HTML escaping issue in `renderSystemHealthServices` function
+  - Fixed HTML escaping issue by changing from `c.html()` to raw `Response()` 
   - No more raw HTML code display, proper component rendering
-- **Both fixes deployed and verified** in production environment at URL above
+- **Operations Services Modal Issues FIXED**: Asset and risk linking modals now render properly
+  - Fixed HTML escaping in `/api/link/assets-to-service` and `/api/link/risks-to-service` endpoints
+  - Changed from `c.html()` wrapper to direct `Response()` with HTML headers
+- **Service Management Enhancement ADDED**: Complete edit and delete functionality
+  - Added service edit modal with CIA triad assessment form
+  - Added smart delete protection (prevents deletion of services with linked assets/risks)
+  - Added comprehensive validation and update capabilities
+- **Risk Controls 500 Error FIXED**: Risk controls dashboard now loads without errors
+  - Fixed database table references from `risks_simple` to `risks`
+  - Updated JOIN queries for proper schema compatibility
+- **All fixes deployed and verified** in production environment at URL above
 
 ### 📊 System Health APIs
 - **System Health Status**: `/api/system-health/status`
