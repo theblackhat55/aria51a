@@ -531,74 +531,75 @@ export function createComplianceRoutes() {
 // Framework Management Page
 function renderFrameworkManagement() {
   return html`
-    <div class="min-h-screen bg-gray-50 py-12">
+    <div class="min-h-screen bg-gray-50 py-6 sm:py-12">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
-        <div class="mb-8">
-          <div class="flex justify-between items-center">
+        <div class="mb-6 sm:mb-8">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
             <div>
-              <h1 class="text-3xl font-bold text-gray-900">Framework Management</h1>
-              <p class="text-gray-600 mt-2">Manage compliance frameworks and controls</p>
+              <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Framework Management</h1>
+              <p class="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage compliance frameworks and controls</p>
             </div>
             <div class="flex space-x-3">
-              <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+              <button class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-lg flex items-center text-sm sm:text-base">
                 <i class="fas fa-plus mr-2"></i>
-                Import Framework
+                <span class="hidden sm:inline">Import Framework</span>
+                <span class="sm:hidden">Import</span>
               </button>
             </div>
           </div>
         </div>
 
         <!-- Framework Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <!-- SOC 2 Framework -->
-          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+          <div class="bg-white rounded-lg shadow p-4 sm:p-6 hover:shadow-lg transition-shadow">
             <div class="flex items-center mb-4">
-              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-shield-alt text-blue-600 text-xl"></i>
+              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-shield-alt text-blue-600 text-lg sm:text-xl"></i>
               </div>
-              <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">SOC 2 Type II</h3>
-                <p class="text-sm text-gray-600">AICPA Trust Services</p>
+              <div class="ml-3 sm:ml-4 min-w-0 flex-1">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 truncate">SOC 2 Type II</h3>
+                <p class="text-xs sm:text-sm text-gray-600 truncate">AICPA Trust Services</p>
               </div>
             </div>
             <div class="space-y-2 mb-4">
-              <div class="flex justify-between text-sm">
+              <div class="flex justify-between text-xs sm:text-sm">
                 <span class="text-gray-600">Controls:</span>
                 <span class="font-medium">127 implemented</span>
               </div>
-              <div class="flex justify-between text-sm">
+              <div class="flex justify-between text-xs sm:text-sm">
                 <span class="text-gray-600">Compliance:</span>
                 <span class="font-medium text-green-600">94%</span>
               </div>
             </div>
-            <a href="/compliance/frameworks/soc2" class="block w-full text-center bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition-colors">
+            <a href="/compliance/frameworks/soc2" class="block w-full text-center bg-blue-50 text-blue-600 py-2 rounded-lg hover:bg-blue-100 active:bg-blue-200 transition-colors text-sm sm:text-base">
               Manage Controls
             </a>
           </div>
 
           <!-- ISO 27001 Framework -->
-          <div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
+          <div class="bg-white rounded-lg shadow p-4 sm:p-6 hover:shadow-lg transition-shadow">
             <div class="flex items-center mb-4">
-              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-certificate text-green-600 text-xl"></i>
+              <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-certificate text-green-600 text-lg sm:text-xl"></i>
               </div>
-              <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">ISO 27001</h3>
-                <p class="text-sm text-gray-600">Information Security</p>
+              <div class="ml-3 sm:ml-4 min-w-0 flex-1">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 truncate">ISO 27001</h3>
+                <p class="text-xs sm:text-sm text-gray-600 truncate">Information Security</p>
               </div>
             </div>
             <div class="space-y-2 mb-4">
-              <div class="flex justify-between text-sm">
+              <div class="flex justify-between text-xs sm:text-sm">
                 <span class="text-gray-600">Controls:</span>
                 <span class="font-medium">114 implemented</span>
               </div>
-              <div class="flex justify-between text-sm">
+              <div class="flex justify-between text-xs sm:text-sm">
                 <span class="text-gray-600">Compliance:</span>
                 <span class="font-medium text-yellow-600">87%</span>
               </div>
             </div>
-            <a href="/compliance/frameworks/iso27001" class="block w-full text-center bg-green-50 text-green-600 py-2 rounded-lg hover:bg-green-100 transition-colors">
+            <a href="/compliance/frameworks/iso27001" class="block w-full text-center bg-green-50 text-green-600 py-2 rounded-lg hover:bg-green-100 active:bg-green-200 transition-colors text-sm sm:text-base">
               Manage Controls
             </a>
           </div>

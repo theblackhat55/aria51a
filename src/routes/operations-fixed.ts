@@ -526,32 +526,32 @@ export function createOperationsRoutes() {
 
 // Main Operations Dashboard
 const renderOperationsDashboard = () => html`
-  <div class="min-h-screen bg-gray-50 py-8">
+  <div class="min-h-screen bg-gray-50 py-6 sm:py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-          <i class="fas fa-shield-alt text-blue-600 mr-3"></i>
+      <div class="mb-6 sm:mb-8">
+        <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center">
+          <i class="fas fa-shield-alt text-blue-600 mr-2 sm:mr-3 text-lg sm:text-xl lg:text-2xl"></i>
           Operations Center
         </h1>
-        <p class="mt-2 text-lg text-gray-600">Microsoft Defender & security operations management</p>
+        <p class="mt-2 text-sm sm:text-base lg:text-lg text-gray-600">Microsoft Defender & security operations management</p>
       </div>
 
       <!-- Quick Stats - Now loading real data -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div class="bg-white overflow-hidden shadow rounded-lg" 
              hx-get="/operations/api/stats/assets" 
              hx-trigger="load"
              hx-swap="innerHTML">
-          <div class="p-5">
+          <div class="p-4 sm:p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <i class="fas fa-server text-2xl text-blue-500"></i>
+                <i class="fas fa-server text-lg sm:text-xl lg:text-2xl text-blue-500"></i>
               </div>
-              <div class="ml-5 w-0 flex-1">
+              <div class="ml-3 sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt class="text-sm font-medium text-gray-500 truncate">Total Assets</dt>
-                  <dd class="text-lg font-medium text-gray-900">Loading...</dd>
+                  <dt class="text-xs sm:text-sm font-medium text-gray-500 truncate">Total Assets</dt>
+                  <dd class="text-sm sm:text-base lg:text-lg font-medium text-gray-900">Loading...</dd>
                 </dl>
               </div>
             </div>
@@ -562,15 +562,15 @@ const renderOperationsDashboard = () => html`
              hx-get="/operations/api/stats/services"
              hx-trigger="load"
              hx-swap="innerHTML">
-          <div class="p-5">
+          <div class="p-4 sm:p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <i class="fas fa-sitemap text-2xl text-green-500"></i>
+                <i class="fas fa-sitemap text-lg sm:text-xl lg:text-2xl text-green-500"></i>
               </div>
-              <div class="ml-5 w-0 flex-1">
+              <div class="ml-3 sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt class="text-sm font-medium text-gray-500 truncate">Active Services</dt>
-                  <dd class="text-lg font-medium text-gray-900">Loading...</dd>
+                  <dt class="text-xs sm:text-sm font-medium text-gray-500 truncate">Active Services</dt>
+                  <dd class="text-sm sm:text-base lg:text-lg font-medium text-gray-900">Loading...</dd>
                 </dl>
               </div>
             </div>
@@ -581,15 +581,15 @@ const renderOperationsDashboard = () => html`
              hx-get="/operations/api/stats/documents"
              hx-trigger="load"
              hx-swap="innerHTML">
-          <div class="p-5">
+          <div class="p-4 sm:p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
-                <i class="fas fa-file-alt text-2xl text-purple-500"></i>
+                <i class="fas fa-file-alt text-lg sm:text-xl lg:text-2xl text-purple-500"></i>
               </div>
-              <div class="ml-5 w-0 flex-1">
+              <div class="ml-3 sm:ml-5 w-0 flex-1">
                 <dl>
-                  <dt class="text-sm font-medium text-gray-500 truncate">Documents</dt>
-                  <dd class="text-lg font-medium text-gray-900">Loading...</dd>
+                  <dt class="text-xs sm:text-sm font-medium text-gray-500 truncate">Documents</dt>
+                  <dd class="text-sm sm:text-base lg:text-lg font-medium text-gray-900">Loading...</dd>
                 </dl>
               </div>
             </div>
@@ -600,7 +600,7 @@ const renderOperationsDashboard = () => html`
              hx-get="/operations/api/stats/incidents"
              hx-trigger="load"
              hx-swap="innerHTML">
-          <div class="p-5">
+          <div class="p-4 sm:p-5">
             <div class="flex items-center">
               <div class="flex-shrink-0">
                 <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>

@@ -225,34 +225,45 @@ const renderCleanDashboard = (stats: any, user: any) => html`
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
     <!-- Hero Section -->
     <div class="bg-gradient-to-r from-blue-600 to-purple-600 shadow-xl">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div class="flex items-center justify-between">
           <div class="text-white">
-            <h1 class="text-4xl font-bold mb-2">
+            <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
               Welcome back, ${user.firstName || user.username}! 👋
             </h1>
-            <p class="text-blue-100 text-lg">
-              Your security intelligence command center • ${new Date().toLocaleDateString('en-US', { 
+            <p class="text-blue-100 text-sm sm:text-base lg:text-lg">
+              Your security intelligence command center
+            </p>
+            <p class="text-blue-100 text-xs sm:text-sm mt-1 lg:hidden">
+              ${new Date().toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric' 
+              })}
+            </p>
+            <p class="hidden lg:block text-blue-100 text-base">
+              ${new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 
                 day: 'numeric' 
               })}
             </p>
-            <div class="flex items-center mt-4 space-x-6 text-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center mt-3 sm:mt-4 space-y-2 sm:space-y-0 sm:space-x-6 text-xs sm:text-sm">
               <div class="flex items-center">
                 <i class="fas fa-shield-check mr-2"></i>
                 <span>Security Status: Active</span>
               </div>
               <div class="flex items-center">
                 <i class="fas fa-clock mr-2"></i>
-                <span>Last Updated: ${new Date().toLocaleTimeString()}</span>
+                <span class="hidden sm:inline">Last Updated: </span>
+                <span class="sm:hidden">Updated: </span>
+                <span>${new Date().toLocaleTimeString()}</span>
               </div>
             </div>
           </div>
           <div class="hidden lg:block">
-            <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <i class="fas fa-shield-halved text-6xl text-white"></i>
+            <div class="w-24 h-24 xl:w-32 xl:h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+              <i class="fas fa-shield-halved text-4xl xl:text-6xl text-white"></i>
             </div>
           </div>
         </div>
@@ -263,15 +274,15 @@ const renderCleanDashboard = (stats: any, user: any) => html`
       <!-- Security Alert Banner -->
       <div class="mb-6">
         <div class="bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl p-4 shadow-lg">
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
             <div class="flex items-center">
-              <i class="fas fa-exclamation-triangle text-2xl mr-3"></i>
+              <i class="fas fa-exclamation-triangle text-xl sm:text-2xl mr-3 flex-shrink-0"></i>
               <div>
-                <h3 class="font-semibold">Security Alert</h3>
-                <p class="text-sm text-red-100">${stats.risks.critical} critical risks require immediate attention</p>
+                <h3 class="font-semibold text-sm sm:text-base">Security Alert</h3>
+                <p class="text-xs sm:text-sm text-red-100">${stats.risks.critical} critical risks require immediate attention</p>
               </div>
             </div>
-            <a href="/risk" class="bg-white text-red-600 px-4 py-2 rounded-lg font-medium hover:bg-red-50 transition-colors">
+            <a href="/risk" class="bg-white text-red-600 px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-red-50 transition-colors text-center">
               Review Now
             </a>
           </div>
@@ -302,97 +313,97 @@ const renderCleanDashboard = (stats: any, user: any) => html`
       </div>
       
       <!-- Quick Actions Panel -->
-      <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200 mb-8">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold text-gray-900">Quick Actions</h2>
+      <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 mb-6 sm:mb-8">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 class="text-lg sm:text-xl font-semibold text-gray-900">Quick Actions</h2>
           <i class="fas fa-bolt text-yellow-500"></i>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <a href="/risk/create" 
              hx-get="/risk/create" 
              hx-target="#modal-container"
-             class="group flex flex-col items-center justify-center px-6 py-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg">
-            <i class="fas fa-plus text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-            <span class="font-medium">New Risk</span>
-            <span class="text-xs text-blue-100 mt-1">Register threat</span>
+             class="group flex flex-col items-center justify-center p-4 sm:px-6 sm:py-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg active:scale-95">
+            <i class="fas fa-plus text-xl sm:text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+            <span class="font-medium text-sm sm:text-base">New Risk</span>
+            <span class="text-xs text-blue-100 mt-1 hidden sm:block">Register threat</span>
           </a>
           
           <a href="/compliance/assessments/new" 
-             class="group flex flex-col items-center justify-center px-6 py-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg">
-            <i class="fas fa-clipboard-check text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-            <span class="font-medium">Assessment</span>
-            <span class="text-xs text-green-100 mt-1">New evaluation</span>
+             class="group flex flex-col items-center justify-center p-4 sm:px-6 sm:py-6 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg active:scale-95">
+            <i class="fas fa-clipboard-check text-xl sm:text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+            <span class="font-medium text-sm sm:text-base">Assessment</span>
+            <span class="text-xs text-green-100 mt-1 hidden sm:block">New evaluation</span>
           </a>
           
           <a href="/risk/incidents/new" 
-             class="group flex flex-col items-center justify-center px-6 py-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg">
-            <i class="fas fa-exclamation-triangle text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-            <span class="font-medium">Report Issue</span>
-            <span class="text-xs text-orange-100 mt-1">Log incident</span>
+             class="group flex flex-col items-center justify-center p-4 sm:px-6 sm:py-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg active:scale-95">
+            <i class="fas fa-exclamation-triangle text-xl sm:text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+            <span class="font-medium text-sm sm:text-base">Report Issue</span>
+            <span class="text-xs text-orange-100 mt-1 hidden sm:block">Log incident</span>
           </a>
           
           <a href="/reports" 
-             class="group flex flex-col items-center justify-center px-6 py-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg">
-            <i class="fas fa-chart-bar text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-            <span class="font-medium">Analytics</span>
-            <span class="text-xs text-purple-100 mt-1">View reports</span>
+             class="group flex flex-col items-center justify-center p-4 sm:px-6 sm:py-6 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-lg active:scale-95">
+            <i class="fas fa-chart-bar text-xl sm:text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+            <span class="font-medium text-sm sm:text-base">Analytics</span>
+            <span class="text-xs text-purple-100 mt-1 hidden sm:block">View reports</span>
           </a>
         </div>
       </div>
       
       <!-- System Status -->
-      <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-semibold text-gray-900">System Health</h2>
+      <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200">
+        <div class="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 class="text-lg sm:text-xl font-semibold text-gray-900">System Health</h2>
           <div class="flex items-center space-x-2">
             <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span class="text-sm text-green-600 font-medium">Operational</span>
+            <span class="text-xs sm:text-sm text-green-600 font-medium">Operational</span>
           </div>
         </div>
         
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <i class="fas fa-server text-green-600"></i>
-              <div>
-                <p class="text-sm font-medium text-gray-900">API Services</p>
-                <p class="text-xs text-gray-500">All systems operational</p>
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <i class="fas fa-server text-green-600 text-sm sm:text-base"></i>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">API Services</p>
+                <p class="text-xs text-gray-500 truncate">All systems operational</p>
               </div>
             </div>
-            <span class="text-green-600 text-sm font-medium">99.9%</span>
+            <span class="text-green-600 text-xs sm:text-sm font-medium ml-2">99.9%</span>
           </div>
           
           <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <i class="fas fa-database text-green-600"></i>
-              <div>
-                <p class="text-sm font-medium text-gray-900">Database</p>
-                <p class="text-xs text-gray-500">Connection stable</p>
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <i class="fas fa-database text-green-600 text-sm sm:text-base"></i>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">Database</p>
+                <p class="text-xs text-gray-500 truncate">Connection stable</p>
               </div>
             </div>
-            <span class="text-green-600 text-sm font-medium">Active</span>
+            <span class="text-green-600 text-xs sm:text-sm font-medium ml-2">Active</span>
           </div>
           
           <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <i class="fas fa-shield-halved text-yellow-600"></i>
-              <div>
-                <p class="text-sm font-medium text-gray-900">Security Scan</p>
-                <p class="text-xs text-gray-500">Last: 2 hours ago</p>
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <i class="fas fa-shield-halved text-yellow-600 text-sm sm:text-base"></i>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">Security Scan</p>
+                <p class="text-xs text-gray-500 truncate">Last: 2 hours ago</p>
               </div>
             </div>
-            <span class="text-yellow-600 text-sm font-medium">Scanning</span>
+            <span class="text-yellow-600 text-xs sm:text-sm font-medium ml-2">Scanning</span>
           </div>
           
           <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <i class="fas fa-cloud-arrow-up text-green-600"></i>
-              <div>
-                <p class="text-sm font-medium text-gray-900">Backups</p>
-                <p class="text-xs text-gray-500">Last: 6 hours ago</p>
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <i class="fas fa-cloud-arrow-up text-green-600 text-sm sm:text-base"></i>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">Backups</p>
+                <p class="text-xs text-gray-500 truncate">Last: 6 hours ago</p>
               </div>
             </div>
-            <span class="text-green-600 text-sm font-medium">Current</span>
+            <span class="text-green-600 text-xs sm:text-sm font-medium ml-2">Current</span>
           </div>
         </div>
       </div>

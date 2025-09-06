@@ -89,6 +89,31 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
     body.modal-open {
       overflow: hidden;
     }
+    
+    /* Mobile Navigation Styles */
+    .mobile-nav-item {
+      @apply flex items-center space-x-3 px-3 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200;
+    }
+    
+    /* Mobile menu animation */
+    #mobile-menu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-in-out;
+    }
+    
+    #mobile-menu.show {
+      max-height: 100vh;
+    }
+    
+    /* Hamburger menu animation */
+    #mobile-menu-icon {
+      transition: transform 0.3s ease-in-out;
+    }
+    
+    #mobile-menu-icon.open {
+      transform: rotate(90deg);
+    }
   </style>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
@@ -310,7 +335,7 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
   </script>
 
   <!-- Enhanced AI Assistant Chatbot Widget (Testing: Show on all pages) -->
-  <div id="chatbot-widget" class="fixed bottom-6 right-6 z-50">
+  <div id="chatbot-widget" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
     <!-- Notification Badge -->
     <div id="chatbot-notification" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
       <span id="notification-count">1</span>
@@ -318,12 +343,12 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
     
     <!-- Chatbot Toggle Button -->
     <button id="chatbot-toggle" 
-            class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full w-16 h-16 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative overflow-hidden">
+            class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-full w-14 h-14 sm:w-16 sm:h-16 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group relative overflow-hidden">
       <!-- Background Animation -->
       <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
       
       <!-- Main Icon -->
-      <i id="chatbot-icon" class="fas fa-robot text-xl group-hover:scale-110 transition-all duration-300 z-10"></i>
+      <i id="chatbot-icon" class="fas fa-robot text-lg sm:text-xl group-hover:scale-110 transition-all duration-300 z-10"></i>
       
       <!-- Pulse Animation -->
       <div class="absolute inset-0 rounded-full border-2 border-blue-300 animate-ping opacity-20"></div>
@@ -331,7 +356,7 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
     
     <!-- Enhanced Chatbot Panel -->
     <div id="chatbot-panel" 
-         class="hidden absolute bottom-20 right-0 w-[420px] h-[600px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden transform transition-all duration-300 scale-95 opacity-0">
+         class="hidden fixed sm:absolute inset-x-4 bottom-20 sm:inset-x-auto sm:bottom-20 sm:right-0 sm:w-[420px] w-auto h-[600px] sm:h-[600px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden transform transition-all duration-300 scale-95 opacity-0">
       
       <!-- Enhanced Header -->
       <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
@@ -363,23 +388,27 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       </div>
       
       <!-- Quick Actions Bar -->
-      <div id="quick-actions" class="bg-gray-50 p-3 border-b border-gray-200">
-        <div class="flex space-x-2 overflow-x-auto">
-          <button class="quick-action-btn" data-prompt="Analyze my current risk landscape">
+      <div id="quick-actions" class="bg-gray-50 p-2 sm:p-3 border-b border-gray-200">
+        <div class="flex space-x-1 sm:space-x-2 overflow-x-auto pb-2">
+          <button class="quick-action-btn flex-shrink-0" data-prompt="Analyze my current risk landscape">
             <i class="fas fa-chart-line text-red-500"></i>
-            <span>Risk Analysis</span>
+            <span class="hidden sm:inline">Risk Analysis</span>
+            <span class="sm:hidden">Risk</span>
           </button>
-          <button class="quick-action-btn" data-prompt="Check our compliance status">
+          <button class="quick-action-btn flex-shrink-0" data-prompt="Check our compliance status">
             <i class="fas fa-shield-check text-green-500"></i>
-            <span>Compliance</span>
+            <span class="hidden sm:inline">Compliance</span>
+            <span class="sm:hidden">Comp</span>
           </button>
-          <button class="quick-action-btn" data-prompt="Recommend security controls">
+          <button class="quick-action-btn flex-shrink-0" data-prompt="Recommend security controls">
             <i class="fas fa-lock text-blue-500"></i>
-            <span>Controls</span>
+            <span class="hidden sm:inline">Controls</span>
+            <span class="sm:hidden">Ctrl</span>
           </button>
-          <button class="quick-action-btn" data-prompt="Help me create a new risk assessment">
+          <button class="quick-action-btn flex-shrink-0" data-prompt="Help me create a new risk assessment">
             <i class="fas fa-plus text-purple-500"></i>
-            <span>New Risk</span>
+            <span class="hidden sm:inline">New Risk</span>
+            <span class="sm:hidden">New</span>
           </button>
         </div>
       </div>
@@ -506,10 +535,26 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
   <style>
     /* Enhanced Chatbot Styles */
     .quick-action-btn {
-      @apply flex items-center space-x-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 whitespace-nowrap;
+      @apply flex items-center space-x-1 px-2 sm:px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 whitespace-nowrap;
     }
     .quick-action-btn i {
       @apply text-xs;
+    }
+    
+    /* Mobile chatbot adjustments */
+    @media (max-width: 640px) {
+      #chatbot-panel {
+        height: calc(100vh - 120px);
+        max-height: calc(100vh - 120px);
+      }
+      
+      #chatbot-messages {
+        font-size: 14px;
+      }
+      
+      #chatbot-input {
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
     }
     
     /* Typing animation */
@@ -1106,6 +1151,78 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       }
     }
 
+    // Mobile Menu Functionality
+    window.ARIA5.initMobileMenu = function() {
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const mobileMenuIcon = document.getElementById('mobile-menu-icon');
+      
+      if (!mobileMenuButton || !mobileMenu || !mobileMenuIcon) {
+        console.log('📱 Mobile menu elements not found, skipping initialization');
+        return;
+      }
+      
+      let isMenuOpen = false;
+      
+      mobileMenuButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        isMenuOpen = !isMenuOpen;
+        
+        if (isMenuOpen) {
+          mobileMenu.classList.remove('hidden');
+          mobileMenu.classList.add('show');
+          mobileMenuIcon.classList.add('open');
+          mobileMenuIcon.className = 'fas fa-times text-xl open';
+          document.body.style.overflow = 'hidden'; // Prevent scroll when menu is open
+        } else {
+          mobileMenu.classList.remove('show');
+          mobileMenuIcon.classList.remove('open');
+          mobileMenuIcon.className = 'fas fa-bars text-xl';
+          document.body.style.overflow = '';
+          
+          // Hide menu after animation
+          setTimeout(() => {
+            if (!mobileMenu.classList.contains('show')) {
+              mobileMenu.classList.add('hidden');
+            }
+          }, 300);
+        }
+        
+        console.log('📱 Mobile menu', isMenuOpen ? 'opened' : 'closed');
+      });
+      
+      // Close mobile menu when clicking on a link
+      mobileMenu.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A' || e.target.closest('a') || e.target.closest('button')) {
+          isMenuOpen = false;
+          mobileMenu.classList.remove('show');
+          mobileMenuIcon.classList.remove('open');
+          mobileMenuIcon.className = 'fas fa-bars text-xl';
+          document.body.style.overflow = '';
+          
+          setTimeout(() => {
+            mobileMenu.classList.add('hidden');
+          }, 300);
+        }
+      });
+      
+      // Close mobile menu on window resize to desktop
+      window.addEventListener('resize', function() {
+        if (window.innerWidth >= 768 && isMenuOpen) { // md breakpoint
+          isMenuOpen = false;
+          mobileMenu.classList.remove('show');
+          mobileMenu.classList.add('hidden');
+          mobileMenuIcon.classList.remove('open');
+          mobileMenuIcon.className = 'fas fa-bars text-xl';
+          document.body.style.overflow = '';
+        }
+      });
+      
+      console.log('📱 Mobile menu initialized successfully');
+    };
+
     // Initialize Enhanced Chatbot (Testing: Always initialize)
     document.addEventListener('DOMContentLoaded', function() {
       console.log('🔍 Checking for chatbot elements...');
@@ -1127,6 +1244,9 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
           input: !!document.getElementById('chatbot-input')
         });
       }
+      
+      // Initialize mobile menu
+      window.ARIA5.initMobileMenu();
     });
   </script>
 </body>
@@ -1135,7 +1255,7 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
 
 const renderCleanNavigation = (user: any) => html`
   <nav class="bg-white shadow-lg border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <!-- Logo and Brand -->
         <div class="flex items-center space-x-3">
@@ -1143,14 +1263,24 @@ const renderCleanNavigation = (user: any) => html`
             <div class="h-10 w-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
               <i class="fas fa-shield-alt text-white"></i>
             </div>
-            <div>
+            <div class="hidden sm:block">
               <h1 class="text-xl font-semibold text-gray-900">ARIA5.1</h1>
               <p class="text-xs text-gray-500">Clean Edition</p>
             </div>
+            <div class="block sm:hidden">
+              <h1 class="text-lg font-semibold text-gray-900">ARIA5</h1>
+            </div>
           </a>
         </div>
+
+        <!-- Mobile menu button -->
+        <div class="md:hidden">
+          <button id="mobile-menu-button" class="text-gray-500 hover:text-gray-900 focus:outline-none focus:text-gray-900 p-2">
+            <i id="mobile-menu-icon" class="fas fa-bars text-xl"></i>
+          </button>
+        </div>
         
-        <!-- Navigation Menu -->
+        <!-- Desktop Navigation Menu -->
         <div class="hidden md:flex items-center space-x-2">
           <!-- Overview Dropdown -->
           <div class="relative" data-dropdown>
@@ -1338,8 +1468,8 @@ const renderCleanNavigation = (user: any) => html`
           ` : ''}
         </div>
         
-        <!-- Right side: Notifications + User -->
-        <div class="flex items-center space-x-4">
+        <!-- Desktop Right side: Notifications + User -->
+        <div class="hidden md:flex items-center space-x-4">
           <!-- Notification Bell (Static) -->
           <div class="relative" data-dropdown>
             <button data-dropdown-button class="relative p-2 text-gray-600 hover:text-gray-900 focus:outline-none">
@@ -1386,11 +1516,136 @@ const renderCleanNavigation = (user: any) => html`
           </div>
 
           <!-- User Section -->
-          <span class="text-sm text-gray-600">Welcome, ${user?.username || 'User'}</span>
+          <span class="text-sm text-gray-600 hidden lg:block">Welcome, ${user?.username || 'User'}</span>
           <button hx-post="/auth/logout" 
                   hx-redirect="/"
-                  class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                  class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            <i class="fas fa-sign-out-alt lg:mr-1"></i>
+            <span class="hidden lg:inline">Logout</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Mobile Navigation Menu -->
+      <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200">
+        <div class="px-2 pt-2 pb-3 space-y-1">
+          <!-- Overview Section -->
+          <div class="px-3 py-2">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Overview</h3>
+          </div>
+          <a href="/dashboard" class="mobile-nav-item">
+            <i class="fas fa-tachometer-alt text-blue-500"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="/reports" class="mobile-nav-item">
+            <i class="fas fa-chart-bar text-green-500"></i>
+            <span>Reports & Analytics</span>
+          </a>
+          
+          <!-- Risk Section -->
+          <div class="px-3 py-2 mt-4">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Risk Management</h3>
+          </div>
+          <a href="/risk" class="mobile-nav-item">
+            <i class="fas fa-shield-alt text-red-500"></i>
+            <span>Risk Register</span>
+          </a>
+          <button hx-get="/risk/create" hx-target="#modal-container" class="mobile-nav-item w-full text-left">
+            <i class="fas fa-plus text-orange-500"></i>
+            <span>New Risk</span>
+          </button>
+          <a href="/risk/assessments" class="mobile-nav-item">
+            <i class="fas fa-clipboard-check text-yellow-500"></i>
+            <span>Risk Assessments</span>
+          </a>
+          <a href="/risk-controls" class="mobile-nav-item">
+            <i class="fas fa-link text-purple-500"></i>
+            <span>Risk-Control Mapping</span>
+          </a>
+          
+          <!-- Compliance Section -->
+          <div class="px-3 py-2 mt-4">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Compliance</h3>
+          </div>
+          <a href="/compliance/frameworks" class="mobile-nav-item">
+            <i class="fas fa-layer-group text-blue-500"></i>
+            <span>Framework Management</span>
+          </a>
+          <a href="/compliance/soa" class="mobile-nav-item">
+            <i class="fas fa-file-contract text-purple-500"></i>
+            <span>Statement of Applicability</span>
+          </a>
+          <a href="/compliance/evidence" class="mobile-nav-item">
+            <i class="fas fa-folder-open text-orange-500"></i>
+            <span>Evidence Management</span>
+          </a>
+          <a href="/compliance/assessments" class="mobile-nav-item">
+            <i class="fas fa-clipboard-check text-green-500"></i>
+            <span>Compliance Assessments</span>
+          </a>
+          
+          <!-- Operations Section -->
+          <div class="px-3 py-2 mt-4">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Operations</h3>
+          </div>
+          <a href="/operations" class="mobile-nav-item">
+            <i class="fas fa-shield-alt text-blue-500"></i>
+            <span>Operations Center</span>
+          </a>
+          <a href="/operations/assets" class="mobile-nav-item">
+            <i class="fas fa-server text-green-500"></i>
+            <span>Asset Management</span>
+          </a>
+          <a href="/operations/services" class="mobile-nav-item">
+            <i class="fas fa-sitemap text-green-500"></i>
+            <span>Service Management</span>
+          </a>
+          <a href="/documents" class="mobile-nav-item">
+            <i class="fas fa-file-alt text-blue-500"></i>
+            <span>Document Management</span>
+          </a>
+          
+          <!-- Intelligence -->
+          <a href="/intelligence" class="mobile-nav-item">
+            <i class="fas fa-brain text-purple-500"></i>
+            <span>Threat Intelligence</span>
+          </a>
+          
+          <!-- Admin Section (if admin) -->
+          ${user?.role === 'admin' ? html`
+          <div class="px-3 py-2 mt-4">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Administration</h3>
+          </div>
+          <a href="/admin" class="mobile-nav-item">
+            <i class="fas fa-cogs text-purple-500"></i>
+            <span>System Settings</span>
+          </a>
+          <a href="/admin/users" class="mobile-nav-item">
+            <i class="fas fa-users text-indigo-500"></i>
+            <span>User Management</span>
+          </a>
+          ` : ''}
+          
+          <!-- Mobile User Actions -->
+          <div class="px-3 py-2 mt-4 border-t border-gray-200">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account</h3>
+          </div>
+          <div class="px-3 py-3 flex items-center space-x-3">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-user text-blue-600 text-sm"></i>
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">${user?.username || 'User'}</p>
+              <p class="text-xs text-gray-500">${user?.role || 'User'}</p>
+            </div>
+          </div>
+          <button hx-post="/auth/logout" 
+                  hx-redirect="/"
+                  class="mobile-nav-item w-full text-left border-t border-gray-100 text-red-600">
+            <i class="fas fa-sign-out-alt text-red-500"></i>
+            <span>Logout</span>
           </button>
         </div>
       </div>

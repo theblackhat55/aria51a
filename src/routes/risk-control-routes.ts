@@ -182,119 +182,130 @@ const renderRiskControlDashboard = (stats: any, mappings: any[]) => html`
   <div class="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex items-center justify-between">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900">Risk-Control Mapping</h1>
-            <p class="text-gray-600 mt-1">AI-powered risk to control framework linkage</p>
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Risk-Control Mapping</h1>
+            <p class="text-sm sm:text-base text-gray-600 mt-1">AI-powered risk to control framework linkage</p>
           </div>
-          <div class="flex space-x-3">
+          <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
             <button onclick="triggerAIMapping()" 
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center">
+                    class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center">
               <i class="fas fa-robot mr-2"></i>
-              AI Auto-Map All Risks
+              <span class="hidden sm:inline">AI Auto-Map All Risks</span>
+              <span class="sm:hidden">AI Auto-Map</span>
             </button>
-            <a href="/risk" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+            <a href="/risk" class="bg-gray-600 hover:bg-gray-700 active:bg-gray-800 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center">
               <i class="fas fa-arrow-left mr-2"></i>
-              Back to Risks
+              <span class="hidden sm:inline">Back to Risks</span>
+              <span class="sm:hidden">Back</span>
             </a>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <!-- Statistics Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-600">Total Risks</p>
-              <p class="text-3xl font-bold text-blue-600">${stats?.total_risks || 0}</p>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Risks</p>
+              <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-600">${stats?.total_risks || 0}</p>
             </div>
-            <i class="fas fa-exclamation-triangle text-blue-500 text-2xl"></i>
+            <i class="fas fa-exclamation-triangle text-blue-500 text-lg sm:text-xl lg:text-2xl ml-2"></i>
           </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-600">Mapped Controls</p>
-              <p class="text-3xl font-bold text-green-600">${stats?.mapped_controls || 0}</p>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-medium text-gray-600 truncate">Mapped Controls</p>
+              <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600">${stats?.mapped_controls || 0}</p>
             </div>
-            <i class="fas fa-link text-green-500 text-2xl"></i>
+            <i class="fas fa-link text-green-500 text-lg sm:text-xl lg:text-2xl ml-2"></i>
           </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-600">Unmapped Risks</p>
-              <p class="text-3xl font-bold text-red-600">${stats?.unmapped_risks || 0}</p>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-medium text-gray-600 truncate">Unmapped Risks</p>
+              <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">${stats?.unmapped_risks || 0}</p>
             </div>
-            <i class="fas fa-unlink text-red-500 text-2xl"></i>
+            <i class="fas fa-unlink text-red-500 text-lg sm:text-xl lg:text-2xl ml-2"></i>
           </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-600">Avg Effectiveness</p>
-              <p class="text-3xl font-bold text-purple-600">${stats?.avg_effectiveness ? Math.round(stats.avg_effectiveness * 10) / 10 : 0}/5</p>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-medium text-gray-600 truncate">Avg Effectiveness</p>
+              <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-600">${stats?.avg_effectiveness ? Math.round(stats.avg_effectiveness * 10) / 10 : 0}/5</p>
             </div>
-            <i class="fas fa-chart-line text-purple-500 text-2xl"></i>
+            <i class="fas fa-chart-line text-purple-500 text-lg sm:text-xl lg:text-2xl ml-2"></i>
           </div>
         </div>
         
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-600">AI Confidence</p>
-              <p class="text-3xl font-bold text-orange-600">${stats?.avg_confidence ? Math.round(stats.avg_confidence * 100) : 0}%</p>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-medium text-gray-600 truncate">AI Confidence</p>
+              <p class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">${stats?.avg_confidence ? Math.round(stats.avg_confidence * 100) : 0}%</p>
             </div>
-            <i class="fas fa-brain text-orange-500 text-2xl"></i>
+            <i class="fas fa-brain text-orange-500 text-lg sm:text-xl lg:text-2xl ml-2"></i>
           </div>
         </div>
       </div>
 
       <!-- Risk-Control Mappings Table -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">Risk-Control Linkages</h2>
+        <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
+          <h2 class="text-base sm:text-lg font-semibold text-gray-900">Risk-Control Linkages</h2>
         </div>
         
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Controls</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effectiveness</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frameworks</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Category</th>
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Controls</th>
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Effectiveness</th>
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Frameworks</th>
+                <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               ${mappings.map(mapping => html`
                 <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium text-gray-900">${mapping.risk_title}</div>
+                  <td class="px-3 sm:px-6 py-4">
+                    <div class="text-xs sm:text-sm font-medium text-gray-900 truncate max-w-32 sm:max-w-none">${mapping.risk_title}</div>
+                    <div class="text-xs text-gray-500 mt-1 sm:hidden">
+                      <span class="inline-flex px-1.5 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-800 mr-1">
+                        ${mapping.risk_category || 'General'}
+                      </span>
+                      ${mapping.control_count > 0 ? 
+                        `${mapping.control_count} controls` : 
+                        'No controls'
+                      }
+                    </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                       ${mapping.risk_category || 'General'}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
-                      <span class="text-sm font-medium ${
+                      <span class="text-xs sm:text-sm font-medium ${
                         mapping.risk_score >= 20 ? 'text-red-600' :
                         mapping.risk_score >= 12 ? 'text-orange-600' :
                         mapping.risk_score >= 6 ? 'text-yellow-600' : 'text-green-600'
                       }">${mapping.risk_score}</span>
-                      <div class="ml-2 w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div class="ml-1 sm:ml-2 w-8 sm:w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div class="h-full ${
                           mapping.risk_score >= 20 ? 'bg-red-500' :
                           mapping.risk_score >= 12 ? 'bg-orange-500' :
@@ -303,7 +314,7 @@ const renderRiskControlDashboard = (stats: any, mappings: any[]) => html`
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                     <div class="flex items-center">
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         mapping.control_count > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -312,7 +323,7 @@ const renderRiskControlDashboard = (stats: any, mappings: any[]) => html`
                       </span>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                     <div class="flex items-center">
                       ${mapping.avg_effectiveness ? html`
                         <div class="flex">
@@ -328,18 +339,20 @@ const renderRiskControlDashboard = (stats: any, mappings: any[]) => html`
                       `}
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">${mapping.frameworks || 'None'}</div>
+                  <td class="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                    <div class="text-sm text-gray-900 truncate max-w-32">${mapping.frameworks || 'None'}</div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <a href="/risk-controls/risk/${mapping.risk_id}" class="text-blue-600 hover:text-blue-900 mr-3">
-                      <i class="fas fa-eye mr-1"></i>View
-                    </a>
-                    ${mapping.control_count === 0 ? html`
-                      <button onclick="mapRiskAI(${mapping.risk_id})" class="text-green-600 hover:text-green-900">
-                        <i class="fas fa-robot mr-1"></i>AI Map
-                      </button>
-                    ` : ''}
+                  <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                    <div class="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-3">
+                      <a href="/risk-controls/risk/${mapping.risk_id}" class="text-blue-600 hover:text-blue-900">
+                        <i class="fas fa-eye mr-1"></i><span class="hidden sm:inline">View</span>
+                      </a>
+                      ${mapping.control_count === 0 ? html`
+                        <button onclick="mapRiskAI(${mapping.risk_id})" class="text-green-600 hover:text-green-900 text-left">
+                          <i class="fas fa-robot mr-1"></i><span class="hidden sm:inline">AI Map</span>
+                        </button>
+                      ` : ''}
+                    </div>
                   </td>
                 </tr>
               `)}
