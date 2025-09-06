@@ -14,6 +14,7 @@ import { createRiskRoutesARIA5 } from './routes/risk-routes-aria5';
 import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 import { createComplianceRoutes } from './routes/compliance-routes';
 import { createOperationsRoutes } from './routes/operations-fixed';
+import { createIntelligenceRoutes } from './routes/intelligence-routes';
 import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createRiskControlRoutes } from './routes/risk-control-routes';
 
@@ -235,6 +236,14 @@ app.route('/admin', createAdminRoutesARIA5());
 
 // AI Assistant (requires authentication)
 app.route('/ai', createAIAssistantRoutes());
+
+// Intelligence routes (requires authentication)
+app.route('/intelligence', createIntelligenceRoutes());
+
+// Reports route - redirect to intelligence reports (requires authentication)
+app.get('/reports', (c) => {
+  return c.redirect('/intelligence/reports');
+});
 
 // Risk Controls (requires authentication)
 app.route('/risk-controls', createRiskControlRoutes());
