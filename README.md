@@ -146,7 +146,7 @@ npm run test                 # Test local server
 
 ## 🌍 Live Demo
 
-**Production URL**: [https://cf5e202a.aria51.pages.dev](https://cf5e202a.aria51.pages.dev)
+**Production URL**: [https://aria51.pages.dev](https://aria51.pages.dev)
 
 ### ✅ Recent Fixes (September 2025)
 - **Dashboard Data Issue RESOLVED**: Dashboard now displays actual risk and incident statistics from production database
