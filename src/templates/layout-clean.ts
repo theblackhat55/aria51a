@@ -95,24 +95,45 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       @apply flex items-center space-x-3 px-3 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200;
     }
     
-    /* Mobile menu animation */
+    /* Mobile menu animation - Enhanced */
     #mobile-menu {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.3s ease-in-out;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      background: linear-gradient(to bottom, #ffffff, #f8fafc);
     }
     
     #mobile-menu.show {
-      max-height: 100vh;
+      max-height: calc(100vh - 64px); /* Account for nav height */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
     }
     
-    /* Hamburger menu animation */
+    /* Hamburger menu animation - More intuitive */
     #mobile-menu-icon {
-      transition: transform 0.3s ease-in-out;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-origin: center;
     }
     
     #mobile-menu-icon.open {
-      transform: rotate(90deg);
+      transform: rotate(180deg);
+    }
+    
+    /* Touch-friendly active states */
+    .active\:scale-98:active {
+      transform: scale(0.98);
+    }
+    
+    .active\:scale-95:active {
+      transform: scale(0.95);
+    }
+    
+    /* Improved focus states for mobile accessibility */
+    .mobile-menu-button:focus-visible,
+    .mobile-menu-link:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+      border-radius: 0.5rem;
     }
   </style>
 </head>
@@ -213,6 +234,94 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       }
       
       console.log('✅ ARIA5 dropdowns initialization complete');
+    };
+    
+    // Enhanced Mobile Menu Functionality
+    window.ARIA5.initMobileMenu = function() {
+      console.log('📱 Initializing enhanced mobile menu');
+      
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const mobileMenuIcon = document.getElementById('mobile-menu-icon');
+      
+      if (!mobileMenuButton || !mobileMenu || !mobileMenuIcon) {
+        console.warn('⚠️ Mobile menu elements not found');
+        return;
+      }
+      
+      let isMenuOpen = false;
+      
+      // Enhanced toggle functionality
+      mobileMenuButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        isMenuOpen = !isMenuOpen;
+        
+        if (isMenuOpen) {
+          // Opening menu
+          mobileMenu.classList.remove('hidden');
+          mobileMenu.classList.add('show');
+          mobileMenuIcon.classList.add('open');
+          mobileMenuButton.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden'; // Prevent background scrolling
+          
+          console.log('📱 Mobile menu opened');
+        } else {
+          // Closing menu
+          mobileMenu.classList.add('hidden');
+          mobileMenu.classList.remove('show');
+          mobileMenuIcon.classList.remove('open');
+          mobileMenuButton.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = ''; // Restore scrolling
+          
+          console.log('📱 Mobile menu closed');
+        }
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener('click', function(e) {
+        if (isMenuOpen && !mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+          isMenuOpen = false;
+          mobileMenu.classList.add('hidden');
+          mobileMenu.classList.remove('show');
+          mobileMenuIcon.classList.remove('open');
+          mobileMenuButton.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+          console.log('📱 Mobile menu closed (outside click)');
+        }
+      });
+      
+      // Close menu on escape key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && isMenuOpen) {
+          isMenuOpen = false;
+          mobileMenu.classList.add('hidden');
+          mobileMenu.classList.remove('show');
+          mobileMenuIcon.classList.remove('open');
+          mobileMenuButton.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+          console.log('📱 Mobile menu closed (escape key)');
+        }
+      });
+      
+      // Close menu when navigating (clicking links)
+      mobileMenu.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+          // Small delay to allow navigation to complete
+          setTimeout(() => {
+            isMenuOpen = false;
+            mobileMenu.classList.add('hidden');
+            mobileMenu.classList.remove('show');
+            mobileMenuIcon.classList.remove('open');
+            mobileMenuButton.setAttribute('aria-expanded', 'false');
+            document.body.style.overflow = '';
+            console.log('📱 Mobile menu closed (navigation)');
+          }, 150);
+        }
+      });
+      
+      console.log('✅ Enhanced mobile menu initialized successfully');
     };
     
     // HTMX Configuration
@@ -1273,10 +1382,13 @@ const renderCleanNavigation = (user: any) => html`
           </a>
         </div>
 
-        <!-- Mobile menu button -->
+        <!-- Mobile menu button - Enhanced UX -->
         <div class="md:hidden">
-          <button id="mobile-menu-button" class="text-gray-500 hover:text-gray-900 focus:outline-none focus:text-gray-900 p-2">
-            <i id="mobile-menu-icon" class="fas fa-bars text-xl"></i>
+          <button id="mobile-menu-button" 
+                  class="flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg transition-all duration-200 mobile-menu-button"
+                  aria-label="Toggle navigation menu"
+                  aria-expanded="false">
+            <i id="mobile-menu-icon" class="fas fa-bars text-lg"></i>
           </button>
         </div>
         
@@ -1526,127 +1638,152 @@ const renderCleanNavigation = (user: any) => html`
         </div>
       </div>
       
-      <!-- Mobile Navigation Menu -->
-      <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200">
-        <div class="px-2 pt-2 pb-3 space-y-1">
-          <!-- Overview Section -->
-          <div class="px-3 py-2">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Overview</h3>
-          </div>
-          <a href="/dashboard" class="mobile-nav-item">
-            <i class="fas fa-tachometer-alt text-blue-500"></i>
-            <span>Dashboard</span>
-          </a>
-          <a href="/reports" class="mobile-nav-item">
-            <i class="fas fa-chart-bar text-green-500"></i>
-            <span>Reports & Analytics</span>
-          </a>
+      <!-- Mobile Navigation Menu - Optimized for Better UX -->
+      <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200 max-h-screen overflow-y-auto">
+        <div class="px-4 py-4">
           
-          <!-- Risk Section -->
-          <div class="px-3 py-2 mt-4">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Risk Management</h3>
+          <!-- Quick Actions Section - Most Used Features First -->
+          <div class="mb-6">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <a href="/dashboard" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:from-blue-100 hover:to-blue-150 active:scale-95 transition-all">
+                <i class="fas fa-tachometer-alt text-blue-600 text-xl mb-2"></i>
+                <span class="text-sm font-semibold text-blue-800">Dashboard</span>
+              </a>
+              <button hx-get="/risk/create" hx-target="#modal-container" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200 hover:from-red-100 hover:to-red-150 active:scale-95 transition-all">
+                <i class="fas fa-plus text-red-600 text-xl mb-2"></i>
+                <span class="text-sm font-semibold text-red-800">New Risk</span>
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <a href="/reports" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200 hover:from-green-100 hover:to-green-150 active:scale-95 transition-all">
+                <i class="fas fa-chart-bar text-green-600 text-xl mb-2"></i>
+                <span class="text-sm font-semibold text-green-800">Reports</span>
+              </a>
+              <a href="/intelligence" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:from-purple-100 hover:to-purple-150 active:scale-95 transition-all">
+                <i class="fas fa-brain text-purple-600 text-xl mb-2"></i>
+                <span class="text-sm font-semibold text-purple-800">Intelligence</span>
+              </a>
+            </div>
           </div>
-          <a href="/risk" class="mobile-nav-item">
-            <i class="fas fa-shield-alt text-red-500"></i>
-            <span>Risk Register</span>
-          </a>
-          <button hx-get="/risk/create" hx-target="#modal-container" class="mobile-nav-item w-full text-left">
-            <i class="fas fa-plus text-orange-500"></i>
-            <span>New Risk</span>
-          </button>
-          <a href="/risk/assessments" class="mobile-nav-item">
-            <i class="fas fa-clipboard-check text-yellow-500"></i>
-            <span>Risk Assessments</span>
-          </a>
-          <a href="/risk-controls" class="mobile-nav-item">
-            <i class="fas fa-link text-purple-500"></i>
-            <span>Risk-Control Mapping</span>
-          </a>
           
-          <!-- Compliance Section -->
-          <div class="px-3 py-2 mt-4">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Compliance</h3>
-          </div>
-          <a href="/compliance/frameworks" class="mobile-nav-item">
-            <i class="fas fa-layer-group text-blue-500"></i>
-            <span>Framework Management</span>
-          </a>
-          <a href="/compliance/soa" class="mobile-nav-item">
-            <i class="fas fa-file-contract text-purple-500"></i>
-            <span>Statement of Applicability</span>
-          </a>
-          <a href="/compliance/evidence" class="mobile-nav-item">
-            <i class="fas fa-folder-open text-orange-500"></i>
-            <span>Evidence Management</span>
-          </a>
-          <a href="/compliance/assessments" class="mobile-nav-item">
-            <i class="fas fa-clipboard-check text-green-500"></i>
-            <span>Compliance Assessments</span>
-          </a>
-          
-          <!-- Operations Section -->
-          <div class="px-3 py-2 mt-4">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Operations</h3>
-          </div>
-          <a href="/operations" class="mobile-nav-item">
-            <i class="fas fa-shield-alt text-blue-500"></i>
-            <span>Operations Center</span>
-          </a>
-          <a href="/operations/assets" class="mobile-nav-item">
-            <i class="fas fa-server text-green-500"></i>
-            <span>Asset Management</span>
-          </a>
-          <a href="/operations/services" class="mobile-nav-item">
-            <i class="fas fa-sitemap text-green-500"></i>
-            <span>Service Management</span>
-          </a>
-          <a href="/documents" class="mobile-nav-item">
-            <i class="fas fa-file-alt text-blue-500"></i>
-            <span>Document Management</span>
-          </a>
-          
-          <!-- Intelligence -->
-          <a href="/intelligence" class="mobile-nav-item">
-            <i class="fas fa-brain text-purple-500"></i>
-            <span>Threat Intelligence</span>
-          </a>
-          
-          <!-- Admin Section (if admin) -->
-          ${user?.role === 'admin' ? html`
-          <div class="px-3 py-2 mt-4">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Administration</h3>
-          </div>
-          <a href="/admin" class="mobile-nav-item">
-            <i class="fas fa-cogs text-purple-500"></i>
-            <span>System Settings</span>
-          </a>
-          <a href="/admin/users" class="mobile-nav-item">
-            <i class="fas fa-users text-indigo-500"></i>
-            <span>User Management</span>
-          </a>
-          ` : ''}
-          
-          <!-- Mobile User Actions -->
-          <div class="px-3 py-2 mt-4 border-t border-gray-200">
-            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Account</h3>
-          </div>
-          <div class="px-3 py-3 flex items-center space-x-3">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <i class="fas fa-user text-blue-600 text-sm"></i>
+          <!-- Main Navigation Categories -->
+          <div class="space-y-4">
+            
+            <!-- Risk Management -->
+            <div class="bg-red-50 rounded-xl p-1 border border-red-100">
+              <div class="px-3 py-2 bg-red-100 rounded-lg mb-2">
+                <h3 class="text-sm font-bold text-red-800 flex items-center">
+                  <i class="fas fa-exclamation-triangle mr-2"></i>
+                  Risk Management
+                </h3>
+              </div>
+              <div class="px-2 space-y-1">
+                <a href="/risk" class="flex items-center p-3 hover:bg-red-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-shield-alt text-red-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-red-800">Risk Register</span>
+                </a>
+                <a href="/risk/assessments" class="flex items-center p-3 hover:bg-red-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-clipboard-check text-red-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-red-800">Assessments</span>
+                </a>
+                <a href="/risk-controls" class="flex items-center p-3 hover:bg-red-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-link text-red-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-red-800">Control Mapping</span>
+                </a>
               </div>
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium text-gray-900">${user?.username || 'User'}</p>
-              <p class="text-xs text-gray-500">${user?.role || 'User'}</p>
+            
+            <!-- Compliance -->
+            <div class="bg-green-50 rounded-xl p-1 border border-green-100">
+              <div class="px-3 py-2 bg-green-100 rounded-lg mb-2">
+                <h3 class="text-sm font-bold text-green-800 flex items-center">
+                  <i class="fas fa-clipboard-check mr-2"></i>
+                  Compliance
+                </h3>
+              </div>
+              <div class="px-2 space-y-1">
+                <a href="/compliance/frameworks" class="flex items-center p-3 hover:bg-green-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-layer-group text-green-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-green-800">Frameworks</span>
+                </a>
+                <a href="/compliance/evidence" class="flex items-center p-3 hover:bg-green-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-folder-open text-green-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-green-800">Evidence</span>
+                </a>
+                <a href="/compliance/assessments" class="flex items-center p-3 hover:bg-green-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-tasks text-green-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-green-800">Assessments</span>
+                </a>
+              </div>
+            </div>
+            
+            <!-- Operations -->
+            <div class="bg-blue-50 rounded-xl p-1 border border-blue-100">
+              <div class="px-3 py-2 bg-blue-100 rounded-lg mb-2">
+                <h3 class="text-sm font-bold text-blue-800 flex items-center">
+                  <i class="fas fa-cogs mr-2"></i>
+                  Operations
+                </h3>
+              </div>
+              <div class="px-2 space-y-1">
+                <a href="/operations" class="flex items-center p-3 hover:bg-blue-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-shield-alt text-blue-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-blue-800">Operations Center</span>
+                </a>
+                <a href="/operations/assets" class="flex items-center p-3 hover:bg-blue-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-server text-blue-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-blue-800">Assets</span>
+                </a>
+                <a href="/operations/services" class="flex items-center p-3 hover:bg-blue-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-sitemap text-blue-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-blue-800">Services</span>
+                </a>
+              </div>
+            </div>
+            
+            <!-- Admin Section (if admin) -->
+            ${user?.role === 'admin' ? html`
+            <div class="bg-purple-50 rounded-xl p-1 border border-purple-100">
+              <div class="px-3 py-2 bg-purple-100 rounded-lg mb-2">
+                <h3 class="text-sm font-bold text-purple-800 flex items-center">
+                  <i class="fas fa-user-shield mr-2"></i>
+                  Administration
+                </h3>
+              </div>
+              <div class="px-2 space-y-1">
+                <a href="/admin" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-cogs text-purple-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-purple-800">Settings</span>
+                </a>
+                <a href="/admin/users" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-users text-purple-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-purple-800">Users</span>
+                </a>
+              </div>
+            </div>
+            ` : ''}
+          </div>
+          
+          <!-- User Account Section -->
+          <div class="mt-6 pt-4 border-t-2 border-gray-100">
+            <div class="bg-gray-50 rounded-xl p-4 mb-3">
+              <div class="flex items-center space-x-3 mb-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                  <i class="fas fa-user text-white text-lg"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-base font-semibold text-gray-900 truncate">${user?.username || 'User'}</p>
+                  <p class="text-sm text-gray-600 capitalize">${user?.role || 'User'}</p>
+                </div>
+              </div>
+              <button hx-post="/auth/logout" 
+                      hx-redirect="/"
+                      class="w-full flex items-center justify-center p-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg font-medium transition-colors active:scale-98">
+                <i class="fas fa-sign-out-alt mr-2"></i>
+                <span>Sign Out</span>
+              </button>
             </div>
           </div>
-          <button hx-post="/auth/logout" 
-                  hx-redirect="/"
-                  class="mobile-nav-item w-full text-left border-t border-gray-100 text-red-600">
-            <i class="fas fa-sign-out-alt text-red-500"></i>
-            <span>Logout</span>
-          </button>
         </div>
       </div>
     </div>
