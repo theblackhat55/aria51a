@@ -18,7 +18,8 @@ export function createRiskControlRoutes() {
     const user = c.get('user');
     
     try {
-      // Get risk-control mapping statistics
+      // Get risk-control mapping statistics  
+      // Use risks_simple for production compatibility (Cloudflare Pages)
       const stats = await c.env.DB.prepare(`
         SELECT 
           COUNT(DISTINCT r.id) as total_risks,
@@ -26,12 +27,13 @@ export function createRiskControlRoutes() {
           COUNT(DISTINCT CASE WHEN rcm.id IS NULL THEN r.id END) as unmapped_risks,
           AVG(rcm.effectiveness_rating) as avg_effectiveness,
           AVG(rcm.mapping_confidence) as avg_confidence
-        FROM risks r
+        FROM risks_simple r
         LEFT JOIN risk_control_mappings rcm ON r.id = rcm.risk_id
         WHERE r.status = 'active'
       `).first();
 
       // Get detailed risk-control mappings
+      // Use risks_simple for production compatibility (Cloudflare Pages) 
       const mappings = await c.env.DB.prepare(`
         SELECT 
           r.id as risk_id,
@@ -42,7 +44,7 @@ export function createRiskControlRoutes() {
           AVG(rcm.effectiveness_rating) as avg_effectiveness,
           AVG(rcm.mapping_confidence) as avg_confidence,
           GROUP_CONCAT(cf.name, ', ') as frameworks
-        FROM risks r
+        FROM risks_simple r
         LEFT JOIN risk_control_mappings rcm ON r.id = rcm.risk_id
         LEFT JOIN compliance_frameworks cf ON rcm.framework_id = cf.id
         WHERE r.status = 'active'
@@ -120,9 +122,10 @@ export function createRiskControlRoutes() {
     const user = c.get('user');
     
     try {
-      // Get risk details
+      // Get risk details  
+      // Use risks_simple for production compatibility (Cloudflare Pages)
       const risk = await c.env.DB.prepare(`
-        SELECT * FROM risks WHERE id = ?
+        SELECT * FROM risks_simple WHERE id = ?
       `).bind(riskId).first();
 
       if (!risk) {

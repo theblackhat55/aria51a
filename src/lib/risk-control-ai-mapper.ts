@@ -354,9 +354,10 @@ export class AIRiskControlMapper {
   async mapAllUnmappedRisks(): Promise<number> {
     try {
       // Get risks that don't have any control mappings
+      // Use risks_simple for production compatibility (Cloudflare Pages)
       const unmappedRisks = await this.db.prepare(`
         SELECT r.id, r.title, r.description, r.category 
-        FROM risks r
+        FROM risks_simple r
         LEFT JOIN risk_control_mappings rcm ON r.id = rcm.risk_id
         WHERE r.status = 'active' AND rcm.id IS NULL
       `).all();
