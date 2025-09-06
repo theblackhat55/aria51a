@@ -15,6 +15,7 @@ import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
 import { createComplianceRoutes } from './routes/compliance-routes';
 import { createOperationsRoutes } from './routes/operations-fixed';
 import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
+import { createRiskControlRoutes } from './routes/risk-control-routes';
 
 // Import security middleware
 import { authMiddleware, requireRole, requireAdmin, csrfMiddleware } from './middleware/auth-middleware';
@@ -234,6 +235,9 @@ app.route('/admin', createAdminRoutesARIA5());
 
 // AI Assistant (requires authentication)
 app.route('/ai', createAIAssistantRoutes());
+
+// Risk Controls (requires authentication)
+app.route('/risk-controls', createRiskControlRoutes());
 
 // 404 handler
 app.notFound((c) => {
