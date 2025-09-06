@@ -316,9 +316,11 @@ const renderRiskControlDashboard = (stats: any, mappings: any[]) => html`
                     <div class="flex items-center">
                       ${mapping.avg_effectiveness ? html`
                         <div class="flex">
-                          ${Array.from({length: 5}, (_, i) => html`
-                            <i class="fas fa-star text-sm ${i < Math.round(mapping.avg_effectiveness) ? 'text-yellow-400' : 'text-gray-300'}"></i>
-                          `)}
+                          <i class="fas fa-star text-sm ${0 < Math.round(mapping.avg_effectiveness) ? 'text-yellow-400' : 'text-gray-300'}"></i>
+                          <i class="fas fa-star text-sm ${1 < Math.round(mapping.avg_effectiveness) ? 'text-yellow-400' : 'text-gray-300'}"></i>
+                          <i class="fas fa-star text-sm ${2 < Math.round(mapping.avg_effectiveness) ? 'text-yellow-400' : 'text-gray-300'}"></i>
+                          <i class="fas fa-star text-sm ${3 < Math.round(mapping.avg_effectiveness) ? 'text-yellow-400' : 'text-gray-300'}"></i>
+                          <i class="fas fa-star text-sm ${4 < Math.round(mapping.avg_effectiveness) ? 'text-yellow-400' : 'text-gray-300'}"></i>
                         </div>
                         <span class="ml-2 text-sm text-gray-600">${Math.round(mapping.avg_effectiveness * 10) / 10}</span>
                       ` : html`
@@ -340,7 +342,7 @@ const renderRiskControlDashboard = (stats: any, mappings: any[]) => html`
                     ` : ''}
                   </td>
                 </tr>
-              `).join('')}
+              `)}
             </tbody>
           </table>
         </div>
