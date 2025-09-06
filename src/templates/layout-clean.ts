@@ -1417,6 +1417,14 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Generate reports</div>
                   </div>
                 </a>
+                <div class="border-t border-gray-100 my-2"></div>
+                <a href="/intelligence" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                  <i class="fas fa-brain w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Threat Intelligence</div>
+                    <div class="text-xs text-gray-500">IOCs, threat feeds & analysis</div>
+                  </div>
+                </a>
               </div>
             </div>
           </div>
@@ -1540,15 +1548,19 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Policies, procedures & documents</div>
                   </div>
                 </a>
+                <div class="border-t border-gray-100 my-2"></div>
+                <a href="/operations/intelligence-settings" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-brain w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Intelligence Settings</div>
+                    <div class="text-xs text-gray-500">STIX/TAXII feed providers & configuration</div>
+                  </div>
+                </a>
               </div>
             </div>
           </div>
           
-          <!-- Intelligence -->
-          <a href="/intelligence" class="flex items-center space-x-1 text-gray-700 hover:text-blue-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            <i class="fas fa-brain mr-1"></i>
-            <span>Intelligence</span>
-          </a>
+
           
           <!-- Admin (if admin user) -->
           ${user?.role === 'admin' ? html`
@@ -1659,9 +1671,9 @@ const renderCleanNavigation = (user: any) => html`
                 <i class="fas fa-chart-bar text-green-600 text-xl mb-2"></i>
                 <span class="text-sm font-semibold text-green-800">Reports</span>
               </a>
-              <a href="/intelligence" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:from-purple-100 hover:to-purple-150 active:scale-95 transition-all">
+              <a href="/operations/intelligence-settings" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:from-purple-100 hover:to-purple-150 active:scale-95 transition-all">
                 <i class="fas fa-brain text-purple-600 text-xl mb-2"></i>
-                <span class="text-sm font-semibold text-purple-800">Intelligence</span>
+                <span class="text-sm font-semibold text-purple-800">Intel Settings</span>
               </a>
             </div>
           </div>
@@ -1737,6 +1749,15 @@ const renderCleanNavigation = (user: any) => html`
                 <a href="/operations/services" class="flex items-center p-3 hover:bg-blue-100 rounded-lg transition-colors active:scale-98">
                   <i class="fas fa-sitemap text-blue-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-blue-800">Services</span>
+                </a>
+                <a href="/documents" class="flex items-center p-3 hover:bg-blue-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-file-alt text-blue-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-blue-800">Documents</span>
+                </a>
+                <div class="border-t border-blue-200 my-2 mx-2"></div>
+                <a href="/operations/intelligence-settings" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98 bg-gradient-to-r from-purple-50 to-purple-100">
+                  <i class="fas fa-brain text-purple-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-purple-800">Intelligence Settings</span>
                 </a>
               </div>
             </div>

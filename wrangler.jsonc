@@ -25,13 +25,13 @@
   //   }
   // ],
 
-  // R2 Storage for Evidence Files and Reports (disabled for initial deployment)
-  // "r2_buckets": [
-  //   {
-  //     "binding": "R2",
-  //     "bucket_name": "aria51-storage"
-  //   }
-  // ],
+  // R2 Storage for Evidence Files and Reports (ENABLED)
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "aria51"
+    }
+  ],
   
   // AI Workers binding for Cloudflare AI
   "ai": {

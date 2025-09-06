@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { html, raw } from 'hono/html';
 import { requireAuth } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
+import { renderIntelligenceSettings, getThreatFeeds, getThreatFeedById, testThreatFeed } from './intelligence-settings';
 import type { CloudflareBindings } from '../types';
 
 export function createOperationsRoutes() {
@@ -52,12 +53,19 @@ export function createOperationsRoutes() {
   // Document Management
   app.get('/documents', async (c) => {
     const user = c.get('user');
+    const typeFilter = c.req.query('type');
+    let documents = await getDocuments(c.env.DB);
+    
+    // Filter by type if specified
+    if (typeFilter) {
+      documents = documents.filter(doc => doc.type === typeFilter);
+    }
     
     return c.html(
       cleanLayout({
         title: 'Document Management',
         user,
-        content: renderDocumentManagement()
+        content: renderDocumentManagement(documents)
       })
     );
   });
@@ -118,7 +126,7 @@ export function createOperationsRoutes() {
 
   app.get('/api/stats/documents', async (c) => {
     try {
-      const result = await c.env.DB.prepare('SELECT COUNT(*) as count FROM evidence').first();
+      const result = await c.env.DB.prepare('SELECT COUNT(*) as count FROM documents WHERE is_active = 1').first();
       const count = result?.count || 0;
       return c.html(`
         <div class="p-5">
@@ -440,16 +448,70 @@ export function createOperationsRoutes() {
     return c.html(renderDocumentUploadModal());
   });
 
-  // Document upload processing
+  // Document upload processing - R2 Integration
   app.post('/api/documents', async (c) => {
     try {
       const formData = await c.req.formData();
+      const file = formData.get('file') as File;
+      const name = formData.get('name') as string;
+      const type = formData.get('type') as string;
+      const description = formData.get('description') as string;
+      
+      if (!file || !name || !type) {
+        throw new Error('Missing required fields');
+      }
+      
+      // Validate file size (50MB limit)
+      if (file.size > 50 * 1024 * 1024) {
+        throw new Error('File size exceeds 50MB limit');
+      }
+      
+      // Generate unique filename
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const randomId = Math.random().toString(36).substring(2, 8);
+      const fileExtension = file.name.split('.').pop();
+      const uniqueFilename = `${timestamp}-${randomId}.${fileExtension}`;
+      const r2Key = `documents/${uniqueFilename}`;
+      
+      // Upload to R2
+      await c.env.R2.put(r2Key, file, {
+        httpMetadata: {
+          contentType: file.type,
+        },
+        customMetadata: {
+          originalName: file.name,
+          uploadedBy: 'system',
+          uploadedAt: new Date().toISOString(),
+        },
+      });
+      
+      // Save document metadata to database
       const documentData = {
-        name: formData.get('name'),
-        type: formData.get('type'),
-        description: formData.get('description'),
-        file: formData.get('file') // In a real app, this would be processed
+        document_id: `DOC-${randomId.toUpperCase()}`,
+        file_name: uniqueFilename,
+        original_file_name: file.name,
+        file_path: r2Key,
+        file_size: file.size,
+        mime_type: file.type || 'application/octet-stream',
+        file_hash: '', // Could implement SHA256 hash if needed
+        uploaded_by: c.get('user')?.id || 1,
+        title: name,
+        description: description || '',
+        document_type: type,
+        tags: JSON.stringify([]),
+        version: '1.0',
+        visibility: 'private',
+        access_permissions: JSON.stringify([]),
+        related_entity_type: null,
+        related_entity_id: null,
+        upload_date: new Date().toISOString(),
+        download_count: 0,
+        is_active: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
+      
+      const document = await createDocument(c.env.DB, documentData);
       
       // Return success message and close modal
       return c.html(html`
@@ -457,10 +519,10 @@ export function createOperationsRoutes() {
           <div class="bg-white p-6 rounded-lg shadow-lg text-center">
             <i class="fas fa-check-circle text-purple-500 text-4xl mb-4"></i>
             <h3 class="text-lg font-medium text-gray-900 mb-2">Document Uploaded Successfully!</h3>
-            <p class="text-sm text-gray-600 mb-4">${documentData.name} has been uploaded to the system.</p>
-            <button hx-get="/operations/api/documents/close" hx-target="#document-modal" hx-swap="innerHTML"
+            <p class="text-sm text-gray-600 mb-4">${name} has been uploaded to aria51 R2 storage.</p>
+            <button hx-get="/operations/documents" hx-target="body" hx-swap="innerHTML"
                     class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
-              Close
+              View Documents
             </button>
           </div>
         </div>
@@ -471,11 +533,102 @@ export function createOperationsRoutes() {
           <div class="flex">
             <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
             <div class="text-sm text-red-700">
-              Error uploading document. Please try again.
+              Error uploading document: ${error.message}
             </div>
           </div>
         </div>
         ${renderDocumentUploadModal()}
+      `);
+    }
+  });
+
+  // Microsoft Defender Stats API endpoints
+  app.get('/api/stats/machines', async (c) => {
+    try {
+      const result = await c.env.DB.prepare("SELECT COUNT(*) as count FROM assets WHERE type = 'device' AND status = 'active'").first();
+      const count = result?.count || 0;
+      return c.html(`
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-check-circle text-green-400"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-green-800">Machines Online</p>
+            <p class="text-sm text-green-600">${count} devices</p>
+          </div>
+        </div>
+      `);
+    } catch (error) {
+      return c.html(`
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-check-circle text-green-400"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-green-800">Machines Online</p>
+            <p class="text-sm text-green-600">0 devices</p>
+          </div>
+        </div>
+      `);
+    }
+  });
+
+  app.get('/api/stats/alerts', async (c) => {
+    try {
+      const result = await c.env.DB.prepare("SELECT COUNT(*) as count FROM incidents WHERE status = 'open'").first();
+      const count = result?.count || 0;
+      return c.html(`
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-yellow-800">Active Alerts</p>
+            <p class="text-sm text-yellow-600">${count} alerts</p>
+          </div>
+        </div>
+      `);
+    } catch (error) {
+      return c.html(`
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-yellow-800">Active Alerts</p>
+            <p class="text-sm text-yellow-600">0 alerts</p>
+          </div>
+        </div>
+      `);
+    }
+  });
+
+  app.get('/api/stats/vulnerabilities', async (c) => {
+    try {
+      const result = await c.env.DB.prepare("SELECT COUNT(*) as count FROM risks WHERE status = 'active' AND (probability * impact) >= 15").first();
+      const count = result?.count || 0;
+      return c.html(`
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-bug text-red-400"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-red-800">Vulnerabilities</p>
+            <p class="text-sm text-red-600">${count} found</p>
+          </div>
+        </div>
+      `);
+    } catch (error) {
+      return c.html(`
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-bug text-red-400"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-red-800">Vulnerabilities</p>
+            <p class="text-sm text-red-600">0 found</p>
+          </div>
+        </div>
       `);
     }
   });
@@ -604,6 +757,221 @@ export function createOperationsRoutes() {
     });
   });
 
+  // R2 Object Storage - File Upload Endpoint
+  app.post('/api/documents/upload', async (c) => {
+    try {
+      const formData = await c.req.formData();
+      const file = formData.get('file') as File;
+      
+      if (!file) {
+        return c.json({ error: 'No file provided' }, 400);
+      }
+
+      // Validate file size (50MB limit)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        return c.json({ error: 'File size exceeds 50MB limit' }, 400);
+      }
+
+      // Generate unique file name
+      const fileExtension = file.name.split('.').pop() || '';
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const fileName = `documents/${timestamp}-${randomId}.${fileExtension}`;
+
+      // Upload to R2
+      const fileBuffer = await file.arrayBuffer();
+      await c.env.R2.put(fileName, fileBuffer, {
+        httpMetadata: {
+          contentType: file.type || 'application/octet-stream',
+        },
+        customMetadata: {
+          originalName: file.name,
+          uploadedBy: c.get('user')?.id?.toString() || 'unknown',
+          uploadDate: new Date().toISOString(),
+        }
+      });
+
+      // Store document metadata in database
+      const documentData = {
+        document_id: `DOC-${randomId.toUpperCase()}`,
+        file_name: fileName,
+        original_file_name: file.name,
+        file_path: fileName,
+        file_size: file.size,
+        mime_type: file.type || 'application/octet-stream',
+        file_hash: '', // Could implement SHA256 hash if needed
+        uploaded_by: c.get('user')?.id || 1,
+        title: formData.get('title') || file.name,
+        description: formData.get('description') || '',
+        document_type: formData.get('document_type') || 'other',
+        tags: JSON.stringify(formData.get('tags')?.toString().split(',') || []),
+        version: formData.get('version') || '1.0',
+        visibility: formData.get('visibility') || 'private',
+        access_permissions: JSON.stringify([]),
+        related_entity_type: formData.get('related_entity_type') || null,
+        related_entity_id: formData.get('related_entity_id') ? parseInt(formData.get('related_entity_id') as string) : null,
+        upload_date: new Date().toISOString(),
+        download_count: 0,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      await createDocument(c.env.DB, documentData);
+
+      return c.json({
+        success: true,
+        document_id: documentData.document_id,
+        file_name: fileName,
+        original_name: file.name,
+        file_size: file.size,
+        download_url: `/api/documents/${documentData.document_id}/download`
+      });
+
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      return c.json({ error: 'Failed to upload file' }, 500);
+    }
+  });
+
+  // File Download Endpoint
+  app.get('/api/documents/:documentId/download', async (c) => {
+    try {
+      const documentId = c.req.param('documentId');
+      
+      // Get document metadata from database
+      const document = await getDocumentById(c.env.DB, documentId);
+      if (!document) {
+        return c.notFound();
+      }
+
+      // Get file from R2
+      const object = await c.env.R2.get(document.file_path);
+      if (!object) {
+        return c.notFound();
+      }
+
+      // Update download count
+      await updateDocumentDownloadCount(c.env.DB, documentId);
+
+      // Return file with proper headers
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': document.mime_type,
+          'Content-Disposition': `attachment; filename="${document.original_file_name}"`,
+          'Content-Length': document.file_size.toString(),
+        }
+      });
+
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      return c.text('Error downloading file', 500);
+    }
+  });
+
+  // List Documents Endpoint
+  app.get('/api/documents', async (c) => {
+    try {
+      const documents = await getDocuments(c.env.DB);
+      return c.json({
+        success: true,
+        documents: documents.map(doc => ({
+          ...doc,
+          tags: doc.tags ? JSON.parse(doc.tags) : [],
+          access_permissions: doc.access_permissions ? JSON.parse(doc.access_permissions) : [],
+          download_url: `/api/documents/${doc.document_id}/download`
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      return c.json({ error: 'Failed to fetch documents' }, 500);
+    }
+  });
+
+  // Delete Document Endpoint
+  app.delete('/api/documents/:documentId', async (c) => {
+    try {
+      const documentId = c.req.param('documentId');
+      
+      // Get document metadata
+      const document = await getDocumentById(c.env.DB, documentId);
+      if (!document) {
+        return c.json({ error: 'Document not found' }, 404);
+      }
+
+      // Delete from R2
+      await c.env.R2.delete(document.file_path);
+
+      // Delete from database
+      await deleteDocument(c.env.DB, documentId);
+
+      return c.json({ success: true, message: 'Document deleted successfully' });
+
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      return c.json({ error: 'Failed to delete document' }, 500);
+    }
+  });
+
+  // Document delete confirmation modal
+  app.get('/api/documents/:id/delete-confirm', async (c) => {
+    const documentId = c.req.param('id');
+    const document = await getDocumentById(c.env.DB, documentId);
+    if (!document) {
+      return new Response('<div class="p-4 text-red-600">Document not found</div>', {
+        headers: { 'Content-Type': 'text/html' }
+      });
+    }
+    const modalHtml = renderDocumentDeleteModal(document);
+    return new Response(modalHtml.toString(), {
+      headers: { 'Content-Type': 'text/html' }
+    });
+  });
+
+  // Process document deletion
+  app.post('/api/documents/:id/delete', async (c) => {
+    try {
+      const documentId = c.req.param('id');
+      
+      // Get document metadata
+      const document = await getDocumentById(c.env.DB, documentId);
+      if (!document) {
+        return c.html(html`
+          <div class="bg-red-50 border border-red-200 rounded-md p-4">
+            <div class="text-sm text-red-700">Document not found</div>
+          </div>
+        `);
+      }
+
+      // Delete from R2
+      await c.env.R2.delete(document.r2_key);
+
+      // Delete from database
+      await deleteDocument(c.env.DB, documentId);
+
+      return c.html(html`
+        <div class="fixed inset-0 bg-red-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+            <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Document Deleted Successfully!</h3>
+            <p class="text-sm text-gray-600 mb-4">${document.name} has been permanently removed.</p>
+            <button hx-get="/operations/documents" hx-target="body" hx-swap="innerHTML"
+                    class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+              Back to Documents
+            </button>
+          </div>
+        </div>
+      `);
+    } catch (error) {
+      return c.html(html`
+        <div class="bg-red-50 border border-red-200 rounded-md p-4">
+          <div class="text-sm text-red-700">Error deleting document: ${error.message}</div>
+        </div>
+      `);
+    }
+  });
+
   // Delete service endpoint
   app.delete('/api/services/:id', async (c) => {
     try {
@@ -636,6 +1004,103 @@ export function createOperationsRoutes() {
     } catch (error) {
       console.error('Error deleting service:', error);
       return c.json({ error: 'Error deleting service' }, 500);
+    }
+  });
+
+  // Intelligence Settings
+  app.get('/intelligence-settings', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'Intelligence Settings',
+        user,
+        content: renderIntelligenceSettings()
+      })
+    );
+  });
+
+  // Intelligence Settings API routes
+  app.get('/api/intelligence/feeds', async (c) => {
+    try {
+      const feeds = await getThreatFeeds(c.env.DB);
+      return c.json({ feeds });
+    } catch (error) {
+      console.error('Error fetching threat feeds:', error);
+      return c.json({ error: 'Failed to fetch threat feeds' }, 500);
+    }
+  });
+
+  app.post('/api/intelligence/feeds', async (c) => {
+    try {
+      const { name, type, url, api_key, format, description, active } = await c.req.json();
+      
+      const result = await c.env.DB.prepare(`
+        INSERT INTO threat_feeds (name, type, url, api_key, format, description, active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+      `).bind(name, type, url, api_key, format, description, active ? 1 : 0).run();
+      
+      return c.json({ success: true, id: result.meta.last_row_id });
+    } catch (error) {
+      console.error('Error creating threat feed:', error);
+      return c.json({ error: 'Failed to create threat feed' }, 500);
+    }
+  });
+
+  app.put('/api/intelligence/feeds/:id', async (c) => {
+    try {
+      const feedId = c.req.param('id');
+      const { name, type, url, api_key, format, description, active } = await c.req.json();
+      
+      await c.env.DB.prepare(`
+        UPDATE threat_feeds 
+        SET name = ?, type = ?, url = ?, api_key = ?, format = ?, description = ?, active = ?, updated_at = datetime('now')
+        WHERE feed_id = ?
+      `).bind(name, type, url, api_key, format, description, active ? 1 : 0, feedId).run();
+      
+      return c.json({ success: true });
+    } catch (error) {
+      console.error('Error updating threat feed:', error);
+      return c.json({ error: 'Failed to update threat feed' }, 500);
+    }
+  });
+
+  app.delete('/api/intelligence/feeds/:id', async (c) => {
+    try {
+      const feedId = c.req.param('id');
+      
+      await c.env.DB.prepare(`
+        DELETE FROM threat_feeds WHERE feed_id = ?
+      `).bind(feedId).run();
+      
+      return c.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting threat feed:', error);
+      return c.json({ error: 'Failed to delete threat feed' }, 500);
+    }
+  });
+
+  app.post('/api/intelligence/feeds/:id/test', async (c) => {
+    try {
+      const feedId = c.req.param('id');
+      const feed = await getThreatFeedById(c.env.DB, feedId);
+      
+      if (!feed) {
+        return c.json({ error: 'Feed not found' }, 404);
+      }
+
+      // Test the feed connection
+      const testResult = await testThreatFeed(feed);
+      
+      return c.json({ 
+        success: testResult.success, 
+        message: testResult.message,
+        response_time: testResult.responseTime,
+        indicators_count: testResult.indicatorsCount
+      });
+    } catch (error) {
+      console.error('Error testing threat feed:', error);
+      return c.json({ error: 'Failed to test threat feed' }, 500);
     }
   });
 
@@ -791,38 +1256,47 @@ const renderOperationsDashboard = () => html`
           <p class="text-gray-600 mb-4">Real-time security data and threat intelligence</p>
           
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-green-50 p-4 rounded-lg">
+            <div class="bg-green-50 p-4 rounded-lg"
+                 hx-get="/operations/api/stats/machines"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
                   <i class="fas fa-check-circle text-green-400"></i>
                 </div>
                 <div class="ml-3">
                   <p class="text-sm font-medium text-green-800">Machines Online</p>
-                  <p class="text-sm text-green-600">847 devices</p>
+                  <p class="text-sm text-green-600">Loading...</p>
                 </div>
               </div>
             </div>
             
-            <div class="bg-yellow-50 p-4 rounded-lg">
+            <div class="bg-yellow-50 p-4 rounded-lg"
+                 hx-get="/operations/api/stats/alerts"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
                   <i class="fas fa-exclamation-triangle text-yellow-400"></i>
                 </div>
                 <div class="ml-3">
                   <p class="text-sm font-medium text-yellow-800">Active Alerts</p>
-                  <p class="text-sm text-yellow-600">12 alerts</p>
+                  <p class="text-sm text-yellow-600">Loading...</p>
                 </div>
               </div>
             </div>
             
-            <div class="bg-red-50 p-4 rounded-lg">
+            <div class="bg-red-50 p-4 rounded-lg"
+                 hx-get="/operations/api/stats/vulnerabilities"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
                   <i class="fas fa-bug text-red-400"></i>
                 </div>
                 <div class="ml-3">
                   <p class="text-sm font-medium text-red-800">Vulnerabilities</p>
-                  <p class="text-sm text-red-600">34 found</p>
+                  <p class="text-sm text-red-600">Loading...</p>
                 </div>
               </div>
             </div>
@@ -988,7 +1462,7 @@ const renderServiceManagement = () => html`
 `;
 
 // Document Management Page
-const renderDocumentManagement = () => html`
+const renderDocumentManagement = (documents: any[] = []) => html`
   <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="mb-8 flex items-center justify-between">
@@ -1008,38 +1482,7 @@ const renderDocumentManagement = () => html`
 
       <!-- Document Categories -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white shadow rounded-lg p-6">
-          <div class="flex items-center mb-4">
-            <i class="fas fa-shield-alt text-blue-500 mr-3"></i>
-            <h3 class="text-lg font-semibold text-gray-900">Security Policies</h3>
-          </div>
-          <p class="text-gray-600 mb-4">Information security and data protection policies</p>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            45 documents
-          </span>
-        </div>
-
-        <div class="bg-white shadow rounded-lg p-6">
-          <div class="flex items-center mb-4">
-            <i class="fas fa-cog text-gray-500 mr-3"></i>
-            <h3 class="text-lg font-semibold text-gray-900">Procedures</h3>
-          </div>
-          <p class="text-gray-600 mb-4">Operational procedures and work instructions</p>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            78 documents
-          </span>
-        </div>
-
-        <div class="bg-white shadow rounded-lg p-6">
-          <div class="flex items-center mb-4">
-            <i class="fas fa-clipboard-check text-green-500 mr-3"></i>
-            <h3 class="text-lg font-semibold text-gray-900">Compliance</h3>
-          </div>
-          <p class="text-gray-600 mb-4">Regulatory and compliance documentation</p>
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            32 documents
-          </span>
-        </div>
+        ${raw(renderDocumentCategories(documents))}
       </div>
 
       <!-- Recent Documents -->
@@ -1048,7 +1491,7 @@ const renderDocumentManagement = () => html`
           <h2 class="text-lg font-semibold text-gray-900">Recent Documents</h2>
         </div>
         <div class="divide-y divide-gray-200">
-          ${raw(renderDocumentRows())}
+          ${raw(renderDocumentRows(documents))}
         </div>
       </div>
     </div>
@@ -1423,29 +1866,78 @@ function renderServiceRows(services: any[]) {
   }).join('');
 }
 
-function renderDocumentRows() {
-  const documents = [
-    { name: 'Information Security Policy', type: 'Policy', updated: '2 days ago', size: '2.1 MB' },
-    { name: 'Incident Response Procedure', type: 'Procedure', updated: '1 week ago', size: '1.8 MB' },
-    { name: 'GDPR Compliance Guide', type: 'Compliance', updated: '3 days ago', size: '4.2 MB' },
-    { name: 'Access Control Policy', type: 'Policy', updated: '5 days ago', size: '1.5 MB' }
-  ];
+function renderDocumentRows(documents: any[] = []) {
+  if (!documents || documents.length === 0) {
+    return `
+      <div class="px-6 py-8 text-center">
+        <i class="fas fa-folder-open text-gray-300 text-4xl mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No documents found</h3>
+        <p class="text-sm text-gray-500 mb-4">Upload your first document to get started.</p>
+        <button hx-get="/operations/api/documents/new" hx-target="#document-modal" hx-swap="innerHTML"
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700">
+          <i class="fas fa-upload mr-2"></i>
+          Upload Document
+        </button>
+      </div>
+    `;
+  }
   
-  return documents.map(doc => `
-    <div class="px-6 py-4 flex items-center justify-between">
-      <div class="flex items-center">
-        <i class="fas fa-file-pdf text-red-500 mr-3"></i>
-        <div>
-          <div class="text-sm font-medium text-gray-900">${doc.name}</div>
-          <div class="text-sm text-gray-500">${doc.type} • ${doc.size} • Updated ${doc.updated}</div>
+  return documents.map(doc => {
+    // Format file size
+    const formatSize = (bytes) => {
+      const mb = bytes / (1024 * 1024);
+      return mb < 1 ? `${(bytes / 1024).toFixed(1)} KB` : `${mb.toFixed(1)} MB`;
+    };
+    
+    // Format date
+    const formatDate = (dateStr) => {
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - date.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) return '1 day ago';
+      if (diffDays <= 7) return `${diffDays} days ago`;
+      if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+      return date.toLocaleDateString();
+    };
+    
+    // Get file icon based on mime type
+    const getFileIcon = (mimeType) => {
+      if (mimeType?.includes('pdf')) return 'fas fa-file-pdf text-red-500';
+      if (mimeType?.includes('word')) return 'fas fa-file-word text-blue-500';
+      if (mimeType?.includes('excel')) return 'fas fa-file-excel text-green-500';
+      if (mimeType?.includes('powerpoint')) return 'fas fa-file-powerpoint text-orange-500';
+      if (mimeType?.includes('image')) return 'fas fa-file-image text-purple-500';
+      return 'fas fa-file-alt text-gray-500';
+    };
+    
+    return `
+      <div class="px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center">
+          <i class="${getFileIcon(doc.mime_type)} mr-3"></i>
+          <div>
+            <div class="text-sm font-medium text-gray-900">${doc.name}</div>
+            <div class="text-sm text-gray-500">
+              ${doc.type} • ${formatSize(doc.file_size)} • 
+              Updated ${formatDate(doc.updated_at)} • 
+              Downloads: ${doc.download_count || 0}
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button hx-get="/operations/api/documents/${doc.id}/download" 
+                  class="text-blue-600 hover:text-blue-900 px-2 py-1 rounded">
+            <i class="fas fa-download mr-1"></i>Download
+          </button>
+          <button hx-get="/operations/api/documents/${doc.id}/delete-confirm" hx-target="#document-modal" hx-swap="innerHTML"
+                  class="text-red-600 hover:text-red-900 px-2 py-1 rounded">
+            <i class="fas fa-trash mr-1"></i>Delete
+          </button>
         </div>
       </div>
-      <div class="flex items-center space-x-2">
-        <button class="text-blue-600 hover:text-blue-900">Download</button>
-        <button class="text-gray-600 hover:text-gray-900">View</button>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function renderDefenderAlerts() {
@@ -2801,3 +3293,180 @@ const renderServiceDeleteModal = (service: any, linkedAssets: any[], linkedRisks
     </div>
   `;
 };
+
+// Document Management Helper Functions
+async function createDocument(db: any, documentData: any) {
+  try {
+    await db.prepare(`
+      INSERT INTO documents (
+        document_id, file_name, original_file_name, file_path, file_size, mime_type,
+        file_hash, uploaded_by, title, description, document_type, tags, version,
+        visibility, access_permissions, related_entity_type, related_entity_id,
+        upload_date, download_count, is_active, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      documentData.document_id,
+      documentData.file_name,
+      documentData.original_file_name,
+      documentData.file_path,
+      documentData.file_size,
+      documentData.mime_type,
+      documentData.file_hash,
+      documentData.uploaded_by,
+      documentData.title,
+      documentData.description,
+      documentData.document_type,
+      documentData.tags,
+      documentData.version,
+      documentData.visibility,
+      documentData.access_permissions,
+      documentData.related_entity_type,
+      documentData.related_entity_id,
+      documentData.upload_date,
+      documentData.download_count,
+      documentData.is_active,
+      documentData.created_at,
+      documentData.updated_at
+    ).run();
+
+    return true;
+  } catch (error) {
+    console.error('Error creating document:', error);
+    throw error;
+  }
+}
+
+async function getDocumentById(db: any, documentId: string) {
+  try {
+    const result = await db.prepare(`
+      SELECT * FROM documents WHERE document_id = ? AND is_active = 1
+    `).bind(documentId).first();
+    return result;
+  } catch (error) {
+    console.error('Error fetching document by ID:', error);
+    return null;
+  }
+}
+
+async function getDocuments(db: any, limit = 100) {
+  try {
+    const result = await db.prepare(`
+      SELECT d.*, u.username as uploaded_by_name
+      FROM documents d
+      LEFT JOIN users u ON d.uploaded_by = u.id
+      WHERE d.is_active = 1
+      ORDER BY d.created_at DESC
+      LIMIT ?
+    `).bind(limit).all();
+    return result.results || [];
+  } catch (error) {
+    console.error('Error fetching documents:', error);
+    return [];
+  }
+}
+
+async function updateDocumentDownloadCount(db: any, documentId: string) {
+  try {
+    await db.prepare(`
+      UPDATE documents 
+      SET download_count = download_count + 1,
+          last_accessed = ?
+      WHERE document_id = ?
+    `).bind(new Date().toISOString(), documentId).run();
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating download count:', error);
+    return false;
+  }
+}
+
+async function deleteDocument(db: any, documentId: string) {
+  try {
+    // Soft delete - mark as inactive instead of hard delete
+    await db.prepare(`
+      UPDATE documents 
+      SET is_active = 0, updated_at = ?
+      WHERE document_id = ?
+    `).bind(new Date().toISOString(), documentId).run();
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    throw error;
+  }
+}
+
+// Document Categories
+function renderDocumentCategories(documents: any[] = []) {
+  const categories = [
+    { 
+      type: 'Policy', 
+      icon: 'fas fa-shield-alt', 
+      color: 'blue', 
+      title: 'Security Policies',
+      description: 'Information security and data protection policies'
+    },
+    { 
+      type: 'Procedure', 
+      icon: 'fas fa-cog', 
+      color: 'gray', 
+      title: 'Procedures',
+      description: 'Operational procedures and work instructions'
+    },
+    { 
+      type: 'Compliance', 
+      icon: 'fas fa-clipboard-check', 
+      color: 'green', 
+      title: 'Compliance',
+      description: 'Regulatory and compliance documentation'
+    }
+  ];
+
+  return categories.map(category => {
+    const count = documents.filter(doc => doc.type === category.type).length;
+    return `
+      <div class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow cursor-pointer"
+           hx-get="/operations/documents?type=${category.type}" hx-target="body" hx-swap="innerHTML">
+        <div class="flex items-center mb-4">
+          <i class="${category.icon} text-${category.color}-500 mr-3"></i>
+          <h3 class="text-lg font-semibold text-gray-900">${category.title}</h3>
+        </div>
+        <p class="text-gray-600 mb-4">${category.description}</p>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${category.color}-100 text-${category.color}-800">
+          ${count} document${count !== 1 ? 's' : ''}
+        </span>
+      </div>
+    `;
+  }).join('');
+}
+
+// Document Delete Confirmation Modal
+const renderDocumentDeleteModal = (document: any) => html`
+  <div class="fixed inset-0 bg-red-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+      <div class="flex items-center mb-4">
+        <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+        <h3 class="text-lg font-medium text-gray-900">Delete Document</h3>
+      </div>
+      <p class="text-sm text-gray-600 mb-6">
+        Are you sure you want to delete "<strong>${document.name}</strong>"? 
+        This action cannot be undone and the file will be permanently removed from R2 storage.
+      </p>
+      <div class="flex items-center space-x-3">
+        <button hx-post="/operations/api/documents/${document.document_id}/delete" 
+                hx-target="#document-modal" 
+                hx-swap="innerHTML"
+                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <i class="fas fa-trash mr-2"></i>Delete Document
+        </button>
+        <button hx-get="/operations/api/documents/close" 
+                hx-target="#document-modal" 
+                hx-swap="innerHTML"
+                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+`;

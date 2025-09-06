@@ -37,6 +37,8 @@ app.use('*', cors({
   origin: (origin, c) => {
     // Allow same-origin requests and your production domain
     const allowedOrigins = [
+      'https://aria51.pages.dev',
+      'https://*.aria51.pages.dev',
       'https://aria51-htmx.pages.dev',
       'https://*.aria51-htmx.pages.dev'
     ];
@@ -298,6 +300,11 @@ app.route('/intelligence', createIntelligenceRoutes());
 // Reports route - redirect to intelligence reports (requires authentication)
 app.get('/reports', (c) => {
   return c.redirect('/intelligence/reports');
+});
+
+// Documents route - redirect to operations documents (requires authentication)
+app.get('/documents', (c) => {
+  return c.redirect('/operations/documents');
 });
 
 // Risk Controls (requires authentication)
