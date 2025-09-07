@@ -18,6 +18,7 @@ import { createIntelligenceRoutes } from './routes/intelligence-routes';
 import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createRiskControlRoutes } from './routes/risk-control-routes';
 import { createSystemHealthRoutes } from './routes/system-health-routes';
+import conversationalAssistantRoutes from './routes/conversational-assistant';
 
 // Import security middleware
 import { authMiddleware, requireRole, requireAdmin, csrfMiddleware } from './middleware/auth-middleware';
@@ -296,6 +297,9 @@ app.route('/ai', createAIAssistantRoutes());
 
 // Intelligence routes (requires authentication)
 app.route('/intelligence', createIntelligenceRoutes());
+
+// Conversational AI Assistant API routes
+app.route('/api/assistant', conversationalAssistantRoutes);
 
 // Reports route - redirect to intelligence reports (requires authentication)
 app.get('/reports', (c) => {
