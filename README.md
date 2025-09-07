@@ -38,11 +38,17 @@
 - **Real-time risk monitoring** and alert system
 - **Mobile-responsive risk dashboard** with touch-friendly controls
 
-### 🔍 Threat Intelligence
-- **IOC & threat feed management** with automated ingestion
-- **Campaign attribution tracking** and analysis
-- **Automated threat hunting** capabilities
-- **Intelligence report generation** with contextual insights
+### 🔍 Advanced Threat Intelligence (Phase 4.3)
+- **Phase 4.3 Conversational AI Assistant** with natural language threat intelligence processing
+- **Advanced ML Correlation Engine** with clustering, attribution, and pattern recognition
+- **Multi-Source Feed Connectors** supporting OTX, CISA KEV, STIX/TAXII, and NVD feeds
+- **Behavioral Analytics Engine** with anomaly detection and threat actor profiling
+- **Neural Network Behavioral Analysis** for predictive modeling and advanced pattern detection
+- **Advanced Risk Scoring Engine** with ML-optimized threat-contextual risk calculations
+- **Real-Time Feed Processing** with automated IOC enrichment and validation
+- **Campaign Attribution Tracking** using advanced correlation algorithms
+- **Automated Threat Hunting** with ML-powered hunting hypotheses
+- **Intelligence Report Generation** with contextual insights and risk assessments
 
 ### 📋 Compliance Management
 - **Multi-framework support** (SOC 2, ISO 27001, custom standards)
@@ -51,11 +57,15 @@
 - **Control effectiveness monitoring**
 - **Mobile-optimized framework cards** with responsive layouts
 
-### 🧠 AI & RAG Analytics
+### 🧠 AI & Advanced Analytics
 - **Cloudflare Llama3 AI** integration with intelligent fallback
 - **Platform data indexing** and retrieval capabilities
 - **Contextual ARIA chatbot** with domain-specific knowledge
 - **Real-time AI analytics** dashboard with insights
+- **Phase 4.3 Conversational TI Assistant** with natural language threat intelligence queries
+- **Neural Network Behavioral Analysis** for advanced anomaly detection and threat prediction
+- **ML Correlation Engine** with clustering algorithms for threat attribution and campaign tracking
+- **Risk Scoring Optimizer** with machine learning-based dynamic calibration and performance tuning
 
 ### ⚙️ Operations Center
 - **Asset inventory & classification** with security ratings
@@ -81,6 +91,9 @@
 - **Compliance frameworks** and control mappings
 - **Threat intelligence** IOC and campaign data
 - **AI assistant** knowledge base and conversation history
+- **Threat intelligence** feeds, IOCs, correlations, and behavioral analytics
+- **ML models** for behavioral pattern analysis, risk optimization, and neural networks
+- **Feed connector** configurations and processing status for multi-source TI integration
 - **System health monitoring** tables for real-time metrics:
   - `system_health_status` - Current service status & uptime
   - `api_performance_metrics` - API response time tracking
@@ -146,7 +159,9 @@ npm run test                 # Test local server
 
 ## 🌍 Live Demo
 
-**Production URL**: [https://aria51.pages.dev](https://aria51.pages.dev)
+**Production URL**: [https://aria5-ti-enhancement.pages.dev](https://aria5-ti-enhancement.pages.dev)  
+**TI Enhanced Platform**: [https://542453b8.aria5-ti-enhancement.pages.dev](https://542453b8.aria5-ti-enhancement.pages.dev)  
+**Legacy Platform**: [https://aria51.pages.dev](https://aria51.pages.dev)
 
 ### ✅ Recent Fixes (September 2025)
 - **Dashboard Data Issue RESOLVED**: Dashboard now displays actual risk and incident statistics from production database
@@ -187,6 +202,113 @@ npm run test                 # Test local server
 - **Risk Manager**: `avi_security / demo123`
 - **Compliance Officer**: `sjohnson / demo123`
 
+## 🧠 Phase 4.3 Threat Intelligence Enhancements
+
+### 🚀 Comprehensive TI Enhancement Suite
+
+The ARIA5-HTMX platform has been enhanced with a complete **Phase 4.3 Threat Intelligence Enhancement Suite**, integrating advanced AI, machine learning, and multi-source threat intelligence capabilities.
+
+### 🤖 Conversational AI Assistant (/api/conversational-assistant)
+- **Natural Language Processing** - Query threat intelligence data using conversational interface
+- **Context-Aware Responses** - Maintains conversation context for complex TI workflows
+- **Threat Data Integration** - Direct access to IOCs, campaigns, and risk assessments
+- **Expert System Interface** - Provides actionable threat intelligence insights
+- **Multi-Modal Input** - Support for text queries and structured TI requests
+
+### 🔬 Advanced ML Correlation Engine (/src/services/advanced-correlation-engine.ts)
+- **Clustering Algorithms** - Groups similar threats using K-means and hierarchical clustering
+- **Attribution Analysis** - Links threats to campaigns and threat actors using ML
+- **Pattern Recognition** - Identifies attack patterns and techniques automatically
+- **Confidence Scoring** - Provides confidence levels for threat correlations
+- **Real-Time Processing** - Processes new IOCs and correlates with existing threats
+
+### 📊 Behavioral Analytics Engine (/src/services/behavioral-analytics-engine.ts)
+- **Anomaly Detection** - Real-time behavioral anomaly identification
+- **Threat Actor Profiling** - Builds behavioral profiles for threat actors
+- **Attack Sequence Analysis** - Analyzes and patterns attack sequences
+- **Behavioral Fingerprinting** - Creates unique behavioral signatures
+- **Risk-Based Prioritization** - Prioritizes threats based on behavioral analysis
+
+### 🧠 Neural Network Behavioral Analysis (/src/lib/neural-network-behavioral-analysis.ts)
+- **Deep Learning Models** - Advanced neural networks for behavioral pattern analysis
+- **Predictive Modeling** - Predicts future threat behaviors and attack patterns
+- **Unsupervised Learning** - Discovers unknown threat patterns automatically
+- **Real-Time Profiling** - Continuous behavioral profile updates
+- **Adaptive Learning** - Models improve with new threat intelligence data
+
+### 📈 Advanced Risk Scoring Engine (/src/services/advanced-risk-scoring-engine.ts)
+- **Threat-Contextual Scoring** - Risk scores enhanced with threat intelligence context
+- **Multi-Dimensional Analysis** - Considers multiple risk factors and threat indicators
+- **Dynamic Risk Updates** - Real-time risk score updates based on new intelligence
+- **Business Impact Modeling** - Incorporates business context into risk calculations
+- **ML Optimization** - Machine learning-optimized scoring algorithms
+
+### 🔌 Multi-Source Feed Connectors (/src/services/feed-connectors/)
+- **AlienVault OTX** - Threat intelligence from Open Threat Exchange
+- **CISA KEV** - Known Exploited Vulnerabilities from CISA
+- **STIX/TAXII** - Structured Threat Information eXpression feeds
+- **NVD CVE** - National Vulnerability Database integration
+- **Factory Pattern** - Extensible connector architecture for additional feeds
+- **Rate Limiting** - Intelligent rate limiting and retry mechanisms
+- **Data Validation** - Comprehensive validation and normalization of threat data
+
+### 🎯 API Endpoints
+
+#### Conversational Assistant
+- `POST /api/conversational-assistant/query` - Natural language TI queries
+- `GET /api/conversational-assistant/context` - Conversation context management
+
+#### Correlation Engine  
+- `POST /api/threat-intelligence/correlate` - Threat correlation analysis
+- `GET /api/threat-intelligence/clusters` - Threat clustering results
+- `GET /api/threat-intelligence/attribution` - Attribution analysis results
+
+#### Behavioral Analytics
+- `POST /api/behavioral-analytics/analyze` - Behavioral pattern analysis  
+- `GET /api/behavioral-analytics/anomalies` - Detected behavioral anomalies
+- `GET /api/behavioral-analytics/profiles` - Threat actor behavioral profiles
+
+#### Feed Management
+- `GET /api/feeds/status` - Feed connector status and health
+- `POST /api/feeds/sync` - Manual feed synchronization
+- `GET /api/feeds/iocs` - Retrieved indicators of compromise
+
+### 🔧 Configuration & Setup
+
+#### Environment Variables (.dev.vars)
+```bash
+# Threat Intelligence API Keys
+OTX_API_KEY=your_otx_api_key
+NVD_API_KEY=your_nvd_api_key
+TAXII_USERNAME=your_taxii_username  
+TAXII_PASSWORD=your_taxii_password
+
+# ML Model Configuration
+ML_MODEL_ENDPOINT=your_ml_endpoint
+NEURAL_NETWORK_CONFIG=advanced
+BEHAVIORAL_ANALYSIS_ENABLED=true
+
+# Feed Connector Settings
+FEED_SYNC_INTERVAL=3600
+MAX_IOCS_PER_BATCH=1000
+CORRELATION_THRESHOLD=0.75
+```
+
+#### Database Tables
+- `threat_feeds` - Multi-source feed configuration and status
+- `iocs` - Indicators of compromise with metadata
+- `threat_correlations` - ML-generated threat correlations
+- `behavioral_profiles` - Threat actor behavioral signatures
+- `ml_models` - Neural network model states and configurations
+- `conversation_context` - Conversational assistant context storage
+
+### 🚀 Deployment Status
+
+- **Production URL**: [https://aria5-ti-enhancement.pages.dev](https://aria5-ti-enhancement.pages.dev)
+- **GitHub Repository**: [ARIA5-HTMX/ARIA5-TI branch](https://github.com/theblackhat55/ARIA5-HTMX/tree/ARIA5-TI)
+- **Last Deployment**: Successfully deployed with comprehensive TI enhancement suite
+- **Status**: ✅ All TI components operational and tested
+
 ## 📊 Enhanced Chatbot Features
 
 ### Advanced Functionality
@@ -216,16 +338,33 @@ ARIA5-HTMX/
 │   │   ├── risk-routes-aria5.ts    # Risk management APIs
 │   │   ├── compliance-routes.ts    # Compliance management APIs
 │   │   ├── ai-routes.ts            # AI chatbot endpoints
-│   │   └── intelligence-routes.ts  # Threat intelligence APIs
+│   │   ├── intelligence-routes.ts  # Threat intelligence APIs
+│   │   └── conversational-assistant.ts  # Phase 4.3 Conversational TI Assistant API
+│   ├── services/                   # Core business logic services
+│   │   ├── conversational-ti-assistant.ts      # Conversational AI interface
+│   │   ├── advanced-correlation-engine.ts      # ML correlation algorithms  
+│   │   ├── behavioral-analytics-engine.ts      # Behavioral pattern analysis
+│   │   ├── advanced-risk-scoring-engine.ts     # Threat-contextual risk scoring
+│   │   └── feed-connectors/                    # Multi-source feed infrastructure
+│   │       ├── base-connector.ts               # Base connector interface
+│   │       ├── connector-factory.ts            # Feed connector factory
+│   │       ├── otx-connector.ts                # AlienVault OTX connector
+│   │       ├── cisa-kev-connector.ts           # CISA KEV connector
+│   │       ├── stix-taxii-connector.ts         # STIX/TAXII connector
+│   │       └── nvd-connector.ts                # NVD CVE connector
+│   ├── lib/                        # Advanced utility libraries
+│   │   ├── neural-network-behavioral-analysis.ts  # Neural network ML engine
+│   │   └── risk-scoring-optimizer.ts               # Risk score optimization
 │   ├── templates/
 │   │   ├── layout-clean.ts         # Enhanced chatbot layout
 │   │   └── *.ts                    # Page templates
 │   ├── middleware/
 │   │   ├── auth-middleware.ts      # JWT authentication
 │   │   └── csrf-middleware.ts      # CSRF protection
-│   └── lib/                        # Utility libraries
+├── public/
+│   └── static/
+│       └── conversational-assistant.js  # Frontend TI assistant integration
 ├── migrations/                     # Database schema migrations
-├── public/                         # Static assets
 ├── wrangler.jsonc                  # Cloudflare configuration
 ├── package.json                    # Dependencies and scripts
 ├── tsconfig.json                   # TypeScript configuration
