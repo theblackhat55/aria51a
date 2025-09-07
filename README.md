@@ -9,6 +9,22 @@
 
 > Advanced AI-powered risk management and threat intelligence platform built with HTMX, featuring an enhanced conversational AI chatbot and RAG (Retrieval-Augmented Generation) analytics.
 
+## 🔗 Service URLs
+
+### Production Environment
+- **🌐 Main Application**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
+- **📊 TI-GRC Integration API**: `/api/ti-grc/*` (Authentication Required)
+- **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
+- **📋 System Health Dashboard**: `/health-dashboard` (Real-time monitoring)
+
+### 🚀 NEW: TI-GRC Integration Endpoints
+- `POST /api/ti-grc/process-risks` - Process IOCs for automated risk creation
+- `GET /api/ti-grc/dynamic-risks` - Retrieve TI-generated dynamic risks  
+- `GET /api/ti-grc/pipeline-stats` - Get TI processing pipeline statistics
+- `PATCH /api/ti-grc/dynamic-risks/:id/state` - Update risk lifecycle states
+- `GET /api/ti-grc/risk-creation-rules` - Get risk creation rules configuration
+- `GET /api/ti-grc/risk-summary` - Get comprehensive TI risk summary
+
 ## 🌟 Key Features
 
 ### 📊 Real-Time System Health Monitoring
@@ -38,7 +54,13 @@
 - **Real-time risk monitoring** and alert system
 - **Mobile-responsive risk dashboard** with touch-friendly controls
 
-### 🔍 Advanced Threat Intelligence (Phase 4.3)
+### 🔍 Enhanced Threat Intelligence (TI-GRC Integration)
+- **🚀 NEW: Phase 1 TI-GRC Integration** - Automated risk creation from threat intelligence IOCs
+- **Dynamic Risk Lifecycle Management** - `detected → draft → validated → active → retired`
+- **API Endpoints** - 6 new `/api/ti-grc/*` endpoints for TI-risk processing
+- **Rule-Based Processing** - Configurable risk creation rules with confidence scoring
+- **TI Processing Pipeline** - Comprehensive audit logging and statistics tracking
+- **Enhanced ThreatIntelligenceService** - 28,098+ characters of production-ready code
 - **Phase 4.3 Conversational AI Assistant** with natural language threat intelligence processing
 - **Advanced ML Correlation Engine** with clustering, attribution, and pattern recognition
 - **Multi-Source Feed Connectors** supporting OTX, CISA KEV, STIX/TAXII, and NVD feeds

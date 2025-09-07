@@ -1,9 +1,11 @@
 // DMT Risk Assessment System v2.0 - TypeScript Types
 // Comprehensive type definitions for GRC platform
 
+import { D1Database, R2Bucket } from '@cloudflare/workers-types';
+
 export interface CloudflareBindings {
   DB: D1Database;
-  AI: Ai;
+  AI: any; // Cloudflare AI API (using any for now)
   R2: R2Bucket;
   // Secure AI API keys (server-side only)
   OPENAI_API_KEY?: string;

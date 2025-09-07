@@ -30,7 +30,7 @@ tiGrcRoutes.post('/process-risks', requirePermission('threat_intel:manage'), asy
     const userEmail = getCookie(c, 'user_email') || '';
     const { force_reprocessing = false } = await c.req.json().catch(() => ({}));
     
-    const result = await enhancedService.processIOCsForRiskCreation(force_reprocessing);
+    const result = await enhancedService.processIOCsForRiskCreation();
     
     // Log the processing activity
     console.log(`TI Risk Processing initiated by ${userEmail}:`, {
@@ -96,7 +96,7 @@ tiGrcRoutes.get('/pipeline-stats', requirePermission('threat_intel:view'), async
     const enhancedService = new EnhancedThreatIntelligenceService(DB);
     
     const days = parseInt(c.req.query('days') || '7');
-    const stats = await enhancedService.getTIPipelineStats(days);
+    const stats = await enhancedService.getTIPipelineStats();
     
     return c.json({
       success: true,
