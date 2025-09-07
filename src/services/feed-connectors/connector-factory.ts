@@ -5,9 +5,10 @@
  * Supports multiple feed types and provides unified management interface.
  */
 
-import { BaseFeedConnector, FeedConfig, ConnectorResult } from './base-connector';
+import { BaseFeedConnector, FeedConfig, ConnectorResult, ThreatIndicator } from './base-connector';
 import { OTXConnector } from './otx-connector';
 import { CISAKEVConnector } from './cisa-kev-connector';
+import { NVDConnector } from './nvd-connector';
 
 export interface ConnectorStatus {
   id: string;
@@ -19,11 +20,27 @@ export interface ConnectorStatus {
   error_count: number;
   next_sync?: Date;
   health_status: 'healthy' | 'warning' | 'error' | 'disabled';
+  indicators_stored?: number;
+  last_indicators_fetch?: Date;
+}
+
+export interface ConnectorIndicatorData {
+  connectorId: string;
+  indicators: ThreatIndicator[];
+  fetchTime: Date;
+  metadata: {
+    source: string;
+    version?: string;
+    totalCount: number;
+  };
 }
 
 export class ConnectorFactory {
   private connectors: Map<string, BaseFeedConnector> = new Map();
   private connectorStatus: Map<string, ConnectorStatus> = new Map();
+  private db?: D1Database;
+  private indicatorStorage: Map<string, ThreatIndicator[]> = new Map();
+  private onIndicatorsProcessed?: (connectorId: string, indicators: ThreatIndicator[]) => Promise<void>;
 
   /**
    * Initialize default connectors with standard configurations
@@ -64,8 +81,26 @@ export class ConnectorFactory {
       }
     };
 
+    // NVD Connector
+    const nvdConfig: FeedConfig = {
+      id: 'nvd-cve',
+      name: 'National Vulnerability Database',
+      type: 'json_api',
+      url: 'https://services.nvd.nist.gov/rest/json/cves/2.0',
+      polling_interval: 21600, // 6 hours
+      timeout: 45,
+      retry_attempts: 3,
+      retry_delay: 10,
+      enabled: true,
+      filter_rules: {
+        allowed_types: ['cve'],
+        min_confidence: 50
+      }
+    };
+
     await this.addConnector(otxConfig);
     await this.addConnector(cisaConfig);
+    await this.addConnector(nvdConfig);
 
     console.log('[ConnectorFactory] Default connectors initialized');
   }
@@ -103,6 +138,8 @@ export class ConnectorFactory {
         return new OTXConnector(config);
       case 'cisa-kev':
         return new CISAKEVConnector(config);
+      case 'nvd-cve':
+        return new NVDConnector(config);
       default:
         throw new Error(`Unknown connector type: ${config.id}`);
     }

@@ -3,14 +3,16 @@ import { getCookie } from 'hono/cookie';
 import { requireAuth } from '../middleware/auth';
 import { requirePermission } from '../middleware/rbac';
 import { ThreatIntelligenceService } from '../services/threat-intelligence';
+import { EnhancedThreatIntelligenceService } from '../services/enhanced-threat-intelligence';
 
 const apiThreatIntelRoutes = new Hono();
 
 // Apply authentication middleware to all routes
 apiThreatIntelRoutes.use('*', requireAuth);
 
-// Initialize service
+// Initialize services
 const threatIntelService = new ThreatIntelligenceService();
+const enhancedThreatIntelService = new EnhancedThreatIntelligenceService();
 
 // Threat Intelligence Overview API
 apiThreatIntelRoutes.get('/overview', requirePermission('threat_intel:view'), async (c) => {
@@ -337,6 +339,513 @@ apiThreatIntelRoutes.get('/campaigns/:campaignId', requirePermission('threat_int
   } catch (error) {
     console.error('Error getting threat campaign:', error);
     return c.json({ error: 'Failed to get threat campaign' }, 500);
+  }
+});
+
+// ========================================
+// TI-GRC INTEGRATION API ENDPOINTS (Phase 1 Enhancement)
+// ========================================
+
+// Process IOCs for Dynamic Risk Creation
+apiThreatIntelRoutes.post('/process-risks', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const userEmail = getCookie(c, 'user_email') || '';
+    const { force_reprocessing = false } = await c.req.json().catch(() => ({}));
+    
+    const result = await enhancedThreatIntelService.processIOCsForRiskCreation(force_reprocessing);
+    
+    // Log the processing activity
+    console.log(`TI Risk Processing initiated by ${userEmail}:`, {
+      processed_iocs: result.processed_iocs,
+      risks_created: result.risks_created,
+      success_rate: result.success_rate,
+      force_reprocessing
+    });
+    
+    return c.json({
+      success: true,
+      message: `Processed ${result.processed_iocs} IOCs, created ${result.risks_created} new risks`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error processing IOCs for risk creation:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to process IOCs for risk creation',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Get Dynamic Risks from TI Sources
+apiThreatIntelRoutes.get('/dynamic-risks', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const filters = {
+      state: c.req.query('state') as any,
+      confidence_min: c.req.query('confidence_min') ? parseFloat(c.req.query('confidence_min')!) : undefined,
+      created_after: c.req.query('created_after'),
+      limit: c.req.query('limit') ? parseInt(c.req.query('limit')!) : 50,
+      offset: c.req.query('offset') ? parseInt(c.req.query('offset')!) : 0
+    };
+
+    const risks = await enhancedThreatIntelService.getTIDynamicRisks(filters);
+    
+    return c.json({
+      success: true,
+      data: risks,
+      pagination: {
+        limit: filters.limit,
+        offset: filters.offset,
+        total: risks.length
+      }
+    });
+  } catch (error) {
+    console.error('Error getting TI dynamic risks:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to get TI dynamic risks',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Get TI Processing Pipeline Statistics
+apiThreatIntelRoutes.get('/pipeline-stats', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const days = parseInt(c.req.query('days') || '7');
+    const stats = await enhancedThreatIntelService.getTIPipelineStats(days);
+    
+    return c.json({
+      success: true,
+      data: stats,
+      period: {
+        days: days,
+        generated_at: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error getting TI pipeline stats:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to get TI pipeline statistics',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Update Risk State in TI Lifecycle
+apiThreatIntelRoutes.patch('/dynamic-risks/:riskId/state', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const riskId = parseInt(c.req.param('riskId'));
+    const { new_state, reason, confidence_override } = await c.req.json();
+    const userEmail = getCookie(c, 'user_email') || '';
+    
+    // Validate the new state
+    const validStates = ['detected', 'draft', 'validated', 'active', 'retired'];
+    if (!validStates.includes(new_state)) {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid state. Must be one of: ' + validStates.join(', ')
+      }, 400);
+    }
+    
+    const result = await enhancedThreatIntelService.updateRiskLifecycleState(
+      riskId, 
+      new_state, 
+      reason || `State updated by ${userEmail}`,
+      false, // not automated
+      confidence_override
+    );
+    
+    return c.json({
+      success: true,
+      message: `Risk ${riskId} state updated to ${new_state}`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error updating risk state:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to update risk state',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Get Risk Creation Rules
+apiThreatIntelRoutes.get('/risk-creation-rules', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const rules = await enhancedThreatIntelService.getRiskCreationRules();
+    
+    return c.json({
+      success: true,
+      data: rules,
+      total: rules.length
+    });
+  } catch (error) {
+    console.error('Error getting risk creation rules:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to get risk creation rules',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Create or Update Risk Creation Rule
+apiThreatIntelRoutes.post('/risk-creation-rules', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const ruleData = await c.req.json();
+    const userEmail = getCookie(c, 'user_email') || '';
+    
+    // Validate required fields
+    const requiredFields = ['rule_name', 'conditions', 'confidence_threshold', 'target_category'];
+    for (const field of requiredFields) {
+      if (!ruleData[field]) {
+        return c.json({ 
+          success: false, 
+          error: `Missing required field: ${field}` 
+        }, 400);
+      }
+    }
+    
+    const result = await enhancedThreatIntelService.createRiskCreationRule(ruleData);
+    
+    console.log(`Risk creation rule created by ${userEmail}:`, {
+      rule_id: result.id,
+      rule_name: ruleData.rule_name,
+      enabled: ruleData.enabled
+    });
+    
+    return c.json({
+      success: true,
+      message: `Risk creation rule '${ruleData.rule_name}' created successfully`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error creating risk creation rule:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to create risk creation rule',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Toggle Risk Creation Rule Status
+apiThreatIntelRoutes.patch('/risk-creation-rules/:ruleId/toggle', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const ruleId = parseInt(c.req.param('ruleId'));
+    const { enabled } = await c.req.json();
+    const userEmail = getCookie(c, 'user_email') || '';
+    
+    const result = await enhancedThreatIntelService.toggleRiskCreationRule(ruleId, enabled);
+    
+    console.log(`Risk creation rule ${enabled ? 'enabled' : 'disabled'} by ${userEmail}:`, {
+      rule_id: ruleId
+    });
+    
+    return c.json({
+      success: true,
+      message: `Risk creation rule ${enabled ? 'enabled' : 'disabled'} successfully`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error toggling risk creation rule:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to toggle risk creation rule',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Get TI Processing Logs
+apiThreatIntelRoutes.get('/processing-logs', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const filters = {
+      level: c.req.query('level') as any,
+      component: c.req.query('component'),
+      limit: parseInt(c.req.query('limit') || '100'),
+      offset: parseInt(c.req.query('offset') || '0')
+    };
+    
+    const logs = await enhancedThreatIntelService.getTIProcessingLogs(filters);
+    
+    return c.json({
+      success: true,
+      data: logs,
+      pagination: {
+        limit: filters.limit,
+        offset: filters.offset
+      }
+    });
+  } catch (error) {
+    console.error('Error getting TI processing logs:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to get TI processing logs',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Enrich Risk with Additional TI Data
+apiThreatIntelRoutes.post('/dynamic-risks/:riskId/enrich', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const riskId = parseInt(c.req.param('riskId'));
+    const userEmail = getCookie(c, 'user_email') || '';
+    
+    const result = await enhancedThreatIntelService.enrichRiskWithTIData(riskId);
+    
+    console.log(`Risk enrichment initiated by ${userEmail}:`, {
+      risk_id: riskId,
+      enrichment_success: result.success,
+      sources_found: result.sources_found
+    });
+    
+    return c.json({
+      success: true,
+      message: `Risk ${riskId} enriched with additional TI data`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error enriching risk with TI data:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to enrich risk with TI data',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Get TI-Generated Risk Summary
+apiThreatIntelRoutes.get('/risk-summary', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const period = c.req.query('period') || '30'; // days
+    const summary = await enhancedThreatIntelService.getTIRiskSummary(parseInt(period));
+    
+    return c.json({
+      success: true,
+      data: summary,
+      period: {
+        days: parseInt(period),
+        generated_at: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error getting TI risk summary:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to get TI risk summary',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// ========================================
+// PHASE 1: TI-GRC INTEGRATION ENDPOINTS
+// ========================================
+
+// TI Risk Processing API - Core TI-GRC Integration
+apiThreatIntelRoutes.post('/process-risks', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const userEmail = getCookie(c, 'user_email') || '';
+    const options = await c.req.json().catch(() => ({}));
+    
+    const result = await enhancedThreatIntelService.processIOCsForRiskCreation(options);
+    
+    // Log the processing activity
+    console.log(`TI Risk Processing initiated by ${userEmail}:`, {
+      processed_iocs: result.processed_iocs,
+      risks_created: result.risks_created,
+      processing_time: result.processing_time_ms
+    });
+    
+    return c.json(result);
+  } catch (error) {
+    console.error('Error in TI risk processing:', error);
+    return c.json({ 
+      error: 'Failed to process IOCs for risk creation',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Dynamic Risks API - Get TI-created risks with enhanced filtering
+apiThreatIntelRoutes.get('/dynamic-risks', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const state = c.req.query('state'); // detected, draft, validated, active, retired
+    const limit = parseInt(c.req.query('limit') || '50');
+    const offset = parseInt(c.req.query('offset') || '0');
+    const confidenceThreshold = parseFloat(c.req.query('confidence_threshold') || '0');
+    
+    const filters = {
+      state,
+      limit,
+      offset,
+      confidenceThreshold
+    };
+    
+    const result = await enhancedThreatIntelService.getTIDynamicRisks(filters);
+    return c.json(result);
+  } catch (error) {
+    console.error('Error getting dynamic risks:', error);
+    return c.json({ error: 'Failed to get dynamic risks' }, 500);
+  }
+});
+
+// TI Pipeline Statistics API - Monitoring and analytics
+apiThreatIntelRoutes.get('/pipeline-stats', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const days = parseInt(c.req.query('days') || '7');
+    const includeDetails = c.req.query('details') === 'true';
+    
+    const stats = await enhancedThreatIntelService.getTIPipelineStats({
+      timeframe_days: days,
+      include_breakdown: includeDetails
+    });
+    
+    return c.json(stats);
+  } catch (error) {
+    console.error('Error getting TI pipeline stats:', error);
+    return c.json({ error: 'Failed to get TI pipeline statistics' }, 500);
+  }
+});
+
+// Risk Creation Rules Management API
+apiThreatIntelRoutes.get('/risk-creation-rules', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const rules = await enhancedThreatIntelService.getRiskCreationRules();
+    return c.json(rules);
+  } catch (error) {
+    console.error('Error getting risk creation rules:', error);
+    return c.json({ error: 'Failed to get risk creation rules' }, 500);
+  }
+});
+
+apiThreatIntelRoutes.post('/risk-creation-rules', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const ruleData = await c.req.json();
+    const userEmail = getCookie(c, 'user_email') || '';
+    
+    // Validate required fields
+    const requiredFields = ['rule_name', 'conditions', 'confidence_threshold', 'target_category'];
+    for (const field of requiredFields) {
+      if (!ruleData[field]) {
+        return c.json({ error: `Missing required field: ${field}` }, 400);
+      }
+    }
+    
+    const rule = await enhancedThreatIntelService.createRiskCreationRule(ruleData, userEmail);
+    return c.json(rule);
+  } catch (error) {
+    console.error('Error creating risk creation rule:', error);
+    return c.json({ error: 'Failed to create risk creation rule' }, 500);
+  }
+});
+
+apiThreatIntelRoutes.patch('/risk-creation-rules/:id', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const ruleId = c.req.param('id');
+    const updates = await c.req.json();
+    const userEmail = getCookie(c, 'user_email') || '';
+    
+    const rule = await enhancedThreatIntelService.updateRiskCreationRule(ruleId, updates, userEmail);
+    return c.json(rule);
+  } catch (error) {
+    console.error('Error updating risk creation rule:', error);
+    return c.json({ error: 'Failed to update risk creation rule' }, 500);
+  }
+});
+
+// Risk State Management API - Dynamic risk lifecycle
+apiThreatIntelRoutes.patch('/dynamic-risks/:id/state', requirePermission('risk:manage'), async (c) => {
+  try {
+    const riskId = c.req.param('id');
+    const { new_state, reason } = await c.req.json();
+    const userEmail = getCookie(c, 'user_email') || '';
+    
+    // Validate state transition
+    const validStates = ['detected', 'draft', 'validated', 'active', 'retired'];
+    if (!validStates.includes(new_state)) {
+      return c.json({ error: 'Invalid risk state' }, 400);
+    }
+    
+    const result = await enhancedThreatIntelService.updateRiskState(riskId, new_state, reason, userEmail);
+    return c.json(result);
+  } catch (error) {
+    console.error('Error updating risk state:', error);
+    return c.json({ error: 'Failed to update risk state' }, 500);
+  }
+});
+
+// IOC-Risk Linkage API - View IOC to risk relationships
+apiThreatIntelRoutes.get('/iocs/:id/risks', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const iocId = c.req.param('id');
+    const risks = await enhancedThreatIntelService.getIOCLinkedRisks(iocId);
+    return c.json(risks);
+  } catch (error) {
+    console.error('Error getting IOC linked risks:', error);
+    return c.json({ error: 'Failed to get IOC linked risks' }, 500);
+  }
+});
+
+// TI Processing Logs API - Audit and troubleshooting
+apiThreatIntelRoutes.get('/processing-logs', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const limit = parseInt(c.req.query('limit') || '100');
+    const logLevel = c.req.query('level'); // info, warning, error
+    const since = c.req.query('since'); // ISO datetime
+    
+    const filters = {
+      limit,
+      log_level: logLevel,
+      since_timestamp: since
+    };
+    
+    const logs = await enhancedThreatIntelService.getTIProcessingLogs(filters);
+    return c.json(logs);
+  } catch (error) {
+    console.error('Error getting TI processing logs:', error);
+    return c.json({ error: 'Failed to get TI processing logs' }, 500);
+  }
+});
+
+// Batch IOC Risk Processing API - For handling multiple IOCs
+apiThreatIntelRoutes.post('/batch-process-risks', requirePermission('threat_intel:manage'), async (c) => {
+  try {
+    const { ioc_ids, processing_options = {} } = await c.req.json();
+    const userEmail = getCookie(c, 'user_email') || '';
+    
+    if (!Array.isArray(ioc_ids) || ioc_ids.length === 0) {
+      return c.json({ error: 'Missing or empty ioc_ids array' }, 400);
+    }
+    
+    const result = await enhancedThreatIntelService.batchProcessIOCsForRisks(ioc_ids, processing_options);
+    
+    console.log(`Batch TI Risk Processing by ${userEmail}:`, {
+      input_iocs: ioc_ids.length,
+      processed_iocs: result.processed_iocs,
+      risks_created: result.risks_created
+    });
+    
+    return c.json(result);
+  } catch (error) {
+    console.error('Error in batch TI risk processing:', error);
+    return c.json({ error: 'Failed to batch process IOCs for risks' }, 500);
+  }
+});
+
+// TI Enhancement Status API - Monitor Phase 1 implementation status
+apiThreatIntelRoutes.get('/enhancement-status', requirePermission('threat_intel:view'), async (c) => {
+  try {
+    const status = await enhancedThreatIntelService.getTIEnhancementStatus();
+    return c.json(status);
+  } catch (error) {
+    console.error('Error getting TI enhancement status:', error);
+    return c.json({ error: 'Failed to get TI enhancement status' }, 500);
   }
 });
 

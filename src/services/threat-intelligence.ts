@@ -96,6 +96,8 @@ export interface ThreatAnalysis {
   };
 }
 
+import { D1Database } from '@cloudflare/workers-types';
+
 export class ThreatIntelligenceService {
   constructor(private db: D1Database) {}
 

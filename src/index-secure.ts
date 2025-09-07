@@ -19,6 +19,8 @@ import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
 import { createRiskControlRoutes } from './routes/risk-control-routes';
 import { createSystemHealthRoutes } from './routes/system-health-routes';
 import conversationalAssistantRoutes from './routes/conversational-assistant';
+import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
+import { tiGrcRoutes } from './routes/api-ti-grc-integration';
 
 // Import security middleware
 import { authMiddleware, requireRole, requireAdmin, csrfMiddleware } from './middleware/auth-middleware';
@@ -316,6 +318,12 @@ app.route('/risk-controls', createRiskControlRoutes());
 
 // System Health API (requires authentication)
 app.route('/api/system-health', createSystemHealthRoutes());
+
+// Threat Intelligence API (requires authentication)
+app.route('/api/threat-intelligence', apiThreatIntelRoutes);
+
+// TI-GRC Integration API (Phase 1 Enhanced Features)
+app.route('/api/ti-grc', tiGrcRoutes);
 
 // 404 handler
 app.notFound((c) => {
