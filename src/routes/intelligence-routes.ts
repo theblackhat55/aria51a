@@ -93,6 +93,73 @@ export function createIntelligenceRoutes() {
     );
   });
   
+  // NEW TI ENHANCEMENT PAGES
+  
+  // Conversational AI Assistant
+  app.get('/conversational-assistant', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'Conversational AI Assistant',
+        user,
+        content: renderConversationalAssistantPage(user)
+      })
+    );
+  });
+  
+  // ML Correlation Engine
+  app.get('/correlation-engine', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'ML Correlation Engine',
+        user,
+        content: renderCorrelationEnginePage(user)
+      })
+    );
+  });
+  
+  // Behavioral Analytics
+  app.get('/behavioral-analytics', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'Behavioral Analytics Engine',
+        user,
+        content: renderBehavioralAnalyticsPage(user)
+      })
+    );
+  });
+  
+  // Neural Network Analysis
+  app.get('/neural-network', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'Neural Network Analysis',
+        user,
+        content: renderNeuralNetworkPage(user)
+      })
+    );
+  });
+  
+  // Advanced Risk Scoring
+  app.get('/risk-scoring', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'Advanced Risk Scoring',
+        user,
+        content: renderRiskScoringPage(user)
+      })
+    );
+  });
+  
   // API Endpoints for dynamic data - D1 Database Integration
   app.get('/api/threats/recent', async (c) => {
     const recentThreats = await getRecentThreats(c.env.DB);
@@ -2626,3 +2693,541 @@ const renderReportsPage = (user: any) => html`
     </div>
   </div>
 `;};
+
+// NEW TI ENHANCEMENT PAGE RENDERERS
+
+const renderConversationalAssistantPage = (user: any) => html`
+  <div class="p-6">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-robot text-blue-600 mr-3"></i>
+            Conversational AI Assistant
+          </h1>
+          <p class="text-gray-600 mt-2">Phase 4.3 - Natural Language Threat Intelligence Interface</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+            <i class="fas fa-check-circle mr-1"></i>Active
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Chat Interface -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow-lg h-96">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">AI Threat Intelligence Chat</h2>
+          </div>
+          <div class="p-6 h-64 overflow-y-auto bg-gray-50">
+            <div class="space-y-4">
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <i class="fas fa-robot text-white text-sm"></i>
+                </div>
+                <div class="bg-white p-3 rounded-lg shadow-sm max-w-md">
+                  <p class="text-sm">Hello! I'm your AI Threat Intelligence Assistant. I can help you query threat data, analyze IOCs, and provide contextual insights. What would you like to know?</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-200">
+            <div class="flex space-x-3">
+              <input type="text" placeholder="Ask about threats, IOCs, campaigns..." 
+                     class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions & Stats -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-lg shadow-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Quick Queries</h3>
+          </div>
+          <div class="p-4 space-y-3">
+            <button class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300">
+              <i class="fas fa-search text-blue-600 mr-2"></i>
+              <span class="text-sm">Latest malware campaigns</span>
+            </button>
+            <button class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300">
+              <i class="fas fa-eye text-green-600 mr-2"></i>
+              <span class="text-sm">IOC analysis for domain</span>
+            </button>
+            <button class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300">
+              <i class="fas fa-shield-alt text-red-600 mr-2"></i>
+              <span class="text-sm">Threat actor attribution</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">AI Capabilities</h3>
+          </div>
+          <div class="p-4 space-y-4">
+            <div class="flex items-center text-sm text-gray-700">
+              <i class="fas fa-check text-green-500 mr-2"></i>
+              Natural language processing
+            </div>
+            <div class="flex items-center text-sm text-gray-700">
+              <i class="fas fa-check text-green-500 mr-2"></i>
+              Contextual threat analysis
+            </div>
+            <div class="flex items-center text-sm text-gray-700">
+              <i class="fas fa-check text-green-500 mr-2"></i>
+              Real-time IOC enrichment
+            </div>
+            <div class="flex items-center text-sm text-gray-700">
+              <i class="fas fa-check text-green-500 mr-2"></i>
+              Campaign attribution
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+const renderCorrelationEnginePage = (user: any) => html`
+  <div class="p-6">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-network-wired text-green-600 mr-3"></i>
+            ML Correlation Engine
+          </h1>
+          <p class="text-gray-600 mt-2">Advanced machine learning algorithms for threat correlation and clustering</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Correlation Results -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Active Correlations</h2>
+          </div>
+          <div class="p-6">
+            <div class="space-y-4">
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-semibold text-gray-900">Campaign Cluster #47</h3>
+                  <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">High Confidence</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-3">Banking trojan campaign targeting financial institutions</p>
+                <div class="flex items-center space-x-4 text-sm text-gray-500">
+                  <span><i class="fas fa-network-wired mr-1"></i>23 IOCs</span>
+                  <span><i class="fas fa-users mr-1"></i>APT-28 attributed</span>
+                  <span><i class="fas fa-calendar mr-1"></i>Last updated: 2h ago</span>
+                </div>
+              </div>
+
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-semibold text-gray-900">Malware Family Cluster #12</h3>
+                  <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Medium Confidence</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-3">Ransomware variants with similar C2 infrastructure</p>
+                <div class="flex items-center space-x-4 text-sm text-gray-500">
+                  <span><i class="fas fa-network-wired mr-1"></i>41 IOCs</span>
+                  <span><i class="fas fa-users mr-1"></i>Unknown actor</span>
+                  <span class="text-xs text-gray-500">Last updated: 5h ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ML Configuration -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-lg shadow-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">ML Configuration</h3>
+          </div>
+          <div class="p-4 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Clustering Algorithm</label>
+              <select class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <option>K-Means</option>
+                <option>Hierarchical</option>
+                <option>DBSCAN</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Correlation Threshold</label>
+              <input type="range" min="0.1" max="1.0" step="0.1" value="0.7" class="w-full">
+              <div class="text-xs text-gray-500 mt-1">Current: 0.7 (70%)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Processing Stats</h3>
+          </div>
+          <div class="p-4 space-y-4">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Active Clusters</span>
+              <span class="font-semibold">47</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Processed IOCs</span>
+              <span class="font-semibold">8,741</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Confidence > 80%</span>
+              <span class="font-semibold">23</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+const renderBehavioralAnalyticsPage = (user: any) => html`
+  <div class="p-6">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-chart-line text-orange-600 mr-3"></i>
+            Behavioral Analytics Engine
+          </h1>
+          <p class="text-gray-600 mt-2">Advanced behavioral pattern analysis and anomaly detection</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- Anomaly Detection -->
+      <div class="bg-white rounded-lg shadow-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Behavioral Anomalies</h2>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-3 border border-red-200 rounded-lg bg-red-50">
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                <div>
+                  <div class="font-semibold text-red-900">Unusual C2 Pattern</div>
+                  <div class="text-sm text-red-700">Deviation score: 0.92</div>
+                </div>
+              </div>
+              <button class="text-red-600 hover:text-red-800">
+                <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between p-3 border border-yellow-200 rounded-lg bg-yellow-50">
+              <div class="flex items-center">
+                <i class="fas fa-search text-yellow-600 mr-3"></i>
+                <div>
+                  <div class="font-semibold text-yellow-900">New Attack Vector</div>
+                  <div class="text-sm text-yellow-700">Confidence: 0.84</div>
+                </div>
+              </div>
+              <button class="text-yellow-600 hover:text-yellow-800">
+                <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Threat Actor Profiles -->
+      <div class="bg-white rounded-lg shadow-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Threat Actor Profiles</h2>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <div class="border border-gray-200 rounded-lg p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-gray-900">APT-28</span>
+                <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Active</span>
+              </div>
+              <div class="text-sm text-gray-600">
+                <div>TTPs: Spear phishing, credential harvesting</div>
+                <div>Behavioral signature: 0.94 match</div>
+              </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-gray-900">Unknown Actor #7</span>
+                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Emerging</span>
+              </div>
+              <div class="text-sm text-gray-600">
+                <div>TTPs: Ransomware deployment</div>
+                <div>Behavioral signature: Building profile...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attack Sequence Analysis -->
+    <div class="bg-white rounded-lg shadow-lg">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900">Attack Sequence Patterns</h2>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="text-center p-4 border border-gray-200 rounded-lg">
+            <i class="fas fa-envelope text-blue-600 text-2xl mb-2"></i>
+            <div class="font-semibold text-gray-900">Initial Access</div>
+            <div class="text-sm text-gray-600">Spear phishing (87%)</div>
+          </div>
+          <div class="text-center p-4 border border-gray-200 rounded-lg">
+            <i class="fas fa-arrow-right text-gray-400 text-xl mb-2"></i>
+            <div class="font-semibold text-gray-900">Persistence</div>
+            <div class="text-sm text-gray-600">Registry modification (72%)</div>
+          </div>
+          <div class="text-center p-4 border border-gray-200 rounded-lg">
+            <i class="fas fa-download text-red-600 text-2xl mb-2"></i>
+            <div class="font-semibold text-gray-900">Execution</div>
+            <div class="text-sm text-gray-600">PowerShell (64%)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+const renderNeuralNetworkPage = (user: any) => html`
+  <div class="p-6">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-project-diagram text-purple-600 mr-3"></i>
+            Neural Network Analysis
+          </h1>
+          <p class="text-gray-600 mt-2">Deep learning models for behavioral pattern recognition and prediction</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Model Performance -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Model Performance</h2>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div class="text-center p-4 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">94.7%</div>
+                <div class="text-sm text-green-700">Accuracy</div>
+              </div>
+              <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">91.2%</div>
+                <div class="text-sm text-blue-700">Precision</div>
+              </div>
+              <div class="text-center p-4 bg-purple-50 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600">89.8%</div>
+                <div class="text-sm text-purple-700">Recall</div>
+              </div>
+            </div>
+            
+            <!-- Placeholder for model visualization -->
+            <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+              <div class="text-center text-gray-600">
+                <i class="fas fa-chart-area text-4xl mb-4"></i>
+                <div>Neural Network Training Progress</div>
+                <div class="text-sm">Epoch 247/300 - Loss: 0.0023</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model Configuration -->
+      <div class="space-y-6">
+        <div class="bg-white rounded-lg shadow-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Active Models</h3>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="p-3 border border-green-200 rounded-lg bg-green-50">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-semibold text-green-900">Anomaly Detection</span>
+                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Running</span>
+              </div>
+              <div class="text-xs text-green-700">LSTM-based behavioral analysis</div>
+            </div>
+            
+            <div class="p-3 border border-blue-200 rounded-lg bg-blue-50">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-semibold text-blue-900">Threat Prediction</span>
+                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Training</span>
+              </div>
+              <div class="text-xs text-blue-700">CNN-based pattern recognition</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Predictions</h3>
+          </div>
+          <div class="p-4 space-y-4">
+            <div class="text-sm">
+              <div class="flex justify-between mb-1">
+                <span class="text-gray-600">Next attack likelihood</span>
+                <span class="font-semibold text-red-600">High (0.87)</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-red-600 h-2 rounded-full" style="width: 87%"></div>
+              </div>
+            </div>
+            
+            <div class="text-sm">
+              <div class="flex justify-between mb-1">
+                <span class="text-gray-600">Campaign duration</span>
+                <span class="font-semibold text-yellow-600">14-21 days</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-600 h-2 rounded-full" style="width: 65%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+const renderRiskScoringPage = (user: any) => html`
+  <div class="p-6">
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-calculator text-yellow-600 mr-3"></i>
+            Advanced Risk Scoring Engine
+          </h1>
+          <p class="text-gray-600 mt-2">ML-optimized threat-contextual risk scoring and dynamic calibration</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- Risk Score Distribution -->
+      <div class="bg-white rounded-lg shadow-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Risk Score Distribution</h2>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Critical (90-100)</span>
+              <span class="font-semibold text-red-600">23 threats</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div class="bg-red-600 h-3 rounded-full" style="width: 15%"></div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">High (70-89)</span>
+              <span class="font-semibold text-orange-600">67 threats</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div class="bg-orange-600 h-3 rounded-full" style="width: 44%"></div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Medium (40-69)</span>
+              <span class="font-semibold text-yellow-600">141 threats</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div class="bg-yellow-600 h-3 rounded-full" style="width: 93%"></div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Low (0-39)</span>
+              <span class="font-semibold text-green-600">89 threats</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div class="bg-green-600 h-3 rounded-full" style="width: 58%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scoring Factors -->
+      <div class="bg-white rounded-lg shadow-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Scoring Factors</h2>
+        </div>
+        <div class="p-6">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-700">Threat Intelligence Context</span>
+              <span class="font-semibold text-blue-600">35%</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-700">Business Impact Assessment</span>
+              <span class="font-semibold text-red-600">25%</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-700">Asset Criticality</span>
+              <span class="font-semibold text-orange-600">20%</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-700">Exploitability Score</span>
+              <span class="font-semibold text-yellow-600">15%</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-700">Environmental Factors</span>
+              <span class="font-semibold text-green-600">5%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ML Optimization -->
+    <div class="bg-white rounded-lg shadow-lg">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900">ML Optimization Insights</h2>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 border border-blue-200 rounded-lg bg-blue-50">
+            <i class="fas fa-cog text-blue-600 text-2xl mb-3"></i>
+            <div class="font-semibold text-blue-900 mb-1">Dynamic Calibration</div>
+            <div class="text-sm text-blue-700">Scoring weights automatically adjusted based on threat landscape changes</div>
+          </div>
+
+          <div class="p-4 border border-green-200 rounded-lg bg-green-50">
+            <i class="fas fa-chart-line text-green-600 text-2xl mb-3"></i>
+            <div class="font-semibold text-green-900 mb-1">Performance Tuning</div>
+            <div class="text-sm text-green-700">Machine learning models optimize scoring accuracy over time</div>
+          </div>
+
+          <div class="p-4 border border-purple-200 rounded-lg bg-purple-50">
+            <i class="fas fa-brain text-purple-600 text-2xl mb-3"></i>
+            <div class="font-semibold text-purple-900 mb-1">Contextual Learning</div>
+            <div class="text-sm text-purple-700">AI learns from analyst feedback to improve risk calculations</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
