@@ -21,7 +21,9 @@ export function requirePermission(permission: string) {
         'analytics:view', 'analytics:create',
         'threat_intel:view', 'threat_intel:create',
         'incident:view', 'incident:create', 'incident:execute',
-        'risks:view', 'compliance:view'
+        'risks:view', 'compliance:view',
+        'ai_threat:analyze', 'ai_threat:campaign_analysis',
+        'ai_threat:correlation', 'ai_threat:risk_assessment'
       ],
       'compliance_officer': [
         'compliance:view', 'compliance:create',
@@ -31,7 +33,8 @@ export function requirePermission(permission: string) {
       'risk_analyst': [
         'risks:view', 'risks:create',
         'analytics:view', 'analytics:create',
-        'compliance:view'
+        'compliance:view',
+        'ai_threat:risk_assessment'
       ],
       'viewer': [
         'analytics:view', 'risks:view', 'compliance:view'

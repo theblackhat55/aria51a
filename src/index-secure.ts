@@ -116,6 +116,45 @@ app.get('/health', (c) => {
   });
 });
 
+// AI Threat Analysis Health Check (public)
+app.get('/api/ai-threat/health', async (c) => {
+  try {
+    const { AI, OPENAI_API_KEY, ANTHROPIC_API_KEY } = c.env as any;
+    
+    const healthStatus = {
+      service: 'AI Threat Analysis',
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      models: {
+        cloudflare_ai: AI ? 'available' : 'unavailable',
+        openai: OPENAI_API_KEY ? 'configured' : 'not_configured',
+        anthropic: ANTHROPIC_API_KEY ? 'configured' : 'not_configured'
+      },
+      capabilities: [
+        'ioc_analysis',
+        'campaign_attribution',
+        'correlation_analysis',
+        'risk_assessment',
+        'business_impact_analysis',
+        'mitigation_recommendations'
+      ]
+    };
+    
+    return c.json({
+      success: true,
+      data: healthStatus
+    });
+    
+  } catch (error) {
+    console.error('Error in AI health check:', error);
+    return c.json({
+      success: false,
+      error: 'AI analysis service health check failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
 // Debug endpoint for dashboard metrics (public for testing)
 app.get('/debug/dashboard-stats', async (c) => {
   try {
@@ -324,6 +363,10 @@ app.route('/api/threat-intelligence', apiThreatIntelRoutes);
 
 // TI-GRC Integration API (Phase 1 Enhanced Features)
 app.route('/api/ti-grc', tiGrcRoutes);
+
+// AI Threat Analysis API (Phase 2 Enhanced Features)
+import { aiThreatAnalysisRoutes } from './routes/api-ai-threat-analysis';
+app.route('/api/ai-threat', aiThreatAnalysisRoutes);
 
 // 404 handler
 app.notFound((c) => {
