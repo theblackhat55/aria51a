@@ -1425,11 +1425,11 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Enhanced TI with AI & ML</div>
                   </div>
                 </a>
-                <a href="/intelligence/conversational-assistant" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                <a href="/ai" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
                   <i class="fas fa-robot w-5 text-blue-500 mr-3"></i>
                   <div>
                     <div class="font-medium">AI Assistant</div>
-                    <div class="text-xs text-gray-500">Conversational TI queries</div>
+                    <div class="text-xs text-gray-500">Enhanced with TI capabilities</div>
                   </div>
                 </a>
               </div>
@@ -1556,11 +1556,11 @@ const renderCleanNavigation = (user: any) => html`
                   </div>
                 </a>
                 <div class="border-t border-gray-100 my-2"></div>
-                <a href="/operations/intelligence-settings" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
-                  <i class="fas fa-brain w-5 text-purple-500 mr-3"></i>
+                <a href="/intelligence/feeds" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-rss w-5 text-purple-500 mr-3"></i>
                   <div>
-                    <div class="font-medium">Intelligence Settings</div>
-                    <div class="text-xs text-gray-500">STIX/TAXII feed providers & configuration</div>
+                    <div class="font-medium">Threat Intelligence Feeds</div>
+                    <div class="text-xs text-gray-500">Multi-source feeds & STIX/TAXII configuration</div>
                   </div>
                 </a>
               </div>
@@ -1576,13 +1576,6 @@ const renderCleanNavigation = (user: any) => html`
             </button>
             <div data-dropdown-menu class="dropdown-menu absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
               <div class="py-2">
-                <a href="/intelligence/conversational-assistant" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
-                  <i class="fas fa-robot w-5 text-blue-500 mr-3"></i>
-                  <div>
-                    <div class="font-medium">Conversational AI Assistant</div>
-                    <div class="text-xs text-gray-500">Natural language TI queries</div>
-                  </div>
-                </a>
                 <a href="/intelligence/correlation-engine" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
                   <i class="fas fa-network-wired w-5 text-green-500 mr-3"></i>
                   <div>
@@ -1602,14 +1595,6 @@ const renderCleanNavigation = (user: any) => html`
                   <div>
                     <div class="font-medium">Neural Network Analysis</div>
                     <div class="text-xs text-gray-500">Deep learning behavioral models</div>
-                  </div>
-                </a>
-                <div class="border-t border-gray-100 my-2"></div>
-                <a href="/intelligence/feeds" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
-                  <i class="fas fa-rss w-5 text-red-500 mr-3"></i>
-                  <div>
-                    <div class="font-medium">Multi-Source Feeds</div>
-                    <div class="text-xs text-gray-500">OTX, CISA KEV, STIX/TAXII, NVD</div>
                   </div>
                 </a>
                 <a href="/intelligence/risk-scoring" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
@@ -1817,9 +1802,9 @@ const renderCleanNavigation = (user: any) => html`
                   <span class="text-sm font-medium text-blue-800">Documents</span>
                 </a>
                 <div class="border-t border-blue-200 my-2 mx-2"></div>
-                <a href="/operations/intelligence-settings" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98 bg-gradient-to-r from-purple-50 to-purple-100">
-                  <i class="fas fa-brain text-purple-600 w-6 mr-3"></i>
-                  <span class="text-sm font-medium text-purple-800">Intelligence Settings</span>
+                <a href="/intelligence/feeds" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98 bg-gradient-to-r from-purple-50 to-purple-100">
+                  <i class="fas fa-rss text-purple-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-purple-800">TI Feeds</span>
                 </a>
               </div>
             </div>
@@ -1837,7 +1822,7 @@ const renderCleanNavigation = (user: any) => html`
                   <i class="fas fa-shield-alt text-purple-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-purple-800">TI Dashboard</span>
                 </a>
-                <a href="/intelligence/conversational-assistant" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
+                <a href="/ai" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
                   <i class="fas fa-robot text-purple-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-purple-800">AI Assistant</span>
                 </a>

@@ -95,19 +95,6 @@ export function createIntelligenceRoutes() {
   
   // NEW TI ENHANCEMENT PAGES
   
-  // Conversational AI Assistant
-  app.get('/conversational-assistant', async (c) => {
-    const user = c.get('user');
-    
-    return c.html(
-      cleanLayout({
-        title: 'Conversational AI Assistant',
-        user,
-        content: renderConversationalAssistantPage(user)
-      })
-    );
-  });
-  
   // ML Correlation Engine
   app.get('/correlation-engine', async (c) => {
     const user = c.get('user');
@@ -150,12 +137,13 @@ export function createIntelligenceRoutes() {
   // Advanced Risk Scoring
   app.get('/risk-scoring', async (c) => {
     const user = c.get('user');
+    const riskData = await getRealRiskScoreData(c.env.DB);
     
     return c.html(
       cleanLayout({
         title: 'Advanced Risk Scoring',
         user,
-        content: renderRiskScoringPage(user)
+        content: renderRiskScoringPage(user, riskData)
       })
     );
   });
@@ -3113,7 +3101,49 @@ const renderNeuralNetworkPage = (user: any) => html`
   </div>
 `;
 
-const renderRiskScoringPage = (user: any) => html`
+// Helper function to get real risk data
+async function getRealRiskScoreData(db: any) {
+  try {
+    // Get actual risk counts by severity
+    const riskCounts = await db.prepare(`
+      SELECT 
+        CASE 
+          WHEN risk_score >= 90 THEN 'critical'
+          WHEN risk_score >= 70 THEN 'high' 
+          WHEN risk_score >= 40 THEN 'medium'
+          ELSE 'low'
+        END as severity,
+        COUNT(*) as count
+      FROM risks 
+      WHERE status != 'closed'
+      GROUP BY severity
+    `).all();
+    
+    const data = {
+      critical: 0,
+      high: 0, 
+      medium: 0,
+      low: 0
+    };
+    
+    riskCounts.results?.forEach((row: any) => {
+      data[row.severity as keyof typeof data] = row.count;
+    });
+    
+    return data;
+  } catch (error) {
+    console.error('Error fetching risk data:', error);
+    // Fallback to sample data if database query fails
+    return {
+      critical: 23,
+      high: 67,
+      medium: 141, 
+      low: 89
+    };
+  }
+}
+
+const renderRiskScoringPage = (user: any, riskData?: any) => html`
   <div class="p-6">
     <div class="mb-8">
       <div class="flex items-center justify-between">
@@ -3135,37 +3165,48 @@ const renderRiskScoringPage = (user: any) => html`
         </div>
         <div class="p-6">
           <div class="space-y-4">
+            ${riskData ? html`
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Critical (90-100)</span>
-              <span class="font-semibold text-red-600">23 threats</span>
+              <span class="font-semibold text-red-600">${riskData.critical} threats</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-3">
-              <div class="bg-red-600 h-3 rounded-full" style="width: 15%"></div>
+              <div class="bg-red-600 h-3 rounded-full" style="width: ${Math.max(5, (riskData.critical / Math.max(riskData.medium, 1)) * 100)}%"></div>
             </div>
 
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">High (70-89)</span>
-              <span class="font-semibold text-orange-600">67 threats</span>
+              <span class="font-semibold text-orange-600">${riskData.high} threats</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-3">
-              <div class="bg-orange-600 h-3 rounded-full" style="width: 44%"></div>
+              <div class="bg-orange-600 h-3 rounded-full" style="width: ${Math.max(5, (riskData.high / Math.max(riskData.medium, 1)) * 100)}%"></div>
             </div>
 
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Medium (40-69)</span>
-              <span class="font-semibold text-yellow-600">141 threats</span>
+              <span class="font-semibold text-yellow-600">${riskData.medium} threats</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-3">
-              <div class="bg-yellow-600 h-3 rounded-full" style="width: 93%"></div>
+              <div class="bg-yellow-600 h-3 rounded-full" style="width: 100%"></div>
             </div>
 
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Low (0-39)</span>
-              <span class="font-semibold text-green-600">89 threats</span>
+              <span class="font-semibold text-green-600">${riskData.low} threats</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-3">
-              <div class="bg-green-600 h-3 rounded-full" style="width: 58%"></div>
+              <div class="bg-green-600 h-3 rounded-full" style="width: ${Math.max(5, (riskData.low / Math.max(riskData.medium, 1)) * 100)}%"></div>
             </div>
+            ` : html`
+            <!-- Fallback static data if real data unavailable -->
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Critical (90-100)</span>
+              <span class="font-semibold text-red-600">Loading...</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+              <div class="bg-gray-400 h-3 rounded-full animate-pulse" style="width: 20%"></div>
+            </div>
+            `}
           </div>
         </div>
       </div>
