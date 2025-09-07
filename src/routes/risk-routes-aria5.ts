@@ -4,6 +4,7 @@ import { requireAuth } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import { createAIService } from '../services/ai-providers';
 import { setCSRFToken, authMiddleware } from '../middleware/auth-middleware';
+import { DynamicRiskManager, DynamicRiskState, ThreatIntelligenceData } from '../services/dynamic-risk-manager';
 import type { CloudflareBindings } from '../types';
 
 export function createRiskRoutesARIA5() {
@@ -293,40 +294,19 @@ export function createRiskRoutesARIA5() {
       console.log('📊 Found', risks.length, 'risks');
       
       if (risks.length === 0) {
-        console.log('🔍 No risks found, checking total count...');
+        console.log('🔍 No risks found, checking if we need to populate from seed data...');
         
-        // Add sample data for demo purposes if no real data exists
-        const sampleRisks = [
-          {
-            id: 999,
-            risk_id: 'DEMO-001',
-            title: 'Sample Cybersecurity Risk',
-            description: 'Demo risk for testing',
-            category: 'Technology',
-            probability: 3,
-            impact: 4,
-            risk_score: 12,
-            status: 'active',
-            owner_name: 'Avi Security',
-            category_name: 'Technology',
-            created_at: new Date().toISOString()
-          },
-          {
-            id: 998,
-            risk_id: 'DEMO-002', 
-            title: 'Sample Operational Risk',
-            description: 'Another demo risk',
-            category: 'Operational',
-            probability: 2,
-            impact: 3,
-            risk_score: 6,
-            status: 'active',
-            owner_name: 'Avi Security',
-            category_name: 'Operational',
-            created_at: new Date().toISOString()
-          }
-        ];
-        return c.html(renderRiskTable(sampleRisks));
+        // Check if we have any risks at all (including from seed data)
+        const totalCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM risks').first();
+        console.log('📊 Total risks in database:', totalCount?.count || 0);
+        
+        if ((totalCount?.count || 0) === 0) {
+          console.log('💾 No risks found in database, they should be populated from seed data');
+          return c.html(renderEmptyRiskTable());
+        }
+        
+        // If we have risks but none are active, show empty table
+        return c.html(renderEmptyRiskTable());
       }
       
       return c.html(renderRiskTable(risks));
@@ -925,6 +905,225 @@ Be practical and actionable in your analysis.`;
     );
   });
 
+  // ===== DYNAMIC TI RISK MANAGEMENT API ENDPOINTS =====
+  
+  // Get dynamic risks with filtering
+  app.get('/api/ti/dynamic-risks', async (c) => {
+    try {
+      const dynamicRiskManager = new DynamicRiskManager(c.env.DB);
+      
+      const { state, source, confidence, limit } = c.req.query();
+      
+      const filters: any = {};
+      if (state) filters.state = state as DynamicRiskState;
+      if (source) filters.source = source;
+      if (confidence) filters.confidence = parseFloat(confidence);
+      if (limit) filters.limit = parseInt(limit);
+      
+      const risks = await dynamicRiskManager.getDynamicRisks(filters);
+      
+      return c.json({
+        success: true,
+        data: risks,
+        count: risks.length
+      });
+      
+    } catch (error) {
+      console.error('Error fetching dynamic risks:', error);
+      return c.json({ 
+        success: false, 
+        error: 'Failed to fetch dynamic risks' 
+      }, 500);
+    }
+  });
+
+  // Create dynamic risk from TI data
+  app.post('/api/ti/auto-generate-risk', async (c) => {
+    try {
+      const dynamicRiskManager = new DynamicRiskManager(c.env.DB);
+      
+      const tiData: ThreatIntelligenceData = await c.req.json();
+      
+      // Validate required fields
+      if (!tiData.source || !tiData.indicatorType || !tiData.indicatorValue) {
+        return c.json({ 
+          success: false, 
+          error: 'Missing required TI data fields' 
+        }, 400);
+      }
+      
+      const risk = await dynamicRiskManager.createDynamicRisk(tiData);
+      
+      return c.json({
+        success: true,
+        data: risk,
+        message: 'Dynamic risk created successfully'
+      });
+      
+    } catch (error) {
+      console.error('Error creating dynamic risk:', error);
+      return c.json({ 
+        success: false, 
+        error: error.message || 'Failed to create dynamic risk' 
+      }, 500);
+    }
+  });
+
+  // Validate/transition risk state
+  app.post('/api/ti/validate-risk/:id', async (c) => {
+    try {
+      const dynamicRiskManager = new DynamicRiskManager(c.env.DB);
+      const user = c.get('user');
+      
+      const riskId = parseInt(c.req.param('id'));
+      const { approved, notes, targetState } = await c.req.json();
+      
+      if (approved) {
+        const newState = targetState || DynamicRiskState.VALIDATED;
+        await dynamicRiskManager.transitionRiskState(
+          riskId,
+          newState,
+          notes || 'Manual validation approved',
+          false,
+          user?.id
+        );
+      } else {
+        await dynamicRiskManager.transitionRiskState(
+          riskId,
+          DynamicRiskState.RETIRED,
+          notes || 'Manual validation rejected',
+          false,
+          user?.id
+        );
+      }
+      
+      return c.json({
+        success: true,
+        message: approved ? 'Risk validated successfully' : 'Risk rejected and retired'
+      });
+      
+    } catch (error) {
+      console.error('Error validating risk:', error);
+      return c.json({ 
+        success: false, 
+        error: error.message || 'Failed to validate risk' 
+      }, 500);
+    }
+  });
+
+  // Get risk pipeline statistics
+  app.get('/api/ti/risk-pipeline-stats', async (c) => {
+    try {
+      const dynamicRiskManager = new DynamicRiskManager(c.env.DB);
+      const stats = await dynamicRiskManager.getRiskPipelineStats();
+      
+      return c.json({
+        success: true,
+        data: stats
+      });
+      
+    } catch (error) {
+      console.error('Error fetching pipeline stats:', error);
+      return c.json({ 
+        success: false, 
+        error: 'Failed to fetch pipeline statistics' 
+      }, 500);
+    }
+  });
+
+  // Get risk state history
+  app.get('/api/ti/risk/:id/state-history', async (c) => {
+    try {
+      const riskId = parseInt(c.req.param('id'));
+      
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          drs.*,
+          u.first_name || ' ' || u.last_name as user_name
+        FROM dynamic_risk_states drs
+        LEFT JOIN users u ON drs.created_by = u.id
+        WHERE drs.risk_id = ?
+        ORDER BY drs.created_at DESC
+      `).bind(riskId).all();
+      
+      return c.json({
+        success: true,
+        data: result.results || []
+      });
+      
+    } catch (error) {
+      console.error('Error fetching state history:', error);
+      return c.json({ 
+        success: false, 
+        error: 'Failed to fetch state history' 
+      }, 500);
+    }
+  });
+
+  // Process detected threats (scheduled job endpoint)
+  app.post('/api/ti/process-detected-threats', async (c) => {
+    try {
+      const dynamicRiskManager = new DynamicRiskManager(c.env.DB);
+      await dynamicRiskManager.processDetectedThreats();
+      
+      return c.json({
+        success: true,
+        message: 'Detected threats processed successfully'
+      });
+      
+    } catch (error) {
+      console.error('Error processing detected threats:', error);
+      return c.json({ 
+        success: false, 
+        error: 'Failed to process detected threats' 
+      }, 500);
+    }
+  });
+
+  // Enhanced risk table with TI data
+  app.get('/table-enhanced', async (c) => {
+    try {
+      console.log('📋 Fetching enhanced risk table with TI data...');
+      
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          r.*,
+          u.first_name || ' ' || u.last_name as owner_name,
+          CASE 
+            WHEN r.source_type = 'Dynamic-TI' THEN r.dynamic_state
+            ELSE 'manual'
+          END as risk_lifecycle_state,
+          CASE 
+            WHEN LOWER(r.category) = 'operational' THEN 'Operational'
+            WHEN LOWER(r.category) = 'financial' THEN 'Financial'
+            WHEN LOWER(r.category) = 'strategic' THEN 'Strategic'
+            WHEN LOWER(r.category) = 'compliance' THEN 'Compliance'
+            WHEN LOWER(r.category) = 'cybersecurity' THEN 'Cybersecurity'
+            WHEN LOWER(r.category) = 'technology' THEN 'Technology'
+            WHEN LOWER(r.category) = 'reputation' OR LOWER(r.category) = 'reputational' THEN 'Reputation'
+            ELSE UPPER(SUBSTR(r.category, 1, 1)) || LOWER(SUBSTR(r.category, 2))
+          END as category_name
+        FROM risks r
+        LEFT JOIN users u ON r.owner_id = u.id
+        WHERE r.status = 'active'
+        ORDER BY 
+          CASE WHEN r.source_type = 'Dynamic-TI' THEN 0 ELSE 1 END,
+          r.risk_score DESC, 
+          r.created_at DESC
+        LIMIT 50
+      `).all();
+
+      const risks = result.results || [];
+      console.log('📊 Found', risks.length, 'risks (including TI-generated)');
+      
+      return c.html(renderEnhancedRiskTable(risks));
+      
+    } catch (error) {
+      console.error('Error fetching enhanced risk table:', error);
+      return c.html(renderEmptyRiskTable());
+    }
+  });
+
   return app;
 }
 
@@ -935,6 +1134,208 @@ function getRiskLevel(score: number): string {
   if (score >= 10) return 'Medium';
   if (score >= 5) return 'Low';
   return 'Very Low';
+}
+
+function renderEmptyRiskTable(): string {
+  return html`
+    <div class="text-center py-8">
+      <i class="fas fa-shield-alt text-gray-400 text-4xl mb-4"></i>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No Active Risks Found</h3>
+      <p class="text-gray-500 mb-4">Risks should be populated from seed data or created through threat intelligence feeds.</p>
+      <div class="space-y-2">
+        <button onclick="location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          <i class="fas fa-refresh mr-2"></i>Refresh
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderEnhancedRiskTable(risks: any[]): string {
+  if (!risks || risks.length === 0) {
+    return renderEmptyRiskTable();
+  }
+
+  const riskRows = risks.map(risk => {
+    const level = getRiskLevel(risk.risk_score);
+    const colorClass = getRiskColorClass(level);
+    const sourceIcon = risk.source_type === 'Dynamic-TI' ? 
+      '<i class="fas fa-robot text-purple-600 mr-1" title="AI-Generated from Threat Intelligence"></i>' :
+      '<i class="fas fa-user text-blue-600 mr-1" title="Manually Created"></i>';
+    
+    const stateDisplay = risk.risk_lifecycle_state !== 'manual' ? 
+      `<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStateColorClass(risk.risk_lifecycle_state)}">${formatState(risk.risk_lifecycle_state)}</span>` :
+      '<span class="text-xs text-gray-500">Manual</span>';
+    
+    return html`
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="flex items-center">
+            ${raw(sourceIcon)}
+            <div>
+              <div class="text-sm font-medium text-gray-900">${risk.title || 'Untitled Risk'}</div>
+              <div class="text-sm text-gray-500">${risk.risk_id || `RISK-${risk.id}`}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <div class="text-sm text-gray-900">${risk.description || 'No description available'}</div>
+          ${raw(stateDisplay)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+            ${risk.category_name || 'Uncategorized'}
+          </span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-center">
+          <div class="flex items-center justify-center space-x-1">
+            <span class="text-sm font-medium">${risk.probability || 1}</span>
+            <div class="text-xs text-gray-500">×</div>
+            <span class="text-sm font-medium">${risk.impact || 1}</span>
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-center">
+          <span class="inline-flex px-3 py-1 text-sm font-medium rounded-full ${colorClass}">
+            ${risk.risk_score || (risk.probability * risk.impact)} - ${level}
+          </span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          ${risk.owner_name || 'Unassigned'}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          ${formatDate(risk.created_at)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+          <div class="flex space-x-2">
+            <button class="text-indigo-600 hover:text-indigo-900" onclick="viewRisk(${risk.id})">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="text-blue-600 hover:text-blue-900" onclick="editRisk(${risk.id})">
+              <i class="fas fa-edit"></i>
+            </button>
+            ${risk.source_type === 'Dynamic-TI' ? 
+              `<button class="text-purple-600 hover:text-purple-900" onclick="viewTIDetails(${risk.id})" title="View TI Details">
+                <i class="fas fa-shield-alt"></i>
+              </button>` : ''
+            }
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  return html`
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Risk Details
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Description & State
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Category
+            </th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              P × I
+            </th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Risk Score
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Owner
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Created
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${raw(riskRows)}
+        </tbody>
+      </table>
+    </div>
+    
+    <script>
+      function viewTIDetails(riskId) {
+        // Load TI details modal
+        fetch(\`/risks/api/ti/risk/\${riskId}/state-history\`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              showTIDetailsModal(riskId, data.data);
+            }
+          })
+          .catch(error => console.error('Error loading TI details:', error));
+      }
+      
+      function showTIDetailsModal(riskId, stateHistory) {
+        // Simple modal implementation (can be enhanced with proper modal component)
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+        modal.innerHTML = \`
+          <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+              <h3 class="text-lg font-medium text-gray-900 mb-4">
+                <i class="fas fa-robot mr-2 text-purple-600"></i>
+                Threat Intelligence Details
+              </h3>
+              <div class="space-y-3">
+                \${stateHistory.map(state => \`
+                  <div class="border-l-4 border-blue-500 pl-4 py-2">
+                    <div class="flex justify-between">
+                      <span class="font-medium">\${state.current_state}</span>
+                      <span class="text-sm text-gray-500">\${new Date(state.created_at).toLocaleString()}</span>
+                    </div>
+                    <div class="text-sm text-gray-600">\${state.transition_reason}</div>
+                    \${state.user_name ? \`<div class="text-xs text-gray-500">By: \${state.user_name}</div>\` : ''}
+                  </div>
+                \`).join('')}
+              </div>
+              <div class="mt-6 text-right">
+                <button onclick="this.closest('.fixed').remove()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        \`;
+        document.body.appendChild(modal);
+        
+        // Close on click outside
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            modal.remove();
+          }
+        });
+      }
+    </script>
+  `;
+}
+
+function getStateColorClass(state: string): string {
+  const stateColors: Record<string, string> = {
+    'detected': 'bg-yellow-100 text-yellow-800',
+    'draft': 'bg-orange-100 text-orange-800',
+    'validated': 'bg-blue-100 text-blue-800',
+    'active': 'bg-green-100 text-green-800',
+    'retired': 'bg-gray-100 text-gray-800'
+  };
+  return stateColors[state] || 'bg-gray-100 text-gray-800';
+}
+
+function formatState(state: string): string {
+  return state.charAt(0).toUpperCase() + state.slice(1);
+}
+
+function formatDate(dateString: string): string {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString();
 }
 
 function getRiskColorClass(level: string): string {
