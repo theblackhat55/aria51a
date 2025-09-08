@@ -1816,7 +1816,7 @@ async function getRisks(db: D1Database) {
     const result = await db.prepare(`
       SELECT 
         id, title, category, description, risk_score,
-        likelihood, impact, status, created_at, updated_at
+        probability, impact, status, created_at, updated_at
       FROM risks 
       ORDER BY risk_score DESC, created_at DESC
     `).all();

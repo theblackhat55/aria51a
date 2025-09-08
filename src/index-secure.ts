@@ -350,6 +350,31 @@ app.get('/debug/db-test', async (c) => {
   }
 });
 
+// Debug endpoint for testing risks functionality
+app.get('/debug/risks-test', async (c) => {
+  try {
+    const result = await c.env.DB.prepare(`
+      SELECT 
+        id, title, category, description, risk_score,
+        probability, impact, status, created_at, updated_at
+      FROM risks 
+      ORDER BY risk_score DESC, created_at DESC
+    `).all();
+    
+    return c.json({ 
+      success: true, 
+      risks_count: result.results?.length || 0,
+      risks: result.results || []
+    });
+  } catch (error) {
+    console.error('Debug risks test error:', error);
+    return c.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
 // Debug endpoint for testing operations API without auth
 app.get('/debug/operations-feeds', async (c) => {
   try {

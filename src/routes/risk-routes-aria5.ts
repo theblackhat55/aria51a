@@ -289,7 +289,7 @@ export function createRiskRoutesARIA5() {
   // Risk score calculation endpoint
   app.post('/calculate-score', async (c) => {
     const body = await c.req.parseBody();
-    const likelihood = parseInt(body.likelihood as string);
+    const likelihood = parseInt(body.probability as string) || parseInt(body.likelihood as string);
     const impact = parseInt(body.impact as string);
     
     if (!likelihood || !impact) {
@@ -3181,8 +3181,8 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 ml-9">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Likelihood *</label>
-                <select name="likelihood" 
+                <label class="block text-sm font-medium text-gray-700 mb-1">Probability *</label>
+                <select name="probability" 
                         required 
                         hx-post="/risk/calculate-score"
                         hx-trigger="change"
@@ -3204,7 +3204,7 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
                         hx-post="/risk/calculate-score"
                         hx-trigger="change"
                         hx-target="#risk-score-container"
-                        hx-include="[name='likelihood']"
+                        hx-include="[name='probability']"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="">Select Impact</option>
                   <option value="1">1 - Minimal</option>
@@ -3227,7 +3227,7 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
             </div>
             
             <div class="ml-9">
-              <p class="text-sm text-gray-600">Select likelihood and impact to calculate risk score</p>
+              <p class="text-sm text-gray-600">Select probability and impact to calculate risk score</p>
             </div>
           </div>
 
@@ -3370,7 +3370,7 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
             console.log('📊 Parsed AI Data:', aiData);
             
             // Fill likelihood field
-            const likelihoodField = document.querySelector('select[name="likelihood"]');
+            const likelihoodField = document.querySelector('select[name="probability"]');
             if (likelihoodField && aiData.probability) {
               likelihoodField.value = String(aiData.probability);
               console.log('✅ Set likelihood to:', aiData.probability);
