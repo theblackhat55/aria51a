@@ -414,72 +414,21 @@ export function createOperationsRoutes() {
         riskColor = 'text-green-600 bg-green-100';
       }
       
-      const response = c.html(html`
-        <div class="fixed inset-0 bg-green-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-          <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-lg mx-4">
-            <i class="fas fa-check-circle text-green-500 text-5xl mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">🎉 AI Service Assessment Complete!</h3>
-            
-            <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-4 text-left border-l-4 border-purple-500">
-              <div class="text-sm space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">Service:</span> 
-                  <span class="font-semibold text-purple-700">${serviceData.name}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">AI Criticality:</span> 
-                  <span class="px-3 py-1 rounded-full text-sm font-bold ${
-                    serviceData.criticality === 'Critical' ? 'bg-red-100 text-red-800' :
-                    serviceData.criticality === 'High' ? 'bg-orange-100 text-orange-800' :
-                    serviceData.criticality === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }">
-                    ${serviceData.criticality} (${serviceData.criticality_score}/100)
-                  </span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">AI Confidence:</span> 
-                  <span class="font-semibold text-blue-700">${Math.round((serviceData.ai_confidence || 0) * 100)}%</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">Category:</span> 
-                  <span>${serviceData.service_category}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">Department:</span> 
-                  <span>${serviceData.business_department}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">CIA Triad:</span> 
-                  <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">C:${serviceData.confidentiality_numeric} I:${serviceData.integrity_numeric} A:${serviceData.availability_numeric}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="bg-blue-50 border-l-4 border-blue-400 p-3 mb-4 text-left">
-              <div class="flex items-start">
-                <i class="fas fa-robot text-blue-500 mr-2 mt-0.5"></i>
-                <div class="text-sm text-blue-700">
-                  <p class="font-medium mb-1">AI Assessment Complete</p>
-                  <p class="text-xs">Multi-factor analysis applied: CIA impact (40%), asset dependencies (25%), risk associations (20%), business context (15%). Service is ready for operational integration.</p>
-                </div>
-              </div>
-            </div>
-            
-            <button hx-get="/operations/api/services/close" 
-                    hx-target="#service-modal" 
-                    hx-swap="innerHTML"
-                    hx-trigger="click"
-                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium transition-colors shadow-lg">
-              <i class="fas fa-check mr-2"></i>
-              Continue to Services Dashboard
-            </button>
-          </div>
-        </div>
-      `);
-      
-      // Trigger service list refresh
-      response.headers.set('HX-Trigger', 'serviceCreated,refreshServices');
+      // Close modal and refresh services list immediately
+      const response = c.html('');
+      // Trigger multiple events for comprehensive refresh
+      response.headers.set('HX-Trigger', JSON.stringify({
+        "closeModal": {},
+        "serviceCreated": {
+          "message": `✅ AI Service Assessment Complete! "${serviceData.name}" added with ${serviceData.criticality} criticality (${serviceData.criticality_score}/100, ${Math.round((serviceData.ai_confidence || 0) * 100)}% confidence)`
+        },
+        "refreshServices": {},
+        "showToast": {
+          "type": "success",
+          "title": "🎉 Service Added Successfully!",
+          "message": `${serviceData.name} has been assessed and configured with AI-driven ${serviceData.criticality} criticality.`
+        }
+      }));
       return response;
     } catch (error) {
       console.error('Service creation error:', error);
@@ -720,6 +669,26 @@ export function createOperationsRoutes() {
     return c.json({ success: true, services });
   });
 
+  // API endpoint to render services list for risk forms (HTML response)
+  app.get('/api/services/list-for-risk', async (c) => {
+    const services = await getServices(c.env.DB);
+    
+    const servicesHtml = services.map(service => `
+      <label class="flex items-center">
+        <input type="checkbox" name="affected_services[]" value="${service.service_id}" class="mr-2">
+        <span class="text-sm">${service.name} (${service.criticality || 'Medium'})</span>
+        <span class="text-xs text-gray-500 ml-2">${service.business_department || 'Unknown Dept'}</span>
+      </label>
+    `).join('');
+    
+    return c.html(servicesHtml || `
+      <div class="text-sm text-gray-500 text-center py-2">
+        <i class="fas fa-info-circle mr-1"></i>
+        No services found. <a href="/operations/services" class="text-green-600 hover:text-green-700">Add services first</a>.
+      </div>
+    `);
+  });
+
   // API endpoint to get assets for risk management  
   app.get('/api/assets/for-risk', async (c) => {
     const assets = await getAssets(c.env.DB);
@@ -787,10 +756,20 @@ export function createOperationsRoutes() {
       
       await updateService(c.env.DB, serviceId, serviceData);
       
-      // Return updated service rows with auto-refresh
-      const services = await getServices(c.env.DB);
-      const response = c.html(renderServiceRows(services));
-      response.headers.set('HX-Trigger', 'serviceUpdated');
+      // Return success response with refresh triggers
+      const response = c.html('');
+      response.headers.set('HX-Trigger', JSON.stringify({
+        "closeModal": {},
+        "serviceUpdated": {
+          "message": `Service "${serviceData.name}" updated successfully`
+        },
+        "refreshServices": {},
+        "showToast": {
+          "type": "success", 
+          "title": "Service Updated",
+          "message": `${serviceData.name} has been updated successfully.`
+        }
+      }));
       return response;
     } catch (error) {
       console.error('Error updating service:', error);
@@ -1071,11 +1050,21 @@ export function createOperationsRoutes() {
       
       await deleteService(c.env.DB, serviceId);
       
-      // Return updated service list
-      const services = await getServices(c.env.DB);
-      return new Response(renderServiceRows(services), {
-        headers: { 'Content-Type': 'text/html' }
-      });
+      // Return success response with refresh triggers
+      const response = c.html('');
+      response.headers.set('HX-Trigger', JSON.stringify({
+        "closeModal": {},
+        "serviceDeleted": {
+          "message": "Service deleted successfully"
+        },
+        "refreshServices": {},
+        "showToast": {
+          "type": "success", 
+          "title": "Service Deleted",
+          "message": "Service has been deleted successfully."
+        }
+      }));
+      return response;
     } catch (error) {
       console.error('Error deleting service:', error);
       return c.json({ error: 'Error deleting service' }, 500);
@@ -1803,6 +1792,23 @@ async function getAssets(db: D1Database) {
     return result.results || [];
   } catch (error) {
     console.error('Error fetching assets:', error);
+    return [];
+  }
+}
+
+async function getRisks(db: D1Database) {
+  try {
+    const result = await db.prepare(`
+      SELECT 
+        id, title, category, description, risk_score,
+        likelihood, impact, status, created_at, updated_at
+      FROM risks 
+      ORDER BY risk_score DESC, created_at DESC
+    `).all();
+    
+    return result.results || [];
+  } catch (error) {
+    console.error('Error fetching risks:', error);
     return [];
   }
 }
@@ -3079,21 +3085,9 @@ const renderDocumentUploadModal = () => html`
   </div>
 `;
 
-// Helper function to get risks from database
-async function getRisks(db: D1Database) {
-  try {
-    const result = await db.prepare(`
-      SELECT * FROM risks 
-      WHERE status = 'active' 
-      ORDER BY created_at DESC
-    `).all();
-    
-    return result.results || [];
-  } catch (error) {
-    console.error('Error fetching risks:', error);
-    return [];
-  }
-}
+
+
+
 
 // Asset Linking Modal for Services
 const renderAssetLinkingModal = (assets: any[]) => html`
@@ -3391,9 +3385,9 @@ const renderRiskLinkingModal = (risks: any[]) => html`
 async function getServiceById(db: any, serviceId: string) {
   try {
     const result = await db.prepare(`
-      SELECT * FROM assets_enhanced 
-      WHERE id = ? AND (category = 'service' OR subcategory LIKE '%Service%')
-    `).bind(serviceId).first();
+      SELECT * FROM services 
+      WHERE id = ? OR service_id = ?
+    `).bind(serviceId, serviceId).first();
     return result;
   } catch (error) {
     console.error('Error fetching service by ID:', error);
@@ -3405,31 +3399,36 @@ async function getServiceById(db: any, serviceId: string) {
 async function updateService(db: any, serviceId: string, serviceData: any) {
   try {
     await db.prepare(`
-      UPDATE assets_enhanced SET 
+      UPDATE services SET 
         name = ?,
-        type = ?,
         description = ?,
-        location = ?,
-        asset_owner = ?,
-        technical_custodian = ?,
-        confidentiality = ?,
-        integrity = ?,
-        availability = ?,
+        service_category = ?,
+        business_department = ?,
+        confidentiality_impact = ?,
+        integrity_impact = ?,
+        availability_impact = ?,
+        confidentiality_numeric = ?,
+        integrity_numeric = ?,
+        availability_numeric = ?,
+        business_function = ?,
         criticality = ?,
         updated_at = ?
-      WHERE id = ?
+      WHERE id = ? OR service_id = ?
     `).bind(
       serviceData.name,
-      serviceData.type,
       serviceData.description,
-      serviceData.location,
-      serviceData.asset_owner,
-      serviceData.technical_custodian,
-      serviceData.confidentiality,
-      serviceData.integrity,
-      serviceData.availability,
+      serviceData.service_category,
+      serviceData.business_department,
+      serviceData.confidentiality_impact,
+      serviceData.integrity_impact,
+      serviceData.availability_impact,
+      serviceData.confidentiality_numeric,
+      serviceData.integrity_numeric,
+      serviceData.availability_numeric,
+      serviceData.business_function,
       serviceData.criticality,
       serviceData.updated_at,
+      serviceId,
       serviceId
     ).run();
     
@@ -3443,15 +3442,54 @@ async function updateService(db: any, serviceId: string, serviceData: any) {
 // Helper function to delete service
 async function deleteService(db: any, serviceId: string) {
   try {
+    // First delete any service links
+    await db.prepare(`DELETE FROM service_asset_links WHERE service_id = ?`).bind(serviceId).run();
+    await db.prepare(`DELETE FROM service_risk_links WHERE service_id = ?`).bind(serviceId).run();
+    
+    // Then delete the service
     await db.prepare(`
-      DELETE FROM assets_enhanced 
-      WHERE id = ? AND (category = 'service' OR subcategory LIKE '%Service%')
-    `).bind(serviceId).run();
+      DELETE FROM services 
+      WHERE id = ? OR service_id = ?
+    `).bind(serviceId, serviceId).run();
     
     return true;
   } catch (error) {
     console.error('Error deleting service:', error);
     throw error;
+  }
+}
+
+// Helper function to get service asset links
+async function getServiceAssetLinks(db: any, serviceId: string) {
+  try {
+    const result = await db.prepare(`
+      SELECT sal.*, ae.name as asset_name
+      FROM service_asset_links sal
+      JOIN assets_enhanced ae ON sal.asset_id = ae.asset_id
+      WHERE sal.service_id = ?
+    `).bind(serviceId).all();
+    
+    return result.results || [];
+  } catch (error) {
+    console.error('Error fetching service asset links:', error);
+    return [];
+  }
+}
+
+// Helper function to get service risk links
+async function getServiceRiskLinks(db: any, serviceId: string) {
+  try {
+    const result = await db.prepare(`
+      SELECT srl.*, r.title as risk_title
+      FROM service_risk_links srl
+      JOIN risks r ON srl.risk_id = r.id
+      WHERE srl.service_id = ?
+    `).bind(serviceId).all();
+    
+    return result.results || [];
+  } catch (error) {
+    console.error('Error fetching service risk links:', error);
+    return [];
   }
 }
 

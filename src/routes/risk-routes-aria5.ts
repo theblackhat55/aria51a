@@ -2838,23 +2838,15 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
             
             <div class="ml-9">
               <label class="block text-sm font-medium text-gray-700 mb-2">Related Services</label>
-              <div class="space-y-2">
-                <label class="flex items-center">
-                  <input type="checkbox" name="affected_services[]" value="customer_portal" class="mr-2">
-                  <span class="text-sm">Customer Portal (Standard)</span>
-                </label>
-                <label class="flex items-center">
-                  <input type="checkbox" name="affected_services[]" value="api_gateway" class="mr-2">
-                  <span class="text-sm">API Gateway (Standard)</span>
-                </label>
-                <label class="flex items-center">
-                  <input type="checkbox" name="affected_services[]" value="payment_system" class="mr-2">
-                  <span class="text-sm">Payment Processing System</span>
-                </label>
-                <label class="flex items-center">
-                  <input type="checkbox" name="affected_services[]" value="data_warehouse" class="mr-2">
-                  <span class="text-sm">Data Warehouse</span>
-                </label>
+              <div class="space-y-2" 
+                   hx-get="/operations/api/services/list-for-risk" 
+                   hx-trigger="load, serviceCreated from:body, serviceUpdated from:body"
+                   hx-swap="innerHTML">
+                <!-- Services will be loaded dynamically -->
+                <div class="text-sm text-gray-500 text-center py-2">
+                  <i class="fas fa-spinner fa-spin mr-1"></i>
+                  Loading services...
+                </div>
               </div>
             </div>
           </div>
