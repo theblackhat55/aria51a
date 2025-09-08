@@ -1307,7 +1307,7 @@ Be practical and actionable in your analysis.`;
           
           <script>
             setTimeout(() => {
-              document.getElementById('risk-modal').remove();
+              document.getElementById('modal-container').innerHTML = '';
               // Refresh the risk table if present
               if (window.htmx && document.getElementById('risk-table')) {
                 htmx.trigger('#risk-table', 'hx:trigger');
@@ -2585,20 +2585,20 @@ const renderRiskStats = (stats: any) => html`
 const renderRiskTable = (risks: any[]) => {
   if (risks.length === 0) {
     return `
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk ID</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Probability</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impact</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Review</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Risk ID</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-0 max-w-xs">Title</th>
+              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Category</th>
+              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 hidden sm:table-cell">Owner</th>
+              <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Prob</th>
+              <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Impact</th>
+              <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Score</th>
+              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
+              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 hidden md:table-cell">Review</th>
+              <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
@@ -2638,79 +2638,76 @@ const renderRiskTable = (risks: any[]) => {
     
     return `
       <tr class="hover:bg-gray-50 transition-colors">
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
           <div class="flex items-center">
-            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+            <div class="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center sm:w-8 sm:h-8 sm:mr-2">
               <span class="text-xs font-bold text-blue-600">${risk.id}</span>
             </div>
-            <span class="font-mono">RISK-${risk.id}</span>
+            <span class="font-mono text-xs sm:text-sm hidden sm:inline">RISK-${risk.id}</span>
           </div>
         </td>
-        <td class="px-6 py-4 text-sm text-gray-900">
+        <td class="px-4 py-4 text-sm text-gray-900">
           <div class="max-w-xs truncate">
             <div class="font-medium">${risk.title}</div>
             ${risk.source ? '<div class="text-xs text-purple-600 mt-1"><i class="fas fa-robot mr-1"></i>AI Generated</div>' : ''}
           </div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm">
-          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            ${risk.category_name || risk.category}
+        <td class="px-3 py-4 whitespace-nowrap text-sm">
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            ${(risk.category_name || risk.category)?.substring(0, 8) + ((risk.category_name || risk.category)?.length > 8 ? '...' : '')}
           </span>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.owner_name || 'Unassigned'}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm">
-          <div class="flex items-center">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center mr-2 ${risk.probability >= 4 ? 'bg-red-100' : risk.probability >= 3 ? 'bg-orange-100' : 'bg-green-100'}">
+        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">${(risk.owner_name || 'Unassigned')?.substring(0, 12)}</td>
+        <td class="px-2 py-4 whitespace-nowrap text-center">
+          <div class="flex items-center justify-center">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center ${risk.probability >= 4 ? 'bg-red-100' : risk.probability >= 3 ? 'bg-orange-100' : 'bg-green-100'}">
               <span class="text-xs font-bold ${risk.probability >= 4 ? 'text-red-600' : risk.probability >= 3 ? 'text-orange-600' : 'text-green-600'}">${risk.probability}</span>
             </div>
-            <span class="text-gray-500">/5</span>
           </div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm">
-          <div class="flex items-center">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center mr-2 ${risk.impact >= 4 ? 'bg-red-100' : risk.impact >= 3 ? 'bg-orange-100' : 'bg-green-100'}">
+        <td class="px-2 py-4 whitespace-nowrap text-center">
+          <div class="flex items-center justify-center">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center ${risk.impact >= 4 ? 'bg-red-100' : risk.impact >= 3 ? 'bg-orange-100' : 'bg-green-100'}">
               <span class="text-xs font-bold ${risk.impact >= 4 ? 'text-red-600' : risk.impact >= 3 ? 'text-orange-600' : 'text-green-600'}">${risk.impact}</span>
             </div>
-            <span class="text-gray-500">/5</span>
           </div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap">
-          <div class="flex items-center">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor} mr-2">${riskScore}</span>
-            <span class="text-xs text-gray-500">${riskLevel}</span>
+        <td class="px-3 py-4 whitespace-nowrap text-center">
+          <div class="flex items-center justify-center">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${riskColor}">${riskScore}</span>
           </div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.color}">
+        <td class="px-3 py-4 whitespace-nowrap">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusStyle.color}">
             <i class="fas fa-${statusStyle.icon} text-xs mr-1"></i>
-            ${risk.status?.charAt(0).toUpperCase() + risk.status?.slice(1)}
+            ${(risk.status?.charAt(0).toUpperCase() + risk.status?.slice(1))?.substring(0, 8)}
           </span>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-          <div class="text-xs">${nextReview}</div>
+        <td class="px-3 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
+          <div class="text-xs">${nextReview?.substring(0, 10)}</div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <div class="flex items-center justify-end space-x-2">
+        <td class="px-3 py-4 whitespace-nowrap text-center text-sm font-medium">
+          <div class="flex items-center justify-center space-x-1">
             <button class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors" 
                     hx-get="/risk/view/${risk.id}" 
                     hx-target="#modal-container" 
                     hx-swap="innerHTML"
                     title="View Details">
-              <i class="fas fa-eye"></i>
+              <i class="fas fa-eye text-xs"></i>
             </button>
             <button class="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors" 
                     hx-get="/risk/edit/${risk.id}" 
                     hx-target="#modal-container" 
                     hx-swap="innerHTML"
                     title="Edit Risk">
-              <i class="fas fa-edit"></i>
+              <i class="fas fa-edit text-xs"></i>
             </button>
             <button class="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50 transition-colors" 
                     hx-get="/risk/status-change/${risk.id}" 
                     hx-target="#modal-container" 
                     hx-swap="innerHTML"
                     title="Change Status">
-              <i class="fas fa-exchange-alt"></i>
+              <i class="fas fa-exchange-alt text-xs"></i>
             </button>
             <button class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors" 
                     hx-delete="/risk/${risk.id}" 
@@ -2718,7 +2715,7 @@ const renderRiskTable = (risks: any[]) => {
                     hx-target="closest tr" 
                     hx-swap="outerHTML"
                     title="Delete Risk">
-              <i class="fas fa-trash"></i>
+              <i class="fas fa-trash text-xs"></i>
             </button>
           </div>
         </td>
@@ -2727,20 +2724,20 @@ const renderRiskTable = (risks: any[]) => {
   }).join('');
 
   return `
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk ID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Probability</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impact</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk Score</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Review</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Risk ID</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-0 max-w-xs">Title</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Category</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 hidden sm:table-cell">Owner</th>
+            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Prob</th>
+            <th class="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Impact</th>
+            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Score</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 hidden md:table-cell">Review</th>
+            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Actions</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -3258,14 +3255,14 @@ function renderEditRiskModal(risk: any, csrfToken: string) {
                 <p class="text-blue-100 text-sm mt-1">RISK-${risk.id} • Modify risk details and assessment</p>
               </div>
             </div>
-            <button onclick="document.getElementById('risk-modal').remove()" class="text-white hover:text-gray-200 transition-colors">
+            <button onclick="document.getElementById('modal-container').innerHTML = ''" class="text-white hover:text-gray-200 transition-colors">
               <i class="fas fa-times text-xl"></i>
             </button>
           </div>
         </div>
 
-        <div class="overflow-y-auto max-h-[calc(95vh-120px)]">
-          <form hx-post="/risk/edit/${risk.id}" hx-target="#risk-modal" hx-swap="innerHTML">
+        <div class="overflow-y-auto max-h-[calc(85vh-160px)] pr-2">
+          <form hx-post="/risk/edit/${risk.id}" hx-target="#modal-container" hx-swap="innerHTML">
             <input type="hidden" name="_csrf" value="${csrfToken}">
             
             <div class="p-8 space-y-8">
@@ -3452,7 +3449,7 @@ function renderEditRiskModal(risk: any, csrfToken: string) {
                 Changes will be automatically saved and timestamped
               </div>
               <div class="flex space-x-3">
-                <button type="button" onclick="document.getElementById('risk-modal').remove()" 
+                <button type="button" onclick="document.getElementById('modal-container').innerHTML = ''" 
                         class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded-lg transition-colors">
                   Cancel
                 </button>
