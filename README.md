@@ -12,8 +12,8 @@
 ## 🔗 Service URLs
 
 ### Production Environment  
-- **🌐 Main Application**: https://aria5-ti-enhancement.pages.dev
-- **🚀 Latest Enhanced Deployment**: https://293e380b.aria5-ti-enhancement.pages.dev (LATEST - KRI Dashboard Fix, Simplified AI Assistant, Audit Logging!)
+- **🌐 Main Application**: https://aria51.pages.dev
+- **🚀 Latest Enhanced Deployment**: https://d5f78123.aria51.pages.dev (LATEST - Enhanced RBAC & SAML Integration!)
 - **⚡ Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 - **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
