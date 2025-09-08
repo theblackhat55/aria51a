@@ -132,23 +132,6 @@ export function createRiskRoutesARIA5() {
   // Risk statistics (HTMX endpoint) - EMERGENCY FIX: Use simple table
   app.get('/stats', async (c) => {
     try {
-      // First ensure the simple table exists
-      await c.env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS risks_simple (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          risk_id TEXT UNIQUE NOT NULL,
-          title TEXT NOT NULL,
-          description TEXT,
-          category TEXT DEFAULT 'operational',
-          probability INTEGER DEFAULT 1,
-          impact INTEGER DEFAULT 1,
-          risk_score INTEGER DEFAULT 1,
-          status TEXT DEFAULT 'active',
-          created_at TEXT,
-          updated_at TEXT
-        )
-      `).run();
-      
       // Use comprehensive risks table directly for consistency  
       const result = await c.env.DB.prepare(`
         SELECT 
@@ -184,24 +167,7 @@ export function createRiskRoutesARIA5() {
   // Risk table (HTMX endpoint) - EMERGENCY FIX: Use simple table
   app.get('/table', async (c) => {
     try {
-      console.log('📋 Fetching risks from simple database...');
-      
-      // First ensure the simple table exists
-      await c.env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS risks_simple (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          risk_id TEXT UNIQUE NOT NULL,
-          title TEXT NOT NULL,
-          description TEXT,
-          category TEXT DEFAULT 'operational',
-          probability INTEGER DEFAULT 1,
-          impact INTEGER DEFAULT 1,
-          risk_score INTEGER DEFAULT 1,
-          status TEXT DEFAULT 'active',
-          created_at TEXT,
-          updated_at TEXT
-        )
-      `).run();
+      console.log('📋 Fetching risks from comprehensive database...');
       
       // Use comprehensive risks table directly for consistency
       const result = await c.env.DB.prepare(`
@@ -568,69 +534,55 @@ Be practical and actionable in your analysis.`;
       
       const category_id = categoryMapping[riskData.category.toLowerCase()] || 1; // Default to operational
       
-      // EMERGENCY FIX - Create simple clean database with minimal constraints
+      // Use comprehensive risks table for consistency
       try {
-        // First, create a simple working table structure
-        await c.env.DB.prepare(`
-          CREATE TABLE IF NOT EXISTS risks_simple (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            risk_id TEXT UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
-            category TEXT DEFAULT 'operational',
-            probability INTEGER DEFAULT 1,
-            impact INTEGER DEFAULT 1,
-            risk_score INTEGER DEFAULT 1,
-            status TEXT DEFAULT 'active',
-            created_at TEXT,
-            updated_at TEXT
-          )
-        `).run();
-        
-        // Insert into the simple working table
+        // Insert into the comprehensive risks table
         const result = await c.env.DB.prepare(`
-          INSERT INTO risks_simple (
-            risk_id, title, description, category, probability, impact, 
-            risk_score, status, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO risks (
+            risk_id, title, description, category_id, organization_id, owner_id, 
+            status, risk_type, probability, impact, risk_score, 
+            created_by, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           risk_id,
           riskData.title,
           riskData.description,
-          riskData.category,
+          category_id,
+          riskData.organization_id,
+          riskData.owner_id,
+          riskData.status,
+          'business', // Default risk type
           riskData.probability,
           riskData.impact,
           riskScore,
-          riskData.status,
+          riskData.created_by,
           new Date().toISOString(),
           new Date().toISOString()
         ).run();
 
         console.log('✅ Risk created successfully:', { id: result.meta?.last_row_id, ...riskData });
 
-        // Return success and trigger table refresh
-        c.header('HX-Trigger', 'refreshRiskTable');
+        // Auto-close modal and refresh page
+        console.log('✅ Risk created successfully:', { id: result.meta?.last_row_id, ...riskData });
         
         return c.html(html`
+          <script>
+            // Auto-close modal and refresh page
+            setTimeout(() => {
+              document.getElementById('risk-modal')?.remove();
+              location.reload();
+            }, 1500);
+          </script>
           <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
             <div class="flex items-center">
               <i class="fas fa-check-circle text-green-500 mr-2"></i>
               <span class="text-green-700 font-medium">Risk created successfully!</span>
             </div>
             <p class="text-green-600 text-sm mt-1">Risk ID: ${risk_id} | Score: ${riskScore} | Database ID: ${result.meta?.last_row_id}</p>
-            <div class="mt-3 space-x-2">
-              <button 
-                onclick="document.getElementById('risk-modal').remove()" 
-                hx-get="/risk/table" 
-                hx-target="#risk-table" 
-                hx-swap="innerHTML"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
-                Close & Refresh
-              </button>
-              <button onclick="location.reload()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm">
-                Reload Page
-              </button>
-            </div>
+            <p class="text-gray-600 text-sm mt-2">
+              <i class="fas fa-sync-alt animate-spin mr-1"></i>
+              Auto-closing and refreshing page...
+            </p>
           </div>
         `);
 
