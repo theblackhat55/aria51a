@@ -368,6 +368,10 @@ app.route('/api/ti-grc', tiGrcRoutes);
 import { aiThreatAnalysisRoutes } from './routes/api-ai-threat-analysis';
 app.route('/api/ai-threat', aiThreatAnalysisRoutes);
 
+// Risk Data Consistency API - Unified data layer for consistent risk numbers
+import apiRiskConsistencyRoutes from './routes/api-risk-consistency';
+app.route('/api/risk-consistency', apiRiskConsistencyRoutes);
+
 // 404 handler
 app.notFound((c) => {
   const notFoundHtml = cleanLayout({
