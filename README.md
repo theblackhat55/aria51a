@@ -11,13 +11,22 @@
 
 ## 🔗 Service URLs
 
-### Production Environment
-- **🌐 Main Application**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
-- **📊 TI-GRC Integration API**: `/api/ti-grc/*` (Authentication Required)
+### Production Environment  
+- **🌐 Main Application**: https://a3792b62.aria5-ti-enhancement.pages.dev
+- **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
 - **📋 System Health Dashboard**: `/health-dashboard` (Real-time monitoring)
+- **🆘 Risk Data Consistency Health**: `/api/risk-consistency/health`
 
-### 🚀 TI-GRC Integration Endpoints
+### 🚀 Risk Data Consistency API Endpoints
+
+#### 🔧 Unified Risk Data Layer (NEW)
+- `GET /api/risk-consistency/risks/summary` - **Standardized risk counts** (🎯 Fixes inconsistencies)
+- `GET /api/risk-consistency/risks` - All risks with calculated levels
+- `GET /api/risk-consistency/risks/level/{level}` - Risks filtered by level
+- `GET /api/risk-consistency/dashboard/metrics` - Consistent dashboard data
+- `POST /api/risk-consistency/risks/validate-fix` - Fix data inconsistencies
+- `GET /api/risk-consistency/health` - Service health check
 
 #### Phase 1: TI-Risk Integration
 - `POST /api/ti-grc/process-risks` - Process IOCs for automated risk creation
@@ -60,7 +69,10 @@
 - **Professional styling** with gradient backgrounds and smooth animations
 
 ### 🛡️ Risk Management Suite
-- **Dynamic risk assessment** with automated scoring algorithms
+- **🎯 NEW: Risk Data Consistency Layer** - Unified data access ensures identical risk counts across all components
+- **Standardized Risk Calculations** - COALESCE(risk_score, probability × impact) formula works with any database schema
+- **Risk Level Thresholds** - Critical≥20, High 12-19, Medium 6-11, Low<6 (consistent across platform)
+- **Dynamic risk assessment** with automated scoring algorithms  
 - **Risk register management** with mitigation tracking
 - **Impact & probability matrices** for comprehensive analysis
 - **Real-time risk monitoring** and alert system
@@ -440,6 +452,49 @@ ARIA5-HTMX/
 - **XSS Prevention** through proper escaping
 - **Secure Headers** implementation
 - **Rate Limiting** for API endpoints
+
+## 🎯 Risk Data Consistency Solution
+
+### Problem Solved ✅
+Fixed critical data inconsistencies across ARIA5 Threat Intelligence platform components where different components showed conflicting risk counts due to database schema differences between local and production environments.
+
+### Implementation Details 🔧
+- **RiskDataConsistency Class**: Unified data access layer that works with any database schema
+- **COALESCE Query Strategy**: `COALESCE(risk_score, probability × impact)` ensures consistency across schema variations
+- **Standardized Risk Levels**: Critical≥20, High 12-19, Medium 6-11, Low<6
+- **Comprehensive API Layer**: 6 new endpoints under `/api/risk-consistency/`
+- **Schema Agnostic**: Works with both local SQLite and production Cloudflare D1 databases
+
+### API Response Example 📊
+```json
+{
+  "success": true,
+  "data": {
+    "total_risks": 5,
+    "active_risks": 5, 
+    "critical_risks": 1,
+    "high_risks": 3,
+    "medium_risks": 1,
+    "low_risks": 0
+  },
+  "metadata": {
+    "source": "risk_data_consistency_layer",
+    "calculation_method": "COALESCE(risk_score, probability * impact)",
+    "thresholds": {
+      "critical": "≥ 20",
+      "high": "12-19", 
+      "medium": "6-11",
+      "low": "< 6"
+    }
+  }
+}
+```
+
+### Impact 🚀
+- **100% Consistent Data**: All components now return identical risk counts
+- **Database Schema Independent**: Works with any risk table structure
+- **Real-time Validation**: API endpoint to detect and fix inconsistencies
+- **Future-proof**: New risk calculations automatically inherit consistency layer
 
 ## 📈 Performance & Scalability
 
