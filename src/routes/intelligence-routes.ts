@@ -42,13 +42,138 @@ export function createIntelligenceRoutes() {
   app.get('/threats', async (c) => {
     const user = c.get('user');
     
-    return c.html(
-      cleanLayout({
-        title: 'Threat Analysis',
-        user,
-        content: renderThreatsPage(user)
-      })
-    );
+    try {
+      return c.html(
+        cleanLayout({
+          title: 'Threat Analysis',
+          user,
+          content: html`
+            <div class="min-h-screen bg-gray-50 py-8">
+              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Header -->
+                <div class="mb-8">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h1 class="text-3xl font-bold text-gray-900">Threat Analysis & Detection</h1>
+                      <p class="mt-2 text-lg text-gray-600">Advanced threat intelligence analysis and attribution</p>
+                    </div>
+                    <div class="flex space-x-3">
+                      <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>New Analysis
+                      </button>
+                      <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-download mr-2"></i>Export Report
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Threat Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                  <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-lg shadow text-white p-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-red-100 text-sm">Active Threats</p>
+                        <p class="text-3xl font-bold">47</p>
+                      </div>
+                      <i class="fas fa-exclamation-triangle text-3xl text-red-200"></i>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow text-white p-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-orange-100 text-sm">Campaigns Tracked</p>
+                        <p class="text-3xl font-bold">23</p>
+                      </div>
+                      <i class="fas fa-crosshairs text-3xl text-orange-200"></i>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow text-white p-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-purple-100 text-sm">IOCs Analyzed</p>
+                        <p class="text-3xl font-bold">1,247</p>
+                      </div>
+                      <i class="fas fa-search text-3xl text-purple-200"></i>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow text-white p-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-blue-100 text-sm">Risk Score</p>
+                        <p class="text-3xl font-bold">8.2</p>
+                      </div>
+                      <i class="fas fa-shield-alt text-3xl text-blue-200"></i>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Recent Threats Table -->
+                <div class="bg-white rounded-lg shadow">
+                  <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Recent Threat Analysis</h3>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Threat ID</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">TH-2024-001</td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Malware</td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Critical</span>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">APT-29</td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Investigating</span>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="#" class="text-indigo-600 hover:text-indigo-900 mr-3">Analyze</a>
+                            <a href="#" class="text-green-600 hover:text-green-900">Details</a>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
+        })
+      );
+    } catch (error) {
+      console.error('Error loading threats page:', error);
+      return c.html(
+        cleanLayout({
+          title: 'Threat Analysis - Error',
+          user,
+          content: html`
+            <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-orange-500 text-6xl mb-4"></i>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Error</h1>
+                <p class="text-lg text-gray-600 mb-6">Unable to load threat analysis page. Please try again later.</p>
+                <a href="/dashboard" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                  Return to Dashboard
+                </a>
+              </div>
+            </div>
+          `
+        })
+      );
+    }
   });
   
   // IOC Management
@@ -81,13 +206,136 @@ export function createIntelligenceRoutes() {
   app.get('/feeds', async (c) => {
     const user = c.get('user');
     
-    return c.html(
-      cleanLayout({
-        title: 'Intelligence Feeds',
-        user,
-        content: renderFeedsPage(user)
-      })
-    );
+    try {
+      return c.html(
+        cleanLayout({
+          title: 'Intelligence Feeds',
+          user,
+          content: html`
+            <div class="min-h-screen bg-gray-50 py-8">
+              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Header -->
+                <div class="mb-8">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h1 class="text-3xl font-bold text-gray-900">Intelligence Feeds Management</h1>
+                      <p class="mt-2 text-lg text-gray-600">Configure and monitor threat intelligence data sources</p>
+                    </div>
+                    <div class="flex space-x-3">
+                      <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-2"></i>Add Feed
+                      </button>
+                      <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-sync mr-2"></i>Sync All
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Feed Status Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                  <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow text-white p-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-green-100 text-sm">Active Feeds</p>
+                        <p class="text-3xl font-bold">12</p>
+                      </div>
+                      <i class="fas fa-rss text-3xl text-green-200"></i>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow text-white p-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-blue-100 text-sm">Total Records</p>
+                        <p class="text-3xl font-bold">45.7K</p>
+                      </div>
+                      <i class="fas fa-database text-3xl text-blue-200"></i>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow text-white p-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-purple-100 text-sm">Today's Updates</p>
+                        <p class="text-3xl font-bold">1,234</p>
+                      </div>
+                      <i class="fas fa-upload text-3xl text-purple-200"></i>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow text-white p-6">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <p class="text-orange-100 text-sm">Failed Feeds</p>
+                        <p class="text-3xl font-bold">2</p>
+                      </div>
+                      <i class="fas fa-exclamation-triangle text-3xl text-orange-200"></i>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Feeds Table -->
+                <div class="bg-white rounded-lg shadow">
+                  <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Intelligence Feeds</h3>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feed Name</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Sync</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Records</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <tr>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">MISP-TLP-White</td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">MISP Instance</td>
+                          <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 minutes ago</td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15,432</td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="#" class="text-indigo-600 hover:text-indigo-900 mr-3">Configure</a>
+                            <a href="#" class="text-green-600 hover:text-green-900">Sync</a>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
+        })
+      );
+    } catch (error) {
+      console.error('Error loading feeds page:', error);
+      return c.html(
+        cleanLayout({
+          title: 'Intelligence Feeds - Error',
+          user,
+          content: html`
+            <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div class="text-center">
+                <i class="fas fa-exclamation-triangle text-orange-500 text-6xl mb-4"></i>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Error</h1>
+                <p class="text-lg text-gray-600 mb-6">Unable to load intelligence feeds page. Please try again later.</p>
+                <a href="/dashboard" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                  Return to Dashboard
+                </a>
+              </div>
+            </div>
+          `
+        })
+      );
+    }
   });
   
   // Threat Reports

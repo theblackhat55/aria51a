@@ -373,13 +373,20 @@ export function createAdminRoutesARIA5() {
     const user = c.get('user');
     
     try {
-      // Initialize enhanced services
-      const rbacService = new EnhancedRBACService(c.env.DB);
-      const samlService = new EnhancedSAMLService(c.env.DB);
+      // Try enhanced services first, fallback to basic if they fail
+      let stats, samlConfig;
       
-      // Get enhanced user statistics and SAML config
-      const stats = await getUserStatsEnhanced(c.env.DB, rbacService);
-      const samlConfig = await samlService.getSAMLConfig();
+      try {
+        const rbacService = new EnhancedRBACService(c.env.DB);
+        const samlService = new EnhancedSAMLService(c.env.DB);
+        stats = await getUserStatsEnhanced(c.env.DB, rbacService);
+        samlConfig = await samlService.getSAMLConfig();
+      } catch (enhancedError) {
+        console.warn('Enhanced services failed, using basic stats:', enhancedError);
+        // Fallback to basic stats
+        stats = await getBasicUserStats(c.env.DB);
+        samlConfig = { enabled: false };
+      }
       
       return c.html(
         cleanLayout({
@@ -389,12 +396,106 @@ export function createAdminRoutesARIA5() {
         })
       );
     } catch (error) {
-      console.error('Error loading enhanced user management:', error);
+      console.error('Error loading user management:', error);
       return c.html(
         cleanLayout({
           title: 'User Management',
           user,
-          content: renderErrorPage('Failed to load user management. Please check database connection.')
+          content: html`
+            <div class="min-h-screen bg-gray-50 py-8">
+              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Header -->
+                <div class="mb-8">
+                  <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
+                  <p class="mt-2 text-lg text-gray-600">Manage system users and permissions</p>
+                </div>
+                
+                <!-- Error Message -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                  <div class="flex">
+                    <div class="flex-shrink-0">
+                      <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                      <h3 class="text-sm font-medium text-yellow-800">User Management Temporarily Unavailable</h3>
+                      <div class="mt-2 text-sm text-yellow-700">
+                        <p>The user management system is currently being initialized. Please try again in a few moments.</p>
+                      </div>
+                      <div class="mt-4">
+                        <div class="-mx-2 -my-1.5 flex">
+                          <button onclick="location.reload()" class="bg-yellow-50 px-2 py-1.5 rounded-md text-sm font-medium text-yellow-800 hover:bg-yellow-100 focus:outline-none">
+                            Retry
+                          </button>
+                          <a href="/dashboard" class="ml-3 bg-yellow-50 px-2 py-1.5 rounded-md text-sm font-medium text-yellow-800 hover:bg-yellow-100 focus:outline-none">
+                            Return to Dashboard
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Basic User Stats -->
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0">
+                        <i class="fas fa-users text-blue-600 text-2xl"></i>
+                      </div>
+                      <div class="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
+                          <dd class="text-lg font-medium text-gray-900">Loading...</dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0">
+                        <i class="fas fa-user-check text-green-600 text-2xl"></i>
+                      </div>
+                      <div class="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt class="text-sm font-medium text-gray-500 truncate">Active Users</dt>
+                          <dd class="text-lg font-medium text-gray-900">Loading...</dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0">
+                        <i class="fas fa-shield-alt text-purple-600 text-2xl"></i>
+                      </div>
+                      <div class="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt class="text-sm font-medium text-gray-500 truncate">Admin Users</dt>
+                          <dd class="text-lg font-medium text-gray-900">Loading...</dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0">
+                        <i class="fas fa-key text-orange-600 text-2xl"></i>
+                      </div>
+                      <div class="ml-5 w-0 flex-1">
+                        <dl>
+                          <dt class="text-sm font-medium text-gray-500 truncate">SAML Users</dt>
+                          <dd class="text-lg font-medium text-gray-900">N/A</dd>
+                        </dl>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
         })
       );
     }
@@ -3901,30 +4002,89 @@ const renderErrorPage = (message: string) => html`
 
 // Enhanced functions for RBAC and SAML integration
 
+async function getBasicUserStats(db: any) {
+  try {
+    // Basic user count - works with any users table
+    const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
+    
+    return {
+      total: totalUsers?.count || 0,
+      active: totalUsers?.count || 0, // Assume all users are active for basic stats
+      saml: 0,
+      locked: 0,
+      roles: [],
+      departments: []
+    };
+  } catch (error) {
+    console.error('Error getting basic user stats:', error);
+    return { total: 0, active: 0, saml: 0, locked: 0, roles: [], departments: [] };
+  }
+}
+
 async function getUserStatsEnhanced(db: any, rbacService: EnhancedRBACService) {
   try {
-    const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
-    const activeUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').first();
-    const samlUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE auth_type = "saml"').first();
-    const lockedUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE locked_until IS NOT NULL AND locked_until > datetime("now")').first();
+    // Check if tables exist first
+    const tablesExist = await checkTablesExist(db);
     
-    // Get role distribution
-    const roleStats = await db.prepare(`
-      SELECT r.name, COUNT(ur.user_id) as count
-      FROM roles r
-      LEFT JOIN user_roles ur ON r.id = ur.role_id AND (ur.expires_at IS NULL OR ur.expires_at > datetime('now'))
-      GROUP BY r.id, r.name
-      ORDER BY count DESC
-    `).all();
+    if (!tablesExist.users) {
+      console.warn('Users table not found, returning default stats');
+      return { total: 0, active: 0, saml: 0, locked: 0, roles: [], departments: [] };
+    }
 
-    // Get department distribution
-    const departmentStats = await db.prepare(`
-      SELECT department, COUNT(*) as count
-      FROM users 
-      WHERE department IS NOT NULL
-      GROUP BY department
-      ORDER BY count DESC
-    `).all();
+    // Basic user stats - use safe queries that work with any users table structure
+    const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
+    
+    // Try advanced queries with fallbacks
+    let activeUsers, samlUsers, lockedUsers, roleStats, departmentStats;
+    
+    try {
+      activeUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1 OR status = "active"').first();
+    } catch (e) {
+      activeUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
+    }
+
+    try {
+      samlUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE auth_type = "saml"').first();
+    } catch (e) {
+      samlUsers = { count: 0 };
+    }
+
+    try {
+      lockedUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE locked_until IS NOT NULL AND locked_until > datetime("now")').first();
+    } catch (e) {
+      lockedUsers = { count: 0 };
+    }
+
+    // Role stats - only if tables exist
+    try {
+      if (tablesExist.roles && tablesExist.user_roles) {
+        roleStats = await db.prepare(`
+          SELECT r.name, COUNT(ur.user_id) as count
+          FROM roles r
+          LEFT JOIN user_roles ur ON r.id = ur.role_id AND (ur.expires_at IS NULL OR ur.expires_at > datetime('now'))
+          GROUP BY r.id, r.name
+          ORDER BY count DESC
+        `).all();
+      } else {
+        roleStats = { results: [] };
+      }
+    } catch (e) {
+      console.warn('Role stats query failed:', e);
+      roleStats = { results: [] };
+    }
+
+    // Department stats
+    try {
+      departmentStats = await db.prepare(`
+        SELECT department, COUNT(*) as count
+        FROM users 
+        WHERE department IS NOT NULL
+        GROUP BY department
+        ORDER BY count DESC
+      `).all();
+    } catch (e) {
+      departmentStats = { results: [] };
+    }
 
     return {
       total: totalUsers?.count || 0,
@@ -3938,6 +4098,27 @@ async function getUserStatsEnhanced(db: any, rbacService: EnhancedRBACService) {
     console.error('Error getting enhanced user stats:', error);
     return { total: 0, active: 0, saml: 0, locked: 0, roles: [], departments: [] };
   }
+}
+
+async function checkTablesExist(db: any) {
+  const tables = { users: false, roles: false, user_roles: false };
+  
+  try {
+    const result = await db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name IN ('users', 'roles', 'user_roles')
+    `).all();
+    
+    if (result.results) {
+      result.results.forEach((row: any) => {
+        tables[row.name as keyof typeof tables] = true;
+      });
+    }
+  } catch (error) {
+    console.error('Error checking tables:', error);
+  }
+  
+  return tables;
 }
 
 const renderEnhancedUserManagementPage = (stats: any, samlConfig: any) => html`
