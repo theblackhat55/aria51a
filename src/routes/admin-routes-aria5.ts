@@ -4,6 +4,8 @@ import { requireAuth, requireAdmin } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import type { CloudflareBindings } from '../types';
 import { setCSRFToken } from '../middleware/auth-middleware';
+import EnhancedRBACService, { requirePermission } from '../services/enhanced-rbac-service';
+import EnhancedSAMLService from '../services/enhanced-saml-service';
 
 export function createAdminRoutesARIA5() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -366,28 +368,33 @@ export function createAdminRoutesARIA5() {
     `);
   });
 
-  // User Management
+  // Enhanced User Management with RBAC
   app.get('/users', async (c) => {
     const user = c.get('user');
     
     try {
-      // Get user statistics from database
-      const stats = await getUserStats(c.env.DB);
+      // Initialize enhanced services
+      const rbacService = new EnhancedRBACService(c.env.DB);
+      const samlService = new EnhancedSAMLService(c.env.DB);
+      
+      // Get enhanced user statistics and SAML config
+      const stats = await getUserStatsEnhanced(c.env.DB, rbacService);
+      const samlConfig = await samlService.getSAMLConfig();
       
       return c.html(
         cleanLayout({
           title: 'User Management',
           user,
-          content: renderUserManagementPage(stats)
+          content: renderEnhancedUserManagementPage(stats, samlConfig)
         })
       );
     } catch (error) {
-      console.error('Error loading user management:', error);
+      console.error('Error loading enhanced user management:', error);
       return c.html(
         cleanLayout({
           title: 'User Management',
           user,
-          content: renderErrorPage('Failed to load user management')
+          content: renderErrorPage('Failed to load user management. Please check database connection.')
         })
       );
     }
@@ -652,19 +659,86 @@ export function createAdminRoutesARIA5() {
     try {
       const searchQuery = c.req.query('user-search') || c.req.query('search') || '';
       const roleFilter = c.req.query('role') || '';
+      const departmentFilter = c.req.query('department') || '';
+      const authTypeFilter = c.req.query('auth_type') || '';
       const page = parseInt(c.req.query('page') || '1');
       const limit = parseInt(c.req.query('limit') || '10');
       
-      const usersData = await getUsersFromDB(c.env.DB, { searchQuery, roleFilter, page, limit });
-      return c.html(renderUsersTable(usersData));
+      // Use enhanced RBAC service for better user data
+      const rbacService = new EnhancedRBACService(c.env.DB);
+      const usersData = await rbacService.getUsersWithRoles({ 
+        searchQuery, 
+        roleFilter, 
+        departmentFilter,
+        authTypeFilter,
+        page, 
+        limit 
+      });
+      
+      return c.html(renderEnhancedUsersTable(usersData));
     } catch (error) {
-      console.error('Error loading users table:', error);
-      return c.html(renderErrorMessage('Failed to load users'));
+      console.error('Error loading enhanced users table:', error);
+      return c.html(renderErrorMessage('Failed to load users. Please try refreshing the page.'));
     }
   };
 
   app.get('/users/table', usersTableHandler);
   app.get('/admin/users/table', usersTableHandler);
+
+  // Enhanced RBAC User Management Actions
+
+  // Lock user account
+  app.post('/users/:id/lock', async (c) => {
+    try {
+      const userId = parseInt(c.req.param('id'));
+      const currentUser = c.get('user');
+      
+      const rbacService = new EnhancedRBACService(c.env.DB);
+      const success = await rbacService.lockUser(userId, 30, currentUser.id);
+      
+      if (success) {
+        const usersData = await rbacService.getUsersWithRoles({});
+        return c.html(renderEnhancedUsersTable(usersData));
+      } else {
+        return c.html(renderErrorMessage('Failed to lock user'));
+      }
+    } catch (error) {
+      console.error('Error locking user:', error);
+      return c.html(renderErrorMessage('Failed to lock user'));
+    }
+  });
+
+  // Unlock user account  
+  app.post('/users/:id/unlock', async (c) => {
+    try {
+      const userId = parseInt(c.req.param('id'));
+      const currentUser = c.get('user');
+      
+      const rbacService = new EnhancedRBACService(c.env.DB);
+      const success = await rbacService.unlockUser(userId, currentUser.id);
+      
+      if (success) {
+        const usersData = await rbacService.getUsersWithRoles({});
+        return c.html(renderEnhancedUsersTable(usersData));
+      } else {
+        return c.html(renderErrorMessage('Failed to unlock user'));
+      }
+    } catch (error) {
+      console.error('Error unlocking user:', error);
+      return c.html(renderErrorMessage('Failed to unlock user'));
+    }
+  });
+
+  // Add admin route variants for lock/unlock
+  app.post('/admin/users/:id/lock', async (c) => {
+    const userId = c.req.param('id');
+    return app.fetch(new Request(`${new URL(c.req.url).origin}/users/${userId}/lock`, { method: 'POST' }), c.env);
+  });
+
+  app.post('/admin/users/:id/unlock', async (c) => {
+    const userId = c.req.param('id');
+    return app.fetch(new Request(`${new URL(c.req.url).origin}/users/${userId}/unlock`, { method: 'POST' }), c.env);
+  });
 
   // Organizations Management
   app.get('/organizations', async (c) => {
@@ -3824,6 +3898,460 @@ const renderErrorPage = (message: string) => html`
     </div>
   </div>
 `;
+
+// Enhanced functions for RBAC and SAML integration
+
+async function getUserStatsEnhanced(db: any, rbacService: EnhancedRBACService) {
+  try {
+    const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
+    const activeUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').first();
+    const samlUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE auth_type = "saml"').first();
+    const lockedUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE locked_until IS NOT NULL AND locked_until > datetime("now")').first();
+    
+    // Get role distribution
+    const roleStats = await db.prepare(`
+      SELECT r.name, COUNT(ur.user_id) as count
+      FROM roles r
+      LEFT JOIN user_roles ur ON r.id = ur.role_id AND (ur.expires_at IS NULL OR ur.expires_at > datetime('now'))
+      GROUP BY r.id, r.name
+      ORDER BY count DESC
+    `).all();
+
+    // Get department distribution
+    const departmentStats = await db.prepare(`
+      SELECT department, COUNT(*) as count
+      FROM users 
+      WHERE department IS NOT NULL
+      GROUP BY department
+      ORDER BY count DESC
+    `).all();
+
+    return {
+      total: totalUsers?.count || 0,
+      active: activeUsers?.count || 0,
+      saml: samlUsers?.count || 0,
+      locked: lockedUsers?.count || 0,
+      roles: roleStats.results || [],
+      departments: departmentStats.results || []
+    };
+  } catch (error) {
+    console.error('Error getting enhanced user stats:', error);
+    return { total: 0, active: 0, saml: 0, locked: 0, roles: [], departments: [] };
+  }
+}
+
+const renderEnhancedUserManagementPage = (stats: any, samlConfig: any) => html`
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
+        <p class="mt-1 text-sm text-gray-600">Enhanced with RBAC and SAML integration</p>
+      </div>
+      <div class="flex space-x-3">
+        <button hx-get="/admin/users/create" 
+                hx-target="#user-modal" 
+                hx-swap="innerHTML"
+                class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <i class="fas fa-plus mr-2"></i>
+          Create User
+        </button>
+        ${samlConfig?.enabled ? html`
+          <button hx-post="/admin/users/create-saml-demo" 
+                  hx-target="#notification-area" 
+                  hx-confirm="Create a demo SAML user for testing?"
+                  class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            <i class="fas fa-key mr-2"></i>
+            Create SAML Demo User
+          </button>
+        ` : ''}
+      </div>
+    </div>
+
+    <!-- Enhanced Statistics Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Total Users -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-users text-2xl text-blue-500"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-500">Total Users</p>
+            <p class="text-2xl font-bold text-gray-900">${stats.total}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Users -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-user-check text-2xl text-green-500"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-500">Active Users</p>
+            <p class="text-2xl font-bold text-gray-900">${stats.active}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SAML Users -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-key text-2xl text-purple-500"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-500">SAML Users</p>
+            <p class="text-2xl font-bold text-gray-900">${stats.saml}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Locked Users -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-lock text-2xl text-red-500"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-500">Locked Users</p>
+            <p class="text-2xl font-bold text-gray-900">${stats.locked}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAML Configuration Status -->
+    ${samlConfig ? html`
+      <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">SAML SSO Status</h3>
+        </div>
+        <div class="p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <div class="w-3 h-3 rounded-full ${samlConfig.enabled ? 'bg-green-500' : 'bg-red-500'}"></div>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm font-medium text-gray-900">
+                  SAML Authentication ${samlConfig.enabled ? 'Enabled' : 'Disabled'}
+                </p>
+                <p class="text-xs text-gray-500">
+                  ${samlConfig.enabled ? 'Single Sign-On is active' : 'Users can only login locally'}
+                </p>
+              </div>
+            </div>
+            <a href="/admin/saml" class="text-sm text-blue-600 hover:text-blue-700">
+              Configure SAML →
+            </a>
+          </div>
+        </div>
+      </div>
+    ` : ''}
+
+    <!-- Enhanced Search and Filters -->
+    <div class="bg-white rounded-lg shadow">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">User Search & Filters</h3>
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Search -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
+            <input type="text" 
+                   id="user-search" 
+                   name="search"
+                   hx-get="/admin/users/table" 
+                   hx-target="#users-table" 
+                   hx-trigger="keyup changed delay:300ms, search"
+                   hx-include="[name='role'], [name='department'], [name='auth_type']"
+                   placeholder="Username, email, name..."
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <!-- Role Filter -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+            <select name="role" 
+                    hx-get="/admin/users/table" 
+                    hx-target="#users-table" 
+                    hx-trigger="change"
+                    hx-include="[name='search'], [name='department'], [name='auth_type']"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">All Roles</option>
+              ${stats.roles.map((role: any) => html`
+                <option value="${role.name}">${role.name} (${role.count})</option>
+              `)}
+            </select>
+          </div>
+
+          <!-- Department Filter -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+            <select name="department"
+                    hx-get="/admin/users/table" 
+                    hx-target="#users-table" 
+                    hx-trigger="change"
+                    hx-include="[name='search'], [name='role'], [name='auth_type']"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">All Departments</option>
+              ${stats.departments.map((dept: any) => html`
+                <option value="${dept.department}">${dept.department} (${dept.count})</option>
+              `)}
+            </select>
+          </div>
+
+          <!-- Auth Type Filter -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Auth Type</label>
+            <select name="auth_type"
+                    hx-get="/admin/users/table" 
+                    hx-target="#users-table" 
+                    hx-trigger="change"
+                    hx-include="[name='search'], [name='role'], [name='department']"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">All Types</option>
+              <option value="local">Local</option>
+              <option value="saml">SAML</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white rounded-lg shadow">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-medium text-gray-900">Users</h3>
+      </div>
+      <div id="users-table" hx-get="/admin/users/table" hx-trigger="load">
+        <!-- Table will load here -->
+      </div>
+    </div>
+
+    <!-- Modal containers -->
+    <div id="user-modal"></div>
+    <div id="notification-area"></div>
+  </div>
+`;
+
+const renderEnhancedUsersTable = (data?: { users: any[]; total: number; page: number; limit: number; totalPages: number }) => {
+  if (!data || !data.users) {
+    return renderErrorMessage('No users found or failed to load user data');
+  }
+
+  return html`
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles & Permissions</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auth Type</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${data.users.map(user => html`
+            <tr class="hover:bg-gray-50 ${user.is_locked ? 'bg-red-50' : ''}">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                    <span class="text-sm font-medium text-white">
+                      ${user.first_name?.charAt(0) || user.username?.charAt(0) || 'U'}
+                    </span>
+                  </div>
+                  <div class="ml-3">
+                    <div class="text-sm font-medium text-gray-900">${user.first_name || ''} ${user.last_name || ''}</div>
+                    <div class="text-sm text-gray-500">${user.username} • ${user.email}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="space-y-1">
+                  ${user.role_names ? user.role_names.split(',').map((role: string) => html`
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(role.trim())}">
+                      ${role.trim()}
+                    </span>
+                  `) : html`
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}">
+                      ${user.role}
+                    </span>
+                  `}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${user.department || 'Not assigned'}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getAuthTypeColor(user.auth_type || 'local')}">
+                  ${user.auth_type === 'saml' ? 'SAML' : 'Local'}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center space-x-2">
+                  ${user.is_active ? html`
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                      Active
+                    </span>
+                  ` : html`
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                      Inactive
+                    </span>
+                  `}
+                  ${user.is_locked ? html`
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                      <i class="fas fa-lock mr-1"></i>Locked
+                    </span>
+                  ` : ''}
+                  ${user.failed_login_attempts > 0 ? html`
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                      ${user.failed_login_attempts} failed
+                    </span>
+                  ` : ''}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                ${user.last_login_formatted || 'Never'}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="flex space-x-2">
+                  <!-- Edit User -->
+                  <button hx-get="/admin/users/${user.id}/edit" 
+                          hx-target="#user-modal" 
+                          hx-swap="innerHTML"
+                          class="text-blue-600 hover:text-blue-900">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  
+                  <!-- Lock/Unlock User -->
+                  ${user.is_locked ? html`
+                    <button hx-post="/admin/users/${user.id}/unlock" 
+                            hx-target="#users-table" 
+                            hx-confirm="Unlock this user account?"
+                            class="text-green-600 hover:text-green-900">
+                      <i class="fas fa-unlock"></i>
+                    </button>
+                  ` : html`
+                    <button hx-post="/admin/users/${user.id}/lock" 
+                            hx-target="#users-table" 
+                            hx-confirm="Lock this user account?"
+                            class="text-orange-600 hover:text-orange-900">
+                      <i class="fas fa-lock"></i>
+                    </button>
+                  `}
+
+                  <!-- Activate/Deactivate -->
+                  ${user.is_active ? html`
+                    <button hx-post="/admin/users/${user.id}/disable" 
+                            hx-target="#users-table" 
+                            hx-confirm="Disable this user?"
+                            class="text-red-600 hover:text-red-900">
+                      <i class="fas fa-user-slash"></i>
+                    </button>
+                  ` : html`
+                    <button hx-post="/admin/users/${user.id}/activate" 
+                            hx-target="#users-table" 
+                            hx-confirm="Activate this user?"
+                            class="text-green-600 hover:text-green-900">
+                      <i class="fas fa-user-check"></i>
+                    </button>
+                  `}
+
+                  <!-- Password Reset (Local users only) -->
+                  ${user.role !== 'admin' && (user.auth_type === 'local' || !user.auth_type) ? html`
+                    <button hx-post="/admin/users/${user.id}/reset-password" 
+                            hx-target="#users-table" 
+                            hx-confirm="Reset password for this user?"
+                            class="text-purple-600 hover:text-purple-900">
+                      <i class="fas fa-key"></i>
+                    </button>
+                  ` : ''}
+
+                  <!-- Delete User -->
+                  ${user.role !== 'admin' ? html`
+                    <button hx-post="/admin/users/${user.id}/delete" 
+                            hx-target="#users-table" 
+                            hx-confirm="Are you sure you want to delete this user? This action cannot be undone."
+                            class="text-red-600 hover:text-red-900">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `)}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Enhanced Pagination -->
+    ${data.totalPages > 1 ? html`
+      <div class="px-6 py-3 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-700">
+            Showing ${(data.page - 1) * data.limit + 1} to ${Math.min(data.page * data.limit, data.total)} of ${data.total} users
+          </div>
+          <div class="flex space-x-2">
+            ${data.page > 1 ? html`
+              <button hx-get="/admin/users/table?page=${data.page - 1}" 
+                      hx-target="#users-table"
+                      hx-include="[name='search'], [name='role'], [name='department'], [name='auth_type']"
+                      class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                Previous
+              </button>
+            ` : ''}
+            ${Array.from({length: Math.min(5, data.totalPages)}, (_, i) => {
+              const pageNum = Math.max(1, Math.min(data.totalPages, data.page - 2 + i));
+              return html`
+                <button hx-get="/admin/users/table?page=${pageNum}" 
+                        hx-target="#users-table"
+                        hx-include="[name='search'], [name='role'], [name='department'], [name='auth_type']"
+                        class="px-3 py-1 text-sm ${pageNum === data.page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} border border-gray-300 rounded-md">
+                  ${pageNum}
+                </button>
+              `;
+            })}
+            ${data.page < data.totalPages ? html`
+              <button hx-get="/admin/users/table?page=${data.page + 1}" 
+                      hx-target="#users-table"
+                      hx-include="[name='search'], [name='role'], [name='department'], [name='auth_type']"
+                      class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                Next
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    ` : ''}
+  `;
+};
+
+// Enhanced helper functions for role and auth type colors
+const getRoleColor = (role: string): string => {
+  const colors: Record<string, string> = {
+    'super_admin': 'bg-red-100 text-red-800',
+    'admin': 'bg-red-100 text-red-800',
+    'risk_manager': 'bg-orange-100 text-orange-800',
+    'security_analyst': 'bg-blue-100 text-blue-800',
+    'compliance_officer': 'bg-green-100 text-green-800',
+    'manager': 'bg-purple-100 text-purple-800',
+    'analyst': 'bg-indigo-100 text-indigo-800',
+    'viewer': 'bg-gray-100 text-gray-800'
+  };
+  return colors[role] || 'bg-gray-100 text-gray-800';
+};
+
+const getAuthTypeColor = (authType: string): string => {
+  return authType === 'saml' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+};
 
   return app;
 }
