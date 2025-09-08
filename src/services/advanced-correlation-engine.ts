@@ -9,7 +9,7 @@
  * - Attribution scoring with confidence intervals
  */
 
-import { TICorrelationEngine, type CorrelationEvent, type CorrelationResult } from './ti-correlation-engine';
+import { EnhancedCorrelationEngine, type CorrelationCluster, type EnhancedCorrelationResult } from './enhanced-correlation-engine';
 import { ThreatIndicator } from './feed-connectors/base-connector';
 
 export interface MLCorrelationFeatures {
@@ -148,13 +148,15 @@ export interface ThreatPrediction {
   expires_at: string;
 }
 
-export class AdvancedCorrelationEngine extends TICorrelationEngine {
+export class AdvancedCorrelationEngine {
   private featureCache: Map<string, MLCorrelationFeatures> = new Map();
   private clusterCache: Map<string, MLCorrelationCluster> = new Map();
   private models: Map<string, PredictiveModel> = new Map();
 
+  private db: D1Database;
+
   constructor(db: D1Database) {
-    super(db);
+    this.db = db;
     this.initializeMLModels();
   }
 
