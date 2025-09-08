@@ -414,42 +414,73 @@ export function createOperationsRoutes() {
         riskColor = 'text-green-600 bg-green-100';
       }
       
-      return c.html(html`
+      const response = c.html(html`
         <div class="fixed inset-0 bg-green-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
           <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-lg mx-4">
             <i class="fas fa-check-circle text-green-500 text-5xl mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-900 mb-3">Service Added Successfully!</h3>
+            <h3 class="text-xl font-semibold text-gray-900 mb-3">🎉 AI Service Assessment Complete!</h3>
             
-            <div class="bg-gray-50 rounded-lg p-4 mb-4 text-left">
+            <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-4 text-left border-l-4 border-purple-500">
               <div class="text-sm space-y-2">
-                <div><span class="font-medium">Service:</span> ${serviceData.name}</div>
-                <div><span class="font-medium">Category:</span> ${serviceData.type || 'Not specified'}</div>
-                <div><span class="font-medium">Department:</span> ${serviceData.location || 'Not specified'}</div>
-                <div><span class="font-medium">Criticality:</span> ${serviceData.criticality || 'Medium'}</div>
-                <div class="flex items-center">
-                  <span class="font-medium mr-2">Business Impact:</span>
-                  <span class="px-2 py-1 rounded-full text-xs font-medium ${riskColor}">
-                    ${riskLevel} ${riskScore > 0 ? `(${riskScore.toFixed(1)}/4.0)` : ''}
+                <div class="flex items-center justify-between">
+                  <span class="font-medium">Service:</span> 
+                  <span class="font-semibold text-purple-700">${serviceData.name}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="font-medium">AI Criticality:</span> 
+                  <span class="px-3 py-1 rounded-full text-sm font-bold ${
+                    serviceData.criticality === 'Critical' ? 'bg-red-100 text-red-800' :
+                    serviceData.criticality === 'High' ? 'bg-orange-100 text-orange-800' :
+                    serviceData.criticality === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }">
+                    ${serviceData.criticality} (${serviceData.criticality_score}/100)
                   </span>
                 </div>
-                <div><span class="font-medium">CIA Rating:</span> C:${serviceData.confidentiality}, I:${serviceData.integrity}, A:${serviceData.availability}</div>
-                ${serviceData.rto ? `<div><span class="font-medium">RTO:</span> ${serviceData.rto}</div>` : ''}
-                ${serviceData.rpo ? `<div><span class="font-medium">RPO:</span> ${serviceData.rpo}</div>` : ''}
+                <div class="flex items-center justify-between">
+                  <span class="font-medium">AI Confidence:</span> 
+                  <span class="font-semibold text-blue-700">${Math.round((serviceData.ai_confidence || 0) * 100)}%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="font-medium">Category:</span> 
+                  <span>${serviceData.service_category}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="font-medium">Department:</span> 
+                  <span>${serviceData.business_department}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="font-medium">CIA Triad:</span> 
+                  <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded">C:${serviceData.confidentiality_numeric} I:${serviceData.integrity_numeric} A:${serviceData.availability_numeric}</span>
+                </div>
               </div>
             </div>
             
-            <p class="text-sm text-gray-600 mb-6">
-              The service has been configured with comprehensive business impact assessment and is ready to be linked to assets and risks.
-            </p>
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-3 mb-4 text-left">
+              <div class="flex items-start">
+                <i class="fas fa-robot text-blue-500 mr-2 mt-0.5"></i>
+                <div class="text-sm text-blue-700">
+                  <p class="font-medium mb-1">AI Assessment Complete</p>
+                  <p class="text-xs">Multi-factor analysis applied: CIA impact (40%), asset dependencies (25%), risk associations (20%), business context (15%). Service is ready for operational integration.</p>
+                </div>
+              </div>
+            </div>
             
-            <button hx-get="/operations/api/services/close" hx-target="#service-modal" hx-swap="innerHTML"
-                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium transition-colors">
+            <button hx-get="/operations/api/services/close" 
+                    hx-target="#service-modal" 
+                    hx-swap="innerHTML"
+                    hx-trigger="click"
+                    class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium transition-colors shadow-lg">
               <i class="fas fa-check mr-2"></i>
-              Close
+              Continue to Services Dashboard
             </button>
           </div>
         </div>
       `);
+      
+      // Trigger service list refresh
+      response.headers.set('HX-Trigger', 'serviceCreated,refreshServices');
+      return response;
     } catch (error) {
       console.error('Service creation error:', error);
       return c.html(html`
@@ -698,19 +729,13 @@ export function createOperationsRoutes() {
   // Asset linking modal for services
   app.get('/api/link/assets-to-service', async (c) => {
     const assets = await getAssets(c.env.DB);
-    const modalHtml = renderAssetLinkingModal(assets);
-    return new Response(modalHtml.toString(), {
-      headers: { 'Content-Type': 'text/html' }
-    });
+    return c.html(renderAssetLinkingModal(assets));
   });
 
   // Risk linking modal for services
   app.get('/api/link/risks-to-service', async (c) => {
     const risks = await getRisks(c.env.DB);
-    const modalHtml = renderRiskLinkingModal(risks);
-    return new Response(modalHtml.toString(), {
-      headers: { 'Content-Type': 'text/html' }
-    });
+    return c.html(renderRiskLinkingModal(risks));
   });
 
   // Edit service endpoint
@@ -718,14 +743,9 @@ export function createOperationsRoutes() {
     const serviceId = c.req.param('id');
     const service = await getServiceById(c.env.DB, serviceId);
     if (!service) {
-      return new Response('<div class="p-4 text-red-600">Service not found</div>', {
-        headers: { 'Content-Type': 'text/html' }
-      });
+      return c.html('<div class="p-4 text-red-600">Service not found</div>');
     }
-    const modalHtml = renderServiceEditModal(service);
-    return new Response(modalHtml.toString(), {
-      headers: { 'Content-Type': 'text/html' }
-    });
+    return c.html(renderServiceEditModal(service));
   });
 
   // Delete confirmation modal
@@ -733,19 +753,14 @@ export function createOperationsRoutes() {
     const serviceId = c.req.param('id');
     const service = await getServiceById(c.env.DB, serviceId);
     if (!service) {
-      return new Response('<div class="p-4 text-red-600">Service not found</div>', {
-        headers: { 'Content-Type': 'text/html' }
-      });
+      return c.html('<div class="p-4 text-red-600">Service not found</div>');
     }
     
     // Check if service has linked assets or risks
     const linkedAssets = service.linked_assets ? JSON.parse(service.linked_assets) : [];
     const linkedRisks = service.linked_risks ? JSON.parse(service.linked_risks) : [];
     
-    const modalHtml = renderServiceDeleteModal(service, linkedAssets, linkedRisks);
-    return new Response(modalHtml.toString(), {
-      headers: { 'Content-Type': 'text/html' }
-    });
+    return c.html(renderServiceDeleteModal(service, linkedAssets, linkedRisks));
   });
 
   // Update service endpoint
@@ -755,39 +770,66 @@ export function createOperationsRoutes() {
       const formData = await c.req.formData();
       
       const serviceData = {
-        name: formData.get('name'),
-        type: formData.get('type'),
-        description: formData.get('description'),
-        location: formData.get('location'),
-        asset_owner: formData.get('asset_owner'),
-        technical_custodian: formData.get('technical_custodian'),
-        confidentiality: parseInt(formData.get('confidentiality') as string) || 1,
-        integrity: parseInt(formData.get('integrity') as string) || 1,
-        availability: parseInt(formData.get('availability') as string) || 1,
-        criticality: formData.get('criticality'),
+        name: formData.get('name') as string,
+        description: formData.get('description') as string,
+        service_category: formData.get('service_category') as string || 'Business Service',
+        business_department: formData.get('business_department') as string,
+        confidentiality_impact: formData.get('confidentiality_impact') as string || 'Medium',
+        integrity_impact: formData.get('integrity_impact') as string || 'Medium',
+        availability_impact: formData.get('availability_impact') as string || 'Medium',
+        confidentiality_numeric: parseInt(formData.get('confidentiality_numeric') as string) || 3,
+        integrity_numeric: parseInt(formData.get('integrity_numeric') as string) || 3,
+        availability_numeric: parseInt(formData.get('availability_numeric') as string) || 3,
+        business_function: formData.get('business_function') as string || 'General Operations',
+        criticality: formData.get('criticality') as string || 'Medium',
         updated_at: new Date().toISOString()
       };
       
       await updateService(c.env.DB, serviceId, serviceData);
       
-      // Return updated service row
+      // Return updated service rows with auto-refresh
       const services = await getServices(c.env.DB);
-      return new Response(renderServiceRows(services), {
-        headers: { 'Content-Type': 'text/html' }
-      });
+      const response = c.html(renderServiceRows(services));
+      response.headers.set('HX-Trigger', 'serviceUpdated');
+      return response;
     } catch (error) {
       console.error('Error updating service:', error);
-      return new Response('<div class="p-4 text-red-600">Error updating service</div>', {
-        headers: { 'Content-Type': 'text/html' }
-      });
+      return c.html('<div class="p-4 text-red-600">Error updating service. Please try again.</div>');
     }
   });
 
   // Close service modal endpoint
   app.get('/api/services/close', async (c) => {
-    return new Response('', {
-      headers: { 'Content-Type': 'text/html' }
-    });
+    return c.html('');
+  });
+
+  // Delete service endpoint
+  app.delete('/api/services/:id', async (c) => {
+    try {
+      const serviceId = c.req.param('id');
+      
+      // First delete related records
+      await c.env.DB.prepare('DELETE FROM service_asset_links WHERE service_id = ?').bind(serviceId).run();
+      await c.env.DB.prepare('DELETE FROM service_risk_links WHERE service_id = ?').bind(serviceId).run();
+      await c.env.DB.prepare('DELETE FROM service_criticality_assessments WHERE service_id = ?').bind(serviceId).run();
+      
+      // Then delete the service
+      await c.env.DB.prepare('DELETE FROM services WHERE service_id = ?').bind(serviceId).run();
+      
+      // Return updated service rows with auto-refresh
+      const services = await getServices(c.env.DB);
+      const response = c.html(renderServiceRows(services));
+      response.headers.set('HX-Trigger', 'serviceDeleted');
+      return response;
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      return c.html('<div class="p-4 text-red-600">Error deleting service. Please try again.</div>');
+    }
+  });
+
+  // Close linking modal endpoint
+  app.get('/api/link/close', async (c) => {
+    return c.html('');
   });
 
   // R2 Object Storage - File Upload Endpoint
@@ -1562,7 +1604,9 @@ const renderServiceManagement = () => html`
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200" hx-get="/operations/api/services" hx-trigger="load">
+            <tbody id="services-list" class="bg-white divide-y divide-gray-200" 
+                   hx-get="/operations/api/services" 
+                   hx-trigger="load, serviceCreated from:body, serviceUpdated from:body, serviceDeleted from:body, refreshServices from:body">
               <!-- Loading placeholder -->
               <tr>
                 <td colspan="6" class="px-6 py-8 text-center text-gray-500">
@@ -3090,7 +3134,7 @@ const renderAssetLinkingModal = (assets: any[]) => html`
                     <div class="flex items-center justify-between">
                       <div>
                         <div class="font-medium text-gray-900">${asset.name}</div>
-                        <div class="text-sm text-gray-600">${asset.type || 'Unknown Type'} • ${asset.location || 'No Location'}</div>
+                        <div class="text-sm text-gray-600">${asset.subcategory || asset.asset_type || 'Unknown Type'} • ${asset.location || 'No Location'}</div>
                       </div>
                       <div class="text-right">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -3843,3 +3887,5 @@ const renderDocumentDeleteModal = (document: any) => html`
     </div>
   </div>
 `;
+
+
