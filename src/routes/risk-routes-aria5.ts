@@ -140,8 +140,7 @@ export function createRiskRoutesARIA5() {
           SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 12 AND COALESCE(risk_score, probability * impact) < 20 THEN 1 ELSE 0 END) as high,
           SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 6 AND COALESCE(risk_score, probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
           SUM(CASE WHEN COALESCE(risk_score, probability * impact) < 6 THEN 1 ELSE 0 END) as low
-        FROM risks 
-        WHERE status = 'active'
+        FROM risks
       `).first();
       console.log('✅ Stats from comprehensive risks table');
 

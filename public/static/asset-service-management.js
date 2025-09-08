@@ -1752,7 +1752,315 @@ function closeModal() {
     }
 }
 
+// AI Service Criticality Functions
+function recalculateCriticality(serviceId) {
+    console.log('🤖 Recalculating AI criticality for service:', serviceId);
+    
+    // Show loading indicator
+    const assessmentContainer = document.querySelector(`[data-service-id="${serviceId}"]`);
+    if (assessmentContainer) {
+        assessmentContainer.innerHTML = `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                <i class="fas fa-brain text-blue-600 text-2xl mb-2 animate-pulse"></i>
+                <div class="text-sm font-medium text-blue-900">AI is recalculating criticality...</div>
+                <div class="text-xs text-blue-700 mt-1">Analyzing CIA scores, dependencies, and risks</div>
+            </div>
+        `;
+    }
+    
+    // Trigger HTMX request to recalculate
+    htmx.ajax('GET', `/operations/api/service-criticality/assessment/${serviceId}`, {
+        target: `[data-service-id="${serviceId}"]`,
+        swap: 'innerHTML'
+    });
+}
+
+function showCriticalityDetails(serviceId) {
+    console.log('📊 Showing criticality details for service:', serviceId);
+    
+    // Create detailed modal
+    const modal = createModal('AI Criticality Analysis Details');
+    modal.querySelector('.modal-content').innerHTML = `
+        <div class="bg-white rounded-lg max-w-4xl mx-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-brain text-purple-600 mr-2"></i>
+                    AI Service Criticality Analysis
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">Comprehensive AI-driven criticality assessment</p>
+            </div>
+            <div class="p-6">
+                <div id="criticality-details" hx-get="/operations/api/service-criticality/insights/${serviceId}" hx-trigger="load">
+                    <div class="animate-pulse space-y-4">
+                        <div class="bg-gray-200 rounded-lg h-24"></div>
+                        <div class="bg-gray-200 rounded-lg h-32"></div>
+                        <div class="bg-gray-200 rounded-lg h-20"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Close
+                </button>
+                <button onclick="recalculateCriticality('${serviceId}')" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    <i class="fas fa-sync mr-2"></i>
+                    Recalculate
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function refreshServices() {
+    console.log('🔄 Refreshing services with AI criticality data');
+    
+    // Show loading state
+    const tbody = document.querySelector('#services-table tbody');
+    if (tbody) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-brain text-purple-400 text-3xl mb-2 animate-spin"></i>
+                        <div class="text-sm font-medium">AI is re-analyzing all services...</div>
+                        <div class="text-xs text-gray-400">This may take a few moments</div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+    
+    // Trigger HTMX refresh
+    htmx.trigger(tbody, 'htmx:load');
+    
+    // Also refresh the criticality stats
+    const statsContainer = document.getElementById('criticality-stats');
+    if (statsContainer) {
+        htmx.ajax('GET', '/operations/api/service-criticality/stats', {
+            target: '#criticality-stats',
+            swap: 'innerHTML'
+        });
+    }
+}
+
+function triggerBatchAssessment() {
+    console.log('🚀 Triggering AI batch assessment for all services');
+    
+    // Show loading state in AI status
+    const aiStatus = document.getElementById('ai-status');
+    if (aiStatus) {
+        aiStatus.innerHTML = `
+            <div class="space-y-3">
+                <div class="flex items-center justify-center py-8">
+                    <i class="fas fa-brain text-purple-600 text-4xl animate-pulse mr-3"></i>
+                    <div>
+                        <div class="text-lg font-medium text-purple-900">AI Assessment Running</div>
+                        <div class="text-sm text-purple-700">Processing all services...</div>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-purple-600 h-2 rounded-full animate-pulse" style="width: 100%"></div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Trigger batch assessment
+    htmx.ajax('POST', '/operations/api/service-criticality/batch-assess', {
+        target: '#ai-status',
+        swap: 'innerHTML'
+    }).then(() => {
+        // Refresh services table after batch assessment
+        setTimeout(() => {
+            refreshServices();
+        }, 2000);
+    });
+}
+
+function showServiceCriticalityTrends(serviceId) {
+    console.log('📈 Showing criticality trends for service:', serviceId);
+    
+    const modal = createModal('Service Criticality Trends');
+    modal.querySelector('.modal-content').innerHTML = `
+        <div class="bg-white rounded-lg max-w-6xl mx-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                    Service Criticality Trends & History
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">Historical criticality assessments and trend analysis</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Criticality History Chart -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Criticality Score History</h4>
+                        <div class="h-48 flex items-center justify-center text-gray-500">
+                            <div class="text-center">
+                                <i class="fas fa-chart-area text-3xl mb-2"></i>
+                                <div>Historical trend chart would display here</div>
+                                <div class="text-xs mt-1">(Requires chart.js integration)</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Factor Analysis -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Contributing Factors Analysis</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">CIA Impact</span>
+                                <div class="flex items-center">
+                                    <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-blue-600 h-2 rounded-full" style="width: 75%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">75%</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Asset Dependencies</span>
+                                <div class="flex items-center">
+                                    <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-purple-600 h-2 rounded-full" style="width: 60%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">60%</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Risk Correlation</span>
+                                <div class="flex items-center">
+                                    <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-red-600 h-2 rounded-full" style="width: 45%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">45%</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Business Impact</span>
+                                <div class="flex items-center">
+                                    <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-green-600 h-2 rounded-full" style="width: 85%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">85%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Assessment History Table -->
+                <div class="mt-6">
+                    <h4 class="text-sm font-semibold text-gray-900 mb-3">Recent Assessments</h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Criticality</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Score</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Confidence</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">Key Changes</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-4 py-2 text-xs text-gray-900">Today</td>
+                                    <td class="px-4 py-2"><span class="inline-flex px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">Critical</span></td>
+                                    <td class="px-4 py-2 text-xs font-medium">87</td>
+                                    <td class="px-4 py-2 text-xs">89%</td>
+                                    <td class="px-4 py-2 text-xs text-gray-600">New high-severity risk added</td>
+                                </tr>
+                                <tr>
+                                    <td class="px-4 py-2 text-xs text-gray-900">Yesterday</td>
+                                    <td class="px-4 py-2"><span class="inline-flex px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">High</span></td>
+                                    <td class="px-4 py-2 text-xs font-medium">78</td>
+                                    <td class="px-4 py-2 text-xs">85%</td>
+                                    <td class="px-4 py-2 text-xs text-gray-600">Asset dependency increased</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+                <button onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Enhanced modal function for larger content
+function createEnhancedModal(title, size = 'lg') {
+    const modal = document.createElement('div');
+    modal.id = 'enhanced-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    
+    const sizeClasses = {
+        'sm': 'max-w-md',
+        'md': 'max-w-lg', 
+        'lg': 'max-w-4xl',
+        'xl': 'max-w-6xl',
+        'full': 'max-w-7xl'
+    };
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl ${sizeClasses[size]} w-full max-h-[90vh] overflow-auto modal-content">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
+                <h3 class="text-lg font-semibold text-gray-900">${title}</h3>
+                <button onclick="closeEnhancedModal()" class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Content will be inserted here -->
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeEnhancedModal();
+        }
+    });
+    
+    return modal;
+}
+
+function closeEnhancedModal() {
+    const modal = document.getElementById('enhanced-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Export functions for global access
+window.recalculateCriticality = recalculateCriticality;
+window.showCriticalityDetails = showCriticalityDetails;
+window.refreshServices = refreshServices;
+window.triggerBatchAssessment = triggerBatchAssessment;
+window.showServiceCriticalityTrends = showServiceCriticalityTrends;
+window.closeEnhancedModal = closeEnhancedModal;
+
 // Initialize data on load
 document.addEventListener('DOMContentLoaded', function() {
     initializeAssetServiceData();
+    
+    // Initialize AI service criticality features
+    console.log('🤖 ARIA5 AI Service Criticality Engine initialized');
+    
+    // Auto-refresh criticality stats every 5 minutes
+    setInterval(() => {
+        const statsContainer = document.getElementById('criticality-stats');
+        if (statsContainer && document.visibilityState === 'visible') {
+            htmx.ajax('GET', '/operations/api/service-criticality/stats', {
+                target: '#criticality-stats',
+                swap: 'innerHTML'
+            });
+        }
+    }, 300000); // 5 minutes
 });
