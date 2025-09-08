@@ -13,7 +13,7 @@
 
 ### Production Environment  
 - **🌐 Main Application**: https://aria5-ti-enhancement.pages.dev
-- **🚀 Latest Enhanced Deployment**: https://39641337.aria5-ti-enhancement.pages.dev (LATEST - Enhanced GRC-AI Integration, Advanced Chat, ML Analytics!)
+- **🚀 Latest Enhanced Deployment**: https://293e380b.aria5-ti-enhancement.pages.dev (LATEST - KRI Dashboard Fix, Simplified AI Assistant, Audit Logging!)
 - **⚡ Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 - **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
@@ -21,6 +21,15 @@
 - **🆘 Risk Data Consistency Health**: `/api/risk-consistency/health`
 
 ### 🚀 Latest Enhancement Features (September 2025)
+
+#### 🎯 Critical Fixes & User Experience Improvements
+- ✅ **KRI Dashboard Fixed** - Resolved 404/error issues with proper KRI management interface
+- ✅ **Simplified AI Assistant** - Removed "bulletproof tab" and complex smart-chat system for user-friendly experience
+- ✅ **Streamlined Chatbot Experience** - Eliminated confusion by keeping only bottom widget and AI/ML page chatbot
+- ✅ **Comprehensive Audit Logging** - All user activities tracked: login (with public IP), logout, changes, security events
+- ✅ **Integrated Audit Service** - SimpleAuditLoggingService working with existing database schema
+
+#### 🎯 Previous AI & GRC Enhancements
 - ✅ **Enhanced GRC-AI Integration** - Automated compliance framework mapping (SOC2, ISO27001, NIST, PCI-DSS)
 - ✅ **Advanced AI Chat Service** - Direct ML correlation engine access with intelligent routing
 - ✅ **Multi-Provider AI Stack** - GPT-4, Claude 3.5, Llama 3.1 with dynamic model selection

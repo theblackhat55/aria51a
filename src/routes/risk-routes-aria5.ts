@@ -1212,9 +1212,256 @@ Be practical and actionable in your analysis.`;
     );
   });
 
-  // REDIRECT FIXES FOR COMMON URL MISTAKES
+  // KRI Management Dashboard
   app.get('/kris', async (c) => {
-    return c.redirect('/risk/', 301);
+    const user = c.get('user');
+    
+    try {
+      // Fetch KRIs from database
+      const kris = await c.env.DB.prepare(`
+        SELECT 
+          id,
+          name,
+          description,
+          threshold_value,
+          current_value,
+          measurement_unit,
+          frequency,
+          owner,
+          status,
+          category,
+          risk_appetite,
+          created_at,
+          updated_at,
+          CASE 
+            WHEN current_value > threshold_value THEN 'BREACHED'
+            WHEN current_value > (threshold_value * 0.8) THEN 'WARNING'
+            ELSE 'NORMAL'
+          END as alert_status
+        FROM kris
+        ORDER BY 
+          CASE 
+            WHEN current_value > threshold_value THEN 1
+            WHEN current_value > (threshold_value * 0.8) THEN 2
+            ELSE 3
+          END,
+          name ASC
+      `).all();
+      
+      const kriList = kris.results || [];
+      
+      // Calculate KRI statistics
+      const stats = {
+        total: kriList.length,
+        breached: kriList.filter((k: any) => k.alert_status === 'BREACHED').length,
+        warning: kriList.filter((k: any) => k.alert_status === 'WARNING').length,
+        normal: kriList.filter((k: any) => k.alert_status === 'NORMAL').length
+      };
+      
+      return c.html(
+        cleanLayout({
+          title: 'Key Risk Indicators (KRI)',
+          user,
+          content: html`
+            <div class="min-h-screen bg-gray-50">
+              <!-- Header -->
+              <div class="bg-white shadow-sm border-b">
+                <div class="max-w-7xl mx-auto px-4 py-6">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                        Key Risk Indicators (KRI)
+                      </h1>
+                      <p class="text-gray-600 mt-1">Monitor and track key risk metrics in real-time</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                      <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
+                        <i class="fas fa-plus mr-1"></i>
+                        Add KRI
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="max-w-7xl mx-auto px-4 py-8">
+                <!-- KRI Statistics -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                  <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                      <div class="p-2 bg-blue-100 rounded-lg">
+                        <i class="fas fa-chart-line text-blue-600"></i>
+                      </div>
+                      <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total KRIs</p>
+                        <p class="text-2xl font-semibold text-gray-900">${stats.total}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                      <div class="p-2 bg-red-100 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                      </div>
+                      <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Breached</p>
+                        <p class="text-2xl font-semibold text-red-900">${stats.breached}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                      <div class="p-2 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-exclamation-circle text-yellow-600"></i>
+                      </div>
+                      <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Warning</p>
+                        <p class="text-2xl font-semibold text-yellow-900">${stats.warning}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                      <div class="p-2 bg-green-100 rounded-lg">
+                        <i class="fas fa-check-circle text-green-600"></i>
+                      </div>
+                      <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Normal</p>
+                        <p class="text-2xl font-semibold text-green-900">${stats.normal}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- KRI Table -->
+                <div class="bg-white shadow rounded-lg">
+                  <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Key Risk Indicators</h3>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KRI Name</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Value</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Threshold</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        ${kriList.length === 0 ? html`
+                          <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                              <div class="text-gray-500">
+                                <i class="fas fa-chart-line text-4xl mb-4"></i>
+                                <h3 class="text-lg font-medium mb-2">No KRIs Found</h3>
+                                <p class="text-sm">Get started by adding your first Key Risk Indicator</p>
+                                <button class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                  Add First KRI
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ` : kriList.map((kri: any) => html`
+                          <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div class="text-sm font-medium text-gray-900">${kri.name}</div>
+                                <div class="text-sm text-gray-500">${kri.description || 'No description'}</div>
+                              </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                              <div class="text-sm font-medium text-gray-900">
+                                ${kri.current_value || 0} ${kri.measurement_unit || ''}
+                              </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                              <div class="text-sm text-gray-900">
+                                ${kri.threshold_value || 0} ${kri.measurement_unit || ''}
+                              </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                kri.alert_status === 'BREACHED' ? 'bg-red-100 text-red-800' :
+                                kri.alert_status === 'WARNING' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                              }">
+                                <i class="fas ${
+                                  kri.alert_status === 'BREACHED' ? 'fa-exclamation-triangle' :
+                                  kri.alert_status === 'WARNING' ? 'fa-exclamation-circle' :
+                                  'fa-check-circle'
+                                } mr-1"></i>
+                                ${kri.alert_status}
+                              </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              ${kri.category || 'General'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              ${kri.owner || 'Unassigned'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div class="flex space-x-2">
+                                <button class="text-blue-600 hover:text-blue-900">
+                                  <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-green-600 hover:text-green-900">
+                                  <i class="fas fa-chart-bar"></i>
+                                </button>
+                                <button class="text-red-600 hover:text-red-900">
+                                  <i class="fas fa-trash"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        `)}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
+        })
+      );
+      
+    } catch (error) {
+      console.error('Error fetching KRIs:', error);
+      return c.html(
+        cleanLayout({
+          title: 'KRI Dashboard - Error',
+          user,
+          content: html`
+            <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div class="max-w-md w-full">
+                <div class="bg-white shadow rounded-lg p-6">
+                  <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-2">Error Loading KRIs</h2>
+                    <p class="text-gray-600 mb-4">There was an error loading the KRI dashboard. This might be because the KRI data structure is not yet set up.</p>
+                    <div class="space-y-2">
+                      <a href="/risk" class="block w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        Go to Risk Management
+                      </a>
+                      <a href="/dashboard" class="block w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                        Return to Dashboard
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
+        })
+      );
+    }
   });
 
   app.get('/risks', async (c) => {

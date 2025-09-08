@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { html } from 'hono/html';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { DatabaseService } from '../lib/database';
+import { SimpleAuditLoggingService, getClientIP } from '../services/simple-audit-logging';
 import { 
   hashPassword, 
   verifyPassword, 
@@ -45,8 +46,10 @@ export function createAuthRoutes() {
         `);
       }
 
-      // Rate limiting check
-      const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+      // Rate limiting check and audit logging setup
+      const clientIP = getClientIP(c.req.raw);
+      const userAgent = c.req.header('User-Agent') || 'Unknown';
+      const auditService = new SimpleAuditLoggingService(c.env.DB);
       const rateLimit = checkRateLimit(`login:${clientIP}`, 5, 15); // 5 attempts per 15 minutes
       
       if (!rateLimit.allowed) {
@@ -81,6 +84,9 @@ export function createAuthRoutes() {
         `).bind(username, username).first();
         
         if (!user) {
+          // Log failed login attempt
+          await auditService.logLogin(0, username, clientIP, userAgent, false, 'Invalid username or password');
+          
           return c.html(html`
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
               <div class="flex">
@@ -97,6 +103,9 @@ export function createAuthRoutes() {
 
         // Check if account is active
         if (!user.is_active) {
+          // Log disabled account access attempt
+          await auditService.logSecurityEvent(`Login attempt on disabled account: ${user.username}`, user.id, clientIP, userAgent, 'HIGH');
+          
           return c.html(html`
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
               <div class="flex">
@@ -130,6 +139,9 @@ export function createAuthRoutes() {
         }
 
         if (!isValidPassword) {
+          // Log failed password attempt
+          await auditService.logLogin(user.id, user.username, clientIP, userAgent, false, 'Invalid password');
+          
           return c.html(html`
             <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4" role="alert">
               <div class="flex">
@@ -193,9 +205,11 @@ export function createAuthRoutes() {
       // Create secure JWT
       const jwt = await generateJWT(tokenData, getJWTSecret(c.env));
       
-      // Skip session table for basic authentication
-      // Just use JWT cookies for session management
-      const sessionId = crypto.randomUUID(); // Simple session ID without database
+      // Generate session ID and log successful login
+      const sessionId = crypto.randomUUID();
+      
+      // Log successful login with comprehensive audit information
+      await auditService.logLogin(user.id, user.username, clientIP, userAgent, true);
       
       // Set secure cookies
       const isProduction = c.req.url.includes('.pages.dev') || c.req.url.includes('https://');
@@ -276,11 +290,38 @@ export function createAuthRoutes() {
     }
   });
   
-  // Logout endpoint
+  // Logout endpoint with audit logging
   app.post('/logout', async (c) => {
-    deleteCookie(c, 'aria_token', { path: '/' });
-    c.header('HX-Redirect', '/login');
-    return c.html(renderSuccess('Logged out successfully'));
+    try {
+      // Get current user info from token before deleting
+      const token = getCookie(c, 'aria_token');
+      const sessionId = getCookie(c, 'aria_session');
+      
+      if (token) {
+        try {
+          const decoded = await verifyJWT(token, getJWTSecret(c.env));
+          const auditService = new SimpleAuditLoggingService(c.env.DB);
+          
+          // Log logout activity
+          await auditService.logLogout(decoded.id, decoded.username, sessionId || 'unknown');
+        } catch (error) {
+          console.error('Error logging logout:', error);
+        }
+      }
+      
+      // Delete all authentication cookies
+      deleteCookie(c, 'aria_token', { path: '/' });
+      deleteCookie(c, 'aria_session', { path: '/' });
+      deleteCookie(c, 'aria_csrf', { path: '/' });
+      deleteCookie(c, 'aria_htmx', { path: '/' });
+      
+      c.header('HX-Redirect', '/login');
+      return c.html(renderSuccess('Logged out successfully'));
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      return c.html(renderError('Error during logout'), 500);
+    }
   });
   
   // Check authentication status with detailed debugging
