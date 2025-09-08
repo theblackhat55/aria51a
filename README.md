@@ -12,22 +12,23 @@
 ## 🔗 Service URLs
 
 ### Production Environment  
-- **🌐 Main Application**: https://aria5-ti.aria5-ti-enhancement.pages.dev
-- **🚀 Latest Deployment**: https://ad056e0b.aria5-ti-enhancement.pages.dev (LATEST - Modal routes fixed!)
+- **🌐 Main Application**: https://aria5-ti-enhancement.pages.dev
+- **🚀 Latest Enhanced Deployment**: https://39641337.aria5-ti-enhancement.pages.dev (LATEST - Enhanced GRC-AI Integration, Advanced Chat, ML Analytics!)
+- **⚡ Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 - **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
 - **📋 System Health Dashboard**: `/health-dashboard` (Real-time monitoring)
 - **🆘 Risk Data Consistency Health**: `/api/risk-consistency/health`
 
-### 🔧 Recently Fixed Issues (Latest Deployment)
-- ✅ **HTML parsing in asset/risk linking modals** - Fixed Response headers
-- ✅ **Services page auto-refresh** - Working HTMX triggers after operations  
-- ✅ **Edit/delete service buttons** - Now functional with correct database queries
-- ✅ **New services in risk modals** - Dynamic loading from services table
-- ✅ **AI Engine success messages** - Improved event system and notifications
-- ✅ **Missing modal routes fixed** - Added `/risk/incidents`, `/risk/incidents/new`
-- ✅ **Database validation** - All tables exist in production, graceful error handling added
-- ✅ **URL redirects** - Fixed `/risk/kris` and other common route mistakes
+### 🚀 Latest Enhancement Features (September 2025)
+- ✅ **Enhanced GRC-AI Integration** - Automated compliance framework mapping (SOC2, ISO27001, NIST, PCI-DSS)
+- ✅ **Advanced AI Chat Service** - Direct ML correlation engine access with intelligent routing
+- ✅ **Multi-Provider AI Stack** - GPT-4, Claude 3.5, Llama 3.1 with dynamic model selection
+- ✅ **Comprehensive Performance Analytics** - Token usage monitoring, cost optimization, routing effectiveness
+- ✅ **Proactive AI Notifications** - Real-time alerts through enhanced chat interface
+- ✅ **AI-Powered Control Assessments** - Automatic risk-to-compliance mapping with recommendations
+- ✅ **Performance Tracking** - AI provider comparison, response time monitoring, error analytics
+- ✅ **Enhanced Database Schema** - AI performance logs, chat conversations, GRC integration tables
 
 ### 🚀 Risk Data Consistency API Endpoints
 
@@ -146,13 +147,39 @@
 - **Operational dashboards** with real-time status updates
 - **Mobile-responsive operations dashboard** with optimized stat cards
 
+## 🤖 Enhanced AI Features
+
+### Advanced AI Chat Service (`/ai`)
+- **Multi-Provider Routing**: Intelligent selection between GPT-4, Claude 3.5, and Llama 3.1 based on query complexity
+- **ML Correlation Access**: Direct integration with behavioral analytics and threat intelligence engines
+- **Proactive Notifications**: Real-time alerts for security incidents, compliance violations, and risk changes
+- **Conversational Analytics**: Natural language queries for ML insights, risk assessments, and threat analysis
+
+### GRC-AI Integration
+- **Automated Compliance Mapping**: AI-powered mapping of risks to frameworks (SOC2, ISO27001, NIST, PCI-DSS)
+- **Control Assessments**: Machine learning-based control effectiveness evaluation
+- **Compliance Recommendations**: AI-generated remediation strategies and compliance improvements
+- **Risk-to-Framework Correlation**: Intelligent linking of security risks to regulatory requirements
+
+### Performance Analytics & Optimization
+- **Token Usage Monitoring**: Real-time tracking of AI provider costs and usage patterns
+- **Response Time Analytics**: Performance comparison across AI providers and models
+- **Routing Effectiveness**: Data-driven optimization of AI model selection
+- **Cost Optimization**: Automatic provider switching based on cost-effectiveness metrics
+
+### Enhanced API Endpoints
+- **`/ai/ml-query`**: Direct ML correlation engine queries
+- **`/ai/proactive-alerts`**: Real-time notification system
+- **`/api/ai-performance`**: Performance analytics dashboard
+- **`/api/grc-integration`**: Automated GRC-AI mapping endpoints
+
 ## 🏗️ Architecture
 
 ### Technology Stack
 - **Backend**: Hono framework on Cloudflare Workers
 - **Frontend**: HTMX + TailwindCSS + Vanilla JavaScript
 - **Database**: Cloudflare D1 (SQLite) with global replication
-- **AI/ML**: Cloudflare Workers AI with Llama3 models
+- **AI/ML**: Multi-provider AI stack (GPT-4, Claude 3.5, Llama 3.1) with intelligent routing
 - **Storage**: Cloudflare KV + R2 for caching and file storage
 - **Authentication**: JWT-based with secure session management
 
@@ -162,7 +189,9 @@
 - **Risk assessment** tables with comprehensive tracking
 - **Compliance frameworks** and control mappings
 - **Threat intelligence** IOC and campaign data
-- **AI assistant** knowledge base and conversation history
+- **Enhanced AI assistant** with ML correlation engine and performance analytics
+- **AI performance tracking** with token usage monitoring and cost optimization  
+- **GRC-AI integration** tables for automated compliance framework mapping
 - **Threat intelligence** feeds, IOCs, correlations, and behavioral analytics
 - **ML models** for behavioral pattern analysis, risk optimization, and neural networks
 - **Feed connector** configurations and processing status for multi-source TI integration
