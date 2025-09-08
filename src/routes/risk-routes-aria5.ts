@@ -612,7 +612,7 @@ Be practical and actionable in your analysis.`;
           <script>
             // Auto-close modal and refresh page
             setTimeout(() => {
-              document.getElementById('risk-modal')?.remove();
+              document.getElementById('modal-container').innerHTML = '';
               location.reload();
             }, 1500);
           </script>
@@ -681,7 +681,7 @@ Be practical and actionable in your analysis.`;
 
       if (!risk) {
         return c.html(html`
-          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" id="risk-modal">
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" >
             <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
               <div class="p-6">
                 <div class="flex items-center mb-4">
@@ -692,7 +692,7 @@ Be practical and actionable in your analysis.`;
                 </div>
                 <p class="text-gray-600 mb-6">The requested risk could not be found or may have been deleted.</p>
                 <div class="flex justify-end">
-                  <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                  <button onclick="document.getElementById('modal-container').innerHTML = ''" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
                     Close
                   </button>
                 </div>
@@ -719,7 +719,7 @@ Be practical and actionable in your analysis.`;
       };
 
       return c.html(html`
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" id="risk-modal">
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" >
           <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden">
             
             <!-- Header -->
@@ -738,7 +738,7 @@ Be practical and actionable in your analysis.`;
                   <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${riskColor}">
                     ${riskLevel}
                   </span>
-                  <button onclick="document.getElementById('risk-modal').remove()" class="text-white hover:text-gray-200 transition-colors">
+                  <button onclick="document.getElementById('modal-container').innerHTML = ''" class="text-white hover:text-gray-200 transition-colors">
                     <i class="fas fa-times text-xl"></i>
                   </button>
                 </div>
@@ -790,7 +790,7 @@ Be practical and actionable in your analysis.`;
                         Change Status
                       </button>
                       <button hx-get="/risk/edit/${risk.id}" 
-                              hx-target="#risk-modal" 
+                              hx-target="#modal-container" 
                               hx-swap="outerHTML"
                               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         <i class="fas fa-edit mr-2"></i>
@@ -951,7 +951,7 @@ Be practical and actionable in your analysis.`;
                   <i class="fas fa-print mr-2"></i>
                   Print
                 </button>
-                <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg text-sm transition-colors">
+                <button onclick="document.getElementById('modal-container').innerHTML = ''" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg text-sm transition-colors">
                   Close
                 </button>
               </div>
@@ -965,7 +965,7 @@ Be practical and actionable in your analysis.`;
     } catch (error) {
       console.error('Error fetching risk:', error);
       return c.html(html`
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" id="risk-modal">
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
             <div class="p-6">
               <div class="flex items-center mb-4">
@@ -976,7 +976,7 @@ Be practical and actionable in your analysis.`;
               </div>
               <p class="text-gray-600 mb-6">Failed to load risk details. Please try again.</p>
               <div class="flex justify-end">
-                <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                <button onclick="document.getElementById('modal-container').innerHTML = ''" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
                   Close
                 </button>
               </div>
@@ -1188,13 +1188,13 @@ Be practical and actionable in your analysis.`;
 
       if (!risk) {
         return c.html(html`
-          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
               <div class="p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Risk Not Found</h3>
                 <p class="text-gray-600">The requested risk could not be found.</p>
                 <div class="mt-6 flex justify-end">
-                  <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                  <button onclick="document.getElementById('modal-container').innerHTML = ''" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
                     Close
                   </button>
                 </div>
@@ -1208,13 +1208,13 @@ Be practical and actionable in your analysis.`;
     } catch (error) {
       console.error('Error loading risk for edit:', error);
       return c.html(html`
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
             <div class="p-6">
               <h3 class="text-lg font-medium text-gray-900 mb-4">Error</h3>
               <p class="text-gray-600">Failed to load risk for editing.</p>
               <div class="mt-6 flex justify-end">
-                <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                <button onclick="document.getElementById('modal-container').innerHTML = ''" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
                   Close
                 </button>
               </div>
@@ -1366,17 +1366,17 @@ Be practical and actionable in your analysis.`;
     const csrfToken = setCSRFToken(c);
     
     return c.html(html`
-      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" >
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
           <div class="p-6">
             <div class="flex justify-between items-center mb-6">
               <h3 class="text-xl font-medium text-gray-900">Import Risks</h3>
-              <button onclick="document.getElementById('risk-modal').remove()" class="text-gray-400 hover:text-gray-600">
+              <button onclick="document.getElementById('modal-container').innerHTML = ''" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times text-xl"></i>
               </button>
             </div>
             
-            <form hx-post="/risk/import" hx-encoding="multipart/form-data" hx-target="#risk-modal" hx-swap="innerHTML">
+            <form hx-post="/risk/import" hx-encoding="multipart/form-data" hx-target="#modal-container" hx-swap="innerHTML">
               <input type="hidden" name="_csrf" value="${csrfToken}">
               
               <div class="space-y-6">
@@ -1402,7 +1402,7 @@ Be practical and actionable in your analysis.`;
                   <i class="fas fa-upload mr-2"></i>
                   Import Risks
                 </button>
-                <button type="button" onclick="document.getElementById('risk-modal').remove()" 
+                <button type="button" onclick="document.getElementById('modal-container').innerHTML = ''" 
                         class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
                   Cancel
                 </button>
@@ -1428,7 +1428,7 @@ Be practical and actionable in your analysis.`;
           <p class="text-green-600 text-sm mt-1">CSV import functionality will be implemented in the next version.</p>
           <script>
             setTimeout(() => {
-              document.getElementById('risk-modal').remove();
+              document.getElementById('modal-container').innerHTML = '';
             }, 2000);
           </script>
         </div>
@@ -2180,7 +2180,7 @@ const renderCreateRiskModalWithAIData = (data: any) => html`
         <p class="text-green-700 text-sm mt-1">Review and adjust the pre-filled values as needed.</p>
       </div>
         <form hx-post="/risk/create" 
-              hx-target="#risk-modal" 
+              hx-target="#modal-container" 
               hx-swap="outerHTML"
               class="space-y-6">
           
@@ -2363,7 +2363,7 @@ const renderCreateRiskModalWithAIData = (data: any) => html`
           <!-- Form Actions -->
           <div class="flex justify-end space-x-3 pt-4 border-t">
             <button type="button" 
-                    onclick="document.getElementById('risk-modal').remove()"
+                    onclick="document.getElementById('modal-container').innerHTML = ''"
                     class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-md">
               Cancel
             </button>
@@ -2754,12 +2754,12 @@ const renderRiskTable = (risks: any[]) => {
 
 // Enhanced Risk Assessment Modal - Matching ARIA5 Exactly (with CSRF)
 const renderCreateRiskModal = (csrfToken?: string) => html`
-  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="risk-modal">
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" >
     <div class="relative top-5 mx-auto p-0 border w-full max-w-6xl shadow-xl rounded-lg bg-white">
       <!-- Modal Header -->
       <div class="flex justify-between items-center px-6 py-4 border-b bg-gray-50 rounded-t-md">
         <h3 class="text-lg font-semibold text-gray-900">Create Enhanced Risk Assessment</h3>
-        <button onclick="document.getElementById('risk-modal').remove()" 
+        <button onclick="document.getElementById('modal-container').innerHTML = ''" 
                 class="text-gray-400 hover:text-gray-600">
           <i class="fas fa-times text-xl"></i>
         </button>
@@ -2987,7 +2987,7 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
           <!-- Form Actions -->
           <div class="flex justify-end space-x-3 pt-6 border-t">
             <button type="button" 
-                    onclick="document.getElementById('risk-modal').remove()"
+                    onclick="document.getElementById('modal-container').innerHTML = ''"
                     class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-md">
               Cancel
             </button>
@@ -3244,7 +3244,7 @@ function renderEditRiskModal(risk: any, csrfToken: string) {
   const riskLevel = getRiskLevel(riskScore);
 
   return html`
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" id="risk-modal">
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" >
       <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden">
         
         <!-- Header -->
