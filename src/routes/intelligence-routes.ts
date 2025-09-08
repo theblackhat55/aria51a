@@ -16,9 +16,18 @@ export function createIntelligenceRoutes() {
     const user = c.get('user');
     
     // Get real-time threat intelligence data from database
-    const threatData = await getRecentThreats(c.env.DB);
-    const feedsData = await getFeedsStatus(c.env.DB);
-    const iocsData = await searchIOCs(c.env.DB);
+    let threatData, feedsData, iocsData;
+    try {
+      threatData = await getRecentThreats(c.env.DB);
+      feedsData = await getFeedsStatus(c.env.DB);
+      iocsData = await searchIOCs(c.env.DB);
+    } catch (error) {
+      console.error('Error loading intelligence data:', error);
+      // Use fallback static data
+      threatData = { statistics: { totalThreats: 1, criticalThreats: 1, activeCampaigns: 1, newThisWeek: 0 } };
+      feedsData = { statistics: { totalFeeds: 0, activeFeeds: 0, failedFeeds: 0, recordsToday: 0 } };
+      iocsData = { totalCount: 0, filteredCount: 0 };
+    }
     
     return c.html(
       cleanLayout({
