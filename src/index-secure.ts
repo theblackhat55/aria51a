@@ -318,6 +318,60 @@ app.route('/auth', createAuthRoutes());
 
 // PROTECTED ROUTES (Require authentication)
 
+// Debug endpoint for threat feeds API (bypasses auth for testing)
+app.get('/debug/threat-feeds', async (c) => {
+  try {
+    // Import the getThreatFeeds function
+    const { getThreatFeeds } = await import('./routes/intelligence-settings');
+    const feeds = await getThreatFeeds(c.env.DB);
+    return c.json({ success: true, feeds, count: feeds.length });
+  } catch (error) {
+    console.error('Debug threat feeds error:', error);
+    return c.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    }, 500);
+  }
+});
+
+// Debug endpoint for testing database connectivity
+app.get('/debug/db-test', async (c) => {
+  try {
+    // Test basic database connectivity
+    const result = await c.env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
+    return c.json({ success: true, user_count: result?.count || 0 });
+  } catch (error) {
+    console.error('Debug DB test error:', error);
+    return c.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
+
+// Debug endpoint for testing operations API without auth
+app.get('/debug/operations-feeds', async (c) => {
+  try {
+    // Import the getThreatFeeds function directly  
+    const { getThreatFeeds } = await import('./routes/intelligence-settings');
+    const feeds = await getThreatFeeds(c.env.DB);
+    return c.json({ 
+      success: true, 
+      message: 'Operations API simulation (bypassing auth)', 
+      feeds, 
+      count: feeds.length 
+    });
+  } catch (error) {
+    console.error('Debug operations feeds error:', error);
+    return c.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    }, 500);
+  }
+});
+
 // Dashboard (requires authentication)
 app.route('/dashboard', createCleanDashboardRoutes());
 

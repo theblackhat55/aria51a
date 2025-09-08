@@ -664,13 +664,35 @@ export const renderIntelligenceSettings = () => html`
     async function loadFeeds() {
       try {
         const response = await fetch('/operations/api/intelligence/feeds');
+        
+        // Handle authentication redirects
+        if (response.redirected && response.url.includes('/login')) {
+          console.warn('Session expired, redirecting to login');
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Handle HTTP errors
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            console.warn('Authentication required, redirecting to login');
+            window.location.href = '/login';
+            return;
+          }
+          throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+        }
+        
         const data = await response.json();
         feeds = data.feeds || [];
         renderFeedsTable();
         updateStats();
+        
       } catch (error) {
         console.error('Error loading feeds:', error);
         feeds = [];
+        
+        // Show error message in the UI
+        showErrorMessage('Unable to load threat feeds. Please check your connection and try again.');
         renderFeedsTable();
       }
     }
@@ -782,16 +804,16 @@ export const renderIntelligenceSettings = () => html`
           body: JSON.stringify(feedData)
         });
 
-        if (response.ok) {
-          hideAddFeedModal();
-          loadFeeds();
-          showNotification('Threat feed added successfully!', 'success');
-        } else {
-          throw new Error('Failed to add feed');
-        }
+        const validatedResponse = await handleApiResponse(response);
+        if (!validatedResponse) return; // Redirected to login
+
+        hideAddFeedModal();
+        loadFeeds();
+        showNotification('Threat feed added successfully!', 'success');
+        
       } catch (error) {
         console.error('Error adding feed:', error);
-        showNotification('Error adding threat feed', 'error');
+        showNotification('Error adding threat feed: ' + error.message, 'error');
       }
     }
 
@@ -799,19 +821,22 @@ export const renderIntelligenceSettings = () => html`
     async function testFeed(feedId) {
       try {
         showNotification('Testing feed connection...', 'info');
-        const response = await fetch(\`/operations/api/intelligence/feeds/\${feedId}/test\`, {
+        const response = await fetch('/operations/api/intelligence/feeds/' + feedId + '/test', {
           method: 'POST'
         });
         
-        const result = await response.json();
+        const validatedResponse = await handleApiResponse(response);
+        if (!validatedResponse) return; // Redirected to login
+        
+        const result = await validatedResponse.json();
         if (result.success) {
-          showNotification(\`Feed test successful! Response time: \${result.response_time}ms\`, 'success');
+          showNotification('Feed test successful! Response time: ' + result.response_time + 'ms', 'success');
         } else {
-          showNotification(\`Feed test failed: \${result.message}\`, 'error');
+          showNotification('Feed test failed: ' + result.message, 'error');
         }
       } catch (error) {
         console.error('Error testing feed:', error);
-        showNotification('Error testing feed connection', 'error');
+        showNotification('Error testing feed connection: ' + error.message, 'error');
       }
     }
 
@@ -831,19 +856,19 @@ export const renderIntelligenceSettings = () => html`
     async function deleteFeed(feedId) {
       if (confirm('Are you sure you want to delete this feed?')) {
         try {
-          const response = await fetch(\`/operations/api/intelligence/feeds/\${feedId}\`, {
+          const response = await fetch('/operations/api/intelligence/feeds/' + feedId, {
             method: 'DELETE'
           });
 
-          if (response.ok) {
-            loadFeeds();
-            showNotification('Threat feed deleted successfully!', 'success');
-          } else {
-            throw new Error('Failed to delete feed');
-          }
+          const validatedResponse = await handleApiResponse(response);
+          if (!validatedResponse) return; // Redirected to login
+
+          loadFeeds();
+          showNotification('Threat feed deleted successfully!', 'success');
+          
         } catch (error) {
           console.error('Error deleting feed:', error);
-          showNotification('Error deleting threat feed', 'error');
+          showNotification('Error deleting threat feed: ' + error.message, 'error');
         }
       }
     }
@@ -859,6 +884,32 @@ export const renderIntelligenceSettings = () => html`
     }
 
     // Utility functions
+    // Helper function for handling API responses with auth checks
+    async function handleApiResponse(response) {
+      // Handle authentication redirects
+      if (response.redirected && response.url.includes('/login')) {
+        console.warn('Session expired, redirecting to login');
+        window.location.href = '/login';
+        return null;
+      }
+      
+      // Handle HTTP errors
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          console.warn('Authentication required, redirecting to login');
+          window.location.href = '/login';
+          return null;
+        }
+        throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+      }
+      
+      return response;
+    }
+
+    function showErrorMessage(message) {
+      showNotification(message, 'error');
+    }
+
     function showNotification(message, type = 'info') {
       // Simple notification system - you might want to enhance this
       const colors = {
@@ -868,10 +919,10 @@ export const renderIntelligenceSettings = () => html`
       };
 
       const notification = document.createElement('div');
-      notification.className = \`fixed top-4 right-4 p-4 rounded-lg border \${colors[type]} z-50\`;
+      notification.className = 'fixed top-4 right-4 p-4 rounded-lg border ' + colors[type] + ' z-50';
       notification.innerHTML = \`
         <div class="flex items-center">
-          <span>\${message}</span>
+          <span>' + message + '</span>
           <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-current opacity-50 hover:opacity-75">
             <i class="fas fa-times"></i>
           </button>
@@ -919,7 +970,7 @@ export async function testThreatFeed(feed: any) {
       method: 'GET',
       headers: {
         'User-Agent': 'ARIA5-ThreatIntel/1.0',
-        ...(feed.api_key && { 'Authorization': `Bearer ${feed.api_key}` })
+        ...(feed.api_key && { 'Authorization': 'Bearer ' + feed.api_key })
       },
       signal: AbortSignal.timeout(10000) // 10 second timeout
     });
@@ -929,7 +980,7 @@ export async function testThreatFeed(feed: any) {
     if (!response.ok) {
       return {
         success: false,
-        message: `HTTP ${response.status}: ${response.statusText}`,
+        message: 'HTTP ' + response.status + ': ' + response.statusText,
         responseTime
       };
     }
