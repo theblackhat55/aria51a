@@ -43,11 +43,22 @@ export function createAIAssistantRoutes() {
 
             <div class="max-w-7xl mx-auto px-4 py-8">
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Chat Interface -->
+                <!-- Enhanced Chat Interface with ML Capabilities -->
                 <div class="lg:col-span-2">
                   <div class="bg-white rounded-lg shadow">
                     <!-- Chat Header -->
                     <div class="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <div class="flex items-center justify-between">
+                        <div>
+                          <h2 class="text-lg font-semibold text-gray-900">ARIA Assistant</h2>
+                          <p class="text-sm text-gray-600">AI-powered security intelligence with ML insights</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          <button id="standard-chat-btn" class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full">Standard</button>
+                          <button id="ml-chat-btn" class="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-full">ML Insights</button>
+                        </div>
+                      </div>
+                    </div>
                       <h2 class="text-lg font-semibold text-gray-900">
                         <i class="fas fa-comments text-blue-600 mr-2"></i>
                         Chat with ARIA
@@ -203,20 +214,18 @@ export function createAIAssistantRoutes() {
                     </div>
                   </div>
 
-                  <!-- Recent Insights -->
+                  <!-- Proactive AI Alerts -->
                   <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                      <i class="fas fa-brain text-pink-600 mr-2"></i>
-                      Recent Insights
-                    </h3>
-                    <div class="space-y-3">
-                      <div class="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
-                        <p class="text-sm font-medium text-yellow-800">High Risk Alert</p>
-                        <p class="text-xs text-yellow-600 mt-1">1 critical risk requires immediate attention</p>
-                      </div>
-                      <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                        <p class="text-sm font-medium text-blue-800">Compliance Update</p>
-                        <p class="text-xs text-blue-600 mt-1">ISO 27001 assessment due in 7 days</p>
+                    <div id="proactiveAlerts">
+                      <div class="animate-pulse">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                          <i class="fas fa-bell text-yellow-600 mr-2"></i>
+                          Loading AI Alerts...
+                        </h3>
+                        <div class="space-y-3">
+                          <div class="h-4 bg-gray-200 rounded"></div>
+                          <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -224,6 +233,74 @@ export function createAIAssistantRoutes() {
               </div>
             </div>
           </div>
+          
+          <script>
+            let currentChatMode = 'standard';
+            
+            // Wait for DOM to load
+            document.addEventListener('DOMContentLoaded', function() {
+              // Chat mode switching
+              const standardBtn = document.getElementById('standard-chat-btn');
+              const mlBtn = document.getElementById('ml-chat-btn');
+              
+              if (standardBtn) {
+                standardBtn.addEventListener('click', function() {
+                  currentChatMode = 'standard';
+                  this.classList.add('bg-blue-100', 'text-blue-700');
+                  this.classList.remove('bg-gray-100', 'text-gray-600');
+                  if (mlBtn) {
+                    mlBtn.classList.add('bg-gray-100', 'text-gray-600');
+                    mlBtn.classList.remove('bg-purple-100', 'text-purple-700');
+                  }
+                });
+              }
+              
+              if (mlBtn) {
+                mlBtn.addEventListener('click', function() {
+                  currentChatMode = 'ml';
+                  this.classList.add('bg-purple-100', 'text-purple-700');
+                  this.classList.remove('bg-gray-100', 'text-gray-600');
+                  if (standardBtn) {
+                    standardBtn.classList.add('bg-gray-100', 'text-gray-600');
+                    standardBtn.classList.remove('bg-blue-100', 'text-blue-700');
+                  }
+                });
+              }
+              
+              // Enhanced form submission
+              const chatForm = document.getElementById('chatForm');
+              if (chatForm) {
+                chatForm.addEventListener('submit', function(e) {
+                  e.preventDefault();
+                  const messageInput = document.getElementById('messageInput');
+                  if (messageInput) {
+                    const message = messageInput.value.trim();
+                    
+                    if (message) {
+                      // Choose endpoint based on chat mode
+                      const endpoint = currentChatMode === 'ml' ? '/ai/ml-query' : '/ai/chat';
+                      
+                      // Submit form via HTMX
+                      htmx.ajax('POST', endpoint, {
+                        values: { message: message },
+                        target: '#chatMessages',
+                        swap: 'beforeend'
+                      });
+                      
+                      // Clear input
+                      messageInput.value = '';
+                    }
+                  }
+                });
+              }
+              
+              // Load proactive alerts
+              htmx.ajax('GET', '/ai/proactive-alerts', {
+                target: '#proactiveAlerts',
+                swap: 'innerHTML'
+              });
+            });
+          </script>
         `
       })
     );
@@ -462,6 +539,190 @@ Provide a helpful, professional response focused on risk management, compliance,
     }
   });
 
+  // ENHANCED CHAT ENDPOINTS WITH ML INTEGRATION
+  
+  // Advanced ML Query Endpoint
+  app.post('/ml-query', async (c) => {
+    const formData = await c.req.parseBody();
+    const message = formData.message as string;
+    const user = c.get('user');
+    
+    if (!message) {
+      return c.html(html`<div class="text-red-600">Please provide a query message.</div>`);
+    }
+
+    try {
+      // Use Enhanced AI Chat Service
+      const { EnhancedAIChatService } = await import('../services/enhanced-ai-chat-service');
+      const chatService = new EnhancedAIChatService(c.env.DB, c.env);
+      
+      const chatQuery = {
+        message,
+        sessionId: `ml_${Date.now()}`,
+        userId: user.email || 'unknown',
+        context: 'ml_insights' as const,
+        urgency: 'medium' as const
+      };
+      
+      const response = await chatService.processChatQuery(chatQuery);
+      
+      return c.html(html`
+        <!-- User Message -->
+        <div class="flex items-start space-x-3 justify-end mb-4">
+          <div class="flex-1 max-w-xs lg:max-w-md">
+            <div class="bg-blue-600 text-white rounded-lg px-4 py-3">
+              <p class="text-sm">${message}</p>
+            </div>
+            <p class="text-xs text-gray-500 mt-1 text-right">Just now</p>
+          </div>
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <span class="text-blue-600 text-sm font-medium">${user.firstName?.[0] || user.username?.[0] || 'U'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enhanced ARIA Response -->
+        <div class="flex items-start space-x-3 mb-4">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-brain text-purple-600 text-sm"></i>
+            </div>
+          </div>
+          <div class="flex-1">
+            <div class="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg px-4 py-3">
+              <p class="text-gray-800 text-sm whitespace-pre-wrap">${response.response}</p>
+              
+              ${response.data ? html`
+                <div class="mt-3 p-3 bg-white rounded border">
+                  <div class="text-xs font-medium text-gray-600 mb-2">Live Data Insights:</div>
+                  ${response.data.correlations ? html`
+                    <div class="text-xs text-gray-700">
+                      <strong>Correlations:</strong> ${response.data.correlations.length} clusters found
+                    </div>
+                  ` : ''}
+                  ${response.data.anomalies ? html`
+                    <div class="text-xs text-gray-700">
+                      <strong>Anomalies:</strong> ${response.data.anomalies.length} detected
+                    </div>
+                  ` : ''}
+                  ${response.data.threats ? html`
+                    <div class="text-xs text-gray-700">
+                      <strong>Threats:</strong> ${response.data.threats.length} active indicators
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
+              
+              ${response.actions && response.actions.length > 0 ? html`
+                <div class="mt-3 flex flex-wrap gap-2">
+                  ${response.actions.map(action => html`
+                    <a href="${action.url || '#'}" 
+                       class="inline-flex items-center px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors">
+                      <i class="fas fa-external-link-alt mr-1"></i>
+                      ${action.label}
+                    </a>
+                  `)}
+                </div>
+              ` : ''}
+              
+              <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+                <span>ARIA ML • ${response.aiModel} • ${response.processingTime}ms</span>
+                <span class="flex items-center">
+                  <i class="fas fa-shield-alt mr-1 ${response.confidence >= 0.7 ? 'text-green-500' : response.confidence >= 0.5 ? 'text-yellow-500' : 'text-red-500'}"></i>
+                  ${(response.confidence * 100).toFixed(0)}% confidence
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+
+    } catch (error) {
+      console.error('ML query error:', error);
+      return c.html(html`
+        <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-800 text-sm">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          Sorry, I encountered an error processing your ML query. Please try again.
+        </div>
+      `);
+    }
+  });
+
+  // Proactive Alerts Endpoint
+  app.get('/proactive-alerts', async (c) => {
+    try {
+      const { EnhancedAIChatService } = await import('../services/enhanced-ai-chat-service');
+      const chatService = new EnhancedAIChatService(c.env.DB, c.env);
+      
+      const alerts = await chatService.generateProactiveAlerts();
+      
+      return c.html(html`
+        <div class="space-y-3">
+          <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+            <i class="fas fa-bell text-yellow-600 mr-2"></i>
+            Proactive AI Alerts
+          </h3>
+          
+          ${alerts.length === 0 ? html`
+            <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-green-800 text-sm">
+              <i class="fas fa-check-circle mr-2"></i>
+              No critical alerts at this time. All systems are operating normally.
+            </div>
+          ` : html`
+            <div class="space-y-2">
+              ${alerts.map(alert => html`
+                <div class="border rounded-lg px-4 py-3 ${
+                  alert.severity === 'critical' ? 'bg-red-50 border-red-200' :
+                  alert.severity === 'high' ? 'bg-orange-50 border-orange-200' :
+                  alert.severity === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                  'bg-blue-50 border-blue-200'
+                }">
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                      <h4 class="font-medium text-gray-900 text-sm">${alert.title}</h4>
+                      <p class="text-xs text-gray-600 mt-1">${alert.description}</p>
+                      <p class="text-xs text-gray-700 mt-2 font-medium">AI Analysis: ${alert.aiInsights}</p>
+                    </div>
+                    <span class="ml-2 px-2 py-1 text-xs rounded-full ${
+                      alert.severity === 'critical' ? 'bg-red-100 text-red-800' :
+                      alert.severity === 'high' ? 'bg-orange-100 text-orange-800' :
+                      alert.severity === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-blue-100 text-blue-800'
+                    }">${alert.severity.toUpperCase()}</span>
+                  </div>
+                  
+                  ${alert.recommendedActions.length > 0 ? html`
+                    <div class="mt-3">
+                      <div class="text-xs font-medium text-gray-700 mb-1">Recommended Actions:</div>
+                      <ul class="text-xs text-gray-600 space-y-1">
+                        ${alert.recommendedActions.map(action => html`
+                          <li class="flex items-center">
+                            <i class="fas fa-arrow-right mr-2 text-gray-400"></i>
+                            ${action}
+                          </li>
+                        `)}
+                      </ul>
+                    </div>
+                  ` : ''}
+                </div>
+              `)}
+            </div>
+          `}
+        </div>
+      `);
+
+    } catch (error) {
+      console.error('Proactive alerts error:', error);
+      return c.html(html`
+        <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-red-800 text-sm">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          Unable to load proactive alerts at this time.
+        </div>
+      `);
+    }
+  });
+
   // NEW TI ENHANCEMENT ENDPOINTS
   
   // Threat Analysis endpoint
@@ -526,26 +787,44 @@ Provide a helpful, professional response focused on risk management, compliance,
   return app;
 }
 
-// Enhanced AI response generation with RAG support
+// Enhanced AI response generation with ML integration
 async function generateRAGResponse(message: string, env: any): Promise<string> {
   try {
-    // Check if RAG is enabled
-    const ragResult = await env.DB.prepare(`
-      SELECT value FROM system_configuration WHERE key = 'rag_enabled'
-    `).first();
+    // Use Enhanced AI Chat Service for advanced capabilities
+    const { EnhancedAIChatService } = await import('../services/enhanced-ai-chat-service');
+    const chatService = new EnhancedAIChatService(env.DB, env);
     
-    const ragEnabled = ragResult?.value === 'true';
+    const chatQuery = {
+      message,
+      sessionId: `web_${Date.now()}`,
+      userId: 'web_user',
+      context: 'general' as const
+    };
     
-    if (ragEnabled) {
-      // Use RAG service for contextual responses
-      return await generateContextualRAGResponse(message, env);
-    } else {
-      // Fallback to rule-based responses
-      return generateFallbackResponse(message);
+    const response = await chatService.processChatQuery(chatQuery);
+    
+    // Return the AI response with enhanced formatting
+    let formattedResponse = response.response;
+    
+    // Add action buttons if available
+    if (response.actions && response.actions.length > 0) {
+      formattedResponse += '\n\n**Available Actions:**\n';
+      response.actions.forEach(action => {
+        formattedResponse += `• ${action.label}\n`;
+      });
     }
+    
+    // Add confidence indicator
+    if (response.confidence < 0.5) {
+      formattedResponse += '\n\n*Note: This response has lower confidence. Please verify with additional sources.*';
+    }
+    
+    return formattedResponse;
+    
   } catch (error) {
-    console.error('RAG response error:', error);
-    return generateFallbackResponse(message);
+    console.error('Enhanced chat service error:', error);
+    // Fallback to original RAG implementation
+    return await generateContextualRAGResponse(message, env);
   }
 }
 
