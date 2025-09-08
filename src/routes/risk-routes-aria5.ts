@@ -169,6 +169,49 @@ export function createRiskRoutesARIA5() {
     try {
       console.log('📋 Fetching risks from comprehensive database...');
       
+      // Get filter parameters
+      const search = c.req.query('search') || '';
+      const status = c.req.query('status') || '';
+      const category = c.req.query('category') || '';
+      const risk_level = c.req.query('risk_level') || '';
+      
+      // Build WHERE clause
+      let whereConditions = ['r.status = ?'];
+      let params: any[] = ['active'];
+      
+      if (search) {
+        whereConditions.push('(r.title LIKE ? OR r.description LIKE ?)');
+        params.push(`%${search}%`, `%${search}%`);
+      }
+      
+      if (status && status !== 'active') {
+        whereConditions[0] = 'r.status = ?';
+        params[0] = status;
+      }
+      
+      if (category) {
+        const categoryMap: {[key: string]: number} = {
+          'operational': 1, 'financial': 2, 'strategic': 3,
+          'compliance': 4, 'technology': 5, 'reputation': 6
+        };
+        whereConditions.push('r.category_id = ?');
+        params.push(categoryMap[category] || 1);
+      }
+      
+      if (risk_level) {
+        if (risk_level === 'critical') {
+          whereConditions.push('COALESCE(r.risk_score, r.probability * r.impact) >= 20');
+        } else if (risk_level === 'high') {
+          whereConditions.push('COALESCE(r.risk_score, r.probability * r.impact) >= 15 AND COALESCE(r.risk_score, r.probability * r.impact) < 20');
+        } else if (risk_level === 'medium') {
+          whereConditions.push('COALESCE(r.risk_score, r.probability * r.impact) >= 10 AND COALESCE(r.risk_score, r.probability * r.impact) < 15');
+        } else if (risk_level === 'low') {
+          whereConditions.push('COALESCE(r.risk_score, r.probability * r.impact) < 10');
+        }
+      }
+      
+      const whereClause = whereConditions.join(' AND ');
+      
       // Use comprehensive risks table directly for consistency
       const result = await c.env.DB.prepare(`
         SELECT 
@@ -198,10 +241,10 @@ export function createRiskRoutesARIA5() {
             ELSE 'Operational'
           END as category_name
         FROM risks r
-        WHERE r.status = 'active'
+        WHERE ${whereClause}
         ORDER BY COALESCE(r.risk_score, r.probability * r.impact) DESC, r.created_at DESC
         LIMIT 50
-      `).all();
+      `).bind(...params).all();
       console.log('✅ Successfully fetched from comprehensive risks table');
 
       const risks = result.results || [];
@@ -614,7 +657,423 @@ Be practical and actionable in your analysis.`;
     }
   });
 
+  // View risk modal
+  app.get('/view/:id', async (c) => {
+    const riskId = c.req.param('id');
+    
+    try {
+      const risk = await c.env.DB.prepare(`
+        SELECT 
+          r.id,
+          r.risk_id,
+          r.title,
+          r.description,
+          r.category_id,
+          r.probability,
+          r.impact,
+          COALESCE(r.risk_score, r.probability * r.impact) as risk_score,
+          r.status,
+          r.created_at,
+          r.updated_at,
+          CASE 
+            WHEN r.category_id = 1 THEN 'Operational'
+            WHEN r.category_id = 2 THEN 'Financial' 
+            WHEN r.category_id = 3 THEN 'Strategic'
+            WHEN r.category_id = 4 THEN 'Compliance'
+            WHEN r.category_id = 5 THEN 'Technology'
+            WHEN r.category_id = 6 THEN 'Reputation'
+            ELSE 'Operational'
+          END as category_name
+        FROM risks r
+        WHERE r.id = ?
+      `).bind(riskId).first();
 
+      if (!risk) {
+        return c.html(html`
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+              <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Risk Not Found</h3>
+                <p class="text-gray-600">The requested risk could not be found.</p>
+                <div class="mt-6 flex justify-end">
+                  <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      const riskLevel = getRiskLevel(risk.risk_score);
+      const riskColor = getRiskColorClass(riskLevel);
+
+      return c.html(html`
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+          <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-medium text-gray-900">Risk Details</h3>
+                <button onclick="document.getElementById('risk-modal').remove()" class="text-gray-400 hover:text-gray-600">
+                  <i class="fas fa-times text-xl"></i>
+                </button>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Risk ID</label>
+                  <p class="text-gray-900 font-mono">RISK-${risk.id}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <p class="text-gray-900">${risk.category_name}</p>
+                </div>
+                
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                  <p class="text-gray-900 text-lg font-medium">${risk.title}</p>
+                </div>
+                
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <p class="text-gray-900">${risk.description}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Probability</label>
+                  <p class="text-gray-900">${risk.probability}/5</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Impact</label>
+                  <p class="text-gray-900">${risk.impact}/5</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Risk Score</label>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${riskColor}">
+                    ${risk.risk_score} - ${riskLevel}
+                  </span>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${risk.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                    ${risk.status}
+                  </span>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Created</label>
+                  <p class="text-gray-900">${new Date(risk.created_at).toLocaleString()}</p>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
+                  <p class="text-gray-900">${new Date(risk.updated_at).toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div class="mt-8 flex justify-end space-x-3">
+                <button hx-get="/risk/edit/${risk.id}" 
+                        hx-target="#risk-modal" 
+                        hx-swap="outerHTML"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                  <i class="fas fa-edit mr-2"></i>
+                  Edit Risk
+                </button>
+                <button onclick="document.getElementById('risk-modal').remove()" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    } catch (error) {
+      console.error('Error fetching risk:', error);
+      return c.html(html`
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+          <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div class="p-6">
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Error</h3>
+              <p class="text-gray-600">Failed to load risk details.</p>
+              <div class="mt-6 flex justify-end">
+                <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  });
+
+  // Edit risk modal
+  app.get('/edit/:id', async (c) => {
+    const riskId = c.req.param('id');
+    const csrfToken = setCSRFToken(c);
+    
+    try {
+      const risk = await c.env.DB.prepare(`
+        SELECT * FROM risks WHERE id = ?
+      `).bind(riskId).first();
+
+      if (!risk) {
+        return c.html(html`
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+              <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Risk Not Found</h3>
+                <p class="text-gray-600">The requested risk could not be found.</p>
+                <div class="mt-6 flex justify-end">
+                  <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      return c.html(renderEditRiskModal(risk, csrfToken));
+    } catch (error) {
+      console.error('Error loading risk for edit:', error);
+      return c.html(html`
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+          <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div class="p-6">
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Error</h3>
+              <p class="text-gray-600">Failed to load risk for editing.</p>
+              <div class="mt-6 flex justify-end">
+                <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  });
+
+  // Update risk (PUT/POST)
+  app.post('/edit/:id', async (c) => {
+    const riskId = c.req.param('id');
+    const formData = await c.req.parseBody();
+    
+    try {
+      const title = formData.title as string;
+      const description = formData.description as string;
+      const category = formData.category as string;
+      const probability = parseInt(formData.probability as string);
+      const impact = parseInt(formData.impact as string);
+      const risk_score = probability * impact;
+      
+      // Map category to category_id
+      const categoryMap: {[key: string]: number} = {
+        'operational': 1,
+        'financial': 2,
+        'strategic': 3,
+        'compliance': 4,
+        'technology': 5,
+        'reputation': 6
+      };
+      
+      await c.env.DB.prepare(`
+        UPDATE risks 
+        SET title = ?, description = ?, category_id = ?, probability = ?, impact = ?, risk_score = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(title, description, categoryMap[category] || 1, probability, impact, risk_score, riskId).run();
+
+      return c.html(html`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">Risk updated successfully</span>
+          </div>
+          <script>
+            setTimeout(() => {
+              document.getElementById('risk-modal').remove();
+              // Refresh the risk table
+              if (window.htmx) {
+                htmx.trigger('#risk-table-container', 'refresh-risks');
+              }
+            }, 1500);
+          </script>
+        </div>
+      `);
+    } catch (error) {
+      console.error('Error updating risk:', error);
+      return c.html(html`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-times-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">Failed to update risk</span>
+          </div>
+          <p class="text-red-600 text-sm mt-1">${error.message}</p>
+        </div>
+      `);
+    }
+  });
+
+  // Delete risk
+  app.delete('/:id', async (c) => {
+    const riskId = c.req.param('id');
+    
+    try {
+      await c.env.DB.prepare(`DELETE FROM risks WHERE id = ?`).bind(riskId).run();
+      
+      return c.html(''); // Return empty HTML to remove the table row
+    } catch (error) {
+      console.error('Error deleting risk:', error);
+      return c.html(html`
+        <tr>
+          <td colspan="10" class="px-6 py-4 text-center text-red-600">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Failed to delete risk: ${error.message}
+          </td>
+        </tr>
+      `);
+    }
+  });
+
+  // Import risks modal
+  app.get('/import', async (c) => {
+    const csrfToken = setCSRFToken(c);
+    
+    return c.html(html`
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+          <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-medium text-gray-900">Import Risks</h3>
+              <button onclick="document.getElementById('risk-modal').remove()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            
+            <form hx-post="/risk/import" hx-encoding="multipart/form-data" hx-target="#risk-modal" hx-swap="innerHTML">
+              <input type="hidden" name="_csrf" value="${csrfToken}">
+              
+              <div class="space-y-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                  <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <input type="file" name="csv_file" accept=".csv" required 
+                           class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <p class="text-xs text-gray-500 mt-2">CSV format: title, description, category, probability, impact</p>
+                  </div>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-lg">
+                  <h4 class="text-sm font-medium text-blue-800 mb-2">CSV Format Example:</h4>
+                  <pre class="text-xs text-blue-700 bg-blue-100 p-2 rounded">title,description,category,probability,impact
+"Data Breach","Unauthorized access to customer data","technology",4,5
+"System Outage","Critical system failure","operational",3,4</pre>
+                </div>
+              </div>
+              
+              <div class="mt-6 flex justify-end space-x-3">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                  <i class="fas fa-upload mr-2"></i>
+                  Import Risks
+                </button>
+                <button type="button" onclick="document.getElementById('risk-modal').remove()" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    `);
+  });
+
+  // Import risks processing
+  app.post('/import', async (c) => {
+    try {
+      // For now, return success message
+      // In production, you would parse the CSV and insert into database
+      return c.html(html`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">Import feature coming soon</span>
+          </div>
+          <p class="text-green-600 text-sm mt-1">CSV import functionality will be implemented in the next version.</p>
+          <script>
+            setTimeout(() => {
+              document.getElementById('risk-modal').remove();
+            }, 2000);
+          </script>
+        </div>
+      `);
+    } catch (error) {
+      return c.html(html`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-times-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">Import failed</span>
+          </div>
+          <p class="text-red-600 text-sm mt-1">${error.message}</p>
+        </div>
+      `);
+    }
+  });
+
+  // Export risks
+  app.post('/export', async (c) => {
+    try {
+      const risks = await c.env.DB.prepare(`
+        SELECT 
+          risk_id,
+          title,
+          description,
+          CASE 
+            WHEN category_id = 1 THEN 'operational'
+            WHEN category_id = 2 THEN 'financial' 
+            WHEN category_id = 3 THEN 'strategic'
+            WHEN category_id = 4 THEN 'compliance'
+            WHEN category_id = 5 THEN 'technology'
+            WHEN category_id = 6 THEN 'reputation'
+            ELSE 'operational'
+          END as category,
+          probability,
+          impact,
+          COALESCE(risk_score, probability * impact) as risk_score,
+          status,
+          created_at
+        FROM risks 
+        WHERE status = 'active'
+        ORDER BY risk_score DESC
+      `).all();
+
+      // Generate CSV content
+      const csvHeader = 'risk_id,title,description,category,probability,impact,risk_score,status,created_at\\n';
+      const csvRows = (risks.results || []).map((risk: any) => 
+        `"${risk.risk_id}","${risk.title}","${risk.description}","${risk.category}",${risk.probability},${risk.impact},${risk.risk_score},"${risk.status}","${risk.created_at}"`
+      ).join('\\n');
+      
+      const csvContent = csvHeader + csvRows;
+      
+      return new Response(csvContent, {
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': 'attachment; filename="risks_export.csv"'
+        }
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      return c.json({ error: 'Export failed' }, 500);
+    }
+  });
 
   // Risk Assessments page route - Missing route that was causing 404
   app.get('/assessments', async (c) => {
@@ -1510,10 +1969,15 @@ const renderARIA5RiskManagement = () => html`
             <p class="mt-1 text-sm text-gray-600">Manage organizational risks and mitigation strategies</p>
           </div>
           <div class="flex space-x-3">
-            <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
+            <button hx-get="/risk/import"
+                    hx-target="#modal-container"
+                    hx-swap="innerHTML"
+                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
               <i class="fas fa-upload mr-2"></i>Import
             </button>
-            <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
+            <button hx-post="/risk/export"
+                    hx-trigger="click"
+                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
               <i class="fas fa-download mr-2"></i>Export  
             </button>
             <button hx-get="/risk/create"
@@ -1555,17 +2019,26 @@ const renderARIA5RiskManagement = () => html`
 
       <!-- Filters Section -->
       <div class="bg-white rounded-lg shadow mb-6 p-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="risk-filters">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
             <input type="text" 
                    name="search"
                    placeholder="Search risks..."
+                   hx-get="/risk/table"
+                   hx-trigger="input changed delay:500ms"
+                   hx-target="#risk-table"
+                   hx-include="#risk-filters"
                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">All Status</label>
-            <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select name="status" 
+                    hx-get="/risk/table"
+                    hx-trigger="change"
+                    hx-target="#risk-table"
+                    hx-include="#risk-filters"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="mitigated">Mitigated</option>
@@ -1574,16 +2047,29 @@ const renderARIA5RiskManagement = () => html`
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">All Categories</label>
-            <select name="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select name="category" 
+                    hx-get="/risk/table"
+                    hx-trigger="change"
+                    hx-target="#risk-table"
+                    hx-include="#risk-filters"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">All Categories</option>
-              <option value="cybersecurity">Cybersecurity</option>
-              <option value="data-privacy">Data Privacy</option>
-              <option value="third-party">Third-Party Risk</option>
+              <option value="operational">Operational</option>
+              <option value="financial">Financial</option>
+              <option value="strategic">Strategic</option>
+              <option value="compliance">Compliance</option>
+              <option value="technology">Technology</option>
+              <option value="reputation">Reputation</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">All Risk Levels</label>
-            <select name="risk_level" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select name="risk_level" 
+                    hx-get="/risk/table"
+                    hx-trigger="change"
+                    hx-target="#risk-table"
+                    hx-include="#risk-filters"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">All Risk Levels</option>
               <option value="critical">Critical</option>
               <option value="high">High</option>
@@ -1734,13 +2220,26 @@ const renderRiskTable = (risks: any[]) => {
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${createdDate}</td>
         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+          <button class="text-indigo-600 hover:text-indigo-900 mr-3" 
+                  hx-get="/risk/view/${risk.id}" 
+                  hx-target="#modal-container" 
+                  hx-swap="innerHTML"
+                  title="View Risk">
             <i class="fas fa-eye"></i>
           </button>
-          <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+          <button class="text-indigo-600 hover:text-indigo-900 mr-3" 
+                  hx-get="/risk/edit/${risk.id}" 
+                  hx-target="#modal-container" 
+                  hx-swap="innerHTML"
+                  title="Edit Risk">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="text-red-600 hover:text-red-900">
+          <button class="text-red-600 hover:text-red-900" 
+                  hx-delete="/risk/${risk.id}" 
+                  hx-confirm="Are you sure you want to delete this risk?" 
+                  hx-target="closest tr" 
+                  hx-swap="outerHTML"
+                  title="Delete Risk">
             <i class="fas fa-trash"></i>
           </button>
         </td>
@@ -2236,3 +2735,110 @@ const renderSimpleAddRiskModal = (csrfToken?: string) => html`
     </div>
   </div>
 `;
+
+
+
+// Render edit risk modal
+function renderEditRiskModal(risk: any, csrfToken: string) {
+  const categoryOptions = [
+    { value: 'operational', name: 'Operational' },
+    { value: 'financial', name: 'Financial' },
+    { value: 'strategic', name: 'Strategic' },
+    { value: 'compliance', name: 'Compliance' },
+    { value: 'technology', name: 'Technology' },
+    { value: 'reputation', name: 'Reputation' }
+  ];
+
+  // Map category_id to category name
+  const categoryMap: {[key: number]: string} = {
+    1: 'operational',
+    2: 'financial',
+    3: 'strategic',
+    4: 'compliance',
+    5: 'technology',
+    6: 'reputation'
+  };
+
+  const currentCategory = categoryMap[risk.category_id] || 'operational';
+
+  return html`
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
+      <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-medium text-gray-900">Edit Risk</h3>
+            <button onclick="document.getElementById('risk-modal').remove()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <form hx-post="/risk/edit/${risk.id}" hx-target="#risk-modal" hx-swap="innerHTML">
+            <input type="hidden" name="_csrf" value="${csrfToken}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Risk Title *</label>
+                <input type="text" name="title" value="${risk.title}" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <select name="category" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  ${categoryOptions.map(cat => html`
+                    <option value="${cat.value}" ${currentCategory === cat.value ? 'selected' : ''}>${cat.name}</option>
+                  `)}
+                </select>
+              </div>
+              
+              <div></div>
+              
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <textarea name="description" rows="4" required 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">${risk.description}</textarea>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Probability *</label>
+                <select name="probability" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="1" ${risk.probability === 1 ? 'selected' : ''}>1 - Very Low</option>
+                  <option value="2" ${risk.probability === 2 ? 'selected' : ''}>2 - Low</option>
+                  <option value="3" ${risk.probability === 3 ? 'selected' : ''}>3 - Medium</option>
+                  <option value="4" ${risk.probability === 4 ? 'selected' : ''}>4 - High</option>
+                  <option value="5" ${risk.probability === 5 ? 'selected' : ''}>5 - Very High</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Impact *</label>
+                <select name="impact" required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="1" ${risk.impact === 1 ? 'selected' : ''}>1 - Minimal</option>
+                  <option value="2" ${risk.impact === 2 ? 'selected' : ''}>2 - Minor</option>
+                  <option value="3" ${risk.impact === 3 ? 'selected' : ''}>3 - Moderate</option>
+                  <option value="4" ${risk.impact === 4 ? 'selected' : ''}>4 - Major</option>
+                  <option value="5" ${risk.impact === 5 ? 'selected' : ''}>5 - Severe</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="mt-8 flex justify-end space-x-3">
+              <button type="submit" 
+                      class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                <i class="fas fa-save mr-2"></i>
+                Update Risk
+              </button>
+              <button type="button" onclick="document.getElementById('risk-modal').remove()" 
+                      class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+}

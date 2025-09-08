@@ -1,0 +1,285 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+        <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+          <div class="flex">
+            <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+            <div class="text-sm text-red-700">
+              Error adding asset. Please check all required fields and try again.
+            </div>
+          </div>
+        </div>
+        
+  <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
+       hx-target="this" 
+       hx-swap="outerHTML"
+       _="on click from elsewhere halt the event">
+    <div class="relative top-10 mx-auto p-6 border w-full max-w-4xl shadow-xl rounded-lg bg-white">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-server text-blue-600 mr-3"></i>
+              Add New Asset - ARIA5 Configuration
+            </h3>
+            <p class="text-sm text-gray-600 mt-1">Configure asset with comprehensive security assessment and ARIA5 compliance standards</p>
+          </div>
+          <button hx-get="/operations/api/assets/close" hx-target="#asset-modal" hx-swap="innerHTML" 
+                  class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+        
+        <form hx-post="/operations/api/assets" 
+              hx-target="#asset-modal" 
+              hx-swap="innerHTML"
+              hx-indicator="#asset-loading"
+              onchange="calculateAssetRisk()">
+          
+          <!-- Basic Asset Information -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="space-y-4">
+              <h4 class="text-lg font-medium text-gray-800 border-b pb-2">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                Asset Information
+              </h4>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-tag mr-1"></i>Asset Name *
+                </label>
+                <input type="text" name="name" required 
+                       placeholder="e.g., WEB-SRV-01, DB-MAIN-02"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-desktop mr-1"></i>Asset Type *
+                </label>
+                <select name="type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Asset Type</option>
+                  <option value="Physical Server">Physical Server</option>
+                  <option value="Virtual Server">Virtual Server</option>
+                  <option value="Database Server">Database Server</option>
+                  <option value="Web Server">Web Server</option>
+                  <option value="Application Server">Application Server</option>
+                  <option value="Workstation">Workstation</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Mobile Device">Mobile Device</option>
+                  <option value="Network Switch">Network Switch</option>
+                  <option value="Router">Router</option>
+                  <option value="Firewall">Firewall</option>
+                  <option value="Load Balancer">Load Balancer</option>
+                  <option value="Storage Device">Storage Device</option>
+                  <option value="IoT Device">IoT Device</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <i class="fas fa-map-marker-alt mr-1"></i>Physical Location *
+                </label>
+                <select name="location" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Location</option>
+                  <option value="Primary Data Center">Primary Data Center</option>
+                  <option value="Secondary Data Center">Secondary Data Center</option>
+                  <option value="Cloud (AWS)">Cloud (AWS)</option>
+                  <option value="Cloud (Azure)">Cloud (Azure)</option>
+                  <option value="Cloud (GCP)">Cloud (GCP)</option>
+                  <option value="Cloud (Other)">Cloud (Other)</option>
+                  <option value="Head Office">Head Office</option>
+                  <option value="Branch Office">Branch Office</option>
+                  <option value="Remote Location">Remote Location</option>
+                  <option value="Mobile/Portable">Mobile/Portable</option>
+                  <option value="Home Office">Home Office</option>
+                  <option value="Third Party">Third Party</option>
+                </select>
+              </div>
+              
+              <!-- Asset Criticality is now auto-calculated based on CIA Risk Score -->
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <h5 class="font-medium text-blue-800 mb-2">
+                  <i class="fas fa-info-circle mr-1"></i>Asset Criticality
+                </h5>
+                <div class="text-sm text-blue-700">
+                  Automatically calculated based on CIA Risk Score assessment
+                </div>
+                <div id="asset-criticality-display" class="mt-2 text-lg font-medium text-blue-800">
+                  Complete CIA assessment to view criticality
+                </div>
+              </div>
+            </div>
+            
+            <!-- Security Assessment -->
+            <div class="space-y-4">
+              <h4 class="text-lg font-medium text-gray-800 border-b pb-2">
+                <i class="fas fa-shield-alt text-red-500 mr-2"></i>
+                Security Assessment
+              </h4>
+              
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <h5 class="font-medium text-blue-800 mb-2">
+                  <i class="fas fa-eye-slash mr-1"></i>Data Confidentiality *
+                </h5>
+                <p class="text-xs text-blue-700 mb-3">Sensitivity of data stored/processed on this asset</p>
+                <select name="confidentiality" id="asset_confidentiality" required 
+                        class="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Level</option>
+                  <option value="1">1 - Public (Publicly available information)</option>
+                  <option value="2">2 - Internal (Internal use only)</option>
+                  <option value="3">3 - Confidential (Sensitive business data)</option>
+                  <option value="4">4 - Restricted (Highly classified data)</option>
+                </select>
+              </div>
+              
+              <div class="bg-orange-50 p-4 rounded-lg">
+                <h5 class="font-medium text-orange-800 mb-2">
+                  <i class="fas fa-check-double mr-1"></i>Data Integrity *
+                </h5>
+                <p class="text-xs text-orange-700 mb-3">Impact if asset data is corrupted or tampered</p>
+                <select name="integrity" id="asset_integrity" required 
+                        class="w-full px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                  <option value="">Select Level</option>
+                  <option value="1">1 - Low (Minimal business impact)</option>
+                  <option value="2">2 - Medium (Moderate business impact)</option>
+                  <option value="3">3 - High (Significant business disruption)</option>
+                  <option value="4">4 - Critical (Severe business/safety impact)</option>
+                </select>
+              </div>
+              
+              <div class="bg-green-50 p-4 rounded-lg">
+                <h5 class="font-medium text-green-800 mb-2">
+                  <i class="fas fa-clock mr-1"></i>Availability Requirement *
+                </h5>
+                <p class="text-xs text-green-700 mb-3">Business impact if asset becomes unavailable</p>
+                <select name="availability" id="asset_availability" required 
+                        class="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                  <option value="">Select Level</option>
+                  <option value="1">1 - Low (Can be down for days)</option>
+                  <option value="2">2 - Medium (Can be down for hours)</option>
+                  <option value="3">3 - High (Maximum 1 hour downtime)</option>
+                  <option value="4">4 - Critical (Near zero downtime required)</option>
+                </select>
+              </div>
+              
+              <!-- Overall Risk Score Display -->
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h5 class="font-medium text-gray-800 mb-2">
+                  <i class="fas fa-calculator mr-1"></i>Asset Risk Score
+                </h5>
+                <div id="asset-risk-display" class="text-2xl font-bold text-gray-400">
+                  Select CIA ratings to calculate
+                </div>
+                <div class="text-xs text-gray-600 mt-1">
+                  Calculated as: max(C, I, A) + weighted average
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Additional Information -->
+          <div class="border-t pt-6 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-sticky-note mr-1"></i>Asset Description & Notes
+              </label>
+              <textarea name="description" rows="3" 
+                        placeholder="Additional details about the asset, configuration notes, or special requirements"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+          </div>
+          
+          <!-- Hidden field for calculated risk score -->
+          <input type="hidden" name="risk_score" id="asset_risk_value" value="">
+          
+          <div class="flex justify-end space-x-3 pt-4 border-t">
+            <button type="button" 
+                    hx-get="/operations/api/assets/close" 
+                    hx-target="#asset-modal" 
+                    hx-swap="innerHTML"
+                    class="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors flex items-center">
+              <span class="htmx-indicator" id="asset-loading">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+              </span>
+              <i class="fas fa-plus mr-2"></i>
+              Create Asset
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function calculateAssetRisk() {
+      const c = parseInt(document.getElementById('asset_confidentiality')?.value || '0');
+      const i = parseInt(document.getElementById('asset_integrity')?.value || '0');
+      const a = parseInt(document.getElementById('asset_availability')?.value || '0');
+      
+      if (c && i && a) {
+        // ARIA5 risk calculation: max value + weighted average
+        const maxRating = Math.max(c, i, a);
+        const weightedAvg = (c + i + a) / 3;
+        const overallScore = (maxRating * 0.6) + (weightedAvg * 0.4);
+        
+        // Risk level determination
+        let riskLevel, riskColor, riskBg;
+        if (overa100 14977    0 14059  100   918   898k  60078 --:--:-- --:--:-- --:--:--  975k
+llScore >= 3.5) {
+          riskLevel = 'Critical';
+          riskColor = 'text-red-600';
+          riskBg = 'bg-red-100';
+        } else if (overallScore >= 2.5) {
+          riskLevel = 'High';
+          riskColor = 'text-orange-600';
+          riskBg = 'bg-orange-100';
+        } else if (overallScore >= 1.5) {
+          riskLevel = 'Medium';
+          riskColor = 'text-yellow-600';
+          riskBg = 'bg-yellow-100';
+        } else {
+          riskLevel = 'Low';
+          riskColor = 'text-green-600';
+          riskBg = 'bg-green-100';
+        }
+        
+        document.getElementById('asset-risk-display').innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="px-3 py-1 rounded-full text-sm font-medium ${riskBg} ${riskColor}">
+              ${riskLevel}
+            </span>
+            <span class="text-gray-600">(${overallScore.toFixed(1)}/4.0)</span>
+          </div>
+        `;
+        
+        // Update asset criticality display
+        document.getElementById('asset-criticality-display').innerHTML = `
+          <span class="px-3 py-1 rounded-full text-sm font-medium ${riskBg} ${riskColor}">
+            ${riskLevel} Criticality
+          </span>
+        `;
+        
+        document.getElementById('asset_risk_value').value = overallScore.toFixed(2);
+      }
+    }
+    
+    // Auto-trigger calculation when CIA values change
+    document.addEventListener('DOMContentLoaded', function() {
+      const ciaFields = ['asset_confidentiality', 'asset_integrity', 'asset_availability'];
+      
+      ciaFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('change', calculateAssetRisk);
+        }
+      });
+    });
+  </script>
+
+      

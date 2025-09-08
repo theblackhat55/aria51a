@@ -389,9 +389,7 @@ export function createCleanDashboardRoutes() {
         services: services
       };
 
-      return new Response(renderSystemHealthServices(systemHealth.services), {
-        headers: { 'Content-Type': 'text/html' }
-      });
+      return c.html(renderSystemHealthServices(systemHealth.services));
     } catch (error) {
       console.error('Error fetching system health:', error);
       return c.html('<div class="text-red-600 p-4">Failed to load system health</div>', 500);
@@ -756,62 +754,60 @@ const renderSystemHealthServices = (services: any) => {
     'backups': 'fas fa-cloud-arrow-up'
   };
   
-  let servicesHTML = '';
-  
-  for (const serviceKey of serviceOrder) {
-    const service = services[serviceKey];
-    if (!service) continue;
-    
-    // Determine color scheme based on status
-    let colorClass, textColorClass, statusColor, statusText;
-    
-    switch (service.status) {
-      case 'operational':
-        colorClass = 'bg-green-50';
-        textColorClass = 'text-green-600';
-        statusColor = 'text-green-600';
-        statusText = service.uptime || 'Active';
-        break;
-      case 'scanning':
-      case 'running':
-        colorClass = 'bg-yellow-50';
-        textColorClass = 'text-yellow-600';
-        statusColor = 'text-yellow-600';
-        statusText = 'Running';
-        break;
-      case 'warning':
-        colorClass = 'bg-orange-50';
-        textColorClass = 'text-orange-600';
-        statusColor = 'text-orange-600';
-        statusText = 'Warning';
-        break;
-      case 'error':
-      case 'failed':
-        colorClass = 'bg-red-50';
-        textColorClass = 'text-red-600';
-        statusColor = 'text-red-600';
-        statusText = 'Error';
-        break;
-      default:
-        colorClass = 'bg-gray-50';
-        textColorClass = 'text-gray-600';
-        statusColor = 'text-gray-600';
-        statusText = 'Unknown';
-    }
-    
-    servicesHTML += `
-      <div class="flex items-center justify-between p-3 ${colorClass} rounded-lg">
-        <div class="flex items-center space-x-2 sm:space-x-3">
-          <i class="${icons[serviceKey]} ${textColorClass} text-sm sm:text-base"></i>
-          <div class="min-w-0 flex-1">
-            <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">${service.name}</p>
-            <p class="text-xs text-gray-500 truncate">${service.details}</p>
+  return html`
+    ${serviceOrder.map(serviceKey => {
+      const service = services[serviceKey];
+      if (!service) return '';
+      
+      // Determine color scheme based on status
+      let colorClass, textColorClass, statusColor, statusText;
+      
+      switch (service.status) {
+        case 'operational':
+          colorClass = 'bg-green-50';
+          textColorClass = 'text-green-600';
+          statusColor = 'text-green-600';
+          statusText = service.uptime || 'Active';
+          break;
+        case 'scanning':
+        case 'running':
+          colorClass = 'bg-yellow-50';
+          textColorClass = 'text-yellow-600';
+          statusColor = 'text-yellow-600';
+          statusText = 'Running';
+          break;
+        case 'warning':
+          colorClass = 'bg-orange-50';
+          textColorClass = 'text-orange-600';
+          statusColor = 'text-orange-600';
+          statusText = 'Warning';
+          break;
+        case 'error':
+        case 'failed':
+          colorClass = 'bg-red-50';
+          textColorClass = 'text-red-600';
+          statusColor = 'text-red-600';
+          statusText = 'Error';
+          break;
+        default:
+          colorClass = 'bg-gray-50';
+          textColorClass = 'text-gray-600';
+          statusColor = 'text-gray-600';
+          statusText = 'Unknown';
+      }
+      
+      return html`
+        <div class="flex items-center justify-between p-3 ${colorClass} rounded-lg">
+          <div class="flex items-center space-x-2 sm:space-x-3">
+            <i class="${icons[serviceKey]} ${textColorClass} text-sm sm:text-base"></i>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-medium text-gray-900 truncate">${service.name}</p>
+              <p class="text-xs text-gray-500 truncate">${service.details}</p>
+            </div>
           </div>
+          <span class="${statusColor} text-xs sm:text-sm font-medium ml-2">${statusText}</span>
         </div>
-        <span class="${statusColor} text-xs sm:text-sm font-medium ml-2">${statusText}</span>
-      </div>
-    `;
-  }
-  
-  return servicesHTML;
+      `;
+    })}
+  `;
 };

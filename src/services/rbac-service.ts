@@ -599,7 +599,7 @@ export class RBACService {
         query = 'SELECT 1 FROM services WHERE id = ? AND created_by = ?';
         break;
       case 'assets':
-        query = 'SELECT 1 FROM assets WHERE id = ? AND created_by = ?';
+        query = 'SELECT 1 FROM assets_enhanced WHERE id = ? AND created_by = ?';
         break;
       default:
         return false;

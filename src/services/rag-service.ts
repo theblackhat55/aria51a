@@ -157,7 +157,7 @@ Created: ${new Date(risk.created_at).toDateString()}
 
   private async indexAssets(): Promise<void> {
     const assets = await this.db.prepare(`
-      SELECT * FROM assets WHERE status = 'active'
+      SELECT * FROM assets_enhanced WHERE active_status = TRUE
     `).all();
 
     for (const asset of assets.results || []) {

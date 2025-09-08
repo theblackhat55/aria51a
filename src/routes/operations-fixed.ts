@@ -218,24 +218,34 @@ export function createOperationsRoutes() {
     try {
       const formData = await c.req.formData();
       
-      // Enhanced ARIA5 asset data collection
+      // Generate unique asset ID automatically
+      const asset_id = `ASSET-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      
+      // Enhanced ARIA5 asset data collection for assets_enhanced table
       const assetData = {
+        // Unique asset identifier
+        asset_id: asset_id,
+        
         // Basic asset information
         name: formData.get('name'),
-        type: formData.get('type'),
+        type: formData.get('type'), // Will be used as subcategory
+        asset_type: 'Primary', // Default to Primary asset
+        category: 'Systems', // Default category
         operating_system: formData.get('operating_system'),
         location: formData.get('location'),
-        asset_owner: formData.get('asset_owner'),
         technical_custodian: formData.get('technical_custodian'),
         
-        // Security assessment (CIA Triad)
+        // Security assessment (CIA Triad) - numeric values
         confidentiality: formData.get('confidentiality'),
         integrity: formData.get('integrity'),
         availability: formData.get('availability'),
         
+        // Business and classification fields
+        business_function: formData.get('business_function') || '',
+        data_classification: formData.get('data_classification') || 'Internal',
+        
         // Technical & compliance configuration
         network_zone: formData.get('network_zone'),
-        criticality: formData.get('criticality'),
         compliance_requirements: formData.get('compliance_requirements'),
         patch_management: formData.get('patch_management'),
         backup_status: formData.get('backup_status'),
@@ -253,24 +263,32 @@ export function createOperationsRoutes() {
         updated_at: new Date().toISOString()
       };
       
-      const asset = await createAsset(c.env.DB, assetData);
-      
-      // Determine risk level for display
+      // Auto-calculate criticality based on risk score
       const riskScore = parseFloat(assetData.risk_score || '0');
-      let riskLevel, riskColor;
+      let calculatedCriticality, riskLevel, riskColor;
+      
       if (riskScore >= 3.5) {
+        calculatedCriticality = 'Critical';
         riskLevel = 'Critical';
         riskColor = 'text-red-600 bg-red-100';
       } else if (riskScore >= 2.5) {
+        calculatedCriticality = 'High';
         riskLevel = 'High';
         riskColor = 'text-orange-600 bg-orange-100';
       } else if (riskScore >= 1.5) {
+        calculatedCriticality = 'Medium';
         riskLevel = 'Medium';
         riskColor = 'text-yellow-600 bg-yellow-100';
       } else {
+        calculatedCriticality = 'Low';
         riskLevel = 'Low';
         riskColor = 'text-green-600 bg-green-100';
       }
+      
+      // Add the calculated criticality to asset data
+      assetData.criticality = calculatedCriticality;
+      
+      const asset = await createAsset(c.env.DB, assetData);
       
       // Return enhanced success message with asset details
       return c.html(html`
@@ -281,18 +299,19 @@ export function createOperationsRoutes() {
             
             <div class="bg-gray-50 rounded-lg p-4 mb-4 text-left">
               <div class="text-sm space-y-2">
+                <div><span class="font-medium">Asset ID:</span> <code class="text-blue-600 bg-blue-100 px-2 py-1 rounded">${assetData.asset_id}</code></div>
                 <div><span class="font-medium">Asset:</span> ${assetData.name}</div>
                 <div><span class="font-medium">Type:</span> ${assetData.type || 'Not specified'}</div>
                 <div><span class="font-medium">Location:</span> ${assetData.location || 'Not specified'}</div>
                 <div><span class="font-medium">OS:</span> ${assetData.operating_system || 'Not specified'}</div>
                 <div class="flex items-center">
-                  <span class="font-medium mr-2">Risk Level:</span>
+                  <span class="font-medium mr-2">Risk Score:</span>
                   <span class="px-2 py-1 rounded-full text-xs font-medium ${riskColor}">
                     ${riskLevel} ${riskScore > 0 ? `(${riskScore.toFixed(1)}/4.0)` : ''}
                   </span>
                 </div>
                 <div><span class="font-medium">CIA Rating:</span> C:${assetData.confidentiality}, I:${assetData.integrity}, A:${assetData.availability}</div>
-                <div><span class="font-medium">Criticality:</span> ${assetData.criticality || 'Medium'}</div>
+                <div><span class="font-medium">Auto-Calculated Criticality:</span> <span class="px-2 py-1 rounded-full text-xs font-medium ${riskColor}">${assetData.criticality}</span></div>
               </div>
             </div>
             
@@ -545,7 +564,7 @@ export function createOperationsRoutes() {
   // Microsoft Defender Stats API endpoints
   app.get('/api/stats/machines', async (c) => {
     try {
-      const result = await c.env.DB.prepare("SELECT COUNT(*) as count FROM assets WHERE type = 'device' AND status = 'active'").first();
+      const result = await c.env.DB.prepare("SELECT COUNT(*) as count FROM assets_enhanced WHERE subcategory LIKE '%device%' OR subcategory LIKE '%Device%' AND active_status = TRUE").first();
       const count = result?.count || 0;
       return c.html(`
         <div class="flex items-center">
@@ -1620,8 +1639,13 @@ const renderDefenderIntegration = () => html`
 async function getAssets(db: D1Database) {
   try {
     const result = await db.prepare(`
-      SELECT * FROM assets 
-      WHERE status = 'active' 
+      SELECT 
+        id, asset_id, name, asset_type, category, subcategory,
+        confidentiality_numeric, integrity_numeric, availability_numeric,
+        risk_score, criticality, location, owner_id, custodian_id,
+        active_status, created_at, updated_at
+      FROM assets_enhanced 
+      WHERE active_status = TRUE 
       ORDER BY created_at DESC
     `).all();
     
@@ -1634,10 +1658,10 @@ async function getAssets(db: D1Database) {
 
 async function getServices(db: D1Database) {
   try {
-    // Get services from assets table where category = 'service'
+    // Get services from assets_enhanced table where category = 'service'  
     const result = await db.prepare(`
-      SELECT * FROM assets 
-      WHERE category = 'service' AND status = 'active'
+      SELECT * FROM assets_enhanced 
+      WHERE category = 'service' AND active_status = TRUE
       ORDER BY created_at DESC
     `).all();
     
@@ -1651,20 +1675,39 @@ async function getServices(db: D1Database) {
 async function createAsset(db: D1Database, assetData: any) {
   try {
     const result = await db.prepare(`
-      INSERT INTO assets (
-        name, type, category, location, criticality, 
-        value, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO assets_enhanced (
+        asset_id, name, asset_type, category, subcategory, location, 
+        criticality, confidentiality_numeric, integrity_numeric, 
+        availability_numeric, risk_score, operating_system, 
+        custodian_id, network_zone, compliance_requirements, 
+        patch_management, backup_status, monitoring_level, 
+        description, business_function, data_classification,
+        created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
+      assetData.asset_id,
       assetData.name,
-      assetData.type || 'Unknown',
-      assetData.category || 'IT Infrastructure',
+      assetData.asset_type || 'Primary',
+      assetData.category || 'Systems',
+      assetData.type || 'Unknown', // Use type as subcategory
       assetData.location || 'Unknown',
-      assetData.criticality || 'medium',
-      0, // value - we can calculate this later
-      'active',
-      new Date().toISOString(),
-      new Date().toISOString()
+      assetData.criticality || 'Medium',
+      parseInt(assetData.confidentiality || '2'),
+      parseInt(assetData.integrity || '2'), 
+      parseInt(assetData.availability || '2'),
+      parseFloat(assetData.risk_score || '0'),
+      assetData.operating_system || '',
+      assetData.technical_custodian || null,
+      assetData.network_zone || '',
+      assetData.compliance_requirements || '',
+      assetData.patch_management || '',
+      assetData.backup_status || '',
+      assetData.monitoring_level || '',
+      assetData.description || '',
+      assetData.business_function || '',
+      assetData.data_classification || '',
+      assetData.created_at,
+      assetData.updated_at
     ).run();
     
     return { id: result.meta?.last_row_id, ...assetData };
@@ -2077,14 +2120,17 @@ const renderAssetModal = () => html`
                 </select>
               </div>
               
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Asset Criticality</label>
-                <select name="criticality" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
-                </select>
+              <!-- Asset Criticality is now auto-calculated based on CIA Risk Score -->
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <h5 class="font-medium text-blue-800 mb-2">
+                  <i class="fas fa-info-circle mr-1"></i>Asset Criticality
+                </h5>
+                <div class="text-sm text-blue-700">
+                  Automatically calculated based on CIA Risk Score assessment
+                </div>
+                <div id="asset-criticality-display" class="mt-2 text-lg font-medium text-blue-800">
+                  Complete CIA assessment to view criticality
+                </div>
               </div>
             </div>
             
@@ -2233,9 +2279,28 @@ const renderAssetModal = () => html`
           </div>
         \`;
         
+        // Update asset criticality display
+        document.getElementById('asset-criticality-display').innerHTML = \`
+          <span class="px-3 py-1 rounded-full text-sm font-medium \${riskBg} \${riskColor}">
+            \${riskLevel} Criticality
+          </span>
+        \`;
+        
         document.getElementById('asset_risk_value').value = overallScore.toFixed(2);
       }
     }
+    
+    // Auto-trigger calculation when CIA values change
+    document.addEventListener('DOMContentLoaded', function() {
+      const ciaFields = ['asset_confidentiality', 'asset_integrity', 'asset_availability'];
+      
+      ciaFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('change', calculateAssetRisk);
+        }
+      });
+    });
   </script>
 `;
 
@@ -2974,8 +3039,8 @@ const renderRiskLinkingModal = (risks: any[]) => html`
 async function getServiceById(db: any, serviceId: string) {
   try {
     const result = await db.prepare(`
-      SELECT * FROM assets 
-      WHERE id = ? AND (type = 'service' OR type = 'Service')
+      SELECT * FROM assets_enhanced 
+      WHERE id = ? AND (category = 'service' OR subcategory LIKE '%Service%')
     `).bind(serviceId).first();
     return result;
   } catch (error) {
@@ -2988,7 +3053,7 @@ async function getServiceById(db: any, serviceId: string) {
 async function updateService(db: any, serviceId: string, serviceData: any) {
   try {
     await db.prepare(`
-      UPDATE assets SET 
+      UPDATE assets_enhanced SET 
         name = ?,
         type = ?,
         description = ?,
@@ -3027,8 +3092,8 @@ async function updateService(db: any, serviceId: string, serviceData: any) {
 async function deleteService(db: any, serviceId: string) {
   try {
     await db.prepare(`
-      DELETE FROM assets 
-      WHERE id = ? AND (type = 'service' OR type = 'Service')
+      DELETE FROM assets_enhanced 
+      WHERE id = ? AND (category = 'service' OR subcategory LIKE '%Service%')
     `).bind(serviceId).run();
     
     return true;

@@ -504,9 +504,9 @@ export class DatabaseService {
       SELECT a.*, 
         u.first_name || ' ' || u.last_name as owner_name,
         o.name as organization_name
-      FROM assets a
+      FROM assets_enhanced a
       LEFT JOIN users u ON a.owner_id = u.id
-      LEFT JOIN organizations o ON a.organization_id = o.id
+      LEFT JOIN organizations o ON o.id = 1
       WHERE 1=1
     `;
     const params = [];
@@ -534,19 +534,17 @@ export class DatabaseService {
 
   async createAsset(data: any, userId: number) {
     const result = await this.db.prepare(`
-      INSERT INTO assets (
-        name, type, category, owner_id, organization_id,
-        location, criticality, value, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO assets_enhanced (
+        name, subcategory, category, owner_id, asset_type,
+        location, criticality, active_status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, 'Primary', ?, ?, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `).bind(
       data.name,
       data.type || '',
-      data.category || '',
+      data.category || 'Systems',
       data.owner_id || userId,
-      data.organization_id || 1,
       data.location || '',
-      data.criticality || 'medium',
-      data.value || 0,
+      data.criticality || 'Medium',
       'active'
     ).run();
     

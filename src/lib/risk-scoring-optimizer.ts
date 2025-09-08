@@ -318,7 +318,7 @@ export class RiskScoringOptimizer {
           criticality_level,
           business_impact,
           exposure_level
-        FROM assets 
+        FROM assets_enhanced 
         WHERE id = ?
       `;
       
