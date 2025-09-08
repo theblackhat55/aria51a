@@ -674,7 +674,12 @@ export const renderIntelligenceSettings = () => html`
     // Load feeds from API
     async function loadFeeds() {
       try {
+        console.log('Loading threat feeds from API...');
         const response = await fetch('/operations/api/intelligence/feeds');
+        
+        console.log('Response status:', response.status);
+        console.log('Response URL:', response.url);
+        console.log('Response redirected:', response.redirected);
         
         // Handle authentication redirects
         if (response.redirected && response.url.includes('/login')) {
@@ -694,7 +699,11 @@ export const renderIntelligenceSettings = () => html`
         }
         
         const data = await response.json();
+        console.log('Received data:', data);
+        
         feeds = data.feeds || [];
+        console.log('Processed feeds:', feeds);
+        
         renderFeedsTable();
         updateStats();
         
@@ -907,30 +916,64 @@ export const renderIntelligenceSettings = () => html`
 
     async function editFeed(feedId) {
       try {
+        console.log('editFeed called with feedId:', feedId);
+        console.log('Current feeds:', feeds);
+        
         // Get feed details
         const feed = feeds.find(f => f.feed_id === feedId);
         if (!feed) {
+          console.error('Feed not found for feedId:', feedId);
           showNotification('Feed not found', 'error');
           return;
         }
 
+        console.log('Found feed:', feed);
+
+        // Check if form elements exist before trying to access them
+        const feedNameEl = document.getElementById('feed-name');
+        const feedTypeEl = document.getElementById('feed-type');
+        const feedUrlEl = document.getElementById('feed-url');
+        const feedApiKeyEl = document.getElementById('feed-api-key');
+        const feedFormatEl = document.getElementById('feed-format');
+        const feedDescEl = document.getElementById('feed-description');
+        const feedActiveEl = document.getElementById('feed-active');
+        const form = document.getElementById('add-feed-form');
+
+        if (!feedNameEl || !feedTypeEl || !feedUrlEl || !feedApiKeyEl || !feedFormatEl || !feedDescEl || !feedActiveEl || !form) {
+          console.error('Form elements not found:', {
+            feedName: !!feedNameEl,
+            feedType: !!feedTypeEl,
+            feedUrl: !!feedUrlEl,
+            feedApiKey: !!feedApiKeyEl,
+            feedFormat: !!feedFormatEl,
+            feedDesc: !!feedDescEl,
+            feedActive: !!feedActiveEl,
+            form: !!form
+          });
+          showNotification('Form elements not available. Please try again.', 'error');
+          return;
+        }
+
         // Populate the form with existing data
-        document.getElementById('feed-name').value = feed.name;
-        document.getElementById('feed-type').value = feed.type;
-        document.getElementById('feed-url').value = feed.url;
-        document.getElementById('feed-api-key').value = feed.api_key || '';
-        document.getElementById('feed-format').value = feed.format;
-        document.getElementById('feed-description').value = feed.description || '';
-        document.getElementById('feed-active').checked = feed.active === 1;
+        feedNameEl.value = feed.name || '';
+        feedTypeEl.value = feed.type || '';
+        feedUrlEl.value = feed.url || '';
+        feedApiKeyEl.value = feed.api_key || '';
+        feedFormatEl.value = feed.format || '';
+        feedDescEl.value = feed.description || '';
+        feedActiveEl.checked = feed.active === 1;
 
         // Change form to edit mode
-        const form = document.getElementById('add-feed-form');
         form.setAttribute('data-edit-id', feedId);
         
         // Update modal title and button text
-        document.querySelector('#add-feed-modal h2').textContent = 'Edit Threat Feed';
-        document.querySelector('#add-feed-form button[type="submit"]').textContent = 'Update Feed';
+        const modalTitle = document.querySelector('#add-feed-modal h3');
+        const submitBtn = document.querySelector('#add-feed-form button[type="submit"]');
         
+        if (modalTitle) modalTitle.textContent = 'Edit Threat Feed';
+        if (submitBtn) submitBtn.textContent = 'Update Feed';
+        
+        console.log('Form populated successfully, showing modal');
         showAddFeedModal();
         
       } catch (error) {
@@ -1044,6 +1087,23 @@ export const renderIntelligenceSettings = () => html`
       
       document.body.appendChild(notification);
       setTimeout(() => notification.remove(), 5000);
+    }
+
+    // Initialize page when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Intelligence Settings page loaded, initializing...');
+      loadFeeds();
+    });
+
+    // Also initialize if the page is already loaded (in case script runs after DOMContentLoaded)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('Intelligence Settings page loaded (late init), initializing...');
+        loadFeeds();
+      });
+    } else {
+      console.log('Intelligence Settings page already loaded, initializing immediately...');
+      loadFeeds();
     }
   </script>
 `;

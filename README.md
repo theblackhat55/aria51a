@@ -12,8 +12,8 @@
 ## 🔗 Service URLs
 
 ### Production Environment  
-- **🌐 Main Application**: https://aria51.pages.dev
-- **🚀 Latest Enhanced Deployment**: https://d5f78123.aria51.pages.dev (LATEST - Enhanced RBAC & SAML Integration!)
+- **🌐 Main Application**: https://aria51.pages.dev ✅ **DEPLOYED SEPTEMBER 8, 2025**
+- **🚀 Latest Enhanced Version**: https://6b4e4c2b.aria51.pages.dev (Latest Build - Threat Feed Fixes)
 - **⚡ Development Sandbox**: https://3000-i5y648fwqc9hcsy2275d3-6532622b.e2b.dev
 - **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
@@ -330,9 +330,9 @@ npm run test                 # Test local server
 
 ## 🌍 Live Demo
 
-**Production URL**: [https://aria5-ti-enhancement.pages.dev](https://aria5-ti-enhancement.pages.dev)  
-**TI Enhanced Platform**: [https://542453b8.aria5-ti-enhancement.pages.dev](https://542453b8.aria5-ti-enhancement.pages.dev)  
-**Legacy Platform**: [https://aria51.pages.dev](https://aria51.pages.dev)
+**Production URL**: [https://aria51.pages.dev](https://aria51.pages.dev) ✅ **LATEST DEPLOYMENT**  
+**Enhanced Build**: [https://6b4e4c2b.aria51.pages.dev](https://6b4e4c2b.aria51.pages.dev) (September 8, 2025)  
+**TI Enhanced Platform**: [https://542453b8.aria5-ti-enhancement.pages.dev](https://542453b8.aria5-ti-enhancement.pages.dev)
 
 ### ✅ Recent Updates (September 2025)
 
