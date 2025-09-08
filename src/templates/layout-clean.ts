@@ -335,27 +335,29 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       document.body.addEventListener('htmx:configRequest', function(event) {
         console.log('📡 HTMX request to:', event.detail.path);
         
-        // Add auth token if available
-        const token = localStorage.getItem('aria_token');
-        if (token) {
-          event.detail.headers['Authorization'] = 'Bearer ' + token;
+        // HTMX automatically includes cookies, but we can ensure withCredentials is set
+        event.detail.xhr.withCredentials = true;
+        
+        // Add CSRF token from cookie for additional security
+        const csrfToken = getCookie('aria_csrf');
+        if (csrfToken) {
+          event.detail.headers['X-CSRF-Token'] = csrfToken;
         }
         
-        // Add CSRF token from meta tag or form field
-        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-        if (csrfMeta) {
-          event.detail.headers['X-CSRF-Token'] = csrfMeta.content;
-        } else {
-          // Try to get CSRF token from the form being submitted
-          const form = event.detail.elt.closest('form');
-          if (form) {
-            const csrfInput = form.querySelector('input[name="csrf_token"]');
-            if (csrfInput && csrfInput.value) {
-              event.detail.headers['X-CSRF-Token'] = csrfInput.value;
-            }
-          }
+        // Add session verification header (non-sensitive)
+        const htmxSession = getCookie('aria_htmx');
+        if (htmxSession) {
+          event.detail.headers['X-Session-ID'] = htmxSession;
         }
       });
+      
+      // Helper function to get cookie values
+      function getCookie(name) {
+        const value = "; " + document.cookie;
+        const parts = value.split("; " + name + "=");
+        if (parts.length === 2) return parts.pop().split(";").shift();
+        return null;
+      }
       
       // Modal management
       document.body.addEventListener('htmx:afterSwap', function(event) {

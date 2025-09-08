@@ -9,19 +9,8 @@ import type { CloudflareBindings } from '../types';
 export function createOperationsRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
   
-  // Apply authentication middleware to all routes except for specific internal API endpoints
-  app.use('*', async (c, next) => {
-    // Skip authentication for internal service list API since it's only called from authenticated pages
-    const path = c.req.path;
-    console.log('🔍 Operations middleware - checking path:', path);
-    if (path.endsWith('/api/services/list-for-risk') || path.endsWith('/api/services/for-risk')) {
-      console.log('✅ Skipping auth for internal API:', path);
-      return await next();
-    } else {
-      console.log('🔐 Applying auth for:', path);
-      return await requireAuth(c, next);
-    }
-  });
+  // Apply authentication middleware to all routes
+  app.use('*', requireAuth);
   
   // Main operations dashboard
   app.get('/', async (c) => {

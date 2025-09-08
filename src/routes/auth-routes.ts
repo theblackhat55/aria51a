@@ -227,6 +227,16 @@ export function createAuthRoutes() {
         path: '/'
       });
       
+      // Set a non-sensitive session token for HTMX requests (contains no sensitive data)
+      const htmxToken = sessionId; // Just the session ID, no sensitive user data
+      setCookie(c, 'aria_htmx', htmxToken, {
+        httpOnly: false, // Accessible to JavaScript for HTMX headers
+        secure: isProduction,
+        sameSite: 'Strict',
+        maxAge: 86400,
+        path: '/'
+      });
+      
       // Set security headers
       const securityHeaders = getSecurityHeaders();
       Object.entries(securityHeaders).forEach(([key, value]) => {
@@ -374,18 +384,11 @@ const renderSuccess = (message: string) => html`
 export const requireAuth = async (c: any, next: any) => {
   let token = getCookie(c, 'aria_token');
   
-  // Also check Authorization header (for HTMX requests with localStorage token)
-  if (!token) {
-    const authHeader = c.req.header('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    }
-  }
-  
   // Debug logging
-  console.log('Auth middleware - Token exists:', !!token);
+  console.log('Auth middleware - Token from cookie:', !!token);
   console.log('Auth middleware - Request path:', c.req.path);
-  console.log('Auth middleware - User-Agent:', c.req.header('User-Agent'));
+  console.log('Auth middleware - HTMX request:', !!c.req.header('HX-Request'));
+  console.log('Auth middleware - Cookies present:', !!c.req.header('Cookie'));
   
   if (!token) {
     console.log('Auth middleware - No token found, redirecting to login');
