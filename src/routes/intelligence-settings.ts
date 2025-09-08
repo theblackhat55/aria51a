@@ -607,8 +607,19 @@ export const renderIntelligenceSettings = () => html`
     }
 
     function hideAddFeedModal() {
-      document.getElementById('add-feed-modal').classList.add('hidden');
-      document.getElementById('add-feed-form').reset();
+      const modal = document.getElementById('add-feed-modal');
+      const form = document.getElementById('add-feed-form');
+      
+      modal.classList.add('hidden');
+      form.reset();
+      
+      // Reset form state
+      form.removeAttribute('data-edit-id');
+      document.querySelector('#add-feed-modal h2').textContent = 'Add New Threat Feed';
+      document.querySelector('#add-feed-form button[type="submit"]').textContent = 'Add Feed';
+      
+      // Clear provider selection
+      document.getElementById('feed-provider').value = '';
     }
 
     function toggleAdvanced() {
@@ -780,11 +791,15 @@ export const renderIntelligenceSettings = () => html`
         lastSync > 0 ? new Date(lastSync).toLocaleString() : 'Never';
     }
 
-    // Form submission
+    // Form submission - handles both add and edit
     async function submitFeedForm(event) {
       event.preventDefault();
       
-      const formData = new FormData(event.target);
+      const form = event.target;
+      const editId = form.getAttribute('data-edit-id');
+      const isEditing = editId !== null;
+      
+      const formData = new FormData(form);
       const feedData = {
         name: formData.get('name'),
         type: formData.get('type'),
@@ -796,8 +811,13 @@ export const renderIntelligenceSettings = () => html`
       };
 
       try {
-        const response = await fetch('/operations/api/intelligence/feeds', {
-          method: 'POST',
+        const url = isEditing 
+          ? '/operations/api/intelligence/feeds/' + editId
+          : '/operations/api/intelligence/feeds';
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method: method,
           headers: {
             'Content-Type': 'application/json'
           },
@@ -809,11 +829,23 @@ export const renderIntelligenceSettings = () => html`
 
         hideAddFeedModal();
         loadFeeds();
-        showNotification('Threat feed added successfully!', 'success');
+        
+        const successMessage = isEditing 
+          ? 'Threat feed updated successfully!' 
+          : 'Threat feed added successfully!';
+        showNotification(successMessage, 'success');
+        
+        // Reset form for next use
+        form.removeAttribute('data-edit-id');
+        document.querySelector('#add-feed-modal h2').textContent = 'Add New Threat Feed';
+        document.querySelector('#add-feed-form button[type="submit"]').textContent = 'Add Feed';
         
       } catch (error) {
-        console.error('Error adding feed:', error);
-        showNotification('Error adding threat feed: ' + error.message, 'error');
+        console.error(isEditing ? 'Error updating feed:' : 'Error adding feed:', error);
+        const errorMessage = isEditing 
+          ? 'Error updating threat feed: ' + error.message
+          : 'Error adding threat feed: ' + error.message;
+        showNotification(errorMessage, 'error');
       }
     }
 
@@ -869,6 +901,87 @@ export const renderIntelligenceSettings = () => html`
         } catch (error) {
           console.error('Error deleting feed:', error);
           showNotification('Error deleting threat feed: ' + error.message, 'error');
+        }
+      }
+    }
+
+    async function editFeed(feedId) {
+      try {
+        // Get feed details
+        const feed = feeds.find(f => f.feed_id === feedId);
+        if (!feed) {
+          showNotification('Feed not found', 'error');
+          return;
+        }
+
+        // Populate the form with existing data
+        document.getElementById('feed-name').value = feed.name;
+        document.getElementById('feed-type').value = feed.type;
+        document.getElementById('feed-url').value = feed.url;
+        document.getElementById('feed-api-key').value = feed.api_key || '';
+        document.getElementById('feed-format').value = feed.format;
+        document.getElementById('feed-description').value = feed.description || '';
+        document.getElementById('feed-active').checked = feed.active === 1;
+
+        // Change form to edit mode
+        const form = document.getElementById('add-feed-form');
+        form.setAttribute('data-edit-id', feedId);
+        
+        // Update modal title and button text
+        document.querySelector('#add-feed-modal h2').textContent = 'Edit Threat Feed';
+        document.querySelector('#add-feed-form button[type="submit"]').textContent = 'Update Feed';
+        
+        showAddFeedModal();
+        
+      } catch (error) {
+        console.error('Error loading feed for edit:', error);
+        showNotification('Error loading feed details: ' + error.message, 'error');
+      }
+    }
+
+    function updateFeedTemplate() {
+      const provider = document.getElementById('feed-provider').value;
+      const feedTemplates = {
+        'abuse.ch-malware-bazaar': {
+          type: 'REST',
+          url: 'https://mb-api.abuse.ch/api/v1/',
+          format: 'JSON',
+          description: 'Malware samples and IOCs from MalwareBazaar',
+          requiresApiKey: false
+        },
+        'abuse.ch-threatfox': {
+          type: 'REST', 
+          url: 'https://threatfox-api.abuse.ch/api/v1/',
+          format: 'JSON',
+          description: 'IOCs from ThreatFox database',
+          requiresApiKey: false
+        },
+        'alienvault-otx': {
+          type: 'OTX',
+          url: 'https://otx.alienvault.com/api/v1/',
+          format: 'JSON',
+          description: 'AlienVault Open Threat Exchange',
+          requiresApiKey: true
+        },
+        'mitre-attack': {
+          type: 'TAXII',
+          url: 'https://cti-taxii.mitre.org/stix/collections/',
+          format: 'STIX2',
+          description: 'MITRE ATT&CK threat intelligence',
+          requiresApiKey: false
+        }
+      };
+
+      const template = feedTemplates[provider];
+      if (template) {
+        document.getElementById('feed-type').value = template.type;
+        document.getElementById('feed-url').value = template.url;
+        document.getElementById('feed-format').value = template.format;
+        document.getElementById('feed-description').value = template.description;
+        
+        // Focus API key field if required
+        if (template.requiresApiKey) {
+          document.getElementById('feed-api-key').focus();
         }
       }
     }
