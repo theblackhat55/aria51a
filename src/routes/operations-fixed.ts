@@ -3133,8 +3133,8 @@ const renderAssetLinkingModal = (assets: any[]) => html`
         </div>
         
         <div class="max-h-96 overflow-y-auto">
-          ${assets.length > 0 ? 
-            assets.map(asset => html`
+          ${raw(assets.length > 0 ? 
+            assets.map(asset => `
               <div class="asset-item border border-gray-200 rounded-lg p-4 mb-3 hover:bg-gray-50">
                 <div class="flex items-center">
                   <input type="checkbox" id="asset-${asset.id}" value="${asset.id}" 
@@ -3164,7 +3164,7 @@ const renderAssetLinkingModal = (assets: any[]) => html`
               <i class="fas fa-server text-gray-300 text-3xl mb-2"></i>
               <p class="text-gray-500">No assets found</p>
             </div>`
-          }
+          )}
         </div>
         
         <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
@@ -3278,8 +3278,8 @@ const renderRiskLinkingModal = (risks: any[]) => html`
         </div>
         
         <div class="max-h-96 overflow-y-auto">
-          ${risks.length > 0 ? 
-            risks.map(risk => html`
+          ${raw(risks.length > 0 ? 
+            risks.map(risk => `
               <div class="risk-item border border-gray-200 rounded-lg p-4 mb-3 hover:bg-gray-50">
                 <div class="flex items-center">
                   <input type="checkbox" id="risk-${risk.id}" value="${risk.id}" 
@@ -3312,7 +3312,7 @@ const renderRiskLinkingModal = (risks: any[]) => html`
               <i class="fas fa-shield-alt text-gray-300 text-3xl mb-2"></i>
               <p class="text-gray-500">No risks found</p>
             </div>`
-          }
+          )}
         </div>
         
         <div class="flex justify-end space-x-3 pt-4 border-t mt-6">
