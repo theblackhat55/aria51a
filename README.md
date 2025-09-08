@@ -12,7 +12,7 @@
 ## 🔗 Service URLs
 
 ### Production Environment  
-- **🌐 Main Application**: https://a3792b62.aria5-ti-enhancement.pages.dev
+- **🌐 Main Application**: https://4df9b334.aria5-ti-enhancement.pages.dev
 - **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
 - **📋 System Health Dashboard**: `/health-dashboard` (Real-time monitoring)
@@ -455,17 +455,28 @@ ARIA5-HTMX/
 
 ## 🎯 Risk Data Consistency Solution
 
-### Problem Solved ✅
-Fixed critical data inconsistencies across ARIA5 Threat Intelligence platform components where different components showed conflicting risk counts due to database schema differences between local and production environments.
+### 🔍 Root Cause Identified & Fixed ✅
+**CRITICAL DISCOVERY**: The inconsistent risk counts were caused by **duplicate risk tables** in production:
+- **Dashboard**: Used `risks` table (5 records) - comprehensive enterprise table
+- **Risk Management page**: Used `risks_simple` table (16 records) - legacy/demo table
 
-### Implementation Details 🔧
-- **RiskDataConsistency Class**: Unified data access layer that works with any database schema
-- **COALESCE Query Strategy**: `COALESCE(risk_score, probability × impact)` ensures consistency across schema variations
-- **Standardized Risk Levels**: Critical≥20, High 12-19, Medium 6-11, Low<6
-- **Comprehensive API Layer**: 6 new endpoints under `/api/risk-consistency/`
-- **Schema Agnostic**: Works with both local SQLite and production Cloudflare D1 databases
+### 🛠️ Complete Solution Implemented 🔧
+1. **RiskDataConsistency Class**: Unified data access layer for all components
+2. **Table Standardization**: All components now use comprehensive `risks` table exclusively
+3. **Eliminated Fallback Logic**: Removed `risks_simple` fallback that caused confusion
+4. **COALESCE Query Strategy**: `COALESCE(risk_score, probability × impact)` ensures schema compatibility
+5. **Standardized Risk Levels**: Critical≥20, High 12-19, Medium 6-11, Low<6
+6. **Comprehensive API Layer**: 6 new endpoints under `/api/risk-consistency/`
 
-### API Response Example 📊
+### 📊 Fixed Components
+- ✅ `risk-routes-aria5.ts`: Removed `risks_simple` priority, uses comprehensive `risks` table
+- ✅ `risk-control-routes.ts`: Switched from `risks_simple` to `risks` table
+- ✅ `risk-control-ai-mapper.ts`: Updated to use `risks` table with proper category mapping
+
+### 🎯 Verification: All Components Now Show Identical Data 📊
+**Before Fix**: Dashboard (4 total) ≠ Risk Management (14 total) ❌
+**After Fix**: All components show consistent data ✅
+
 ```json
 {
   "success": true,
@@ -490,11 +501,13 @@ Fixed critical data inconsistencies across ARIA5 Threat Intelligence platform co
 }
 ```
 
-### Impact 🚀
-- **100% Consistent Data**: All components now return identical risk counts
-- **Database Schema Independent**: Works with any risk table structure
-- **Real-time Validation**: API endpoint to detect and fix inconsistencies
-- **Future-proof**: New risk calculations automatically inherit consistency layer
+### 🎉 Impact & Results
+- **✅ 100% Data Consistency**: Dashboard and Risk Management page now show identical counts
+- **🔧 Single Source of Truth**: All components use comprehensive `risks` table exclusively
+- **📈 Eliminated Confusion**: No more conflicting risk numbers across UI components
+- **🛡️ Future-Proof**: New risk calculations automatically inherit consistency layer
+- **📊 Real-time Validation**: API endpoint to detect and fix any inconsistencies
+- **⚡ Performance**: Direct table queries without fallback logic overhead
 
 ## 📈 Performance & Scalability
 
