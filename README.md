@@ -13,7 +13,7 @@
 
 ### Production Environment  
 - **🌐 Main Application**: https://aria5-ti.aria5-ti-enhancement.pages.dev
-- **🚀 Latest Deployment**: https://8692e5fd.aria5-ti-enhancement.pages.dev (LATEST - All issues fixed!)
+- **🚀 Latest Deployment**: https://ad056e0b.aria5-ti-enhancement.pages.dev (LATEST - Modal routes fixed!)
 - **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
 - **📋 System Health Dashboard**: `/health-dashboard` (Real-time monitoring)
@@ -21,10 +21,13 @@
 
 ### 🔧 Recently Fixed Issues (Latest Deployment)
 - ✅ **HTML parsing in asset/risk linking modals** - Fixed Response headers
-- ✅ **Services page auto-refresh** - Working HTMX triggers after operations
+- ✅ **Services page auto-refresh** - Working HTMX triggers after operations  
 - ✅ **Edit/delete service buttons** - Now functional with correct database queries
 - ✅ **New services in risk modals** - Dynamic loading from services table
 - ✅ **AI Engine success messages** - Improved event system and notifications
+- ✅ **Missing modal routes fixed** - Added `/risk/incidents`, `/risk/incidents/new`
+- ✅ **Database validation** - All tables exist in production, graceful error handling added
+- ✅ **URL redirects** - Fixed `/risk/kris` and other common route mistakes
 
 ### 🚀 Risk Data Consistency API Endpoints
 

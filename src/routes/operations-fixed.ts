@@ -9,8 +9,19 @@ import type { CloudflareBindings } from '../types';
 export function createOperationsRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
   
-  // Apply authentication middleware to all routes
-  app.use('*', requireAuth);
+  // Apply authentication middleware to all routes except for specific internal API endpoints
+  app.use('*', async (c, next) => {
+    // Skip authentication for internal service list API since it's only called from authenticated pages
+    const path = c.req.path;
+    console.log('🔍 Operations middleware - checking path:', path);
+    if (path.endsWith('/api/services/list-for-risk') || path.endsWith('/api/services/for-risk')) {
+      console.log('✅ Skipping auth for internal API:', path);
+      return await next();
+    } else {
+      console.log('🔐 Applying auth for:', path);
+      return await requireAuth(c, next);
+    }
+  });
   
   // Main operations dashboard
   app.get('/', async (c) => {
@@ -671,22 +682,37 @@ export function createOperationsRoutes() {
 
   // API endpoint to render services list for risk forms (HTML response)
   app.get('/api/services/list-for-risk', async (c) => {
-    const services = await getServices(c.env.DB);
-    
-    const servicesHtml = services.map(service => `
-      <label class="flex items-center">
-        <input type="checkbox" name="affected_services[]" value="${service.service_id}" class="mr-2">
-        <span class="text-sm">${service.name} (${service.criticality || 'Medium'})</span>
-        <span class="text-xs text-gray-500 ml-2">${service.business_department || 'Unknown Dept'}</span>
-      </label>
-    `).join('');
-    
-    return c.html(servicesHtml || `
-      <div class="text-sm text-gray-500 text-center py-2">
-        <i class="fas fa-info-circle mr-1"></i>
-        No services found. <a href="/operations/services" class="text-green-600 hover:text-green-700">Add services first</a>.
-      </div>
-    `);
+    try {
+      console.log('📡 API call: /api/services/list-for-risk');
+      const services = await getServices(c.env.DB);
+      console.log('📊 Found services:', services.length);
+      
+      const servicesHtml = services.map(service => `
+        <label class="flex items-center">
+          <input type="checkbox" name="affected_services[]" value="${service.service_id}" class="mr-2">
+          <span class="text-sm">${service.name} (${service.criticality || 'Medium'})</span>
+          <span class="text-xs text-gray-500 ml-2">${service.business_department || 'Unknown Dept'}</span>
+        </label>
+      `).join('');
+      
+      const finalHtml = servicesHtml || `
+        <div class="text-sm text-gray-500 text-center py-2">
+          <i class="fas fa-info-circle mr-1"></i>
+          No services found. <a href="/operations/services" class="text-green-600 hover:text-green-700">Add services first</a>.
+        </div>
+      `;
+      
+      console.log('📤 Returning HTML response, length:', finalHtml.length);
+      return c.html(finalHtml);
+    } catch (error) {
+      console.error('❌ Error in service list API:', error);
+      return c.html(`
+        <div class="text-sm text-red-500 text-center py-2">
+          <i class="fas fa-exclamation-triangle mr-1"></i>
+          Error loading services: ${error.message}
+        </div>
+      `);
+    }
   });
 
   // API endpoint to get assets for risk management  
