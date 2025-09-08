@@ -176,17 +176,17 @@ export function createRiskRoutesARIA5() {
       const risk_level = c.req.query('risk_level') || '';
       
       // Build WHERE clause
-      let whereConditions = ['r.status = ?'];
-      let params: any[] = ['active'];
+      let whereConditions: string[] = [];
+      let params: any[] = [];
       
       if (search) {
         whereConditions.push('(r.title LIKE ? OR r.description LIKE ?)');
         params.push(`%${search}%`, `%${search}%`);
       }
       
-      if (status && status !== 'active') {
-        whereConditions[0] = 'r.status = ?';
-        params[0] = status;
+      if (status) {
+        whereConditions.push('r.status = ?');
+        params.push(status);
       }
       
       if (category) {
@@ -210,7 +210,7 @@ export function createRiskRoutesARIA5() {
         }
       }
       
-      const whereClause = whereConditions.join(' AND ');
+      const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
       
       // Use comprehensive risks table directly for consistency
       const result = await c.env.DB.prepare(`
@@ -241,7 +241,7 @@ export function createRiskRoutesARIA5() {
             ELSE 'Operational'
           END as category_name
         FROM risks r
-        WHERE ${whereClause}
+        ${whereClause}
         ORDER BY COALESCE(r.risk_score, r.probability * r.impact) DESC, r.created_at DESC
         LIMIT 50
       `).bind(...params).all();
@@ -2458,8 +2458,11 @@ const renderARIA5RiskManagement = () => html`
                     hx-include="#risk-filters"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value="">All Status</option>
+              <option value="pending">Pending</option>
               <option value="active">Active</option>
               <option value="mitigated">Mitigated</option>
+              <option value="monitoring">Monitoring</option>
+              <option value="escalated">Escalated</option>
               <option value="closed">Closed</option>
             </select>
           </div>
