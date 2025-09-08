@@ -657,31 +657,22 @@ Be practical and actionable in your analysis.`;
     }
   });
 
-  // View risk modal
+  // View risk modal - Enhanced professional design
   app.get('/view/:id', async (c) => {
     const riskId = c.req.param('id');
     
     try {
       const risk = await c.env.DB.prepare(`
         SELECT 
-          r.id,
-          r.risk_id,
-          r.title,
-          r.description,
-          r.category_id,
-          r.probability,
-          r.impact,
-          COALESCE(r.risk_score, r.probability * r.impact) as risk_score,
-          r.status,
-          r.created_at,
-          r.updated_at,
+          r.*,
+          COALESCE(r.probability * r.impact, r.inherent_risk) as risk_score,
           CASE 
-            WHEN r.category_id = 1 THEN 'Operational'
-            WHEN r.category_id = 2 THEN 'Financial' 
-            WHEN r.category_id = 3 THEN 'Strategic'
-            WHEN r.category_id = 4 THEN 'Compliance'
-            WHEN r.category_id = 5 THEN 'Technology'
-            WHEN r.category_id = 6 THEN 'Reputation'
+            WHEN r.category = 'operational' THEN 'Operational'
+            WHEN r.category = 'financial' THEN 'Financial' 
+            WHEN r.category = 'strategic' THEN 'Strategic'
+            WHEN r.category = 'compliance' THEN 'Compliance'
+            WHEN r.category = 'technology' THEN 'Technology'
+            WHEN r.category = 'reputation' THEN 'Reputation'
             ELSE 'Operational'
           END as category_name
         FROM risks r
@@ -690,13 +681,18 @@ Be practical and actionable in your analysis.`;
 
       if (!risk) {
         return c.html(html`
-          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
-            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+          <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" id="risk-modal">
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
               <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Risk Not Found</h3>
-                <p class="text-gray-600">The requested risk could not be found.</p>
-                <div class="mt-6 flex justify-end">
-                  <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                  </div>
+                  <h3 class="text-lg font-medium text-gray-900">Risk Not Found</h3>
+                </div>
+                <p class="text-gray-600 mb-6">The requested risk could not be found or may have been deleted.</p>
+                <div class="flex justify-end">
+                  <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
                     Close
                   </button>
                 </div>
@@ -708,84 +704,279 @@ Be practical and actionable in your analysis.`;
 
       const riskLevel = getRiskLevel(risk.risk_score);
       const riskColor = getRiskColorClass(riskLevel);
+      
+      // Enhanced status color coding
+      const getStatusStyle = (status: string) => {
+        switch (status?.toLowerCase()) {
+          case 'pending': return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+          case 'active': return 'bg-green-100 text-green-800 border border-green-200';
+          case 'mitigated': return 'bg-blue-100 text-blue-800 border border-blue-200';
+          case 'monitoring': return 'bg-purple-100 text-purple-800 border border-purple-200';
+          case 'closed': return 'bg-gray-100 text-gray-800 border border-gray-200';
+          case 'escalated': return 'bg-red-100 text-red-800 border border-red-200';
+          default: return 'bg-gray-100 text-gray-800 border border-gray-200';
+        }
+      };
 
       return c.html(html`
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
-          <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" id="risk-modal">
+          <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden">
+            
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-6">
+              <div class="flex justify-between items-start">
+                <div class="flex items-center space-x-4">
+                  <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-2xl"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-2xl font-bold">Risk Assessment Details</h3>
+                    <p class="text-blue-100 text-sm mt-1">RISK-${risk.id} • ${risk.category_name}</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${riskColor}">
+                    ${riskLevel}
+                  </span>
+                  <button onclick="document.getElementById('risk-modal').remove()" class="text-white hover:text-gray-200 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="overflow-y-auto max-h-[calc(95vh-120px)]">
+              <div class="p-8">
+                
+                <!-- Status and Quick Actions Bar -->
+                <div class="bg-gray-50 rounded-lg p-4 mb-8 border">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-6">
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Current Status</label>
+                        <div class="mt-1">
+                          <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium ${getStatusStyle(risk.status)}">
+                            <i class="fas fa-circle text-xs mr-2"></i>
+                            ${risk.status?.charAt(0).toUpperCase() + risk.status?.slice(1) || 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Risk Score</label>
+                        <div class="mt-1">
+                          <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-bold ${riskColor}">
+                            ${risk.risk_score} / 25
+                          </span>
+                        </div>
+                      </div>
+                      ${risk.source ? html`
+                        <div>
+                          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">Source</label>
+                          <div class="mt-1">
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                              <i class="fas fa-robot text-xs mr-2"></i>
+                              AI Generated
+                            </span>
+                          </div>
+                        </div>
+                      ` : ''}
+                    </div>
+                    <div class="flex space-x-2">
+                      <button hx-get="/risk/status-change/${risk.id}" 
+                              hx-target="#modal-overlay" 
+                              hx-swap="innerHTML"
+                              class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-exchange-alt mr-2"></i>
+                        Change Status
+                      </button>
+                      <button hx-get="/risk/edit/${risk.id}" 
+                              hx-target="#risk-modal" 
+                              hx-swap="outerHTML"
+                              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-edit mr-2"></i>
+                        Edit Risk
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  
+                  <!-- Left Column - Risk Information -->
+                  <div class="lg:col-span-2 space-y-6">
+                    
+                    <!-- Risk Overview -->
+                    <div class="bg-white border rounded-lg overflow-hidden">
+                      <div class="bg-gray-50 px-6 py-3 border-b">
+                        <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                          <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                          Risk Overview
+                        </h4>
+                      </div>
+                      <div class="p-6 space-y-4">
+                        <div>
+                          <label class="text-sm font-medium text-gray-700">Risk Title</label>
+                          <p class="mt-1 text-lg font-medium text-gray-900">${risk.title}</p>
+                        </div>
+                        <div>
+                          <label class="text-sm font-medium text-gray-700">Description</label>
+                          <p class="mt-1 text-gray-800 leading-relaxed">${risk.description || 'No description provided'}</p>
+                        </div>
+                        ${risk.affected_assets ? html`
+                          <div>
+                            <label class="text-sm font-medium text-gray-700">Affected Assets</label>
+                            <p class="mt-1 text-gray-800">${risk.affected_assets}</p>
+                          </div>
+                        ` : ''}
+                      </div>
+                    </div>
+
+                    <!-- Risk Assessment -->
+                    <div class="bg-white border rounded-lg overflow-hidden">
+                      <div class="bg-gray-50 px-6 py-3 border-b">
+                        <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                          <i class="fas fa-calculator text-orange-500 mr-2"></i>
+                          Risk Assessment
+                        </h4>
+                      </div>
+                      <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div class="text-center">
+                            <div class="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-2">
+                              <span class="text-2xl font-bold text-red-600">${risk.probability || 0}</span>
+                            </div>
+                            <label class="text-sm font-medium text-gray-700">Probability</label>
+                            <p class="text-xs text-gray-500">Scale: 1-5</p>
+                          </div>
+                          <div class="text-center">
+                            <div class="w-16 h-16 mx-auto bg-orange-100 rounded-full flex items-center justify-center mb-2">
+                              <span class="text-2xl font-bold text-orange-600">${risk.impact || 0}</span>
+                            </div>
+                            <label class="text-sm font-medium text-gray-700">Impact</label>
+                            <p class="text-xs text-gray-500">Scale: 1-5</p>
+                          </div>
+                          <div class="text-center">
+                            <div class="w-16 h-16 mx-auto ${riskLevel === 'Critical' ? 'bg-red-100' : riskLevel === 'High' ? 'bg-orange-100' : riskLevel === 'Medium' ? 'bg-yellow-100' : 'bg-green-100'} rounded-full flex items-center justify-center mb-2">
+                              <span class="text-2xl font-bold ${riskLevel === 'Critical' ? 'text-red-600' : riskLevel === 'High' ? 'text-orange-600' : riskLevel === 'Medium' ? 'text-yellow-600' : 'text-green-600'}">${risk.risk_score}</span>
+                            </div>
+                            <label class="text-sm font-medium text-gray-700">Total Score</label>
+                            <p class="text-xs text-gray-500">P × I = Score</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Right Column - Metadata -->
+                  <div class="space-y-6">
+                    
+                    <!-- Timeline -->
+                    <div class="bg-white border rounded-lg overflow-hidden">
+                      <div class="bg-gray-50 px-6 py-3 border-b">
+                        <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                          <i class="fas fa-calendar-alt text-green-500 mr-2"></i>
+                          Timeline
+                        </h4>
+                      </div>
+                      <div class="p-6 space-y-4">
+                        <div>
+                          <label class="text-sm font-medium text-gray-700">Created</label>
+                          <p class="mt-1 text-gray-800">${new Date(risk.created_at).toLocaleDateString()}</p>
+                          <p class="text-xs text-gray-500">${new Date(risk.created_at).toLocaleTimeString()}</p>
+                        </div>
+                        <div>
+                          <label class="text-sm font-medium text-gray-700">Last Updated</label>
+                          <p class="mt-1 text-gray-800">${new Date(risk.updated_at).toLocaleDateString()}</p>
+                          <p class="text-xs text-gray-500">${new Date(risk.updated_at).toLocaleTimeString()}</p>
+                        </div>
+                        ${risk.review_date ? html`
+                          <div>
+                            <label class="text-sm font-medium text-gray-700">Next Review</label>
+                            <p class="mt-1 text-gray-800">${new Date(risk.review_date).toLocaleDateString()}</p>
+                          </div>
+                        ` : ''}
+                        ${risk.due_date ? html`
+                          <div>
+                            <label class="text-sm font-medium text-gray-700">Due Date</label>
+                            <p class="mt-1 text-gray-800">${new Date(risk.due_date).toLocaleDateString()}</p>
+                          </div>
+                        ` : ''}
+                      </div>
+                    </div>
+
+                    <!-- Risk Metrics -->
+                    <div class="bg-white border rounded-lg overflow-hidden">
+                      <div class="bg-gray-50 px-6 py-3 border-b">
+                        <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                          <i class="fas fa-chart-line text-purple-500 mr-2"></i>
+                          Risk Metrics
+                        </h4>
+                      </div>
+                      <div class="p-6 space-y-4">
+                        ${risk.inherent_risk ? html`
+                          <div>
+                            <label class="text-sm font-medium text-gray-700">Inherent Risk</label>
+                            <p class="mt-1 text-lg font-semibold text-red-600">${risk.inherent_risk}</p>
+                          </div>
+                        ` : ''}
+                        ${risk.residual_risk ? html`
+                          <div>
+                            <label class="text-sm font-medium text-gray-700">Residual Risk</label>
+                            <p class="mt-1 text-lg font-semibold text-orange-600">${risk.residual_risk}</p>
+                          </div>
+                        ` : ''}
+                        <div>
+                          <label class="text-sm font-medium text-gray-700">Risk Level</label>
+                          <p class="mt-1">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor}">
+                              ${riskLevel}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="bg-gray-50 px-8 py-4 border-t flex justify-between items-center">
+              <div class="text-sm text-gray-600">
+                Risk ID: <span class="font-mono font-medium">RISK-${risk.id}</span>
+              </div>
+              <div class="flex space-x-3">
+                <button onclick="window.print()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                  <i class="fas fa-print mr-2"></i>
+                  Print
+                </button>
+                <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg text-sm transition-colors">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Change Modal Container -->
+        <div id="modal-overlay"></div>
+      `);
+    } catch (error) {
+      console.error('Error fetching risk:', error);
+      return c.html(html`
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" id="risk-modal">
+          <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
             <div class="p-6">
-              <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-medium text-gray-900">Risk Details</h3>
-                <button onclick="document.getElementById('risk-modal').remove()" class="text-gray-400 hover:text-gray-600">
-                  <i class="fas fa-times text-xl"></i>
-                </button>
+              <div class="flex items-center mb-4">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                  <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900">Error Loading Risk</h3>
               </div>
-              
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Risk ID</label>
-                  <p class="text-gray-900 font-mono">RISK-${risk.id}</p>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                  <p class="text-gray-900">${risk.category_name}</p>
-                </div>
-                
-                <div class="md:col-span-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <p class="text-gray-900 text-lg font-medium">${risk.title}</p>
-                </div>
-                
-                <div class="md:col-span-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <p class="text-gray-900">${risk.description}</p>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Probability</label>
-                  <p class="text-gray-900">${risk.probability}/5</p>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Impact</label>
-                  <p class="text-gray-900">${risk.impact}/5</p>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Risk Score</label>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${riskColor}">
-                    ${risk.risk_score} - ${riskLevel}
-                  </span>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium ${risk.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                    ${risk.status}
-                  </span>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Created</label>
-                  <p class="text-gray-900">${new Date(risk.created_at).toLocaleString()}</p>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
-                  <p class="text-gray-900">${new Date(risk.updated_at).toLocaleString()}</p>
-                </div>
-              </div>
-              
-              <div class="mt-8 flex justify-end space-x-3">
-                <button hx-get="/risk/edit/${risk.id}" 
-                        hx-target="#risk-modal" 
-                        hx-swap="outerHTML"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                  <i class="fas fa-edit mr-2"></i>
-                  Edit Risk
-                </button>
-                <button onclick="document.getElementById('risk-modal').remove()" 
-                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+              <p class="text-gray-600 mb-6">Failed to load risk details. Please try again.</p>
+              <div class="flex justify-end">
+                <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
                   Close
                 </button>
               </div>
@@ -793,21 +984,192 @@ Be practical and actionable in your analysis.`;
           </div>
         </div>
       `);
-    } catch (error) {
-      console.error('Error fetching risk:', error);
+    }
+  });
+
+  // Status change modal
+  app.get('/status-change/:id', async (c) => {
+    const riskId = c.req.param('id');
+    const csrfToken = setCSRFToken(c);
+    
+    try {
+      const risk = await c.env.DB.prepare(`
+        SELECT id, title, status FROM risks WHERE id = ?
+      `).bind(riskId).first();
+
+      if (!risk) {
+        return c.html(html`<div class="text-red-600">Risk not found</div>`);
+      }
+
+      const statusOptions = [
+        { value: 'pending', name: 'Pending', description: 'Awaiting review or approval', icon: 'clock', color: 'yellow' },
+        { value: 'active', name: 'Active', description: 'Risk is confirmed and being monitored', icon: 'exclamation-triangle', color: 'green' },
+        { value: 'mitigated', name: 'Mitigated', description: 'Risk controls have been implemented', icon: 'shield-check', color: 'blue' },
+        { value: 'monitoring', name: 'Monitoring', description: 'Risk is under continuous observation', icon: 'eye', color: 'purple' },
+        { value: 'escalated', name: 'Escalated', description: 'Risk requires management attention', icon: 'arrow-up', color: 'red' },
+        { value: 'closed', name: 'Closed', description: 'Risk has been resolved or is no longer relevant', icon: 'check-circle', color: 'gray' }
+      ];
+
       return c.html(html`
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
-          <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
-            <div class="p-6">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Error</h3>
-              <p class="text-gray-600">Failed to load risk details.</p>
-              <div class="mt-6 flex justify-end">
-                <button onclick="document.getElementById('risk-modal').remove()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
-                  Close
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
+          <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+            <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-4 rounded-t-xl">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="text-xl font-bold">Change Risk Status</h3>
+                  <p class="text-orange-100 text-sm mt-1">RISK-${risk.id} • ${risk.title}</p>
+                </div>
+                <button onclick="document.getElementById('modal-overlay').innerHTML = ''" class="text-white hover:text-gray-200">
+                  <i class="fas fa-times text-xl"></i>
                 </button>
               </div>
             </div>
+            
+            <form hx-post="/risk/status-change/${risk.id}" hx-target="#modal-overlay" hx-swap="innerHTML">
+              <input type="hidden" name="_csrf" value="${csrfToken}">
+              
+              <div class="p-6">
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Current Status</label>
+                  <div class="p-3 bg-gray-50 rounded-lg border">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-800">
+                      <i class="fas fa-circle text-xs mr-2"></i>
+                      ${risk.status?.charAt(0).toUpperCase() + risk.status?.slice(1)}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-3">Select New Status</label>
+                  <div class="space-y-3">
+                    ${statusOptions.map(option => html`
+                      <label class="relative flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${risk.status === option.value ? 'border-gray-300 bg-gray-100' : 'border-gray-200'}">
+                        <input type="radio" 
+                               name="new_status" 
+                               value="${option.value}"
+                               ${risk.status === option.value ? 'disabled' : ''}
+                               class="mr-4 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                        <div class="flex items-center flex-1">
+                          <div class="w-10 h-10 rounded-full flex items-center justify-center mr-4 ${
+                            option.color === 'yellow' ? 'bg-yellow-100' :
+                            option.color === 'green' ? 'bg-green-100' :
+                            option.color === 'blue' ? 'bg-blue-100' :
+                            option.color === 'purple' ? 'bg-purple-100' :
+                            option.color === 'red' ? 'bg-red-100' :
+                            'bg-gray-100'
+                          }">
+                            <i class="fas fa-${option.icon} ${
+                              option.color === 'yellow' ? 'text-yellow-600' :
+                              option.color === 'green' ? 'text-green-600' :
+                              option.color === 'blue' ? 'text-blue-600' :
+                              option.color === 'purple' ? 'text-purple-600' :
+                              option.color === 'red' ? 'text-red-600' :
+                              'text-gray-600'
+                            }"></i>
+                          </div>
+                          <div class="flex-1">
+                            <div class="flex items-center">
+                              <span class="font-medium text-gray-900 ${risk.status === option.value ? 'text-gray-500' : ''}">${option.name}</span>
+                              ${risk.status === option.value ? html`<span class="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">(Current)</span>` : ''}
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">${option.description}</p>
+                          </div>
+                        </div>
+                      </label>
+                    `)}
+                  </div>
+                </div>
+
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Status Change Reason</label>
+                  <textarea name="change_reason" 
+                            rows="3" 
+                            placeholder="Provide a reason for this status change (optional)"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+              </div>
+
+              <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3">
+                <button type="button" 
+                        onclick="document.getElementById('modal-overlay').innerHTML = ''"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" 
+                        class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition-colors">
+                  <i class="fas fa-save mr-2"></i>
+                  Update Status
+                </button>
+              </div>
+            </form>
           </div>
+        </div>
+      `);
+    } catch (error) {
+      console.error('Error loading status change modal:', error);
+      return c.html(html`<div class="text-red-600">Error loading status change options</div>`);
+    }
+  });
+
+  // Process status change
+  app.post('/status-change/:id', async (c) => {
+    const riskId = c.req.param('id');
+    const formData = await c.req.parseBody();
+    
+    try {
+      const newStatus = formData.new_status as string;
+      const changeReason = formData.change_reason as string;
+      
+      if (!newStatus) {
+        return c.html(html`
+          <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-times-circle text-red-500 mr-2"></i>
+              <span class="text-red-700 font-medium">Please select a new status</span>
+            </div>
+          </div>
+        `);
+      }
+
+      // Update risk status
+      await c.env.DB.prepare(`
+        UPDATE risks 
+        SET status = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(newStatus, riskId).run();
+
+      // Log the status change (you could create a separate audit table for this)
+      // For now, we'll just return success
+
+      return c.html(html`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            <span class="text-green-700 font-medium">Status updated successfully</span>
+          </div>
+          <p class="text-green-600 text-sm mt-1">Risk status changed to: ${newStatus}</p>
+          <script>
+            setTimeout(() => {
+              // Close both modals and refresh the page or table
+              document.getElementById('modal-overlay').innerHTML = '';
+              document.getElementById('risk-modal').remove();
+              // Refresh risk table if present
+              if (window.htmx && document.getElementById('risk-table')) {
+                htmx.trigger('#risk-table', 'hx:trigger');
+              }
+            }, 2000);
+          </script>
+        </div>
+      `);
+    } catch (error) {
+      console.error('Error updating risk status:', error);
+      return c.html(html`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-times-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">Failed to update status</span>
+          </div>
+          <p class="text-red-600 text-sm mt-1">${error.message}</p>
         </div>
       `);
     }
@@ -862,7 +1224,7 @@ Be practical and actionable in your analysis.`;
     }
   });
 
-  // Update risk (PUT/POST)
+  // Update risk (PUT/POST) - Enhanced with all fields
   app.post('/edit/:id', async (c) => {
     const riskId = c.req.param('id');
     const formData = await c.req.parseBody();
@@ -871,40 +1233,90 @@ Be practical and actionable in your analysis.`;
       const title = formData.title as string;
       const description = formData.description as string;
       const category = formData.category as string;
+      const status = formData.status as string;
       const probability = parseInt(formData.probability as string);
       const impact = parseInt(formData.impact as string);
-      const risk_score = probability * impact;
+      const affected_assets = formData.affected_assets as string;
+      const review_date = formData.review_date as string;
+      const due_date = formData.due_date as string;
       
-      // Map category to category_id
-      const categoryMap: {[key: string]: number} = {
-        'operational': 1,
-        'financial': 2,
-        'strategic': 3,
-        'compliance': 4,
-        'technology': 5,
-        'reputation': 6
-      };
+      // Calculate risk scores
+      const inherent_risk = probability * impact;
+      const residual_risk = Math.max(1, Math.round(inherent_risk * 0.7)); // Assume 30% reduction with controls
+      
+      // Build update query dynamically to handle optional fields
+      const updates = [];
+      const params = [];
+      
+      updates.push('title = ?', 'description = ?', 'category = ?', 'status = ?', 'probability = ?', 'impact = ?', 'inherent_risk = ?', 'residual_risk = ?', 'updated_at = CURRENT_TIMESTAMP');
+      params.push(title, description, category, status, probability, impact, inherent_risk, residual_risk);
+      
+      if (affected_assets) {
+        updates.push('affected_assets = ?');
+        params.push(affected_assets);
+      }
+      
+      if (review_date) {
+        updates.push('review_date = ?');
+        params.push(review_date);
+      }
+      
+      if (due_date) {
+        updates.push('due_date = ?');
+        params.push(due_date);
+      }
+      
+      params.push(riskId); // For WHERE clause
       
       await c.env.DB.prepare(`
         UPDATE risks 
-        SET title = ?, description = ?, category_id = ?, probability = ?, impact = ?, risk_score = ?, updated_at = CURRENT_TIMESTAMP
+        SET ${updates.join(', ')}
         WHERE id = ?
-      `).bind(title, description, categoryMap[category] || 1, probability, impact, risk_score, riskId).run();
+      `).bind(...params).run();
+
+      const riskLevel = getRiskLevel(inherent_risk);
 
       return c.html(html`
-        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div class="flex items-center">
-            <i class="fas fa-check-circle text-green-500 mr-2"></i>
-            <span class="text-green-700 font-medium">Risk updated successfully</span>
+        <div class="p-6 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center mb-4">
+            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-check-circle text-green-600 text-xl"></i>
+            </div>
+            <div>
+              <h4 class="text-lg font-medium text-green-800">Risk Updated Successfully</h4>
+              <p class="text-green-600 text-sm">All changes have been saved and timestamped</p>
+            </div>
           </div>
+          
+          <div class="bg-white rounded-lg p-4 border border-green-200">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div>
+                <div class="text-2xl font-bold text-green-600">${probability}</div>
+                <div class="text-xs text-gray-600">Probability</div>
+              </div>
+              <div>
+                <div class="text-2xl font-bold text-green-600">${impact}</div>
+                <div class="text-xs text-gray-600">Impact</div>
+              </div>
+              <div>
+                <div class="text-2xl font-bold text-green-600">${inherent_risk}</div>
+                <div class="text-xs text-gray-600">${riskLevel}</div>
+              </div>
+            </div>
+          </div>
+          
           <script>
             setTimeout(() => {
               document.getElementById('risk-modal').remove();
-              // Refresh the risk table
-              if (window.htmx) {
-                htmx.trigger('#risk-table-container', 'refresh-risks');
+              // Refresh the risk table if present
+              if (window.htmx && document.getElementById('risk-table')) {
+                htmx.trigger('#risk-table', 'hx:trigger');
               }
-            }, 1500);
+              // Also refresh stats
+              if (window.htmx && document.getElementById('risk-stats')) {
+                htmx.trigger('#risk-stats', 'hx:trigger');
+              }
+            }, 2500);
           </script>
         </div>
       `);
@@ -917,6 +1329,11 @@ Be practical and actionable in your analysis.`;
             <span class="text-red-700 font-medium">Failed to update risk</span>
           </div>
           <p class="text-red-600 text-sm mt-1">${error.message}</p>
+          <div class="mt-3">
+            <button onclick="window.location.reload()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm">
+              Refresh and Try Again
+            </button>
+          </div>
         </div>
       `);
     }
@@ -2198,50 +2615,112 @@ const renderRiskTable = (risks: any[]) => {
   }
 
   const riskRows = risks.map(risk => {
-    const riskScore = risk.risk_score || (risk.probability * risk.impact);
+    const riskScore = risk.inherent_risk || risk.risk_score || (risk.probability * risk.impact);
     const riskLevel = getRiskLevel(riskScore);
     const riskColor = getRiskColorClass(riskLevel);
-    const statusColor = risk.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    
+    // Enhanced status colors and icons
+    const getStatusDisplay = (status: string) => {
+      const statusMap = {
+        'pending': { color: 'bg-yellow-100 text-yellow-800 border border-yellow-200', icon: 'clock' },
+        'active': { color: 'bg-green-100 text-green-800 border border-green-200', icon: 'exclamation-triangle' },
+        'mitigated': { color: 'bg-blue-100 text-blue-800 border border-blue-200', icon: 'shield-check' },
+        'monitoring': { color: 'bg-purple-100 text-purple-800 border border-purple-200', icon: 'eye' },
+        'escalated': { color: 'bg-red-100 text-red-800 border border-red-200', icon: 'arrow-up' },
+        'closed': { color: 'bg-gray-100 text-gray-800 border border-gray-200', icon: 'check-circle' }
+      };
+      return statusMap[status?.toLowerCase()] || statusMap['active'];
+    };
+    
+    const statusStyle = getStatusDisplay(risk.status);
     const createdDate = new Date(risk.created_at).toLocaleDateString();
+    const nextReview = risk.review_date ? new Date(risk.review_date).toLocaleDateString() : 'Not set';
     
     return `
-      <tr class="hover:bg-gray-50">
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">RISK-${risk.id}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${risk.title}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.category}</td>
+      <tr class="hover:bg-gray-50 transition-colors">
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+              <span class="text-xs font-bold text-blue-600">${risk.id}</span>
+            </div>
+            <span class="font-mono">RISK-${risk.id}</span>
+          </div>
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-900">
+          <div class="max-w-xs truncate">
+            <div class="font-medium">${risk.title}</div>
+            ${risk.source ? '<div class="text-xs text-purple-600 mt-1"><i class="fas fa-robot mr-1"></i>AI Generated</div>' : ''}
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm">
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+            ${risk.category_name || risk.category}
+          </span>
+        </td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.owner_name || 'Unassigned'}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.probability}/5</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${risk.impact}/5</td>
-        <td class="px-6 py-4 whitespace-nowrap">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor}">${riskScore}</span>
+        <td class="px-6 py-4 whitespace-nowrap text-sm">
+          <div class="flex items-center">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center mr-2 ${risk.probability >= 4 ? 'bg-red-100' : risk.probability >= 3 ? 'bg-orange-100' : 'bg-green-100'}">
+              <span class="text-xs font-bold ${risk.probability >= 4 ? 'text-red-600' : risk.probability >= 3 ? 'text-orange-600' : 'text-green-600'}">${risk.probability}</span>
+            </div>
+            <span class="text-gray-500">/5</span>
+          </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm">
+          <div class="flex items-center">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center mr-2 ${risk.impact >= 4 ? 'bg-red-100' : risk.impact >= 3 ? 'bg-orange-100' : 'bg-green-100'}">
+              <span class="text-xs font-bold ${risk.impact >= 4 ? 'text-red-600' : risk.impact >= 3 ? 'text-orange-600' : 'text-green-600'}">${risk.impact}</span>
+            </div>
+            <span class="text-gray-500">/5</span>
+          </div>
         </td>
         <td class="px-6 py-4 whitespace-nowrap">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}">${risk.status}</span>
+          <div class="flex items-center">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${riskColor} mr-2">${riskScore}</span>
+            <span class="text-xs text-gray-500">${riskLevel}</span>
+          </div>
         </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${createdDate}</td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyle.color}">
+            <i class="fas fa-${statusStyle.icon} text-xs mr-1"></i>
+            ${risk.status?.charAt(0).toUpperCase() + risk.status?.slice(1)}
+          </span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          <div class="text-xs">${nextReview}</div>
+        </td>
         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <button class="text-indigo-600 hover:text-indigo-900 mr-3" 
-                  hx-get="/risk/view/${risk.id}" 
-                  hx-target="#modal-container" 
-                  hx-swap="innerHTML"
-                  title="View Risk">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button class="text-indigo-600 hover:text-indigo-900 mr-3" 
-                  hx-get="/risk/edit/${risk.id}" 
-                  hx-target="#modal-container" 
-                  hx-swap="innerHTML"
-                  title="Edit Risk">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="text-red-600 hover:text-red-900" 
-                  hx-delete="/risk/${risk.id}" 
-                  hx-confirm="Are you sure you want to delete this risk?" 
-                  hx-target="closest tr" 
-                  hx-swap="outerHTML"
-                  title="Delete Risk">
-            <i class="fas fa-trash"></i>
-          </button>
+          <div class="flex items-center justify-end space-x-2">
+            <button class="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors" 
+                    hx-get="/risk/view/${risk.id}" 
+                    hx-target="#modal-container" 
+                    hx-swap="innerHTML"
+                    title="View Details">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition-colors" 
+                    hx-get="/risk/edit/${risk.id}" 
+                    hx-target="#modal-container" 
+                    hx-swap="innerHTML"
+                    title="Edit Risk">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50 transition-colors" 
+                    hx-get="/risk/status-change/${risk.id}" 
+                    hx-target="#modal-container" 
+                    hx-swap="innerHTML"
+                    title="Change Status">
+              <i class="fas fa-exchange-alt"></i>
+            </button>
+            <button class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors" 
+                    hx-delete="/risk/${risk.id}" 
+                    hx-confirm="Are you sure you want to permanently delete this risk? This action cannot be undone." 
+                    hx-target="closest tr" 
+                    hx-swap="outerHTML"
+                    title="Delete Risk">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -2738,107 +3217,286 @@ const renderSimpleAddRiskModal = (csrfToken?: string) => html`
 
 
 
-// Render edit risk modal
+// Render enhanced edit risk modal
 function renderEditRiskModal(risk: any, csrfToken: string) {
   const categoryOptions = [
-    { value: 'operational', name: 'Operational' },
-    { value: 'financial', name: 'Financial' },
-    { value: 'strategic', name: 'Strategic' },
-    { value: 'compliance', name: 'Compliance' },
-    { value: 'technology', name: 'Technology' },
-    { value: 'reputation', name: 'Reputation' }
+    { value: 'operational', name: 'Operational', icon: 'cogs', description: 'Business operations and processes' },
+    { value: 'financial', name: 'Financial', icon: 'dollar-sign', description: 'Financial and economic risks' },
+    { value: 'strategic', name: 'Strategic', icon: 'chess', description: 'Strategic and business direction' },
+    { value: 'compliance', name: 'Compliance', icon: 'balance-scale', description: 'Regulatory and legal compliance' },
+    { value: 'technology', name: 'Technology', icon: 'laptop-code', description: 'Technology and cybersecurity' },
+    { value: 'reputation', name: 'Reputation', icon: 'star', description: 'Brand and reputation management' }
   ];
 
-  // Map category_id to category name
-  const categoryMap: {[key: number]: string} = {
-    1: 'operational',
-    2: 'financial',
-    3: 'strategic',
-    4: 'compliance',
-    5: 'technology',
-    6: 'reputation'
-  };
+  const statusOptions = [
+    { value: 'pending', name: 'Pending', description: 'Awaiting review or approval', color: 'yellow' },
+    { value: 'active', name: 'Active', description: 'Risk is confirmed and being monitored', color: 'green' },
+    { value: 'mitigated', name: 'Mitigated', description: 'Risk controls have been implemented', color: 'blue' },
+    { value: 'monitoring', name: 'Monitoring', description: 'Risk is under continuous observation', color: 'purple' },
+    { value: 'escalated', name: 'Escalated', description: 'Risk requires management attention', color: 'red' },
+    { value: 'closed', name: 'Closed', description: 'Risk has been resolved', color: 'gray' }
+  ];
 
-  const currentCategory = categoryMap[risk.category_id] || 'operational';
+  const currentCategory = risk.category || 'operational';
+  const currentStatus = risk.status || 'active';
+  const riskScore = risk.probability && risk.impact ? risk.probability * risk.impact : 0;
+  const riskLevel = getRiskLevel(riskScore);
 
   return html`
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="risk-modal">
-      <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="text-xl font-medium text-gray-900">Edit Risk</h3>
-            <button onclick="document.getElementById('risk-modal').remove()" class="text-gray-400 hover:text-gray-600">
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" id="risk-modal">
+      <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-6">
+          <div class="flex justify-between items-start">
+            <div class="flex items-center space-x-4">
+              <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                <i class="fas fa-edit text-2xl"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold">Edit Risk Assessment</h3>
+                <p class="text-blue-100 text-sm mt-1">RISK-${risk.id} • Modify risk details and assessment</p>
+              </div>
+            </div>
+            <button onclick="document.getElementById('risk-modal').remove()" class="text-white hover:text-gray-200 transition-colors">
               <i class="fas fa-times text-xl"></i>
             </button>
           </div>
-          
+        </div>
+
+        <div class="overflow-y-auto max-h-[calc(95vh-120px)]">
           <form hx-post="/risk/edit/${risk.id}" hx-target="#risk-modal" hx-swap="innerHTML">
             <input type="hidden" name="_csrf" value="${csrfToken}">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Risk Title *</label>
-                <input type="text" name="title" value="${risk.title}" required 
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div class="p-8 space-y-8">
+              
+              <!-- Current Risk Score Display -->
+              <div class="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-6 border">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="text-lg font-semibold text-gray-900 mb-2">Current Risk Assessment</h4>
+                    <div class="flex items-center space-x-6">
+                      <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600" id="current-probability">${risk.probability || 0}</div>
+                        <div class="text-xs text-gray-600">Probability</div>
+                      </div>
+                      <div class="text-2xl text-gray-400">×</div>
+                      <div class="text-center">
+                        <div class="text-2xl font-bold text-orange-600" id="current-impact">${risk.impact || 0}</div>
+                        <div class="text-xs text-gray-600">Impact</div>
+                      </div>
+                      <div class="text-2xl text-gray-400">=</div>
+                      <div class="text-center">
+                        <div class="text-3xl font-bold ${riskLevel === 'Critical' ? 'text-red-600' : riskLevel === 'High' ? 'text-orange-600' : riskLevel === 'Medium' ? 'text-yellow-600' : 'text-green-600'}" id="current-score">${riskScore}</div>
+                        <div class="text-xs text-gray-600" id="current-level">${riskLevel}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-sm text-gray-600">Last Updated</div>
+                    <div class="text-lg font-medium">${new Date(risk.updated_at).toLocaleDateString()}</div>
+                  </div>
+                </div>
               </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                <select name="category" required 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  ${categoryOptions.map(cat => html`
-                    <option value="${cat.value}" ${currentCategory === cat.value ? 'selected' : ''}>${cat.name}</option>
-                  `)}
-                </select>
+
+              <!-- Risk Information Section -->
+              <div class="bg-white border rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-6 py-3 border-b">
+                  <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    Risk Information
+                  </h4>
+                </div>
+                <div class="p-6 space-y-6">
+                  
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="lg:col-span-2">
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Risk Title *</label>
+                      <input type="text" name="title" value="${risk.title}" required 
+                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-medium">
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                      <select name="category" required 
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        ${categoryOptions.map(cat => html`
+                          <option value="${cat.value}" ${currentCategory === cat.value ? 'selected' : ''}>${cat.name}</option>
+                        `)}
+                      </select>
+                      <p class="text-xs text-gray-500 mt-1">Select the primary category for this risk</p>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                      <select name="status" required 
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        ${statusOptions.map(status => html`
+                          <option value="${status.value}" ${currentStatus === status.value ? 'selected' : ''}>${status.name}</option>
+                        `)}
+                      </select>
+                      <p class="text-xs text-gray-500 mt-1">Current status of this risk</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Risk Description *</label>
+                    <textarea name="description" rows="4" required 
+                              placeholder="Provide a detailed description of the risk scenario, potential causes, and business impact..."
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">${risk.description}</textarea>
+                  </div>
+
+                  ${risk.affected_assets ? html`
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Affected Assets</label>
+                      <textarea name="affected_assets" rows="2" 
+                                placeholder="List the assets, systems, or processes affected by this risk..."
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">${risk.affected_assets}</textarea>
+                    </div>
+                  ` : ''}
+                </div>
               </div>
-              
-              <div></div>
-              
-              <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-                <textarea name="description" rows="4" required 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">${risk.description}</textarea>
+
+              <!-- Risk Assessment Section -->
+              <div class="bg-white border rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-6 py-3 border-b">
+                  <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-calculator text-orange-500 mr-2"></i>
+                    Risk Assessment
+                  </h4>
+                </div>
+                <div class="p-6">
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-3">Probability *</label>
+                      <div class="space-y-2">
+                        ${[1, 2, 3, 4, 5].map(level => html`
+                          <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="probability" value="${level}" 
+                                   ${risk.probability === level ? 'checked' : ''}
+                                   class="mr-3 h-4 w-4 text-blue-600"
+                                   onchange="updateRiskScore()">
+                            <div class="flex items-center flex-1">
+                              <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3 ${level >= 4 ? 'bg-red-100' : level >= 3 ? 'bg-orange-100' : level >= 2 ? 'bg-yellow-100' : 'bg-green-100'}">
+                                <span class="text-sm font-bold ${level >= 4 ? 'text-red-600' : level >= 3 ? 'text-orange-600' : level >= 2 ? 'text-yellow-600' : 'text-green-600'}">${level}</span>
+                              </div>
+                              <div>
+                                <div class="font-medium text-gray-900">${['', 'Very Low (0-5%)', 'Low (5-25%)', 'Medium (25-50%)', 'High (50-75%)', 'Very High (75%+)'][level]}</div>
+                                <div class="text-xs text-gray-500">${['', 'Rare occurrence', 'Unlikely to occur', 'Possible occurrence', 'Likely to occur', 'Almost certain'][level]}</div>
+                              </div>
+                            </div>
+                          </label>
+                        `)}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-3">Impact *</label>
+                      <div class="space-y-2">
+                        ${[1, 2, 3, 4, 5].map(level => html`
+                          <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="impact" value="${level}" 
+                                   ${risk.impact === level ? 'checked' : ''}
+                                   class="mr-3 h-4 w-4 text-blue-600"
+                                   onchange="updateRiskScore()">
+                            <div class="flex items-center flex-1">
+                              <div class="w-8 h-8 rounded-full flex items-center justify-center mr-3 ${level >= 4 ? 'bg-red-100' : level >= 3 ? 'bg-orange-100' : level >= 2 ? 'bg-yellow-100' : 'bg-green-100'}">
+                                <span class="text-sm font-bold ${level >= 4 ? 'text-red-600' : level >= 3 ? 'text-orange-600' : level >= 2 ? 'text-yellow-600' : 'text-green-600'}">${level}</span>
+                              </div>
+                              <div>
+                                <div class="font-medium text-gray-900">${['', 'Minimal', 'Minor', 'Moderate', 'Major', 'Severe'][level]}</div>
+                                <div class="text-xs text-gray-500">${['', 'Negligible effect', 'Small disruption', 'Noticeable impact', 'Significant damage', 'Critical consequences'][level]}</div>
+                              </div>
+                            </div>
+                          </label>
+                        `)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Probability *</label>
-                <select name="probability" required 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="1" ${risk.probability === 1 ? 'selected' : ''}>1 - Very Low</option>
-                  <option value="2" ${risk.probability === 2 ? 'selected' : ''}>2 - Low</option>
-                  <option value="3" ${risk.probability === 3 ? 'selected' : ''}>3 - Medium</option>
-                  <option value="4" ${risk.probability === 4 ? 'selected' : ''}>4 - High</option>
-                  <option value="5" ${risk.probability === 5 ? 'selected' : ''}>5 - Very High</option>
-                </select>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Impact *</label>
-                <select name="impact" required 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="1" ${risk.impact === 1 ? 'selected' : ''}>1 - Minimal</option>
-                  <option value="2" ${risk.impact === 2 ? 'selected' : ''}>2 - Minor</option>
-                  <option value="3" ${risk.impact === 3 ? 'selected' : ''}>3 - Moderate</option>
-                  <option value="4" ${risk.impact === 4 ? 'selected' : ''}>4 - Major</option>
-                  <option value="5" ${risk.impact === 5 ? 'selected' : ''}>5 - Severe</option>
-                </select>
+
+              <!-- Timeline Section -->
+              <div class="bg-white border rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-6 py-3 border-b">
+                  <h4 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-calendar-alt text-green-500 mr-2"></i>
+                    Timeline & Dates
+                  </h4>
+                </div>
+                <div class="p-6">
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Review Date</label>
+                      <input type="date" name="review_date" value="${risk.review_date || ''}"
+                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <p class="text-xs text-gray-500 mt-1">When should this risk be reviewed next?</p>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                      <input type="date" name="due_date" value="${risk.due_date || ''}"
+                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <p class="text-xs text-gray-500 mt-1">Target date for risk mitigation</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            
-            <div class="mt-8 flex justify-end space-x-3">
-              <button type="submit" 
-                      class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
-                <i class="fas fa-save mr-2"></i>
-                Update Risk
-              </button>
-              <button type="button" onclick="document.getElementById('risk-modal').remove()" 
-                      class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
-                Cancel
-              </button>
+
+            <!-- Footer Actions -->
+            <div class="bg-gray-50 px-8 py-6 border-t flex justify-between items-center">
+              <div class="text-sm text-gray-600">
+                <i class="fas fa-info-circle mr-1"></i>
+                Changes will be automatically saved and timestamped
+              </div>
+              <div class="flex space-x-3">
+                <button type="button" onclick="document.getElementById('risk-modal').remove()" 
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded-lg transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg transition-colors font-medium">
+                  <i class="fas fa-save mr-2"></i>
+                  Update Risk Assessment
+                </button>
+              </div>
             </div>
           </form>
         </div>
       </div>
     </div>
+
+    <script>
+      function updateRiskScore() {
+        const probability = document.querySelector('input[name="probability"]:checked')?.value || 0;
+        const impact = document.querySelector('input[name="impact"]:checked')?.value || 0;
+        const score = probability * impact;
+        
+        let level = 'Very Low';
+        let levelColor = 'text-gray-600';
+        
+        if (score >= 20) {
+          level = 'Critical';
+          levelColor = 'text-red-600';
+        } else if (score >= 15) {
+          level = 'High';
+          levelColor = 'text-orange-600';
+        } else if (score >= 10) {
+          level = 'Medium';
+          levelColor = 'text-yellow-600';
+        } else if (score >= 5) {
+          level = 'Low';
+          levelColor = 'text-green-600';
+        }
+        
+        document.getElementById('current-probability').textContent = probability;
+        document.getElementById('current-impact').textContent = impact;
+        document.getElementById('current-score').textContent = score;
+        document.getElementById('current-score').className = 'text-3xl font-bold ' + levelColor;
+        document.getElementById('current-level').textContent = level;
+      }
+    </script>
   `;
 }
