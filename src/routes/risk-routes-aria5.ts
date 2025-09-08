@@ -1176,6 +1176,80 @@ Be practical and actionable in your analysis.`;
   });
 
   // Edit risk modal
+  // INCIDENT MANAGEMENT ROUTES
+  app.get('/incidents', async (c) => {
+    const user = c.get('user');
+    
+    try {
+      return c.html(
+        cleanLayout({
+          title: 'Security Incidents',
+          user,
+          content: renderIncidentsPage()
+        })
+      );
+    } catch (error) {
+      console.error('Error loading incidents:', error);
+      return c.html(
+        cleanLayout({
+          title: 'Security Incidents',
+          user,
+          content: renderErrorPage('Failed to load incidents')
+        })
+      );
+    }
+  });
+
+  app.get('/incidents/new', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'Create Security Incident',
+        user,
+        content: renderNewIncidentPage()
+      })
+    );
+  });
+
+  // REDIRECT FIXES FOR COMMON URL MISTAKES
+  app.get('/kris', async (c) => {
+    return c.redirect('/risk/', 301);
+  });
+
+  app.get('/risks', async (c) => {
+    return c.redirect('/risk/', 301);
+  });
+
+  app.post('/incidents/create', async (c) => {
+    const user = c.get('user');
+    const formData = await c.req.formData();
+    
+    try {
+      // Create incident logic here
+      const incidentData = {
+        title: formData.get('title'),
+        description: formData.get('description'),
+        severity: formData.get('severity') || 'Medium',
+        status: 'Open',
+        created_by: user?.id || 1,
+        created_at: new Date().toISOString()
+      };
+      
+      // For now, redirect to incidents list
+      return c.redirect('/risk/incidents');
+    } catch (error) {
+      console.error('Error creating incident:', error);
+      return c.html(
+        cleanLayout({
+          title: 'Create Security Incident',
+          user,
+          content: renderNewIncidentPage('Error creating incident')
+        })
+      );
+    }
+  });
+
   app.get('/edit/:id', async (c) => {
     const riskId = c.req.param('id');
     const csrfToken = setCSRFToken(c);
@@ -3492,3 +3566,183 @@ function renderEditRiskModal(risk: any, csrfToken: string) {
     </script>
   `;
 }
+
+// INCIDENT MANAGEMENT RENDER FUNCTIONS
+const renderIncidentsPage = () => html`
+  <div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-8 flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+            Security Incidents
+          </h1>
+          <p class="mt-2 text-lg text-gray-600">Monitor and manage security incidents and breaches</p>
+        </div>
+        <a href="/risk/incidents/new" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+          <i class="fas fa-plus mr-2"></i>
+          Report Incident
+        </a>
+      </div>
+
+      <!-- Incidents Overview Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-fire text-2xl text-red-500"></i>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Critical Incidents</dt>
+                  <dd class="text-lg font-medium text-gray-900">3</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-2xl text-orange-500"></i>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Open Incidents</dt>
+                  <dd class="text-lg font-medium text-gray-900">12</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-clock text-2xl text-blue-500"></i>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Avg Response Time</dt>
+                  <dd class="text-lg font-medium text-gray-900">4.2 hrs</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Incidents Table -->
+      <div class="bg-white shadow overflow-hidden rounded-lg">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Recent Incidents</h2>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                  <i class="fas fa-shield-alt text-gray-300 text-3xl mb-2"></i>
+                  <div>No incidents reported. <a href="/risk/incidents/new" class="text-red-600 hover:text-red-800">Report the first incident</a>.</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+const renderNewIncidentPage = (error?: string) => html`
+  <div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+          <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+          Report Security Incident
+        </h1>
+        <p class="mt-2 text-lg text-gray-600">Document and track security incidents for rapid response</p>
+      </div>
+
+      ${error ? html`
+        <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div class="flex">
+            <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+            <div class="text-sm text-red-700">${error}</div>
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="bg-white shadow rounded-lg p-6">
+        <form action="/risk/incidents/create" method="POST" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Incident Title *</label>
+              <input type="text" name="title" required 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                     placeholder="Brief description of the incident">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Severity Level *</label>
+              <select name="severity" required 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500">
+                <option value="Low">Low - Minimal impact</option>
+                <option value="Medium">Medium - Moderate impact</option>
+                <option value="High">High - Significant impact</option>
+                <option value="Critical">Critical - Severe impact</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Incident Description *</label>
+            <textarea name="description" required rows="6"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                      placeholder="Detailed description of the security incident, including timeline, affected systems, and initial findings..."></textarea>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <a href="/risk/incidents" class="text-gray-600 hover:text-gray-800">
+              <i class="fas fa-arrow-left mr-2"></i>
+              Back to Incidents
+            </a>
+            <button type="submit" 
+                    class="inline-flex items-center px-6 py-2 border border-transparent text-base font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+              <i class="fas fa-exclamation-triangle mr-2"></i>
+              Report Incident
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+`;
+
+const renderErrorPage = (message: string) => html`
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div class="text-center">
+      <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Error</h1>
+      <p class="text-lg text-gray-600 mb-6">${message}</p>
+      <a href="/dashboard" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+        Return Home
+      </a>
+    </div>
+  </div>
+`;

@@ -84,13 +84,24 @@ export function createIntelligenceRoutes() {
   app.get('/reports', async (c) => {
     const user = c.get('user');
     
-    return c.html(
-      cleanLayout({
-        title: 'Threat Reports',
-        user,
-        content: renderReportsPage(user)
-      })
-    );
+    try {
+      return c.html(
+        cleanLayout({
+          title: 'Threat Reports',
+          user,
+          content: renderReportsPage(user)
+        })
+      );
+    } catch (error) {
+      console.error('Error loading reports:', error);
+      return c.html(
+        cleanLayout({
+          title: 'Threat Reports',
+          user,
+          content: renderErrorPage('Threat intelligence database not yet configured. Please contact your administrator.')
+        })
+      );
+    }
   });
   
   // NEW TI ENHANCEMENT PAGES
@@ -3267,6 +3278,25 @@ const renderRiskScoringPage = (user: any, riskData?: any) => html`
             <div class="font-semibold text-purple-900 mb-1">Contextual Learning</div>
             <div class="text-sm text-purple-700">AI learns from analyst feedback to improve risk calculations</div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+const renderErrorPage = (message: string) => html`
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div class="text-center">
+      <i class="fas fa-exclamation-triangle text-orange-500 text-6xl mb-4"></i>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Configuration Required</h1>
+      <p class="text-lg text-gray-600 mb-6">${message}</p>
+      <div class="space-y-4">
+        <a href="/dashboard" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+          Return to Dashboard
+        </a>
+        <div class="text-sm text-gray-500">
+          <p>This feature requires additional database configuration.</p>
+          <p class="mt-1">Please contact your system administrator for setup assistance.</p>
         </div>
       </div>
     </div>

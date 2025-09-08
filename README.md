@@ -12,11 +12,19 @@
 ## 🔗 Service URLs
 
 ### Production Environment  
-- **🌐 Main Application**: https://bae0178f.aria5-ti-enhancement.pages.dev
+- **🌐 Main Application**: https://aria5-ti.aria5-ti-enhancement.pages.dev
+- **🚀 Latest Deployment**: https://8692e5fd.aria5-ti-enhancement.pages.dev (LATEST - All issues fixed!)
 - **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
 - **📋 System Health Dashboard**: `/health-dashboard` (Real-time monitoring)
 - **🆘 Risk Data Consistency Health**: `/api/risk-consistency/health`
+
+### 🔧 Recently Fixed Issues (Latest Deployment)
+- ✅ **HTML parsing in asset/risk linking modals** - Fixed Response headers
+- ✅ **Services page auto-refresh** - Working HTMX triggers after operations
+- ✅ **Edit/delete service buttons** - Now functional with correct database queries
+- ✅ **New services in risk modals** - Dynamic loading from services table
+- ✅ **AI Engine success messages** - Improved event system and notifications
 
 ### 🚀 Risk Data Consistency API Endpoints
 
