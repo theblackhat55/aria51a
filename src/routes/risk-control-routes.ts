@@ -123,10 +123,9 @@ export function createRiskControlRoutes() {
     const user = c.get('user');
     
     try {
-      // Get risk details  
-      // Use risks_simple for production compatibility (Cloudflare Pages)
+      // Get risk details from comprehensive risks table for consistency
       const risk = await c.env.DB.prepare(`
-        SELECT * FROM risks_simple WHERE id = ?
+        SELECT * FROM risks WHERE id = ?
       `).bind(riskId).first();
 
       if (!risk) {

@@ -149,35 +149,18 @@ export function createRiskRoutesARIA5() {
         )
       `).run();
       
-      let result;
-      try {
-        // Try simple table first
-        result = await c.env.DB.prepare(`
-          SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN risk_score >= 20 THEN 1 ELSE 0 END) as critical,
-            SUM(CASE WHEN risk_score >= 12 AND risk_score < 20 THEN 1 ELSE 0 END) as high,
-            SUM(CASE WHEN risk_score >= 6 AND risk_score < 12 THEN 1 ELSE 0 END) as medium,
-            SUM(CASE WHEN risk_score < 6 THEN 1 ELSE 0 END) as low
-          FROM risks_simple 
-          WHERE status = 'active'
-        `).first();
-        console.log('✅ Stats from risks_simple table');
-      } catch (simpleError) {
-        console.log('⚠️ Simple table stats failed, trying complex table:', simpleError.message);
-        
-        // Fallback to complex table
-        result = await c.env.DB.prepare(`
-          SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN risk_score >= 20 THEN 1 ELSE 0 END) as critical,
-            SUM(CASE WHEN risk_score >= 12 AND risk_score < 20 THEN 1 ELSE 0 END) as high,
-            SUM(CASE WHEN risk_score >= 6 AND risk_score < 12 THEN 1 ELSE 0 END) as medium,
-            SUM(CASE WHEN risk_score < 6 THEN 1 ELSE 0 END) as low
-          FROM risks 
-          WHERE status = 'active'
-        `).first();
-      }
+      // Use comprehensive risks table directly for consistency  
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 20 THEN 1 ELSE 0 END) as critical,
+          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 12 AND COALESCE(risk_score, probability * impact) < 20 THEN 1 ELSE 0 END) as high,
+          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 6 AND COALESCE(risk_score, probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
+          SUM(CASE WHEN COALESCE(risk_score, probability * impact) < 6 THEN 1 ELSE 0 END) as low
+        FROM risks 
+        WHERE status = 'active'
+      `).first();
+      console.log('✅ Stats from comprehensive risks table');
 
       const stats = {
         total: result?.total || 0,
@@ -220,75 +203,40 @@ export function createRiskRoutesARIA5() {
         )
       `).run();
       
-      // Try to fetch from simple table first
-      let result;
-      try {
-        result = await c.env.DB.prepare(`
-          SELECT 
-            r.id,
-            r.risk_id,
-            r.title,
-            r.description,
-            r.category,
-            r.probability,
-            r.impact,
-            r.risk_score,
-            r.status,
-            r.created_at,
-            r.updated_at,
-            'Avi Security' as owner_name,
-            CASE 
-              WHEN LOWER(r.category) = 'operational' THEN 'Operational'
-              WHEN LOWER(r.category) = 'financial' THEN 'Financial'
-              WHEN LOWER(r.category) = 'strategic' THEN 'Strategic'
-              WHEN LOWER(r.category) = 'compliance' THEN 'Compliance'
-              WHEN LOWER(r.category) = 'technology' OR LOWER(r.category) = 'cybersecurity' THEN 'Technology'
-              WHEN LOWER(r.category) = 'reputation' OR LOWER(r.category) = 'reputational' THEN 'Reputation'
-              ELSE UPPER(SUBSTR(r.category, 1, 1)) || LOWER(SUBSTR(r.category, 2))
-            END as category_name
-          FROM risks_simple r
-          WHERE r.status = 'active'
-          ORDER BY r.risk_score DESC, r.created_at DESC
-          LIMIT 50
-        `).all();
-        console.log('✅ Successfully fetched from risks_simple table');
-      } catch (simpleError) {
-        console.log('⚠️ Simple table failed, trying complex table:', simpleError.message);
-        
-        // Fallback to complex table
-        result = await c.env.DB.prepare(`
-          SELECT 
-            r.id,
-            r.risk_id,
-            r.title,
-            r.description,
-            r.category_id,
-            r.probability,
-            r.impact,
-            r.risk_score,
-            r.status,
-            r.organization_id,
-            r.owner_id,
-            r.created_by,
-            r.risk_type,
-            r.created_at,
-            r.updated_at,
-            'Avi Security' as owner_name,
-            CASE 
-              WHEN r.category_id = 1 THEN 'Operational'
-              WHEN r.category_id = 2 THEN 'Financial' 
-              WHEN r.category_id = 3 THEN 'Strategic'
-              WHEN r.category_id = 4 THEN 'Compliance'
-              WHEN r.category_id = 5 THEN 'Technology'
-              WHEN r.category_id = 6 THEN 'Reputation'
-              ELSE 'Operational'
-            END as category_name
-          FROM risks r
-          WHERE r.status = 'active'
-          ORDER BY r.risk_score DESC, r.created_at DESC
-          LIMIT 50
-        `).all();
-      }
+      // Use comprehensive risks table directly for consistency
+      const result = await c.env.DB.prepare(`
+        SELECT 
+          r.id,
+          r.risk_id,
+          r.title,
+          r.description,
+          r.category_id,
+          r.probability,
+          r.impact,
+          COALESCE(r.risk_score, r.probability * r.impact) as risk_score,
+          r.status,
+          r.organization_id,
+          r.owner_id,  
+          r.created_by,
+          r.risk_type,
+          r.created_at,
+          r.updated_at,
+          'Avi Security' as owner_name,
+          CASE 
+            WHEN r.category_id = 1 THEN 'Operational'
+            WHEN r.category_id = 2 THEN 'Financial' 
+            WHEN r.category_id = 3 THEN 'Strategic'
+            WHEN r.category_id = 4 THEN 'Compliance'
+            WHEN r.category_id = 5 THEN 'Technology'
+            WHEN r.category_id = 6 THEN 'Reputation'
+            ELSE 'Operational'
+          END as category_name
+        FROM risks r
+        WHERE r.status = 'active'
+        ORDER BY COALESCE(r.risk_score, r.probability * r.impact) DESC, r.created_at DESC
+        LIMIT 50
+      `).all();
+      console.log('✅ Successfully fetched from comprehensive risks table');
 
       const risks = result.results || [];
       console.log('📊 Found', risks.length, 'risks');
