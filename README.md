@@ -29,6 +29,16 @@
 - ✅ **Comprehensive Audit Logging** - All user activities tracked: login (with public IP), logout, changes, security events
 - ✅ **Integrated Audit Service** - SimpleAuditLoggingService working with existing database schema
 
+#### 🔒 Enhanced RBAC & SAML Integration (NEW)
+- ✅ **Advanced Role-Based Access Control** - Fine-grained permission system with role hierarchy
+- ✅ **Enhanced User Management** - Fixed users page errors, added department/auth type filtering
+- ✅ **SAML SSO Integration** - Production-ready Single Sign-On with auto-provisioning
+- ✅ **Account Security Controls** - User locking/unlocking, failed login tracking, session management
+- ✅ **Permission Management** - Dynamic role assignment with granular resource-action permissions
+- ✅ **SAML Group Mapping** - Automatic role assignment based on IdP group memberships
+- ✅ **Enhanced Security** - Account lockout policies, IP tracking, comprehensive audit trails
+- ✅ **User Provisioning** - Automatic SAML user creation with attribute mapping
+
 #### 🎯 Previous AI & GRC Enhancements
 - ✅ **Enhanced GRC-AI Integration** - Automated compliance framework mapping (SOC2, ISO27001, NIST, PCI-DSS)
 - ✅ **Advanced AI Chat Service** - Direct ML correlation engine access with intelligent routing
@@ -88,6 +98,33 @@
 - **Auto-resize textarea** with character counter and send button states
 - **Notification system** with unread message tracking
 - **Professional styling** with gradient backgrounds and smooth animations
+
+### 🔐 Enhanced RBAC & SAML Security Framework
+
+#### **Role-Based Access Control (RBAC)**
+- **Hierarchical Role System** - 8 predefined roles from viewer to super_admin
+- **Fine-Grained Permissions** - Resource-action based permission model (e.g., `risks.create`, `compliance.update`)
+- **Multiple Role Assignment** - Users can have multiple roles with expiration dates
+- **Dynamic Permission Checking** - Real-time permission validation with `hasPermission(userId, resource, action)`
+- **Enhanced User Management** - Department filtering, authentication type filtering, advanced search
+- **Account Security Controls** - User locking/unlocking, failed login tracking (max 5 attempts)
+- **Comprehensive Audit Trail** - All user management actions logged with IP addresses and timestamps
+
+#### **SAML Single Sign-On Integration**
+- **Production-Ready SAML Parser** - Framework for XML assertion parsing and validation
+- **Auto-Provisioning** - Automatic user creation from SAML assertions with configurable defaults
+- **Attribute Mapping** - Flexible SAML attribute to user field mapping configuration
+- **Group Membership Integration** - Map IdP groups to ARIA5 roles (e.g., 'ARIA5-Security-Analysts' → 'security_analyst')
+- **Enhanced Security** - Digital signature validation, assertion timing checks, replay protection
+- **SSO Enforcement** - Optional mandatory SSO for specific domains or globally
+- **SAML Configuration UI** - Complete admin interface for IdP setup and testing
+- **Multi-Provider Support** - Compatible with Active Directory, Okta, Azure AD, and other SAML 2.0 providers
+
+#### **Database Schema Enhancements**
+- **Enhanced Users Table** - auth_type, saml_subject_id, permissions, department, manager_id, security fields
+- **RBAC Tables** - roles, user_roles with expiration support, user_audit_log for compliance
+- **SAML Configuration** - saml_config table with comprehensive IdP settings and attribute mapping
+- **Session Management** - Enhanced user_sessions_enhanced with IP tracking and login method recording
 
 ### 🛡️ Risk Management Suite
 - **🎯 NEW: Risk Data Consistency Layer** - Unified data access ensures identical risk counts across all components
@@ -177,10 +214,29 @@
 - **Cost Optimization**: Automatic provider switching based on cost-effectiveness metrics
 
 ### Enhanced API Endpoints
+
+#### **AI & ML Integration**
 - **`/ai/ml-query`**: Direct ML correlation engine queries
 - **`/ai/proactive-alerts`**: Real-time notification system
 - **`/api/ai-performance`**: Performance analytics dashboard
 - **`/api/grc-integration`**: Automated GRC-AI mapping endpoints
+
+#### **RBAC & User Management**
+- **`GET /admin/users`**: Enhanced user management dashboard with RBAC statistics
+- **`GET /admin/users/table`**: Advanced user table with role, department, auth type filtering
+- **`POST /admin/users/:id/lock`**: Lock user account for security (30-minute default)
+- **`POST /admin/users/:id/unlock`**: Unlock user account and reset failed login attempts
+- **`GET /admin/users/:id/audit`**: Get comprehensive user audit trail
+- **`POST /admin/roles`**: Create new custom roles with specific permissions
+- **`PUT /admin/roles/:id`**: Update role permissions (non-system roles only)
+
+#### **SAML SSO Integration**
+- **`GET /admin/saml`**: SAML configuration management interface
+- **`POST /admin/saml/save`**: Update SAML IdP configuration and settings
+- **`POST /admin/saml/test`**: Test SAML connection and metadata retrieval
+- **`POST /auth/saml/acs`**: SAML Assertion Consumer Service endpoint
+- **`GET /saml/metadata`**: Generate SP metadata for IdP configuration
+- **`POST /admin/users/create-saml-demo`**: Create demo SAML user for testing
 
 ## 🏗️ Architecture
 
@@ -190,18 +246,23 @@
 - **Database**: Cloudflare D1 (SQLite) with global replication
 - **AI/ML**: Multi-provider AI stack (GPT-4, Claude 3.5, Llama 3.1) with intelligent routing
 - **Storage**: Cloudflare KV + R2 for caching and file storage
-- **Authentication**: JWT-based with secure session management
+- **Authentication**: Enhanced JWT with RBAC + SAML SSO integration and comprehensive session management
 
 ### Database Schema
-- **Complete database schema** with 17+ migrations
-- **User management** with role-based access control
-- **Risk assessment** tables with comprehensive tracking
-- **Compliance frameworks** and control mappings
-- **Threat intelligence** IOC and campaign data
-- **Enhanced AI assistant** with ML correlation engine and performance analytics
+- **Complete database schema** with 20+ migrations including enhanced RBAC and SAML
+- **Enhanced user management** with comprehensive RBAC and SAML support:
+  - `users` - Enhanced with auth_type, saml_subject_id, department, security fields
+  - `roles` - Hierarchical role system with JSON permission definitions
+  - `user_roles` - Many-to-many role assignment with expiration support
+  - `user_audit_log` - Comprehensive audit trail for all user management actions
+  - `saml_config` - Complete SAML IdP configuration and attribute mapping
+  - `user_sessions_enhanced` - Session management with IP tracking and login method
+- **Risk assessment** tables with comprehensive tracking and AI integration
+- **Compliance frameworks** and control mappings with GRC-AI automation
+- **Threat intelligence** IOC and campaign data with ML correlation
+- **Enhanced AI assistant** with multi-provider performance analytics
 - **AI performance tracking** with token usage monitoring and cost optimization  
 - **GRC-AI integration** tables for automated compliance framework mapping
-- **Threat intelligence** feeds, IOCs, correlations, and behavioral analytics
 - **ML models** for behavioral pattern analysis, risk optimization, and neural networks
 - **Feed connector** configurations and processing status for multi-source TI integration
 - **System health monitoring** tables for real-time metrics:
