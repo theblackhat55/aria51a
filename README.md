@@ -12,7 +12,7 @@
 ## 🔗 Service URLs
 
 ### Production Environment  
-- **🌐 Main Application**: https://f7cf2250.aria5-ti-enhancement.pages.dev
+- **🌐 Main Application**: https://bae0178f.aria5-ti-enhancement.pages.dev
 - **📊 Risk Consistency API**: `/api/risk-consistency/*` (Real-time consistent risk data)
 - **🔍 Threat Intelligence API**: `/api/threat-intelligence/*` (Authentication Required) 
 - **📋 System Health Dashboard**: `/health-dashboard` (Real-time monitoring)
@@ -507,6 +507,7 @@ ARIA5-HTMX/
 - **📈 Eliminated Confusion**: No more conflicting risk numbers across UI components
 - **🎯 Fixed Risk Creation**: New risks now properly use comprehensive `risks` table (no more `risks_simple` recreation)
 - **🎨 Enhanced UX**: Risk creation form auto-closes and refreshes page after 1.5 seconds
+- **🆔 Automatic ID Generation**: Risk IDs are now automatically generated (no manual entry required)
 - **🛡️ Future-Proof**: New risk calculations automatically inherit consistency layer
 - **📊 Real-time Validation**: API endpoint to detect and fix any inconsistencies
 - **⚡ Performance**: Direct table queries without fallback logic overhead
