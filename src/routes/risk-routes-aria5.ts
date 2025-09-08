@@ -783,7 +783,7 @@ Be practical and actionable in your analysis.`;
                     </div>
                     <div class="flex space-x-2">
                       <button hx-get="/risk/status-change/${risk.id}" 
-                              hx-target="#modal-overlay" 
+                              hx-target="#modal-container" 
                               hx-swap="innerHTML"
                               class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         <i class="fas fa-exchange-alt mr-2"></i>
@@ -960,7 +960,7 @@ Be practical and actionable in your analysis.`;
         </div>
 
         <!-- Status Change Modal Container -->
-        <div id="modal-overlay"></div>
+        <div id="modal-container"></div>
       `);
     } catch (error) {
       console.error('Error fetching risk:', error);
@@ -1012,20 +1012,21 @@ Be practical and actionable in your analysis.`;
 
       return c.html(html`
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-60">
-          <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full">
+          <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-4 rounded-t-xl">
               <div class="flex justify-between items-center">
                 <div>
                   <h3 class="text-xl font-bold">Change Risk Status</h3>
                   <p class="text-orange-100 text-sm mt-1">RISK-${risk.id} • ${risk.title}</p>
                 </div>
-                <button onclick="document.getElementById('modal-overlay').innerHTML = ''" class="text-white hover:text-gray-200">
+                <button onclick="document.getElementById('modal-container').innerHTML = ''" class="text-white hover:text-gray-200">
                   <i class="fas fa-times text-xl"></i>
                 </button>
               </div>
             </div>
             
-            <form hx-post="/risk/status-change/${risk.id}" hx-target="#modal-overlay" hx-swap="innerHTML">
+            <div class="overflow-y-auto max-h-[calc(90vh-120px)]">
+              <form hx-post="/risk/status-change/${risk.id}" hx-target="#modal-container" hx-swap="innerHTML">
               <input type="hidden" name="_csrf" value="${csrfToken}">
               
               <div class="p-6">
@@ -1089,9 +1090,9 @@ Be practical and actionable in your analysis.`;
                 </div>
               </div>
 
-              <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-end space-x-3">
+              <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
                 <button type="button" 
-                        onclick="document.getElementById('modal-overlay').innerHTML = ''"
+                        onclick="document.getElementById('modal-container').innerHTML = ''"
                         class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg transition-colors">
                   Cancel
                 </button>
@@ -1102,6 +1103,7 @@ Be practical and actionable in your analysis.`;
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       `);
@@ -1150,9 +1152,8 @@ Be practical and actionable in your analysis.`;
           <p class="text-green-600 text-sm mt-1">Risk status changed to: ${newStatus}</p>
           <script>
             setTimeout(() => {
-              // Close both modals and refresh the page or table
-              document.getElementById('modal-overlay').innerHTML = '';
-              document.getElementById('risk-modal').remove();
+              // Close modal and refresh the page or table
+              document.getElementById('modal-container').innerHTML = '';
               // Refresh risk table if present
               if (window.htmx && document.getElementById('risk-table')) {
                 htmx.trigger('#risk-table', 'hx:trigger');
