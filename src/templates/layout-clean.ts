@@ -1532,6 +1532,20 @@ const renderCleanNavigation = (user: any) => html`
             </button>
             <div data-dropdown-menu class="dropdown-menu absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
               <div class="py-2">
+                <a href="/compliance/dashboard" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 border-b border-gray-100">
+                  <i class="fas fa-tachometer-alt w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Dashboard</div>
+                    <div class="text-xs text-gray-500">Compliance Overview</div>
+                  </div>
+                </a>
+                <a href="/compliance/automation" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 border-b border-gray-100">
+                  <i class="fas fa-robot w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Automation Center</div>
+                    <div class="text-xs text-gray-500">Phase 3: Workflows & Monitoring</div>
+                  </div>
+                </a>
                 <a href="/compliance/frameworks" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
                   <i class="fas fa-layer-group w-5 text-blue-500 mr-3"></i>
                   <div>
