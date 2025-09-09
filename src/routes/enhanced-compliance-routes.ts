@@ -87,12 +87,15 @@ export function createEnhancedComplianceRoutes() {
         LIMIT 5
       `).all();
 
+      // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
+      // TODO: Re-enable when Phase 4 multi-tenancy features are needed
       // Get organization info (if enterprise features enabled)
-      const orgInfo = await db.prepare(`
-        SELECT * FROM organizations_hierarchy 
-        WHERE status = 'active' 
-        LIMIT 1
-      `).first();
+      // const orgInfo = await db.prepare(`
+      //   SELECT * FROM organizations_hierarchy 
+      //   WHERE status = 'active' 
+      //   LIMIT 1
+      // `).first();
+      const orgInfo = null; // Disabled for now
 
       return c.html(
         cleanLayout({
@@ -397,7 +400,71 @@ export function createEnhancedComplianceRoutes() {
     }
   });
 
-  // Automation Management
+  // Add missing routes for navigation
+  app.get('/soa', async (c) => {
+    const user = c.get('user');
+    return c.html(cleanLayout({
+      title: 'Statement of Applicability',
+      user,
+      content: html`
+        <div class="min-h-screen bg-gray-50">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Statement of Applicability</h3>
+              <p class="text-gray-600 mb-4">Manage your organization's Statement of Applicability for compliance frameworks.</p>
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <p class="text-blue-800">This feature will be available in a future update. Currently focusing on automation workflows.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    }));
+  });
+
+  app.get('/evidence', async (c) => {
+    const user = c.get('user');
+    return c.html(cleanLayout({
+      title: 'Evidence Management',
+      user,
+      content: html`
+        <div class="min-h-screen bg-gray-50">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Evidence Documentation & Proof</h3>
+              <p class="text-gray-600 mb-4">Centralized evidence management for compliance controls.</p>
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <p class="text-blue-800">This feature will be available in a future update. Currently focusing on automation workflows.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    }));
+  });
+
+  app.get('/assessments', async (c) => {
+    const user = c.get('user');
+    return c.html(cleanLayout({
+      title: 'Compliance Assessments',
+      user,
+      content: html`
+        <div class="min-h-screen bg-gray-50">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Compliance Audits</h3>
+              <p class="text-gray-600 mb-4">Manage and track compliance audit activities.</p>
+              <div class="bg-blue-50 p-4 rounded-lg">
+                <p class="text-blue-800">This feature will be available in a future update. Currently focusing on automation workflows.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    }));
+  });
+
+  // Automation Management - PHASE 3 FEATURE
   app.get('/automation', async (c) => {
     const user = c.get('user');
     const db = c.env.DB;
@@ -411,28 +478,43 @@ export function createEnhancedComplianceRoutes() {
     }
 
     try {
-      // Get automation rules with status
-      const automationRules = await db.prepare(`
+      // Get workflow metrics for Phase 3 features
+      const workflowMetrics = await db.prepare(`
         SELECT 
-          car.*,
-          c.control_id,
-          c.title as control_title,
-          f.name as framework_name
-        FROM control_automation_rules car
-        JOIN compliance_controls c ON car.control_id = c.id
-        JOIN compliance_frameworks f ON c.framework_id = f.id
-        WHERE car.is_active = 1
-        ORDER BY car.created_at DESC
+          COUNT(*) as total_workflows,
+          COUNT(CASE WHEN automation_level = 'fully_automated' THEN 1 END) as automated_workflows,
+          COUNT(CASE WHEN status = 'active' THEN 1 END) as active_workflows
+        FROM compliance_workflows_advanced
+      `).first();
+
+      // Get monitoring rules for Phase 3 features  
+      const monitoringRules = await db.prepare(`
+        SELECT 
+          COUNT(*) as total_rules,
+          COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_rules
+        FROM compliance_monitoring_rules
+      `).first();
+
+      // Get recent automation activities
+      const recentActivities = await db.prepare(`
+        SELECT 
+          we.workflow_name,
+          we.execution_status,
+          we.created_at,
+          we.completion_time
+        FROM workflow_executions we
+        ORDER BY we.created_at DESC
+        LIMIT 10
       `).all();
 
       return c.html(
         cleanLayout({
-          title: 'Compliance Automation',
+          title: 'Compliance Automation - Phase 3',
           user,
           additionalHead: html`
             <script src="/static/enhanced-compliance-dashboard.js"></script>
           `,
-          content: renderAutomationManagement(automationRules.results || [])
+          content: renderAutomationManagement(workflowMetrics || {}, monitoringRules || {}, recentActivities.results || [])
         })
       );
     } catch (error) {
@@ -440,7 +522,46 @@ export function createEnhancedComplianceRoutes() {
       return c.html(cleanLayout({
         title: 'Compliance Automation',
         user,
-        content: html`<div class="p-4 text-red-600">Error loading automation data</div>`
+        content: html`
+          <div class="min-h-screen bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div class="bg-white rounded-xl shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                  <i class="fas fa-cogs mr-2 text-blue-600"></i>
+                  Compliance Automation Center - Phase 3
+                </h3>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                  <div class="flex">
+                    <div class="flex-shrink-0">
+                      <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                    </div>
+                    <div class="ml-3">
+                      <h4 class="text-sm font-medium text-yellow-800">Database Initialization Required</h4>
+                      <div class="mt-2 text-sm text-yellow-700">
+                        <p>The automation features require database tables to be initialized. Please run the migration scripts to set up Phase 3 features.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div class="bg-blue-50 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-blue-900 mb-2">Workflow Engine</h4>
+                    <p class="text-blue-700 text-sm">Automated compliance workflow creation and execution</p>
+                  </div>
+                  <div class="bg-green-50 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-green-900 mb-2">Monitoring System</h4>
+                    <p class="text-green-700 text-sm">Continuous compliance monitoring and alerting</p>
+                  </div>
+                  <div class="bg-purple-50 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-purple-900 mb-2">Evidence Collection</h4>
+                    <p class="text-purple-700 text-sm">Automated evidence gathering and validation</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
       }));
     }
   });
@@ -1123,33 +1244,230 @@ function getStatusColor(status: string) {
   }
 }
 
-function renderAutomationManagement(automationRules: any[]) {
+function renderAutomationManagement(workflowMetrics: any, monitoringRules: any, recentActivities: any[]) {
   return html`
     <div class="min-h-screen bg-gray-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="bg-white rounded-xl shadow">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Compliance Automation</h3>
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="py-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h1 class="text-2xl font-bold text-white">Phase 3: Compliance Automation Center</h1>
+                <p class="text-blue-100 mt-1">Advanced Workflow Engine & Continuous Monitoring</p>
+              </div>
+              <div class="flex space-x-3">
+                <button class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-colors">
+                  <i class="fas fa-plus mr-2"></i>
+                  Create Workflow
+                </button>
+                <button class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-colors">
+                  <i class="fas fa-eye mr-2"></i>
+                  Monitor Rules
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="p-6">
-            <div class="space-y-4">
-              ${automationRules.map(rule => html`
-                <div class="border border-gray-200 rounded-lg p-4">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <h4 class="font-medium">${rule.rule_name}</h4>
-                      <p class="text-sm text-gray-500">${rule.control_id} - ${rule.control_title}</p>
-                    </div>
-                    <button 
-                      class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                      data-action="start-automation"
-                      data-rule-id="${rule.id}"
-                    >
-                      Execute
-                    </button>
+        </div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-cogs text-2xl text-blue-600"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Total Workflows</p>
+                <p class="text-2xl font-semibold text-gray-900">${workflowMetrics?.total_workflows || 0}</p>
+                <p class="text-xs text-gray-500">${workflowMetrics?.automated_workflows || 0} fully automated</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-play-circle text-2xl text-green-600"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Active Workflows</p>
+                <p class="text-2xl font-semibold text-gray-900">${workflowMetrics?.active_workflows || 0}</p>
+                <p class="text-xs text-gray-500">Currently running</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-radar-dish text-2xl text-purple-600"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Monitor Rules</p>
+                <p class="text-2xl font-semibold text-gray-900">${monitoringRules?.total_rules || 0}</p>
+                <p class="text-xs text-gray-500">${monitoringRules?.active_rules || 0} active</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <i class="fas fa-percentage text-2xl text-orange-600"></i>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Automation Rate</p>
+                <p class="text-2xl font-semibold text-gray-900">
+                  ${workflowMetrics?.total_workflows > 0 ? 
+                    Math.round((workflowMetrics.automated_workflows / workflowMetrics.total_workflows) * 100) : 0}%
+                </p>
+                <p class="text-xs text-gray-500">Fully automated</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Workflow Management -->
+          <div class="bg-white rounded-xl shadow-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-sitemap mr-2 text-blue-600"></i>
+                Workflow Management
+              </h3>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4">
+                <div class="flex items-center p-4 bg-blue-50 rounded-lg">
+                  <i class="fas fa-plus-circle text-blue-600 mr-3"></i>
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">Create New Workflow</h4>
+                    <p class="text-sm text-gray-600">Set up automated compliance processes</p>
                   </div>
+                  <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                    Create
+                  </button>
                 </div>
-              `).join('')}
+
+                <div class="flex items-center p-4 bg-green-50 rounded-lg">
+                  <i class="fas fa-eye text-green-600 mr-3"></i>
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">View All Workflows</h4>
+                    <p class="text-sm text-gray-600">Manage existing automation workflows</p>
+                  </div>
+                  <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                    View
+                  </button>
+                </div>
+
+                <div class="flex items-center p-4 bg-purple-50 rounded-lg">
+                  <i class="fas fa-chart-bar text-purple-600 mr-3"></i>
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">Workflow Analytics</h4>
+                    <p class="text-sm text-gray-600">Performance and efficiency metrics</p>
+                  </div>
+                  <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                    Analyze
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monitoring Center -->
+          <div class="bg-white rounded-xl shadow-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-shield-alt mr-2 text-green-600"></i>
+                Continuous Monitoring
+              </h3>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4">
+                <div class="flex items-center p-4 bg-green-50 rounded-lg">
+                  <i class="fas fa-plus text-green-600 mr-3"></i>
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">Create Monitor Rule</h4>
+                    <p class="text-sm text-gray-600">Set up continuous compliance monitoring</p>
+                  </div>
+                  <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                    Create
+                  </button>
+                </div>
+
+                <div class="flex items-center p-4 bg-orange-50 rounded-lg">
+                  <i class="fas fa-bell text-orange-600 mr-3"></i>
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">Active Alerts</h4>
+                    <p class="text-sm text-gray-600">View and manage compliance alerts</p>
+                  </div>
+                  <button class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700">
+                    View
+                  </button>
+                </div>
+
+                <div class="flex items-center p-4 bg-red-50 rounded-lg">
+                  <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                  <div class="flex-1">
+                    <h4 class="font-medium text-gray-900">Anomaly Detection</h4>
+                    <p class="text-sm text-gray-600">AI-powered compliance anomalies</p>
+                  </div>
+                  <button class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                    Detect
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="mt-8">
+          <div class="bg-white rounded-xl shadow-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="fas fa-history mr-2 text-gray-600"></i>
+                Recent Automation Activities
+              </h3>
+            </div>
+            <div class="p-6">
+              ${recentActivities.length > 0 ? html`
+                <div class="space-y-3">
+                  ${recentActivities.map(activity => html`
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                          <i class="fas fa-cog text-blue-600 text-sm"></i>
+                        </div>
+                        <div>
+                          <p class="font-medium text-gray-900">${activity.workflow_name || 'Workflow Execution'}</p>
+                          <p class="text-sm text-gray-600">Status: ${activity.execution_status || 'Unknown'}</p>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <p class="text-sm text-gray-500">${new Date(activity.created_at || Date.now()).toLocaleDateString()}</p>
+                        ${activity.completion_time ? html`
+                          <p class="text-xs text-gray-400">Completed: ${new Date(activity.completion_time).toLocaleTimeString()}</p>
+                        ` : ''}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : html`
+                <div class="text-center py-8">
+                  <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+                  <p class="text-gray-500 text-lg">No recent automation activities</p>
+                  <p class="text-gray-400 text-sm">Create your first workflow to get started</p>
+                  <button class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create First Workflow
+                  </button>
+                </div>
+              `}
             </div>
           </div>
         </div>
@@ -1439,38 +1757,38 @@ function renderComplianceDashboard(data: {
               </div>
             </div>
 
-            <!-- Enterprise Features Grid -->
-            ${orgInfo ? html`
-              <div class="bg-white rounded-xl shadow-lg">
-                <div class="px-6 py-4 border-b border-gray-200">
-                  <h3 class="text-lg font-semibold text-gray-900 flex items-center">
-                    <i class="fas fa-crown mr-2 text-purple-600"></i>
-                    Enterprise Features
-                  </h3>
-                </div>
-                <div class="p-6">
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-                      <i class="fas fa-sitemap text-2xl text-blue-600 mb-2"></i>
-                      <h4 class="font-medium text-gray-900">Multi-Tenancy</h4>
-                      <p class="text-sm text-gray-600 mt-1">Hierarchical organizations</p>
-                    </div>
-                    
-                    <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
-                      <i class="fas fa-key text-2xl text-green-600 mb-2"></i>
-                      <h4 class="font-medium text-gray-900">SSO Integration</h4>
-                      <p class="text-sm text-gray-600 mt-1">Enterprise authentication</p>
-                    </div>
-                    
-                    <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-                      <i class="fas fa-shield-alt text-2xl text-purple-600 mb-2"></i>
-                      <h4 class="font-medium text-gray-900">Advanced RBAC</h4>
-                      <p class="text-sm text-gray-600 mt-1">Granular permissions</p>
-                    </div>
+            <!-- MULTI-TENANCY FEATURES - TEMPORARILY DISABLED -->
+            <!-- TODO: Re-enable when Phase 4 multi-tenancy features are needed -->
+            <!-- Phase 3 Automation Features Grid -->
+            <div class="bg-white rounded-xl shadow-lg">
+              <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <i class="fas fa-cogs mr-2 text-blue-600"></i>
+                  Phase 3: Automation Features
+                </h3>
+              </div>
+              <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                    <i class="fas fa-sitemap text-2xl text-blue-600 mb-2"></i>
+                    <h4 class="font-medium text-gray-900">Workflow Engine</h4>
+                    <p class="text-sm text-gray-600 mt-1">Automated compliance processes</p>
+                  </div>
+                  
+                  <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                    <i class="fas fa-radar-dish text-2xl text-green-600 mb-2"></i>
+                    <h4 class="font-medium text-gray-900">Continuous Monitoring</h4>
+                    <p class="text-sm text-gray-600 mt-1">Real-time compliance tracking</p>
+                  </div>
+                  
+                  <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                    <i class="fas fa-brain text-2xl text-purple-600 mb-2"></i>
+                    <h4 class="font-medium text-gray-900">AI Decision Making</h4>
+                    <p class="text-sm text-gray-600 mt-1">Intelligent workflow routing</p>
                   </div>
                 </div>
               </div>
-            ` : ''}
+            </div>
           </div>
         </div>
 
@@ -1509,6 +1827,9 @@ function renderComplianceDashboard(data: {
             </div>
           </div>
 
+          <!-- MULTI-TENANCY FEATURE - TEMPORARILY DISABLED -->
+          <!-- TODO: Re-enable when Phase 4 multi-tenancy features are needed -->
+          <!--
           <button onclick="location.href='/api/enterprise/organizations'" 
                   class="block w-full bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-l-4 border-orange-500 text-left">
             <div class="flex items-center">
@@ -1519,6 +1840,7 @@ function renderComplianceDashboard(data: {
               </div>
             </div>
           </button>
+          -->
         </div>
       </div>
     </div>

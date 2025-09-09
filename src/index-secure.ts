@@ -22,7 +22,9 @@ import conversationalAssistantRoutes from './routes/conversational-assistant';
 import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
 import { tiGrcRoutes } from './routes/api-ti-grc-integration';
 import complianceAutomationApi from './routes/compliance-automation-api';
-import enterpriseMultiTenancyApi from './routes/enterprise-multitenancy-api';
+// MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
+// TODO: Re-enable when Phase 4 multi-tenancy features are needed
+// import enterpriseMultiTenancyApi from './routes/enterprise-multitenancy-api';
 
 // Import security middleware
 import { authMiddleware, requireRole, requireAdmin, csrfMiddleware } from './middleware/auth-middleware';
@@ -456,8 +458,9 @@ app.route('/api/risk-consistency', apiRiskConsistencyRoutes);
 // Phase 3: Advanced Compliance Automation API (requires authentication)
 app.route('/api/compliance-automation', complianceAutomationApi);
 
-// Phase 4: Enterprise Multi-Tenancy API (requires authentication)
-app.route('/api/enterprise', enterpriseMultiTenancyApi);
+// Phase 4: Enterprise Multi-Tenancy API - TEMPORARILY DISABLED
+// TODO: Re-enable when Phase 4 multi-tenancy features are needed
+// app.route('/api/enterprise', enterpriseMultiTenancyApi);
 
 // 404 handler
 app.notFound((c) => {
