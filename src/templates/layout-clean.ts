@@ -95,18 +95,38 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       @apply flex items-center space-x-3 px-3 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 rounded-lg transition-colors duration-200;
     }
     
-    /* Mobile menu animation - Enhanced */
+    /* Mobile menu animation - Fixed for better layout */
     #mobile-menu {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      background: linear-gradient(to bottom, #ffffff, #f8fafc);
+      transition: max-height 0.3s ease-out;
+      background: white;
+      position: relative;
+      z-index: 1000;
     }
     
     #mobile-menu.show {
-      max-height: calc(100vh - 64px); /* Account for nav height */
+      max-height: 100vh; /* Allow full height when open */
       overflow-y: auto;
       -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+    
+    /* Prevent layout shift when menu opens */
+    .mobile-menu-container {
+      position: relative;
+      width: 100%;
+    }
+    
+    /* Ensure proper containment */
+    @media (max-width: 768px) {
+      #mobile-menu {
+        border-top: 1px solid #e5e7eb;
+        box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+      }
+      
+      #mobile-menu.show {
+        max-height: calc(100vh - 80px); /* Account for nav height and padding */
+      }
     }
     
     /* Hamburger menu animation - More intuitive */
@@ -261,19 +281,25 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         if (isMenuOpen) {
           // Opening menu
           mobileMenu.classList.remove('hidden');
-          mobileMenu.classList.add('show');
-          mobileMenuIcon.classList.add('open');
-          mobileMenuButton.setAttribute('aria-expanded', 'true');
-          document.body.style.overflow = 'hidden'; // Prevent background scrolling
+          requestAnimationFrame(() => {
+            mobileMenu.classList.add('show');
+            mobileMenuIcon.classList.add('open');
+            mobileMenuButton.setAttribute('aria-expanded', 'true');
+          });
           
           console.log('📱 Mobile menu opened');
         } else {
           // Closing menu
-          mobileMenu.classList.add('hidden');
           mobileMenu.classList.remove('show');
           mobileMenuIcon.classList.remove('open');
           mobileMenuButton.setAttribute('aria-expanded', 'false');
-          document.body.style.overflow = ''; // Restore scrolling
+          
+          // Hide after animation completes
+          setTimeout(() => {
+            if (!mobileMenu.classList.contains('show')) {
+              mobileMenu.classList.add('hidden');
+            }
+          }, 300);
           
           console.log('📱 Mobile menu closed');
         }
@@ -283,11 +309,16 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       document.addEventListener('click', function(e) {
         if (isMenuOpen && !mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
           isMenuOpen = false;
-          mobileMenu.classList.add('hidden');
           mobileMenu.classList.remove('show');
           mobileMenuIcon.classList.remove('open');
           mobileMenuButton.setAttribute('aria-expanded', 'false');
-          document.body.style.overflow = '';
+          
+          setTimeout(() => {
+            if (!mobileMenu.classList.contains('show')) {
+              mobileMenu.classList.add('hidden');
+            }
+          }, 300);
+          
           console.log('📱 Mobile menu closed (outside click)');
         }
       });
@@ -296,26 +327,36 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && isMenuOpen) {
           isMenuOpen = false;
-          mobileMenu.classList.add('hidden');
           mobileMenu.classList.remove('show');
           mobileMenuIcon.classList.remove('open');
           mobileMenuButton.setAttribute('aria-expanded', 'false');
-          document.body.style.overflow = '';
+          
+          setTimeout(() => {
+            if (!mobileMenu.classList.contains('show')) {
+              mobileMenu.classList.add('hidden');
+            }
+          }, 300);
+          
           console.log('📱 Mobile menu closed (escape key)');
         }
       });
       
       // Close menu when navigating (clicking links)
       mobileMenu.addEventListener('click', function(e) {
-        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
           // Small delay to allow navigation to complete
           setTimeout(() => {
             isMenuOpen = false;
-            mobileMenu.classList.add('hidden');
             mobileMenu.classList.remove('show');
             mobileMenuIcon.classList.remove('open');
             mobileMenuButton.setAttribute('aria-expanded', 'false');
-            document.body.style.overflow = '';
+            
+            setTimeout(() => {
+              if (!mobileMenu.classList.contains('show')) {
+                mobileMenu.classList.add('hidden');
+              }
+            }, 300);
+            
             console.log('📱 Mobile menu closed (navigation)');
           }, 150);
         }
@@ -1282,18 +1323,21 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         isMenuOpen = !isMenuOpen;
         
         if (isMenuOpen) {
+          // Opening menu
           mobileMenu.classList.remove('hidden');
-          mobileMenu.classList.add('show');
-          mobileMenuIcon.classList.add('open');
-          mobileMenuIcon.className = 'fas fa-times text-xl open';
-          document.body.style.overflow = 'hidden'; // Prevent scroll when menu is open
+          // Use requestAnimationFrame to ensure proper rendering
+          requestAnimationFrame(() => {
+            mobileMenu.classList.add('show');
+            mobileMenuIcon.className = 'fas fa-times text-xl open';
+            mobileMenuButton.setAttribute('aria-expanded', 'true');
+          });
         } else {
+          // Closing menu
           mobileMenu.classList.remove('show');
-          mobileMenuIcon.classList.remove('open');
           mobileMenuIcon.className = 'fas fa-bars text-xl';
-          document.body.style.overflow = '';
+          mobileMenuButton.setAttribute('aria-expanded', 'false');
           
-          // Hide menu after animation
+          // Hide menu after animation completes
           setTimeout(() => {
             if (!mobileMenu.classList.contains('show')) {
               mobileMenu.classList.add('hidden');
@@ -1699,8 +1743,9 @@ const renderCleanNavigation = (user: any) => html`
         </div>
       </div>
       
-      <!-- Mobile Navigation Menu - Optimized for Better UX -->
-      <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200 max-h-screen overflow-y-auto">
+      <!-- Mobile Navigation Menu - Fixed Layout Issues -->
+      <div class="mobile-menu-container md:hidden">
+        <div id="mobile-menu" class="hidden bg-white border-t border-gray-200">
         <div class="px-4 py-4">
           
           <!-- Quick Actions Section - Most Used Features First -->
@@ -1886,6 +1931,7 @@ const renderCleanNavigation = (user: any) => html`
               </button>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

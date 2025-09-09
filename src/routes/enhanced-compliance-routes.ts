@@ -38,7 +38,87 @@ export function createEnhancedComplianceRoutes() {
 
   // Enhanced Framework Management Dashboard
   app.get('/', async (c) => {
-    return c.redirect('/compliance/frameworks');
+    return c.redirect('/compliance/dashboard');
+  });
+
+  // AI-Enhanced Compliance Dashboard with Automation and Multi-tenancy
+  app.get('/dashboard', async (c) => {
+    const user = c.get('user');
+    const db = c.env.DB;
+    
+    if (!db) {
+      return c.html(cleanLayout({
+        title: 'Compliance Dashboard',
+        user,
+        content: html`<div class="p-4 text-red-600">Database not available</div>`
+      }));
+    }
+
+    try {
+      // Get automation metrics
+      const automationMetrics = await db.prepare(`
+        SELECT 
+          COUNT(*) as total_workflows,
+          COUNT(CASE WHEN automation_level = 'fully_automated' THEN 1 END) as automated_workflows,
+          COUNT(CASE WHEN status = 'active' THEN 1 END) as active_workflows
+        FROM compliance_workflows_advanced
+      `).first();
+
+      // Get monitoring metrics
+      const monitoringMetrics = await db.prepare(`
+        SELECT 
+          COUNT(*) as total_rules,
+          COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_rules
+        FROM compliance_monitoring_rules
+      `).first();
+
+      // Get recent alerts
+      const recentAlerts = await db.prepare(`
+        SELECT 
+          a.alert_type,
+          a.severity,
+          a.title,
+          a.created_at,
+          r.rule_name
+        FROM compliance_monitoring_alerts a
+        JOIN compliance_monitoring_rules r ON a.rule_id = r.id
+        WHERE a.status = 'open'
+        ORDER BY a.created_at DESC
+        LIMIT 5
+      `).all();
+
+      // Get organization info (if enterprise features enabled)
+      const orgInfo = await db.prepare(`
+        SELECT * FROM organizations_hierarchy 
+        WHERE status = 'active' 
+        LIMIT 1
+      `).first();
+
+      return c.html(
+        cleanLayout({
+          title: 'Compliance Dashboard - ARIA5 Enterprise',
+          user,
+          additionalHead: html`
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="/static/enhanced-compliance-dashboard.js"></script>
+          `,
+          content: renderComplianceDashboard({
+            automationMetrics: automationMetrics || {},
+            monitoringMetrics: monitoringMetrics || {},
+            recentAlerts: recentAlerts.results || [],
+            orgInfo: orgInfo || null,
+            user
+          })
+        })
+      );
+    } catch (error) {
+      console.error('Error loading compliance dashboard:', error);
+      return c.html(cleanLayout({
+        title: 'Compliance Dashboard',
+        user,
+        content: html`<div class="p-4 text-red-600">Error loading dashboard data</div>`
+      }));
+    }
   });
 
   // AI-Enhanced Framework Management Page
@@ -1076,6 +1156,468 @@ function renderAutomationManagement(automationRules: any[]) {
       </div>
     </div>
   `;
+}
+
+function renderComplianceDashboard(data: {
+  automationMetrics: any;
+  monitoringMetrics: any;
+  recentAlerts: any[];
+  orgInfo: any;
+  user: any;
+}) {
+  const { automationMetrics, monitoringMetrics, recentAlerts, orgInfo, user } = data;
+  
+  return html`
+    <div class="min-h-screen bg-gray-50">
+      <!-- Enhanced Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-purple-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="py-8">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-tachometer-alt text-4xl text-white"></i>
+                </div>
+                <div class="ml-4">
+                  <h1 class="text-3xl font-bold text-white">ARIA5 Enterprise Compliance Dashboard</h1>
+                  <p class="text-blue-100 mt-2">Advanced Automation & Multi-Tenancy Platform</p>
+                  ${orgInfo ? html`
+                    <p class="text-blue-200 text-sm mt-1">
+                      <i class="fas fa-building mr-1"></i>
+                      ${orgInfo.organization_name} • ${orgInfo.organization_type}
+                    </p>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="flex space-x-3">
+                <button class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-colors"
+                        onclick="location.href='/compliance/automation'">
+                  <i class="fas fa-cogs mr-2"></i>
+                  Automation Center
+                </button>
+                <button class="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition-colors"
+                        onclick="location.href='/api/enterprise/organizations'">
+                  <i class="fas fa-sitemap mr-2"></i>
+                  Enterprise Console
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+          <!-- Automation Metrics -->
+          <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-blue-100 text-sm font-medium">Workflow Automation</p>
+                <p class="text-3xl font-bold mt-2">${automationMetrics?.total_workflows || 0}</p>
+                <p class="text-blue-200 text-xs mt-1">
+                  ${automationMetrics?.automated_workflows || 0} fully automated
+                </p>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-full p-3">
+                <i class="fas fa-robot text-2xl"></i>
+              </div>
+            </div>
+            <div class="mt-4">
+              <div class="flex justify-between text-xs text-blue-100">
+                <span>Automation Rate</span>
+                <span>${automationMetrics?.total_workflows > 0 ? 
+                  Math.round((automationMetrics.automated_workflows / automationMetrics.total_workflows) * 100) : 0}%</span>
+              </div>
+              <div class="w-full bg-blue-400 bg-opacity-30 rounded-full h-2 mt-2">
+                <div class="bg-white rounded-full h-2 transition-all duration-300" 
+                     style="width: ${automationMetrics?.total_workflows > 0 ? 
+                       Math.round((automationMetrics.automated_workflows / automationMetrics.total_workflows) * 100) : 0}%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monitoring Metrics -->
+          <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-green-100 text-sm font-medium">Continuous Monitoring</p>
+                <p class="text-3xl font-bold mt-2">${monitoringMetrics?.active_rules || 0}</p>
+                <p class="text-green-200 text-xs mt-1">
+                  of ${monitoringMetrics?.total_rules || 0} total rules
+                </p>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-full p-3">
+                <i class="fas fa-radar-dish text-2xl"></i>
+              </div>
+            </div>
+            <div class="mt-4">
+              <div class="flex justify-between text-xs text-green-100">
+                <span>Active Monitoring</span>
+                <span>${monitoringMetrics?.total_rules > 0 ? 
+                  Math.round((monitoringMetrics.active_rules / monitoringMetrics.total_rules) * 100) : 0}%</span>
+              </div>
+              <div class="w-full bg-green-400 bg-opacity-30 rounded-full h-2 mt-2">
+                <div class="bg-white rounded-full h-2 transition-all duration-300" 
+                     style="width: ${monitoringMetrics?.total_rules > 0 ? 
+                       Math.round((monitoringMetrics.active_rules / monitoringMetrics.total_rules) * 100) : 0}%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alert Status -->
+          <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-orange-100 text-sm font-medium">Active Alerts</p>
+                <p class="text-3xl font-bold mt-2">${recentAlerts?.length || 0}</p>
+                <p class="text-orange-200 text-xs mt-1">
+                  ${recentAlerts?.filter(a => a.severity === 'high').length || 0} high severity
+                </p>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-full p-3">
+                <i class="fas fa-exclamation-triangle text-2xl"></i>
+              </div>
+            </div>
+            <div class="mt-4">
+              <div class="flex items-center justify-between">
+                <button class="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full hover:bg-opacity-30 transition-colors">
+                  View All Alerts
+                </button>
+                <div class="flex space-x-1">
+                  ${recentAlerts?.slice(0, 3).map(() => html`
+                    <div class="w-2 h-2 bg-white rounded-full opacity-60"></div>
+                  `).join('') || ''}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enterprise Status -->
+          <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-purple-100 text-sm font-medium">Enterprise Features</p>
+                <p class="text-3xl font-bold mt-2">${orgInfo ? 'Active' : 'Standard'}</p>
+                <p class="text-purple-200 text-xs mt-1">
+                  Multi-tenancy ${orgInfo ? 'enabled' : 'available'}
+                </p>
+              </div>
+              <div class="bg-white bg-opacity-20 rounded-full p-3">
+                <i class="fas fa-crown text-2xl"></i>
+              </div>
+            </div>
+            <div class="mt-4">
+              <button class="text-xs bg-white bg-opacity-20 px-3 py-1 rounded-full hover:bg-opacity-30 transition-colors w-full">
+                ${orgInfo ? 'Manage Organizations' : 'Upgrade to Enterprise'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <!-- Left Column: Recent Alerts & Activities -->
+          <div class="xl:col-span-1 space-y-6">
+            <!-- Recent Alerts -->
+            <div class="bg-white rounded-xl shadow-lg">
+              <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <i class="fas fa-bell mr-2 text-red-500"></i>
+                  Recent Alerts
+                </h3>
+              </div>
+              <div class="p-6">
+                ${recentAlerts?.length > 0 ? html`
+                  <div class="space-y-4">
+                    ${recentAlerts.slice(0, 5).map(alert => html`
+                      <div class="flex items-start space-x-3 p-3 rounded-lg ${getAlertBackground(alert.severity)}">
+                        <div class="flex-shrink-0">
+                          <i class="fas fa-exclamation-circle ${getAlertColor(alert.severity)}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium text-gray-900">${alert.title}</p>
+                          <p class="text-xs text-gray-500">
+                            ${alert.rule_name} • ${new Date(alert.created_at).toLocaleString()}
+                          </p>
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${getSeverityBadge(alert.severity)}">
+                            ${alert.severity}
+                          </span>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : html`
+                  <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-check-circle text-3xl mb-2 text-green-500"></i>
+                    <p>No active alerts</p>
+                    <p class="text-xs">All systems monitoring normally</p>
+                  </div>
+                `}
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-lg">
+              <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <i class="fas fa-lightning-bolt mr-2 text-yellow-500"></i>
+                  Quick Actions
+                </h3>
+              </div>
+              <div class="p-6">
+                <div class="grid grid-cols-1 gap-3">
+                  <button class="flex items-center p-3 text-left bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                          onclick="location.href='/api/compliance-automation/workflows'">
+                    <i class="fas fa-play-circle text-blue-600 mr-3"></i>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Start New Workflow</p>
+                      <p class="text-xs text-gray-500">Launch automated compliance process</p>
+                    </div>
+                  </button>
+                  
+                  <button class="flex items-center p-3 text-left bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                          onclick="location.href='/api/compliance-automation/monitoring/rules'">
+                    <i class="fas fa-plus-circle text-green-600 mr-3"></i>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Create Monitoring Rule</p>
+                      <p class="text-xs text-gray-500">Set up continuous monitoring</p>
+                    </div>
+                  </button>
+                  
+                  <button class="flex items-center p-3 text-left bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                          onclick="location.href='/api/enterprise/organizations'">
+                    <i class="fas fa-building text-purple-600 mr-3"></i>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">Manage Organizations</p>
+                      <p class="text-xs text-gray-500">Enterprise multi-tenancy</p>
+                    </div>
+                  </button>
+                  
+                  <button class="flex items-center p-3 text-left bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                          onclick="location.href='/compliance/analytics'">
+                    <i class="fas fa-chart-bar text-orange-600 mr-3"></i>
+                    <div>
+                      <p class="text-sm font-medium text-gray-900">View Analytics</p>
+                      <p class="text-xs text-gray-500">Advanced compliance metrics</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Charts & Analytics -->
+          <div class="xl:col-span-2 space-y-6">
+            <!-- Automation Overview Chart -->
+            <div class="bg-white rounded-xl shadow-lg">
+              <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <i class="fas fa-chart-pie mr-2 text-blue-600"></i>
+                  Automation Overview
+                </h3>
+              </div>
+              <div class="p-6">
+                <div class="h-64 flex items-center justify-center">
+                  <canvas id="automationOverviewChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Monitoring Trends -->
+            <div class="bg-white rounded-xl shadow-lg">
+              <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                  <i class="fas fa-chart-line mr-2 text-green-600"></i>
+                  Monitoring Trends
+                </h3>
+              </div>
+              <div class="p-6">
+                <div class="h-64 flex items-center justify-center">
+                  <canvas id="monitoringTrendsChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <!-- Enterprise Features Grid -->
+            ${orgInfo ? html`
+              <div class="bg-white rounded-xl shadow-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                  <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-crown mr-2 text-purple-600"></i>
+                    Enterprise Features
+                  </h3>
+                </div>
+                <div class="p-6">
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                      <i class="fas fa-sitemap text-2xl text-blue-600 mb-2"></i>
+                      <h4 class="font-medium text-gray-900">Multi-Tenancy</h4>
+                      <p class="text-sm text-gray-600 mt-1">Hierarchical organizations</p>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                      <i class="fas fa-key text-2xl text-green-600 mb-2"></i>
+                      <h4 class="font-medium text-gray-900">SSO Integration</h4>
+                      <p class="text-sm text-gray-600 mt-1">Enterprise authentication</p>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
+                      <i class="fas fa-shield-alt text-2xl text-purple-600 mb-2"></i>
+                      <h4 class="font-medium text-gray-900">Advanced RBAC</h4>
+                      <p class="text-sm text-gray-600 mt-1">Granular permissions</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Navigation Cards -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <a href="/compliance/frameworks" 
+             class="block bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-l-4 border-blue-500">
+            <div class="flex items-center">
+              <i class="fas fa-shield-alt text-2xl text-blue-600 mr-4"></i>
+              <div>
+                <h3 class="font-semibold text-gray-900">Frameworks</h3>
+                <p class="text-sm text-gray-600">Manage compliance frameworks</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="/compliance/automation" 
+             class="block bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-l-4 border-green-500">
+            <div class="flex items-center">
+              <i class="fas fa-cogs text-2xl text-green-600 mr-4"></i>
+              <div>
+                <h3 class="font-semibold text-gray-900">Automation</h3>
+                <p class="text-sm text-gray-600">Workflow automation center</p>
+              </div>
+            </div>
+          </a>
+
+          <a href="/compliance/analytics" 
+             class="block bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-l-4 border-purple-500">
+            <div class="flex items-center">
+              <i class="fas fa-chart-bar text-2xl text-purple-600 mr-4"></i>
+              <div>
+                <h3 class="font-semibold text-gray-900">Analytics</h3>
+                <p class="text-sm text-gray-600">Advanced compliance metrics</p>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="location.href='/api/enterprise/organizations'" 
+                  class="block w-full bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-l-4 border-orange-500 text-left">
+            <div class="flex items-center">
+              <i class="fas fa-building text-2xl text-orange-600 mr-4"></i>
+              <div>
+                <h3 class="font-semibold text-gray-900">Enterprise</h3>
+                <p class="text-sm text-gray-600">Multi-tenancy console</p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Initialize Charts -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Automation Overview Chart
+        const automationCtx = document.getElementById('automationOverviewChart');
+        if (automationCtx) {
+          new Chart(automationCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Fully Automated', 'Partially Automated', 'Manual'],
+              datasets: [{
+                data: [
+                  ${automationMetrics?.automated_workflows || 0},
+                  ${(automationMetrics?.active_workflows || 0) - (automationMetrics?.automated_workflows || 0)},
+                  ${(automationMetrics?.total_workflows || 0) - (automationMetrics?.active_workflows || 0)}
+                ],
+                backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                }
+              }
+            }
+          });
+        }
+
+        // Monitoring Trends Chart
+        const monitoringCtx = document.getElementById('monitoringTrendsChart');
+        if (monitoringCtx) {
+          new Chart(monitoringCtx, {
+            type: 'line',
+            data: {
+              labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+              datasets: [{
+                label: 'Active Rules',
+                data: [12, 15, 18, 20, 22, 25, ${monitoringMetrics?.active_rules || 0}],
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                fill: true,
+                tension: 0.4
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
+              }
+            }
+          });
+        }
+      });
+    </script>
+  `;
+}
+
+// Alert utility functions
+function getAlertBackground(severity: string) {
+  switch (severity?.toLowerCase()) {
+    case 'high': return 'bg-red-50 border border-red-200';
+    case 'medium': return 'bg-yellow-50 border border-yellow-200';
+    case 'low': return 'bg-blue-50 border border-blue-200';
+    default: return 'bg-gray-50 border border-gray-200';
+  }
+}
+
+function getAlertColor(severity: string) {
+  switch (severity?.toLowerCase()) {
+    case 'high': return 'text-red-600';
+    case 'medium': return 'text-yellow-600';
+    case 'low': return 'text-blue-600';
+    default: return 'text-gray-600';
+  }
+}
+
+function getSeverityBadge(severity: string) {
+  switch (severity?.toLowerCase()) {
+    case 'high': return 'bg-red-100 text-red-800';
+    case 'medium': return 'bg-yellow-100 text-yellow-800';
+    case 'low': return 'bg-blue-100 text-blue-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
 }
 
 function renderAdvancedAnalytics(metrics: any) {
