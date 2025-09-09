@@ -12,7 +12,7 @@ import { createAuthRoutes } from './routes/auth-routes';
 import { createCleanDashboardRoutes } from './routes/dashboard-routes-clean';
 import { createRiskRoutesARIA5 } from './routes/risk-routes-aria5';
 import { createAIAssistantRoutes } from './routes/ai-assistant-routes';
-import { createComplianceRoutes } from './routes/compliance-routes';
+import { createEnhancedComplianceRoutes } from './routes/enhanced-compliance-routes';
 import { createOperationsRoutes } from './routes/operations-fixed';
 import { createIntelligenceRoutes } from './routes/intelligence-routes';
 import { createAdminRoutesARIA5 } from './routes/admin-routes-aria5';
@@ -403,8 +403,8 @@ app.route('/dashboard', createCleanDashboardRoutes());
 // Risk Management (requires authentication, works with database fix)
 app.route('/risk', createRiskRoutesARIA5());
 
-// Compliance Management (requires authentication)
-app.route('/compliance', createComplianceRoutes());
+// Enhanced Compliance Management with AI (requires authentication)
+app.route('/compliance', createEnhancedComplianceRoutes());
 
 // Operations Management (requires authentication)
 app.route('/operations', createOperationsRoutes());

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARIA5.1 User Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 { color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }
+        h2 { color: #1e40af; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
+        h3 { color: #1e3a8a; }
+        code { background-color: #f3f4f6; padding: 2px 4px; border-radius: 4px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
+        th { background-color: #f9fafb; font-weight: 600; }
+        .toc { background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        @media print {
+            body { font-size: 12pt; }
+            h1 { page-break-before: always; }
+            h2 { page-break-before: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <h1>ARIA5.1 Enterprise Risk Intelligence Platform</h1>
+    <p><strong>Version:</strong> 5.1.0<br>
+    <strong>Date:</strong> September 2025<br>
+    <strong>Classification:</strong> Internal Use</p>
+    
+    <div class="toc">
+        <h2>Quick PDF Generation Instructions</h2>
+        <ol>
+            <li>Open this HTML file in Chrome or any modern browser</li>
+            <li>Press Ctrl+P (Cmd+P on Mac) or go to File → Print</li>
+            <li>Select "Save as PDF" as the destination</li>
+            <li>Choose "More settings" and select "Background graphics"</li>
+            <li>Set margins to "Minimum" for best results</li>
+            <li>Click "Save" to generate the PDF</li>
+        </ol>
+        <p><strong>Note:</strong> The complete 46KB user guide is available in the RAG database and ARIA can now answer detailed questions about all platform features, AI/ML ratings, and system operations.</p>
+    </div>
+
+    <h2>Document Summary</h2>
+    <p>This comprehensive 46KB user guide covers:</p>
+    <ul>
+        <li><strong>Platform Overview:</strong> Enterprise architecture and capabilities</li>
+        <li><strong>AI/ML Rating Systems:</strong> Risk scoring algorithms, IOC confidence, compliance scoring</li>
+        <li><strong>ARIA AI Assistant:</strong> Multi-provider AI integration and intelligent routing</li>
+        <li><strong>Risk Management:</strong> Lifecycle management and assessment algorithms</li>
+        <li><strong>Threat Intelligence:</strong> IOC analysis, campaign attribution, behavioral analytics</li>
+        <li><strong>Compliance Management:</strong> Multi-framework support and automated assessment</li>
+        <li><strong>Operations Center:</strong> Asset management and service monitoring</li>
+        <li><strong>Admin Configuration:</strong> User management and system settings</li>
+        <li><strong>API Reference:</strong> REST endpoints and integration guides</li>
+        <li><strong>Troubleshooting:</strong> Common issues and diagnostic tools</li>
+    </ul>
+
+    <h2>ARIA Knowledge Base Integration</h2>
+    <p>The complete user guide has been integrated into ARIA's RAG (Retrieval-Augmented Generation) database with 11 detailed sections covering:</p>
+    
+    <table>
+        <thead>
+            <tr><th>Section</th><th>Coverage</th><th>Key Information</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Platform Overview</td>
+                <td>Architecture & Features</td>
+                <td>Cloudflare edge infrastructure, sub-100ms response times</td>
+            </tr>
+            <tr>
+                <td>AI/ML Ratings</td>
+                <td>Scoring Algorithms</td>
+                <td>Risk Score = (Probability × Impact × Context) + AI Enhancement</td>
+            </tr>
+            <tr>
+                <td>Risk Management</td>
+                <td>Lifecycle & Assessment</td>
+                <td>Multi-dimensional evaluation with threat correlation</td>
+            </tr>
+            <tr>
+                <td>AI Assistant</td>
+                <td>Provider Management</td>
+                <td>OpenAI, Anthropic, Google, Azure, Cloudflare routing</td>
+            </tr>
+            <tr>
+                <td>Threat Intelligence</td>
+                <td>IOC & Attribution</td>
+                <td>Confidence scoring, campaign analysis, behavioral analytics</td>
+            </tr>
+            <tr>
+                <td>Compliance</td>
+                <td>Framework Support</td>
+                <td>SOC 2, ISO 27001, NIST, PCI DSS automation</td>
+            </tr>
+            <tr>
+                <td>Operations</td>
+                <td>Asset Management</td>
+                <td>Classification, lifecycle, SLA monitoring</td>
+            </tr>
+            <tr>
+                <td>Admin Config</td>
+                <td>System Management</td>
+                <td>User roles, access control, audit logging</td>
+            </tr>
+            <tr>
+                <td>API Reference</td>
+                <td>Integration</td>
+                <td>REST endpoints, webhooks, rate limiting</td>
+            </tr>
+            <tr>
+                <td>Troubleshooting</td>
+                <td>Support & Diagnostics</td>
+                <td>Common issues, diagnostic tools, support channels</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Key AI/ML Rating Information</h2>
+    
+    <h3>Risk Severity Classifications</h3>
+    <table>
+        <thead>
+            <tr><th>Score Range</th><th>Severity</th><th>Color</th><th>Action Required</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>90-100</td><td>Critical</td><td>🔴 Red</td><td>Immediate (0-24h)</td></tr>
+            <tr><td>70-89</td><td>High</td><td>🟠 Orange</td><td>Urgent (1-7 days)</td></tr>
+            <tr><td>40-69</td><td>Medium</td><td>🟡 Yellow</td><td>Scheduled (1-30 days)</td></tr>
+            <tr><td>1-39</td><td>Low</td><td>🟢 Green</td><td>Routine monitoring</td></tr>
+        </tbody>
+    </table>
+
+    <h3>AI Provider Priority</h3>
+    <ol>
+        <li><strong>OpenAI GPT-4</strong> - Complex analysis, high accuracy</li>
+        <li><strong>Anthropic Claude</strong> - Safety-focused, analytical</li>
+        <li><strong>Google Gemini</strong> - Multimodal capabilities</li>
+        <li><strong>Azure AI Foundry</strong> - Enterprise security</li>
+        <li><strong>Cloudflare Llama3</strong> - Always available fallback</li>
+    </ol>
+
+    <h2>Test ARIA's Knowledge</h2>
+    <p>Try asking ARIA questions like:</p>
+    <ul>
+        <li>"How does the risk scoring algorithm work?"</li>
+        <li>"What AI providers are supported?"</li>
+        <li>"Explain the IOC confidence scoring system"</li>
+        <li>"How do I configure compliance frameworks?"</li>
+        <li>"What are the API rate limits?"</li>
+        <li>"How does the threat intelligence system work?"</li>
+    </ul>
+
+    <p><strong>Deployment Status:</strong> ✅ Live at <a href="https://0c1b4e3f.aria51.pages.dev">https://0c1b4e3f.aria51.pages.dev</a></p>
+    
+    <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+        <p><strong>Document Information:</strong><br>
+        Version: 5.1.0 | Last Updated: September 2025 | Classification: Internal Use<br>
+        © 2025 ARIA5 Platform. This document contains comprehensive platform documentation.</p>
+    </footer>
+</body>
+</html>

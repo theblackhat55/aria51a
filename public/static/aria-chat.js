@@ -67,7 +67,7 @@
       input.value = '';
       state.sending = true;
       try {
-        const res = await fetch('/api/ai/chat', {
+        const res = await fetch('/ai/chat-json', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -76,8 +76,8 @@
           body: JSON.stringify({ message: text })
         });
         const json = await res.json();
-        if (!json.success) throw new Error(json.error || 'Request failed');
-        appendAssistant(json.data.reply, json.data.sources || []);
+        if (json.error) throw new Error(json.error || 'Request failed');
+        appendAssistant(json.response, json.sources || []);
       } catch (err) {
         appendSystem('Error: ' + err.message);
       } finally {

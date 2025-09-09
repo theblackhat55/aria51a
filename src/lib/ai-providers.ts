@@ -4,12 +4,14 @@
 
 export interface AIProvider {
   name: string;
-  type: 'openai' | 'anthropic' | 'google' | 'azure' | 'local';
+  type: 'openai' | 'anthropic' | 'google' | 'azure' | 'local' | 'cloudflare';
   apiKey: string;
   baseUrl?: string;
   model: string;
   maxTokens?: number;
   temperature?: number;
+  deploymentName?: string; // For Azure AI Foundry deployment names
+  apiVersion?: string; // For Azure API versioning
 }
 
 export interface AIResponse {
@@ -113,6 +115,7 @@ export class AIProviderService {
       maxTokens?: number;
       temperature?: number;
       systemPrompt?: string;
+      cloudflareAI?: any; // Cloudflare Workers AI binding
     }
   ): Promise<AIResponse> {
     const provider = this.providers.get(providerId || this.defaultProvider || '');
@@ -129,6 +132,9 @@ export class AIProviderService {
         return this.callGoogleGemini(provider, prompt, options);
       case 'azure':
         return this.callAzureOpenAI(provider, prompt, options);
+      case 'local':
+      case 'cloudflare':
+        return this.callCloudflareAI(provider, prompt, options);
       default:
         throw new Error(`Unsupported provider type: ${provider.type}`);
     }
@@ -383,7 +389,7 @@ Please generate comprehensive security recommendations focusing on the specified
   }
 
   /**
-   * Azure OpenAI API integration
+   * Azure AI Foundry / Azure OpenAI API integration
    */
   private async callAzureOpenAI(
     provider: AIProvider, 
@@ -395,9 +401,26 @@ Please generate comprehensive security recommendations focusing on the specified
       { role: 'user', content: prompt }
     ];
 
-    // Azure OpenAI requires specific URL format: 
+    // Azure AI Foundry URL format: 
     // https://{resource-name}.openai.azure.com/openai/deployments/{deployment-name}/chat/completions?api-version={api-version}
-    const response = await fetch(`${provider.baseUrl}/chat/completions?api-version=2024-02-15-preview`, {
+    const deploymentName = provider.deploymentName || provider.model || 'gpt-4';
+    const apiVersion = provider.apiVersion || '2024-02-15-preview';
+    const baseUrl = provider.baseUrl || '';
+    
+    // Construct proper Azure URL
+    let azureUrl: string;
+    if (baseUrl.includes('/openai/deployments/')) {
+      // Full URL provided
+      azureUrl = `${baseUrl}?api-version=${apiVersion}`;
+    } else if (baseUrl.includes('.openai.azure.com')) {
+      // Azure endpoint provided, add deployment path
+      azureUrl = `${baseUrl}/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
+    } else {
+      // Assume it's a resource name, build full URL
+      azureUrl = `https://${baseUrl}.openai.azure.com/openai/deployments/${deploymentName}/chat/completions?api-version=${apiVersion}`;
+    }
+
+    const response = await fetch(azureUrl, {
       method: 'POST',
       headers: {
         'api-key': provider.apiKey,
@@ -412,7 +435,7 @@ Please generate comprehensive security recommendations focusing on the specified
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Azure OpenAI API error: ${response.status} ${errorText}`);
+      throw new Error(`Azure AI Foundry API error: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
@@ -424,9 +447,62 @@ Please generate comprehensive security recommendations focusing on the specified
         completionTokens: data.usage.completion_tokens,
         totalTokens: data.usage.total_tokens,
       } : undefined,
-      model: provider.model,
+      model: provider.deploymentName || provider.model,
       provider: provider.name
     };
+  }
+
+  /**
+   * Cloudflare Workers AI integration (Free Llama3)
+   */
+  private async callCloudflareAI(
+    provider: AIProvider, 
+    prompt: string, 
+    options?: any
+  ): Promise<AIResponse> {
+    // Get Cloudflare AI binding from options
+    const AI = options?.cloudflareAI;
+    if (!AI) {
+      throw new Error('Cloudflare AI binding not available');
+    }
+
+    // Prepare messages for Cloudflare AI format
+    const messages = [
+      ...(options?.systemPrompt ? [{ role: 'system', content: options.systemPrompt }] : []),
+      { role: 'user', content: prompt }
+    ];
+
+    try {
+      // Call Cloudflare Workers AI with Llama3
+      const response = await AI.run(provider.model, {
+        messages,
+        max_tokens: options?.maxTokens || provider.maxTokens || 1000,
+        temperature: options?.temperature || provider.temperature || 0.7,
+      });
+
+      // Handle Cloudflare AI response format
+      let content = '';
+      if (response && response.response) {
+        content = response.response;
+      } else if (response && typeof response === 'string') {
+        content = response;
+      } else {
+        throw new Error('Invalid response format from Cloudflare AI');
+      }
+
+      return {
+        content,
+        usage: {
+          promptTokens: 0, // Cloudflare AI doesn't provide token usage
+          completionTokens: 0,
+          totalTokens: 0,
+        },
+        model: provider.model,
+        provider: provider.name
+      };
+    } catch (error) {
+      throw new Error(`Cloudflare AI error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 

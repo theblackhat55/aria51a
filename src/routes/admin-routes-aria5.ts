@@ -2032,6 +2032,62 @@ const renderAIProvidersPage = () => html`
           <div id="gemini-test-result"></div>
         </div>
 
+        <!-- Azure AI Foundry -->
+        <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-indigo-500">
+          <div class="flex justify-between items-start mb-4">
+            <div class="flex items-center">
+              <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+                <i class="fas fa-microsoft text-indigo-600 text-xl"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">Azure AI Foundry</h3>
+                <p class="text-sm text-gray-600">Azure OpenAI Service, Custom Models</p>
+              </div>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              Not Configured
+            </span>
+          </div>
+          
+          <div class="space-y-3 mb-4">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Models Available:</span>
+              <span class="font-medium text-gray-400">Configure to view</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Last Test:</span>
+              <span class="font-medium text-gray-400">Never</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Usage This Month:</span>
+              <span class="font-medium">$0.00</span>
+            </div>
+          </div>
+          
+          <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-4">
+            <div class="flex items-center">
+              <i class="fas fa-building text-indigo-500 mr-2"></i>
+              <span class="text-indigo-700 text-sm">
+                <strong>Enterprise:</strong> Azure-hosted models with enterprise security
+              </span>
+            </div>
+          </div>
+          
+          <div class="flex space-x-2">
+            <button hx-get="/admin/ai-providers/azure/config"
+                    hx-target="#modal-container"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
+              Configure
+            </button>
+            <button hx-post="/admin/ai-providers/azure/test"
+                    hx-target="#azure-test-result"
+                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded text-sm">
+              Test
+            </button>
+          </div>
+          <div id="azure-test-result"></div>
+        </div>
+
         <!-- Custom API -->
         <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-purple-500">
           <div class="flex justify-between items-start mb-4">
@@ -2090,6 +2146,8 @@ const renderAIProvidersPage = () => html`
               <option>OpenAI (GPT-4)</option>
               <option>Anthropic (Claude-3)</option>
               <option>Google (Gemini Pro)</option>
+              <option>Azure AI Foundry (Enterprise)</option>
+              <option>Cloudflare Llama3 (Fallback)</option>
             </select>
           </div>
           <div>

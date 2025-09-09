@@ -88,6 +88,7 @@
   "author": "ARIA5 Development Team",
   "license": "MIT",
   "dependencies": {
-    "bcryptjs": "^3.0.2"
+    "bcryptjs": "^3.0.2",
+    "marked": "^16.2.1"
   }
 }
