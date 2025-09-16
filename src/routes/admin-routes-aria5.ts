@@ -18,11 +18,72 @@ export function createAdminRoutesARIA5() {
   app.get('/', async (c) => {
     const user = c.get('user');
     
+    // Fetch dynamic admin dashboard statistics
+    let adminStats = {
+      aiProviders: { count: 0, active: 0 },
+      ragDocuments: { total: 0, processed: 0, successRate: 0 },
+      knowledgeBase: { count: 0, uploaded: 0 }
+    };
+
+    try {
+      // Get AI Provider statistics
+      const aiProvidersResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active
+        FROM ai_configurations
+      `).first();
+      
+      if (aiProvidersResult) {
+        adminStats.aiProviders = {
+          count: Number(aiProvidersResult.total) || 0,
+          active: Number(aiProvidersResult.active) || 0
+        };
+      }
+
+      // Get RAG Documents statistics
+      const ragDocsResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed
+        FROM rag_documents
+      `).first();
+      
+      if (ragDocsResult && ragDocsResult.total > 0) {
+        const successRate = Math.round((Number(ragDocsResult.processed) / Number(ragDocsResult.total)) * 100);
+        adminStats.ragDocuments = {
+          total: Number(ragDocsResult.total) || 0,
+          processed: Number(ragDocsResult.processed) || 0,
+          successRate: successRate
+        };
+      }
+
+      // Get Knowledge Base statistics
+      const knowledgeBaseResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN document_type = 'knowledge_base' THEN 1 ELSE 0 END) as kb_docs
+        FROM rag_documents
+        WHERE status IN ('processed', 'uploaded')
+      `).first();
+      
+      if (knowledgeBaseResult) {
+        adminStats.knowledgeBase = {
+          count: Number(knowledgeBaseResult.kb_docs) || 0,
+          uploaded: Number(knowledgeBaseResult.total) || 0
+        };
+      }
+
+    } catch (error) {
+      console.error('Error fetching admin dashboard statistics:', error);
+      // Use fallback values if database error
+    }
+    
     return c.html(
       cleanLayout({
         title: 'Admin Dashboard',
         user,
-        content: renderOptimizedAdminDashboard()
+        content: renderOptimizedAdminDashboard(adminStats)
       })
     );
   });
@@ -1178,8 +1239,15 @@ export function createAdminRoutesARIA5() {
   return app;
 }
 
-// Optimized Admin Dashboard - Cleaner Layout
-function renderOptimizedAdminDashboard() {
+// Optimized Admin Dashboard - Cleaner Layout with Dynamic Data
+function renderOptimizedAdminDashboard(stats = null) {
+  // Use provided stats or fallback to default values
+  const adminStats = stats || {
+    aiProviders: { count: 0, active: 0 },
+    ragDocuments: { total: 0, processed: 0, successRate: 0 },
+    knowledgeBase: { count: 0, uploaded: 0 }
+  };
+
   return html`
     <div class="min-h-screen bg-gray-50 py-8">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1206,9 +1274,9 @@ function renderOptimizedAdminDashboard() {
               </div>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-2xl font-bold text-gray-900">3</span>
+              <span class="text-2xl font-bold text-gray-900">${adminStats.aiProviders.count}</span>
               <span class="text-sm text-green-600">
-                <i class="fas fa-check-circle mr-1"></i>Active
+                <i class="fas fa-check-circle mr-1"></i>${adminStats.aiProviders.active} Active
               </span>
             </div>
           </div>
@@ -1226,7 +1294,7 @@ function renderOptimizedAdminDashboard() {
               </div>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-2xl font-bold text-gray-900">284</span>
+              <span class="text-2xl font-bold text-gray-900">${adminStats.ragDocuments.total}</span>
               <span class="text-sm text-blue-600">
                 <i class="fas fa-database mr-1"></i>Documents
               </span>
@@ -1246,7 +1314,7 @@ function renderOptimizedAdminDashboard() {
               </div>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-2xl font-bold text-gray-900">42</span>
+              <span class="text-2xl font-bold text-gray-900">${adminStats.knowledgeBase.count}</span>
               <span class="text-sm text-orange-600">
                 <i class="fas fa-upload mr-1"></i>Uploaded
               </span>
@@ -1330,11 +1398,11 @@ function renderOptimizedAdminDashboard() {
             <div class="p-6">
               <div class="grid grid-cols-2 gap-4 mb-4">
                 <div class="text-center p-4 bg-blue-50 rounded-lg">
-                  <div class="text-2xl font-bold text-blue-600">284</div>
+                  <div class="text-2xl font-bold text-blue-600">${adminStats.ragDocuments.total}</div>
                   <div class="text-sm text-gray-600">Indexed Documents</div>
                 </div>
                 <div class="text-center p-4 bg-green-50 rounded-lg">
-                  <div class="text-2xl font-bold text-green-600">98%</div>
+                  <div class="text-2xl font-bold text-green-600">${adminStats.ragDocuments.successRate}%</div>
                   <div class="text-sm text-gray-600">Processing Complete</div>
                 </div>
               </div>

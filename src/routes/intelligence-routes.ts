@@ -42,7 +42,34 @@ export function createIntelligenceRoutes() {
   app.get('/threats', async (c) => {
     const user = c.get('user');
     
+    // Get real-time threat data for analysis page
+    let threatStats = {
+      activeThreats: 0,
+      campaignsTracked: 0,
+      monitored: 0,
+      detections: 0
+    };
+
     try {
+      // Get threat statistics from database
+      const threatResult = await c.env.DB.prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+          SUM(CASE WHEN threat_type = 'campaign' THEN 1 ELSE 0 END) as campaigns,
+          SUM(CASE WHEN confidence_score > 80 THEN 1 ELSE 0 END) as high_confidence
+        FROM threat_intelligence
+      `).first();
+
+      if (threatResult) {
+        threatStats = {
+          activeThreats: Number(threatResult.active) || 0,
+          campaignsTracked: Number(threatResult.campaigns) || 0,
+          monitored: Number(threatResult.total) || 0,
+          detections: Number(threatResult.high_confidence) || 0
+        };
+      }
+
       return c.html(
         cleanLayout({
           title: 'Threat Analysis',
@@ -74,7 +101,7 @@ export function createIntelligenceRoutes() {
                     <div class="flex items-center justify-between">
                       <div>
                         <p class="text-red-100 text-sm">Active Threats</p>
-                        <p class="text-3xl font-bold">47</p>
+                        <p class="text-3xl font-bold">${threatStats.activeThreats}</p>
                       </div>
                       <i class="fas fa-exclamation-triangle text-3xl text-red-200"></i>
                     </div>
@@ -84,7 +111,7 @@ export function createIntelligenceRoutes() {
                     <div class="flex items-center justify-between">
                       <div>
                         <p class="text-orange-100 text-sm">Campaigns Tracked</p>
-                        <p class="text-3xl font-bold">23</p>
+                        <p class="text-3xl font-bold">${threatStats.campaignsTracked}</p>
                       </div>
                       <i class="fas fa-crosshairs text-3xl text-orange-200"></i>
                     </div>
@@ -94,7 +121,7 @@ export function createIntelligenceRoutes() {
                     <div class="flex items-center justify-between">
                       <div>
                         <p class="text-purple-100 text-sm">IOCs Analyzed</p>
-                        <p class="text-3xl font-bold">1,247</p>
+                        <p class="text-3xl font-bold">${threatStats.monitored}</p>
                       </div>
                       <i class="fas fa-search text-3xl text-purple-200"></i>
                     </div>
@@ -104,7 +131,7 @@ export function createIntelligenceRoutes() {
                     <div class="flex items-center justify-between">
                       <div>
                         <p class="text-blue-100 text-sm">Risk Score</p>
-                        <p class="text-3xl font-bold">8.2</p>
+                        <p class="text-3xl font-bold">${threatStats.detections}</p>
                       </div>
                       <i class="fas fa-shield-alt text-3xl text-blue-200"></i>
                     </div>
@@ -1336,7 +1363,7 @@ const renderThreatsPage = (user: any) => html`
           <div class="flex items-center justify-between">
             <div>
               <p class="text-red-100 text-sm">Active Threats</p>
-              <p class="text-3xl font-bold">47</p>
+              <p class="text-3xl font-bold">${stats.totalThreats}</p>
             </div>
             <i class="fas fa-exclamation-triangle text-3xl text-red-200"></i>
           </div>
@@ -1346,7 +1373,7 @@ const renderThreatsPage = (user: any) => html`
           <div class="flex items-center justify-between">
             <div>
               <p class="text-orange-100 text-sm">Campaigns Tracked</p>
-              <p class="text-3xl font-bold">23</p>
+              <p class="text-3xl font-bold">${stats.activeCampaigns}</p>
             </div>
             <i class="fas fa-crosshairs text-3xl text-orange-200"></i>
           </div>
@@ -1356,7 +1383,7 @@ const renderThreatsPage = (user: any) => html`
           <div class="flex items-center justify-between">
             <div>
               <p class="text-purple-100 text-sm">TTPs Analyzed</p>
-              <p class="text-3xl font-bold">156</p>
+              <p class="text-3xl font-bold">${iocStats.totalCount}</p>
             </div>
             <i class="fas fa-chess-knight text-3xl text-purple-200"></i>
           </div>
@@ -1366,7 +1393,7 @@ const renderThreatsPage = (user: any) => html`
           <div class="flex items-center justify-between">
             <div>
               <p class="text-blue-100 text-sm">Attribution Score</p>
-              <p class="text-3xl font-bold">89%</p>
+              <p class="text-3xl font-bold">${Math.round((stats.criticalThreats / (stats.totalThreats || 1)) * 100)}%</p>
             </div>
             <i class="fas fa-fingerprint text-3xl text-blue-200"></i>
           </div>
