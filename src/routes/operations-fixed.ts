@@ -1795,12 +1795,10 @@ async function getAssets(db: D1Database) {
   try {
     const result = await db.prepare(`
       SELECT 
-        id, asset_id, name, asset_type, category, subcategory,
-        confidentiality_numeric, integrity_numeric, availability_numeric,
-        risk_score, criticality, location, owner_id, custodian_id,
-        active_status, created_at, updated_at
-      FROM assets_enhanced 
-      WHERE active_status = TRUE 
+        id, name, type, category, location, criticality, value,
+        status, owner_id, organization_id, created_at, updated_at
+      FROM assets 
+      WHERE status = 'active' 
       ORDER BY created_at DESC
     `).all();
     
