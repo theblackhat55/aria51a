@@ -484,7 +484,7 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         }
       });
       
-      console.log('✅ ARIA5.1 Clean Layout - Ready');
+      console.log('✅ ARIA5.1 Enterprise Edition - Ready');
     });
   </script>
 
@@ -1452,7 +1452,7 @@ const renderCleanNavigation = (user: any) => html`
             </div>
             <div class="hidden sm:block">
               <h1 class="text-xl font-semibold text-gray-900">ARIA5.1</h1>
-              <p class="text-xs text-gray-500">Clean Edition</p>
+              <p class="text-xs text-gray-500">Enterprise Edition</p>
             </div>
             <div class="block sm:hidden">
               <h1 class="text-lg font-semibold text-gray-900">ARIA5</h1>
@@ -1723,6 +1723,13 @@ const renderCleanNavigation = (user: any) => html`
                   <div>
                     <div class="font-medium">User Management</div>
                     <div class="text-xs text-gray-500">Manage users and roles</div>
+                  </div>
+                </a>
+                <a href="/admin/settings/smtp" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
+                  <i class="fas fa-envelope w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">SMTP Settings</div>
+                    <div class="text-xs text-gray-500">Email configuration</div>
                   </div>
                 </a>
               </div>

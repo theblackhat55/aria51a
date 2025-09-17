@@ -114,8 +114,8 @@ app.use('/static/*', serveStatic({
 app.get('/health', (c) => {
   return c.json({
     status: 'healthy',
-    version: '5.1.0-secure',
-    mode: 'Production Ready',
+    version: '5.1.0-enterprise',
+    mode: 'Enterprise Edition',
     security: 'Full',
     timestamp: new Date().toISOString()
   });

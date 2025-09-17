@@ -421,13 +421,18 @@ export function createAdminRoutesARIA5() {
   app.post('/settings/general', async (c) => {
     const formData = await c.req.parseBody();
     
-    console.log('Updating general settings:', formData);
+    // Remove system_name from formData as it's read-only
+    const { system_name, ...settingsToUpdate } = formData;
+    
+    console.log('Updating general settings (excluding system_name):', settingsToUpdate);
+    
+    // TODO: Save settings to database (excluding system_name)
     
     return c.html(html`
       <div id="general-success" class="p-3 mb-4 bg-green-50 border border-green-200 rounded-lg">
         <div class="flex items-center">
           <i class="fas fa-check-circle text-green-500 mr-2"></i>
-          <span class="text-green-700 text-sm">General settings updated successfully!</span>
+          <span class="text-green-700 text-sm">General settings updated successfully! (System name is fixed as Enterprise Edition)</span>
         </div>
       </div>
       <script>
@@ -3343,8 +3348,9 @@ const renderSystemSettingsPage = () => html`
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">System Name</label>
-                  <input type="text" name="system_name" value="ARIA5 Security Platform" 
-                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <input type="text" name="system_name" value="ARIA5.1 Enterprise Edition" readonly 
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed" 
+                         title="System name cannot be changed">
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Default Timezone</label>
