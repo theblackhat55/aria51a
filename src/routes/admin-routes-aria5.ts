@@ -483,128 +483,227 @@ export function createAdminRoutesARIA5() {
     `);
   });
 
-  // Enhanced User Management with RBAC
+  // Simple User Management - Rebuilt from scratch
   app.get('/users', async (c) => {
     const user = c.get('user');
     
     try {
-      // Try enhanced services first, fallback to basic if they fail
-      let stats, samlConfig;
+      // Simple database queries with proper error handling
+      const totalUsersResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM users').first();
+      const activeUsersResult = await c.env.DB.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').first();
       
-      try {
-        const rbacService = new EnhancedRBACService(c.env.DB);
-        const samlService = new EnhancedSAMLService(c.env.DB);
-        stats = await getUserStatsEnhanced(c.env.DB, rbacService);
-        samlConfig = await samlService.getSAMLConfig();
-      } catch (enhancedError) {
-        console.warn('Enhanced services failed, using basic stats:', enhancedError);
-        // Fallback to basic stats
-        stats = await getBasicUserStats(c.env.DB);
-        samlConfig = { enabled: false };
-      }
+      // Get actual user list
+      const usersList = await c.env.DB.prepare(`
+        SELECT id, username, email, first_name, last_name, role, 
+               is_active, created_at, last_login 
+        FROM users 
+        ORDER BY created_at DESC 
+        LIMIT 50
+      `).all();
+      
+      const totalUsers = totalUsersResult?.count || 0;
+      const activeUsers = activeUsersResult?.count || 0;
+      const inactiveUsers = totalUsers - activeUsers;
+      
+      // Simple, clean user management interface
+      const content = html`
+        <div class="space-y-6">
+          <!-- Header -->
+          <div class="flex justify-between items-center">
+            <div>
+              <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
+              <p class="mt-1 text-sm text-gray-600">Manage system users and access permissions</p>
+            </div>
+            <button onclick="window.location.href='/admin/users/create'" 
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <i class="fas fa-plus mr-2"></i>
+              Add User
+            </button>
+          </div>
+
+          <!-- Statistics Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Total Users -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-600">Total Users</p>
+                  <p class="text-3xl font-bold text-gray-900">${totalUsers}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Users -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user-check text-green-600 text-xl"></i>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-600">Active Users</p>
+                  <p class="text-3xl font-bold text-gray-900">${activeUsers}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inactive Users -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-user-times text-red-600 text-xl"></i>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-600">Inactive Users</p>
+                  <p class="text-3xl font-bold text-gray-900">${inactiveUsers}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Table -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-medium text-gray-900">Users</h2>
+              <p class="mt-1 text-sm text-gray-600">A list of all users in the system including their name, role, and status.</p>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  ${usersList?.results ? usersList.results.map((u: any) => {
+                    const roleColor = u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                     u.role === 'risk_manager' ? 'bg-blue-100 text-blue-800' :
+                                     u.role === 'compliance_officer' ? 'bg-green-100 text-green-800' :
+                                     'bg-gray-100 text-gray-800';
+                    
+                    const statusColor = u.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                    const statusText = u.is_active ? 'Active' : 'Inactive';
+                    const actionColor = u.is_active ? 'red' : 'green';
+                    const actionIcon = u.is_active ? 'ban' : 'check';
+                    const actionText = u.is_active ? 'Disable' : 'Enable';
+                    const fullName = (u.first_name || '') + ' ' + (u.last_name || '');
+                    const lastLogin = u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never';
+                    const roleDisplay = u.role.replace('_', ' ').toUpperCase();
+                    
+                    // Return raw string without template literal to avoid double-escaping
+                    return '<tr class="hover:bg-gray-50">' +
+                      '<td class="px-6 py-4 whitespace-nowrap">' +
+                        '<div class="flex items-center">' +
+                          '<div class="flex-shrink-0 h-10 w-10">' +
+                            '<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">' +
+                              '<i class="fas fa-user text-gray-500"></i>' +
+                            '</div>' +
+                          '</div>' +
+                          '<div class="ml-4">' +
+                            '<div class="text-sm font-medium text-gray-900">' + fullName + '</div>' +
+                            '<div class="text-sm text-gray-500">' + u.email + '</div>' +
+                          '</div>' +
+                        '</div>' +
+                      '</td>' +
+                      '<td class="px-6 py-4 whitespace-nowrap">' +
+                        '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + roleColor + '">' +
+                          roleDisplay +
+                        '</span>' +
+                      '</td>' +
+                      '<td class="px-6 py-4 whitespace-nowrap">' +
+                        '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ' + statusColor + '">' +
+                          statusText +
+                        '</span>' +
+                      '</td>' +
+                      '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + lastLogin + '</td>' +
+                      '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">' +
+                        '<button onclick="editUser(' + u.id + ')" class="text-blue-600 hover:text-blue-900 mr-3">' +
+                          '<i class="fas fa-edit"></i> Edit' +
+                        '</button>' +
+                        '<button onclick="toggleUser(' + u.id + ', ' + !u.is_active + ')" class="text-' + actionColor + '-600 hover:text-' + actionColor + '-900">' +
+                          '<i class="fas fa-' + actionIcon + '"></i> ' + actionText +
+                        '</button>' +
+                      '</td>' +
+                    '</tr>';
+                  }).join('') : '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No users found</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          function editUser(userId) {
+            // Simple redirect to edit page
+            window.location.href = '/admin/users/' + userId + '/edit';
+          }
+          
+          function toggleUser(userId, enable) {
+            if (confirm('Are you sure you want to ' + (enable ? 'enable' : 'disable') + ' this user?')) {
+              fetch('/admin/users/' + userId + '/toggle', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ active: enable })
+              }).then(response => {
+                if (response.ok) {
+                  location.reload();
+                } else {
+                  alert('Error updating user status');
+                }
+              });
+            }
+          }
+        </script>
+      `;
       
       return c.html(
         cleanLayout({
           title: 'User Management',
           user,
-          content: renderEnhancedUserManagementPage(stats, samlConfig)
+          content: content
         })
       );
+      
     } catch (error) {
-      console.error('Error loading user management:', error);
+      console.error('❌ Error loading user management:', error);
+      
+      // Simple fallback with actual error details
       return c.html(
         cleanLayout({
           title: 'User Management',
           user,
           content: html`
-            <div class="min-h-screen bg-gray-50 py-8">
-              <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- Header -->
-                <div class="mb-8">
-                  <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
-                  <p class="mt-2 text-lg text-gray-600">Manage system users and permissions</p>
-                </div>
-                
-                <!-- Error Message -->
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                  <div class="flex">
-                    <div class="flex-shrink-0">
-                      <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
-                    </div>
-                    <div class="ml-3">
-                      <h3 class="text-sm font-medium text-yellow-800">User Management Temporarily Unavailable</h3>
-                      <div class="mt-2 text-sm text-yellow-700">
-                        <p>The user management system is currently being initialized. Please try again in a few moments.</p>
-                      </div>
-                      <div class="mt-4">
-                        <div class="-mx-2 -my-1.5 flex">
-                          <button onclick="location.reload()" class="bg-yellow-50 px-2 py-1.5 rounded-md text-sm font-medium text-yellow-800 hover:bg-yellow-100 focus:outline-none">
-                            Retry
-                          </button>
-                          <a href="/dashboard" class="ml-3 bg-yellow-50 px-2 py-1.5 rounded-md text-sm font-medium text-yellow-800 hover:bg-yellow-100 focus:outline-none">
-                            Return to Dashboard
-                          </a>
-                        </div>
-                      </div>
-                    </div>
+            <div class="space-y-6">
+              <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-circle text-red-400 text-xl"></i>
                   </div>
-                </div>
-                
-                <!-- Basic User Stats -->
-                <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                      <div class="flex-shrink-0">
-                        <i class="fas fa-users text-blue-600 text-2xl"></i>
-                      </div>
-                      <div class="ml-5 w-0 flex-1">
-                        <dl>
-                          <dt class="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                          <dd class="text-lg font-medium text-gray-900">Loading...</dd>
-                        </dl>
-                      </div>
+                  <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Error Loading User Management</h3>
+                    <div class="mt-2 text-sm text-red-700">
+                      <p>Error: ${error.message || 'Unknown error occurred'}</p>
+                      <p class="mt-2">Please check the console for more details.</p>
                     </div>
-                  </div>
-                  
-                  <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                      <div class="flex-shrink-0">
-                        <i class="fas fa-user-check text-green-600 text-2xl"></i>
-                      </div>
-                      <div class="ml-5 w-0 flex-1">
-                        <dl>
-                          <dt class="text-sm font-medium text-gray-500 truncate">Active Users</dt>
-                          <dd class="text-lg font-medium text-gray-900">Loading...</dd>
-                        </dl>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                      <div class="flex-shrink-0">
-                        <i class="fas fa-shield-alt text-purple-600 text-2xl"></i>
-                      </div>
-                      <div class="ml-5 w-0 flex-1">
-                        <dl>
-                          <dt class="text-sm font-medium text-gray-500 truncate">Admin Users</dt>
-                          <dd class="text-lg font-medium text-gray-900">Loading...</dd>
-                        </dl>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                      <div class="flex-shrink-0">
-                        <i class="fas fa-key text-orange-600 text-2xl"></i>
-                      </div>
-                      <div class="ml-5 w-0 flex-1">
-                        <dl>
-                          <dt class="text-sm font-medium text-gray-500 truncate">SAML Users</dt>
-                          <dd class="text-lg font-medium text-gray-900">N/A</dd>
-                        </dl>
-                      </div>
+                    <div class="mt-4">
+                      <button onclick="location.reload()" 
+                              class="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200 transition-colors">
+                        <i class="fas fa-refresh mr-1"></i> Try Again
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -616,10 +715,110 @@ export function createAdminRoutesARIA5() {
     }
   });
 
-  // User Creation Modal
+  // Simple User Creation Page
   app.get('/users/create', async (c) => {
-    const csrfToken = setCSRFToken(c);
-    return c.html(renderCreateUserModal(csrfToken));
+    const user = c.get('user');
+    
+    const content = html`
+      <div class="space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">Create New User</h1>
+            <p class="mt-1 text-sm text-gray-600">Add a new user to the system</p>
+          </div>
+          <button onclick="window.location.href='/admin/users'" 
+                  class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Users
+          </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <form method="POST" action="/admin/users/create" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                <input type="text" name="username" id="username" required
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              </div>
+              <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" name="email" id="email" required
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                <input type="text" name="first_name" id="first_name" required
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              </div>
+              <div>
+                <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                <input type="text" name="last_name" id="last_name" required
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label for="role" class="block text-sm font-medium text-gray-700">Role</label>
+                <select name="role" id="role" required
+                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                  <option value="">Select a role</option>
+                  <option value="admin">Admin</option>
+                  <option value="risk_manager">Risk Manager</option>
+                  <option value="compliance_officer">Compliance Officer</option>
+                  <option value="analyst">Analyst</option>
+                  <option value="user">User</option>
+                </select>
+              </div>
+              <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" name="password" id="password" required
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              </div>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+              <button type="button" onclick="window.location.href='/admin/users'"
+                      class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button type="submit"
+                      class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-save mr-2"></i>
+                Create User
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    
+    return c.html(
+      cleanLayout({
+        title: 'Create User',
+        user,
+        content: content
+      })
+    );
+  });
+
+  // Toggle User Status
+  app.post('/users/:id/toggle', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      const { active } = await c.req.json();
+      
+      await c.env.DB.prepare('UPDATE users SET is_active = ? WHERE id = ?').bind(active, userId).run();
+      
+      return c.json({ success: true });
+    } catch (error) {
+      console.error('Error toggling user status:', error);
+      return c.json({ success: false, error: error.message }, 500);
+    }
   });
 
   // Create User
@@ -875,25 +1074,42 @@ export function createAdminRoutesARIA5() {
     try {
       const searchQuery = c.req.query('user-search') || c.req.query('search') || '';
       const roleFilter = c.req.query('role') || '';
-      const departmentFilter = c.req.query('department') || '';
-      const authTypeFilter = c.req.query('auth_type') || '';
       const page = parseInt(c.req.query('page') || '1');
       const limit = parseInt(c.req.query('limit') || '10');
+      const offset = (page - 1) * limit;
       
-      // Use enhanced RBAC service for better user data
-      const rbacService = new EnhancedRBACService(c.env.DB);
-      const usersData = await rbacService.getUsersWithRoles({ 
-        searchQuery, 
-        roleFilter, 
-        departmentFilter,
-        authTypeFilter,
-        page, 
-        limit 
-      });
+      // Build SQL query with filters
+      let sql = `SELECT * FROM users WHERE 1=1`;
+      let bindings = [];
       
-      return c.html(renderEnhancedUsersTable(usersData));
+      if (searchQuery) {
+        sql += ` AND (username LIKE ? OR email LIKE ? OR first_name LIKE ? OR last_name LIKE ?)`;
+        const searchTerm = `%${searchQuery}%`;
+        bindings.push(searchTerm, searchTerm, searchTerm, searchTerm);
+      }
+      
+      if (roleFilter) {
+        sql += ` AND role = ?`;
+        bindings.push(roleFilter);
+      }
+      
+      sql += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+      bindings.push(limit, offset);
+      
+      const users = await c.env.DB.prepare(sql).bind(...bindings).all();
+      const totalCount = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM users`).first();
+      
+      const usersData = {
+        users: users.results || [],
+        total: totalCount?.count || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((totalCount?.count || 0) / limit)
+      };
+      
+      return c.html(renderBasicUsersTable(usersData));
     } catch (error) {
-      console.error('Error loading enhanced users table:', error);
+      console.error('Error loading users table:', error);
       return c.html(renderErrorMessage('Failed to load users. Please try refreshing the page.'));
     }
   };
@@ -4188,11 +4404,37 @@ async function getBasicUserStats(db: any) {
     // Basic user count - works with any users table
     const totalUsers = await db.prepare('SELECT COUNT(*) as count FROM users').first();
     
+    // Try to get more detailed stats with fallbacks
+    let activeUsers = totalUsers;
+    let samlUsers = { count: 0 };
+    let lockedUsers = { count: 0 };
+    
+    try {
+      activeUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 1').first();
+    } catch (e) {
+      // Column might not exist, use total
+      activeUsers = totalUsers;
+    }
+    
+    try {
+      samlUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE auth_type = "saml"').first();
+    } catch (e) {
+      // Column might not exist
+      samlUsers = { count: 0 };
+    }
+    
+    try {
+      lockedUsers = await db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = 0').first();
+    } catch (e) {
+      // Column might not exist
+      lockedUsers = { count: 0 };
+    }
+    
     return {
       total: totalUsers?.count || 0,
-      active: totalUsers?.count || 0, // Assume all users are active for basic stats
-      saml: 0,
-      locked: 0,
+      active: activeUsers?.count || 0,
+      saml: samlUsers?.count || 0,
+      locked: lockedUsers?.count || 0,
       roles: [],
       departments: []
     };
@@ -4714,6 +4956,135 @@ const getRoleColor = (role: string): string => {
 const getAuthTypeColor = (authType: string): string => {
   return authType === 'saml' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
 };
+
+// Basic users table renderer (fallback when enhanced services fail)
+const renderBasicUsersTable = (data: any) => html`
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <!-- Table Header -->
+    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <h3 class="text-lg font-medium text-gray-900">Users (${data.total})</h3>
+    </div>
+
+    <!-- Users Table -->
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          ${data.users.length === 0 ? html`
+            <tr>
+              <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                <i class="fas fa-users text-3xl mb-2"></i>
+                <p>No users found</p>
+              </td>
+            </tr>
+          ` : data.users.map((user: any) => html`
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <span class="text-sm font-medium text-blue-600">
+                        ${(user.first_name?.[0] || '').toUpperCase()}${(user.last_name?.[0] || '').toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">${user.first_name} ${user.last_name}</div>
+                    <div class="text-sm text-gray-500">${user.email}</div>
+                    <div class="text-xs text-gray-400">@${user.username}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(user.role)}">
+                  ${user.role.replace('_', ' ')}
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center">
+                  <div class="w-2 h-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-500'} mr-2"></div>
+                  <span class="text-sm text-gray-900">${user.is_active ? 'Active' : 'Inactive'}</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500">
+                ${new Date(user.created_at).toLocaleDateString()}
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center space-x-2">
+                  <button hx-get="/admin/users/${user.id}/edit" 
+                          hx-target="#modal-container"
+                          class="text-blue-600 hover:text-blue-900 text-sm">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  ${user.is_active ? html`
+                    <button hx-post="/admin/users/${user.id}/disable" 
+                            hx-target="#users-table"
+                            hx-confirm="Disable this user?"
+                            class="text-red-600 hover:text-red-900 text-sm ml-2">
+                      <i class="fas fa-ban"></i>
+                    </button>
+                  ` : html`
+                    <button hx-post="/admin/users/${user.id}/activate" 
+                            hx-target="#users-table"
+                            hx-confirm="Activate this user?"
+                            class="text-green-600 hover:text-green-900 text-sm ml-2">
+                      <i class="fas fa-check"></i>
+                    </button>
+                  `}
+                </div>
+              </td>
+            </tr>
+          `)}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    ${data.totalPages > 1 ? html`
+      <div class="px-6 py-3 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-700">
+            Showing ${((data.page - 1) * data.limit) + 1} to ${Math.min(data.page * data.limit, data.total)} of ${data.total} results
+          </div>
+          <div class="flex space-x-1">
+            ${data.page > 1 ? html`
+              <button hx-get="/admin/users/table?page=${data.page - 1}" 
+                      hx-target="#users-table"
+                      class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                Previous
+              </button>
+            ` : ''}
+            ${Array.from({length: Math.min(5, data.totalPages)}, (_, i) => {
+              const pageNum = Math.max(1, Math.min(data.totalPages, data.page - 2 + i));
+              return html`
+                <button hx-get="/admin/users/table?page=${pageNum}" 
+                        hx-target="#users-table"
+                        class="px-3 py-1 text-sm ${pageNum === data.page ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'} border border-gray-300 rounded-md">
+                  ${pageNum}
+                </button>
+              `;
+            })}
+            ${data.page < data.totalPages ? html`
+              <button hx-get="/admin/users/table?page=${data.page + 1}" 
+                      hx-target="#users-table"
+                      class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                Next
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      </div>
+    ` : ''}
+  </div>
+`;
 
   return app;
 }
