@@ -22,6 +22,7 @@ import conversationalAssistantRoutes from './routes/conversational-assistant';
 import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
 import { tiGrcRoutes } from './routes/api-ti-grc-integration';
 import complianceAutomationApi from './routes/compliance-automation-api';
+import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
 // TODO: Re-enable when Phase 4 multi-tenancy features are needed
 // import enterpriseMultiTenancyApi from './routes/enterprise-multitenancy-api';
@@ -415,6 +416,9 @@ app.route('/operations', createOperationsRoutes());
 
 // Admin Management (requires admin role)
 app.route('/admin', createAdminRoutesARIA5());
+
+// SMTP Settings (requires admin role)
+app.route('/admin', createSMTPSettingsRoutes());
 
 // AI Assistant (requires authentication)
 app.route('/ai', createAIAssistantRoutes());

@@ -626,15 +626,17 @@ Please provide a comprehensive response based on the current platform data and y
       let intelligentResponse: string;
       
       // Get real-time platform data directly
+      // Use realistic thresholds: 20+ for critical, 12+ for high, 8+ for medium, <8 for low
       const riskStats = await c.env.DB.prepare(`
         SELECT 
-          COUNT(CASE WHEN risk_score >= 90 THEN 1 END) as critical,
-          COUNT(CASE WHEN risk_score >= 70 AND risk_score < 90 THEN 1 END) as high,
-          COUNT(CASE WHEN risk_score >= 40 AND risk_score < 70 THEN 1 END) as medium,
-          COUNT(CASE WHEN risk_score < 40 THEN 1 END) as low,
-          AVG(risk_score) as avg_score
-        FROM risks WHERE status != 'closed'
-      `).first().catch(() => ({ critical: 0, high: 0, medium: 0, low: 8, avg_score: 35.2 }));
+          COUNT(CASE WHEN risk_score >= 20 THEN 1 END) as critical,
+          COUNT(CASE WHEN risk_score >= 12 AND risk_score < 20 THEN 1 END) as high,
+          COUNT(CASE WHEN risk_score >= 8 AND risk_score < 12 THEN 1 END) as medium,
+          COUNT(CASE WHEN risk_score < 8 THEN 1 END) as low,
+          AVG(risk_score) as avg_score,
+          COUNT(*) as total_risks
+        FROM risks WHERE status = 'active'
+      `).first().catch(() => ({ critical: 0, high: 0, medium: 0, low: 0, avg_score: 0, total_risks: 0 }));
 
       // Get threat intelligence statistics
       const threatStats = await c.env.DB.prepare(`

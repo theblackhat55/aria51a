@@ -629,12 +629,17 @@ export function createAdminRoutesARIA5() {
                       '</td>' +
                       '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + lastLogin + '</td>' +
                       '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">' +
-                        '<button onclick="editUser(' + u.id + ')" class="text-blue-600 hover:text-blue-900 mr-3">' +
-                          '<i class="fas fa-edit"></i> Edit' +
-                        '</button>' +
-                        '<button onclick="toggleUser(' + u.id + ', ' + !u.is_active + ')" class="text-' + actionColor + '-600 hover:text-' + actionColor + '-900">' +
-                          '<i class="fas fa-' + actionIcon + '"></i> ' + actionText +
-                        '</button>' +
+                        '<div class="flex space-x-2">' +
+                          '<button onclick="editUser(' + u.id + ')" class="text-blue-600 hover:text-blue-900 flex items-center px-2 py-1 rounded border border-blue-200 hover:bg-blue-50">' +
+                            '<i class="fas fa-edit mr-1"></i>Edit' +
+                          '</button>' +
+                          '<button onclick="toggleUser(' + u.id + ', ' + !u.is_active + ')" class="text-' + actionColor + '-600 hover:text-' + actionColor + '-900 flex items-center px-2 py-1 rounded border border-' + actionColor + '-200 hover:bg-' + actionColor + '-50">' +
+                            '<i class="fas fa-' + actionIcon + ' mr-1"></i>' + actionText +
+                          '</button>' +
+                          '<button onclick="deleteUserFromTable(' + u.id + ')" class="text-red-600 hover:text-red-900 flex items-center px-2 py-1 rounded border border-red-200 hover:bg-red-50">' +
+                            '<i class="fas fa-trash mr-1"></i>Delete' +
+                          '</button>' +
+                        '</div>' +
                       '</td>' +
                     '</tr>';
                   }).join('') : '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No users found</td></tr>')}
@@ -664,6 +669,28 @@ export function createAdminRoutesARIA5() {
                 } else {
                   alert('Error updating user status');
                 }
+              });
+            }
+          }
+          
+          function deleteUserFromTable(userId) {
+            const confirmation = prompt('Are you sure you want to DELETE this user? This action cannot be undone. Type "DELETE" to confirm:');
+            if (confirmation === 'DELETE') {
+              fetch('/admin/users/' + userId + '/delete', {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                }
+              }).then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  alert('User deleted successfully!');
+                  location.reload();
+                } else {
+                  alert('Error: ' + (data.error || 'Failed to delete user'));
+                }
+              }).catch(error => {
+                alert('Error deleting user: ' + error.message);
               });
             }
           }
@@ -1020,7 +1047,17 @@ export function createAdminRoutesARIA5() {
         return c.html(renderErrorMessage('User not found'));
       }
       
-      return c.html(renderEditUserModal(user));
+      const authResult = await requireAuth(c);
+      if (authResult instanceof Response) return authResult;
+      const authenticatedUser = authResult;
+      
+      return c.html(
+        cleanLayout({
+          title: 'Edit User',
+          user: authenticatedUser,
+          content: renderEditUserPage(user)
+        })
+      );
     } catch (error) {
       console.error('Error fetching user for edit:', error);
       return c.html(renderErrorMessage('Failed to load user'));
@@ -1058,14 +1095,130 @@ export function createAdminRoutesARIA5() {
         </div>
         <script>
           setTimeout(() => {
-            document.getElementById('modal-container').innerHTML = '';
-            htmx.ajax('GET', '/admin/users/table', '#users-table');
-          }, 2000);
+            window.location.href = '/admin/users';
+          }, 1500);
         </script>
       `);
     } catch (error) {
       console.error('Error updating user:', error);
       return c.html(renderErrorMessage('Failed to update user: ' + error.message));
+    }
+  });
+
+  // Delete user
+  app.delete('/users/:id/delete', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      
+      // Check if user exists
+      const user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+      if (!user) {
+        return c.json({ success: false, error: 'User not found' }, 404);
+      }
+
+      // Prevent self-deletion (if authenticated user context available)
+      // TODO: Add proper auth check here
+      
+      // Delete user (soft delete by setting is_active to false and adding deleted_at)
+      await c.env.DB.prepare(`
+        UPDATE users SET 
+          is_active = 0, 
+          deleted_at = ?, 
+          updated_at = ?
+        WHERE id = ?
+      `).bind(
+        new Date().toISOString(),
+        new Date().toISOString(),
+        userId
+      ).run();
+      
+      return c.json({ success: true, message: 'User deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return c.json({ success: false, error: 'Failed to delete user' }, 500);
+    }
+  });
+
+  // Reset password
+  app.post('/users/:id/reset-password', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      
+      // Check if user exists
+      const user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+      if (!user) {
+        return c.json({ success: false, error: 'User not found' }, 404);
+      }
+
+      // Generate temporary password (8 characters)
+      const tempPassword = Math.random().toString(36).slice(-8);
+      const bcrypt = await import('bcryptjs');
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+      
+      // Update password and set password_reset flag
+      await c.env.DB.prepare(`
+        UPDATE users SET 
+          password_hash = ?, 
+          password_reset_required = 1,
+          updated_at = ?
+        WHERE id = ?
+      `).bind(
+        hashedPassword,
+        new Date().toISOString(),
+        userId
+      ).run();
+
+      // Send email with temporary password using SMTP service
+      const SMTPService = (await import('../services/smtp-service')).default;
+      const smtpService = new SMTPService(c.env);
+      const template = SMTPService.getPasswordResetTemplate(
+        `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email,
+        tempPassword
+      );
+      
+      const emailResult = await smtpService.sendEmail(user.email, template);
+      
+      return c.json({ 
+        success: true, 
+        message: emailResult.success 
+          ? 'Password reset successfully. User will receive email with temporary password.'
+          : 'Password reset but email sending failed: ' + emailResult.message,
+        emailSent: emailResult.success
+      });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      return c.json({ success: false, error: 'Failed to reset password' }, 500);
+    }
+  });
+
+  // Send welcome email
+  app.post('/users/:id/send-welcome', async (c) => {
+    try {
+      const userId = c.req.param('id');
+      
+      // Check if user exists
+      const user = await c.env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+      if (!user) {
+        return c.json({ success: false, error: 'User not found' }, 404);
+      }
+
+      // Send welcome email using SMTP service
+      const SMTPService = (await import('../services/smtp-service')).default;
+      const smtpService = new SMTPService(c.env);
+      const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+      const template = SMTPService.getWelcomeTemplate(userName, user.email);
+      
+      const emailResult = await smtpService.sendEmail(user.email, template);
+      
+      return c.json({ 
+        success: emailResult.success,
+        message: emailResult.success 
+          ? 'Welcome email sent successfully to ' + user.email
+          : 'Failed to send welcome email: ' + emailResult.message
+      });
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      return c.json({ success: false, error: 'Failed to send welcome email' }, 500);
     }
   });
 
@@ -3737,43 +3890,65 @@ function getAuthTypeColor(authType: string): string {
 }
 
 // Edit User Modal
-const renderEditUserModal = (user: any) => html`
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4">
-      <div class="flex justify-between items-center p-6 border-b">
-        <h3 class="text-lg font-semibold text-gray-900">Edit User</h3>
-        <button onclick="document.getElementById('modal-container').innerHTML=''" class="text-gray-400 hover:text-gray-600">
-          <i class="fas fa-times"></i>
+const renderEditUserPage = (user: any) => html`
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <button onclick="window.history.back()" class="flex items-center text-gray-500 hover:text-gray-700">
+          <i class="fas fa-arrow-left mr-2"></i>
+          Back to Users
         </button>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Edit User</h1>
+          <p class="mt-1 text-sm text-gray-600">Update user information and permissions</p>
+        </div>
       </div>
-      
-      <form hx-post="/admin/users/${user.id}/edit" hx-target="#edit-result">
-        <div class="p-6 space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    </div>
+
+    <!-- User Edit Form -->
+    <div class="bg-white shadow rounded-lg">
+      <form hx-post="/admin/users/${user.id}/edit" hx-target="#edit-result" class="divide-y divide-gray-200">
+        <!-- Basic Information -->
+        <div class="p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-user mr-1"></i>First Name
+              </label>
               <input type="text" name="first_name" value="${user.first_name || ''}" required 
-                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-user mr-1"></i>Last Name
+              </label>
               <input type="text" name="last_name" value="${user.last_name || ''}" required 
-                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-envelope mr-1"></i>Email Address
+              </label>
+              <input type="email" name="email" value="${user.email}" required 
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             </div>
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-            <input type="email" name="email" value="${user.email}" required 
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </div>
+        
+        <!-- Role & Organization -->
+        <div class="p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Role & Organization</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-shield-alt mr-1"></i>Role
+              </label>
               <select name="role" required 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Administrator</option>
                 <option value="risk_manager" ${user.role === 'risk_manager' ? 'selected' : ''}>Risk Manager</option>
                 <option value="compliance_officer" ${user.role === 'compliance_officer' ? 'selected' : ''}>Compliance Officer</option>
@@ -3784,30 +3959,66 @@ const renderEditUserModal = (user: any) => html`
             </div>
             
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Organization</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <i class="fas fa-building mr-1"></i>Organization
+              </label>
               <select name="organization_id" 
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <option value="1" ${user.organization_id === 1 ? 'selected' : ''}>ARIA5 Corporation</option>
                 <option value="2" ${user.organization_id === 2 ? 'selected' : ''}>Demo Healthcare Inc</option>
                 <option value="3" ${user.organization_id === 3 ? 'selected' : ''}>Financial Services Ltd</option>
               </select>
             </div>
           </div>
-          
-          <div class="flex items-center">
-            <input type="checkbox" name="is_active" value="true" ${user.is_active ? 'checked' : ''} 
-                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-            <label class="ml-2 block text-sm text-gray-700">Active User</label>
+        </div>
+
+        <!-- Account Status -->
+        <div class="p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Account Status</h3>
+          <div class="space-y-4">
+            <div class="flex items-center">
+              <input type="checkbox" name="is_active" value="true" ${user.is_active ? 'checked' : ''} 
+                     class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label class="ml-3 block text-sm text-gray-700">
+                <span class="font-medium">Active User</span>
+                <span class="text-gray-500 block">User can login and access the platform</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Actions -->
+        <div class="p-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">User Actions</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button type="button" onclick="resetUserPassword(${user.id})" 
+                    class="flex items-center justify-center px-4 py-3 border border-yellow-300 text-yellow-700 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+              <i class="fas fa-key mr-2"></i>
+              Reset Password
+            </button>
+            
+            <button type="button" onclick="sendWelcomeEmail(${user.id})" 
+                    class="flex items-center justify-center px-4 py-3 border border-green-300 text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+              <i class="fas fa-envelope mr-2"></i>
+              Send Welcome Email
+            </button>
+            
+            <button type="button" onclick="deleteUser(${user.id})" 
+                    class="flex items-center justify-center px-4 py-3 border border-red-300 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+              <i class="fas fa-trash mr-2"></i>
+              Delete User
+            </button>
           </div>
         </div>
         
-        <div class="flex justify-end items-center p-6 border-t bg-gray-50 space-x-3">
-          <button type="button" onclick="document.getElementById('modal-container').innerHTML=''" 
-                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
-            Cancel
+        <!-- Action Buttons -->
+        <div class="flex justify-end items-center p-6 bg-gray-50 space-x-3">
+          <button type="button" onclick="window.location.href='/admin/users'" 
+                  class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+            <i class="fas fa-times mr-2"></i>Cancel
           </button>
-          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
-            Update User
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium">
+            <i class="fas fa-save mr-2"></i>Update User
           </button>
         </div>
         
@@ -3815,6 +4026,70 @@ const renderEditUserModal = (user: any) => html`
       </form>
     </div>
   </div>
+
+  <script>
+    function resetUserPassword(userId) {
+      if (confirm('Are you sure you want to reset this user\\'s password? They will receive an email with a new temporary password.')) {
+        fetch('/admin/users/' + userId + '/reset-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }).then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Password reset email sent successfully!');
+          } else {
+            alert('Error: ' + (data.error || 'Failed to reset password'));
+          }
+        }).catch(error => {
+          alert('Error resetting password: ' + error.message);
+        });
+      }
+    }
+    
+    function sendWelcomeEmail(userId) {
+      if (confirm('Send welcome email to this user?')) {
+        fetch('/admin/users/' + userId + '/send-welcome', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }).then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Welcome email sent successfully!');
+          } else {
+            alert('Error: ' + (data.error || 'Failed to send welcome email'));
+          }
+        }).catch(error => {
+          alert('Error sending email: ' + error.message);
+        });
+      }
+    }
+    
+    function deleteUser(userId) {
+      const confirmation = prompt('Are you sure you want to DELETE this user? This action cannot be undone. Type "DELETE" to confirm:');
+      if (confirmation === 'DELETE') {
+        fetch('/admin/users/' + userId + '/delete', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }).then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('User deleted successfully!');
+            window.location.href = '/admin/users';
+          } else {
+            alert('Error: ' + (data.error || 'Failed to delete user'));
+          }
+        }).catch(error => {
+          alert('Error deleting user: ' + error.message);
+        });
+      }
+    }
+  </script>
 `;
 
 // Create User Modal

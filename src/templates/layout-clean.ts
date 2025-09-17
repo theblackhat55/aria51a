@@ -377,7 +377,9 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         console.log('📡 HTMX request to:', event.detail.path);
         
         // HTMX automatically includes cookies, but we can ensure withCredentials is set
-        event.detail.xhr.withCredentials = true;
+        if (event.detail && event.detail.xhr) {
+          event.detail.xhr.withCredentials = true;
+        }
         
         // Add CSRF token from cookie for additional security
         const csrfToken = getCookie('aria_csrf');
