@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
-import { html } from 'hono/html';
+import { html, raw } from 'hono/html';
 import { serveStatic } from 'hono/cloudflare-workers';
 import { getCookie } from 'hono/cookie';
 
@@ -123,6 +123,8 @@ app.use('/static/*', serveStatic({
     console.log(`Static file not found: ${path}`);
   }
 }));
+
+
 
 // Health check (public)
 app.get('/health', (c) => {

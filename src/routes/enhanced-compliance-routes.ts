@@ -635,50 +635,57 @@ const renderComplianceDashboard = (data: any) => html`
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">Framework Compliance Status</h2>
           <div class="space-y-4">
-            ${data.frameworkScores.map((framework: any) => html`
-              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div class="flex-1">
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="font-medium text-gray-900">${framework.name}</span>
-                    <span class="text-sm font-semibold ${
-                      framework.compliance_percentage >= 80 ? 'text-green-600' :
-                      framework.compliance_percentage >= 60 ? 'text-yellow-600' : 'text-red-600'
-                    }">${framework.compliance_percentage || 0}%</span>
+            ${data.frameworkScores.map((framework: any) => {
+              const percentage = framework.compliance_percentage || 0;
+              const percentageColor = percentage >= 80 ? 'text-green-600' :
+                                     percentage >= 60 ? 'text-yellow-600' : 'text-red-600';
+              const barColor = percentage >= 80 ? 'bg-green-500' :
+                              percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500';
+              const implemented = framework.implemented_controls || 0;
+              const total = framework.total_controls || 0;
+              
+              return raw(`
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-medium text-gray-900">${framework.name}</span>
+                      <span class="text-sm font-semibold ${percentageColor}">${percentage}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                      <div class="h-2 rounded-full ${barColor}" style="width: ${percentage}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                      ${implemented} of ${total} controls implemented
+                    </p>
                   </div>
-                  <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="h-2 rounded-full ${
-                      framework.compliance_percentage >= 80 ? 'bg-green-500' :
-                      framework.compliance_percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                    }" style="width: ${framework.compliance_percentage || 0}%"></div>
-                  </div>
-                  <p class="text-xs text-gray-500 mt-1">
-                    ${framework.implemented_controls || 0} of ${framework.total_controls || 0} controls implemented
-                  </p>
                 </div>
-              </div>
-            `).join('')}
+              `);
+            }).join('')}
           </div>
         </div>
         
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h2>
           <div class="space-y-3">
-            ${data.recentActivities.length > 0 ? data.recentActivities.map((activity: any) => html`
-              <div class="flex items-start space-x-3 p-3 border-l-4 ${
-                activity.type === 'assessment' ? 'border-blue-400 bg-blue-50' : 'border-green-400 bg-green-50'
-              } rounded-r">
-                <i class="fas ${activity.type === 'assessment' ? 'fa-clipboard-check text-blue-600' : 'fa-upload text-green-600'} text-sm mt-1"></i>
-                <div class="flex-1">
-                  <p class="text-sm font-medium text-gray-900">${activity.description}</p>
-                  <p class="text-xs text-gray-500">
-                    ${activity.type === 'assessment' ? 'Assessment' : 'Evidence'} • 
-                    ${new Date(activity.created_at).toLocaleDateString()}
-                  </p>
+            ${data.recentActivities.length > 0 ? data.recentActivities.map((activity: any) => {
+              const isAssessment = activity.type === 'assessment';
+              const borderColor = isAssessment ? 'border-blue-400 bg-blue-50' : 'border-green-400 bg-green-50';
+              const iconClass = isAssessment ? 'fa-clipboard-check text-blue-600' : 'fa-upload text-green-600';
+              const typeLabel = isAssessment ? 'Assessment' : 'Evidence';
+              const dateFormatted = new Date(activity.created_at).toLocaleDateString();
+              
+              return raw(`
+                <div class="flex items-start space-x-3 p-3 border-l-4 ${borderColor} rounded-r">
+                  <i class="fas ${iconClass} text-sm mt-1"></i>
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900">${activity.description}</p>
+                    <p class="text-xs text-gray-500">
+                      ${typeLabel} • ${dateFormatted}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            `).join('') : html`
-              <p class="text-gray-500 text-sm italic">No recent activities</p>
-            `}
+              `);
+            }).join('') : '<p class="text-gray-500 text-sm italic">No recent activities</p>'}
           </div>
         </div>
       </div>

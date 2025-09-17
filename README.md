@@ -6,11 +6,14 @@
 
 **ARIA52 Enterprise Security Intelligence Platform**
 - **Platform**: Fully deployed and operational with comprehensive database
-- **Production URL**: https://041e1af0.aria52.pages.dev
-- **Database**: Complete schema with realistic enterprise security data
+- **Production URL**: https://aria52.pages.dev (Latest: https://8a47ebaa.aria52.pages.dev)
+- **Database**: Complete schema with realistic enterprise security data  
 - **Authentication**: Working demo accounts with proper authentication
 - **Dashboards**: Dynamic data-driven dashboards with live metrics
+- **Latest Fix**: HTML parsing fix for compliance dashboard ✅
 - **Cloudflare Deployment**: ✅ Live and active on aria52.pages.dev
+- **Health Check**: https://aria52.pages.dev/health
+- **Last Updated**: September 17, 2025
 
 ---
 
