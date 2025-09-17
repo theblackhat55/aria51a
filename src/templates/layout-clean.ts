@@ -160,8 +160,12 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
 <body class="bg-gray-50 font-sans antialiased">
   ${user ? renderCleanNavigation(user) : ''}
   
-  <main id="main-content">
-    ${content}
+  <main id="main-content" class="min-h-screen ${user ? 'pt-6 px-4 sm:px-6 lg:px-8' : ''}">
+    ${user ? html`
+    <div class="max-w-7xl mx-auto">
+      ${content}
+    </div>
+    ` : content}
   </main>
   
   <!-- Global loading indicator -->
