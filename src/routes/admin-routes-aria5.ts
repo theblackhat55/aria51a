@@ -3317,6 +3317,10 @@ const renderSystemSettingsPage = () => html`
                       class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
                 <i class="fas fa-bell mr-2"></i>Notifications
               </button>
+              <button onclick="window.location.href='/admin/settings/smtp'" id="smtp-tab"
+                      class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
+                <i class="fas fa-envelope mr-2"></i>SMTP Settings
+              </button>
               <button onclick="showTab('audit')" id="audit-tab"
                       class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
                 <i class="fas fa-history mr-2"></i>Audit Logs

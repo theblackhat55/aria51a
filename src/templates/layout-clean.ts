@@ -1725,13 +1725,6 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Manage users and roles</div>
                   </div>
                 </a>
-                <a href="/admin/settings/smtp" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
-                  <i class="fas fa-envelope w-5 text-green-500 mr-3"></i>
-                  <div>
-                    <div class="font-medium">SMTP Settings</div>
-                    <div class="text-xs text-gray-500">Email configuration</div>
-                  </div>
-                </a>
               </div>
             </div>
           </div>

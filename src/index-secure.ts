@@ -102,6 +102,20 @@ app.use('/compliance/*/update', csrfMiddleware);
 app.use('/compliance/*/create', csrfMiddleware);
 app.use('/admin/*', csrfMiddleware);
 
+// Authentication middleware for protected routes
+app.use('/dashboard/*', authMiddleware);
+app.use('/risk/*', authMiddleware);
+app.use('/compliance/*', authMiddleware);
+app.use('/operations/*', authMiddleware);
+app.use('/ai/*', authMiddleware);
+app.use('/intelligence/*', authMiddleware);
+app.use('/risk-controls/*', authMiddleware);
+app.use('/api/*', authMiddleware);
+
+// Admin routes require both authentication and admin role
+app.use('/admin/*', authMiddleware);
+app.use('/admin/*', requireAdmin);
+
 // Serve static files with proper headers
 app.use('/static/*', serveStatic({ 
   root: './',

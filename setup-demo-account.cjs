@@ -43,7 +43,7 @@ async function setupDemoAccount() {
     `;
     
     // Execute query
-    execSync(`npx wrangler d1 execute aria51-production --local --command="${insertQuery}"`, {
+    execSync(`npx wrangler d1 execute aria52-production --local --command="${insertQuery}"`, {
       stdio: 'inherit'
     });
     
@@ -58,7 +58,7 @@ async function setupDemoAccount() {
       WHERE username = 'admin';
     `;
     
-    execSync(`npx wrangler d1 execute aria51-production --local --command="${updateAdminQuery}"`, {
+    execSync(`npx wrangler d1 execute aria52-production --local --command="${updateAdminQuery}"`, {
       stdio: 'inherit'
     });
     
@@ -66,7 +66,7 @@ async function setupDemoAccount() {
     
     // Verify accounts
     const verifyQuery = `SELECT username, first_name, role FROM users WHERE username IN ('demo', 'admin');`;
-    execSync(`npx wrangler d1 execute aria51-production --local --command="${verifyQuery}"`, {
+    execSync(`npx wrangler d1 execute aria52-production --local --command="${verifyQuery}"`, {
       stdio: 'inherit'
     });
     

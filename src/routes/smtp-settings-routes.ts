@@ -9,11 +9,9 @@ export function createSMTPSettingsRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
 
   // SMTP Settings Page
-  app.get('/settings/smtp', requireAdmin, async (c) => {
+  app.get('/settings/smtp', async (c) => {
     try {
-      const authResult = await requireAuth(c);
-      if (authResult instanceof Response) return authResult;
-      const user = authResult;
+      const user = c.get('user');
 
       const smtpService = new SMTPService(c.env);
       const config = await smtpService.loadConfig();
@@ -297,7 +295,7 @@ export function createSMTPSettingsRoutes() {
   });
 
   // Save SMTP Configuration
-  app.post('/settings/smtp', requireAdmin, async (c) => {
+  app.post('/settings/smtp', async (c) => {
     try {
       const formData = await c.req.parseBody();
       
@@ -347,7 +345,7 @@ export function createSMTPSettingsRoutes() {
   });
 
   // Test SMTP Connection
-  app.post('/settings/smtp/test', requireAdmin, async (c) => {
+  app.post('/settings/smtp/test', async (c) => {
     try {
       const smtpService = new SMTPService(c.env);
       const result = await smtpService.testConnection();
@@ -360,7 +358,7 @@ export function createSMTPSettingsRoutes() {
   });
 
   // Send Test Email
-  app.post('/settings/smtp/test-email', requireAdmin, async (c) => {
+  app.post('/settings/smtp/test-email', async (c) => {
     try {
       const body = await c.req.json();
       const testEmail = body.email;
