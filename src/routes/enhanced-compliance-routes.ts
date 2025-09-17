@@ -738,7 +738,7 @@ const renderFrameworkManagement = (frameworks: any[]) => html`
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        ${frameworks.map(framework => html`
+        ${frameworks.map(framework => raw(`
           <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
@@ -790,7 +790,7 @@ const renderFrameworkManagement = (frameworks: any[]) => html`
               </div>
             </div>
           </div>
-        `).join('')}
+        `)).join('')}
       </div>
     </div>
   </div>
@@ -833,7 +833,7 @@ const renderFrameworkDetails = (framework: any, controls: any[]) => html`
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              ${controls.map(control => html`
+              ${controls.map(control => raw(`
                 <tr class="hover:bg-gray-50">
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     ${control.control_id}
@@ -870,7 +870,7 @@ const renderFrameworkDetails = (framework: any, controls: any[]) => html`
                     </button>
                   </td>
                 </tr>
-              `).join('')}
+              `)).join('')}
             </tbody>
           </table>
         </div>
@@ -928,7 +928,7 @@ const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => html`
         </p>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          ${frameworks.map(framework => html`
+          ${frameworks.map(framework => raw(`
             <div class="border border-gray-200 rounded-lg p-4">
               <h3 class="font-medium text-gray-900">${framework.name}</h3>
               <p class="text-sm text-gray-600 mb-3">${framework.type}</p>
@@ -938,7 +938,7 @@ const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => html`
                 Review Controls
               </button>
             </div>
-          `).join('')}
+          `)).join('')}
         </div>
       </div>
 
@@ -959,7 +959,7 @@ const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => html`
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              ${soaEntries.length > 0 ? soaEntries.map(entry => html`
+              ${soaEntries.length > 0 ? soaEntries.map(entry => raw(`
                 <tr class="hover:bg-gray-50">
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">${entry.framework_name}</div>
@@ -989,7 +989,7 @@ const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => html`
                     </button>
                   </td>
                 </tr>
-              `).join('') : html`
+              `)).join('') : html`
                 <tr>
                   <td colspan="5" class="px-6 py-4 text-center text-gray-500">
                     No SoA decisions recorded. Use "Review Controls" to start defining applicability.
@@ -1044,7 +1044,7 @@ const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[
             <i class="fas fa-exclamation-triangle mr-2"></i>Controls Requiring Evidence
           </h2>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${controlsNeedingEvidence.map(control => html`
+            ${controlsNeedingEvidence.map(control => raw(`
               <div class="bg-white border border-yellow-300 rounded-lg p-4">
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
@@ -1059,7 +1059,7 @@ const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[
                   </button>
                 </div>
               </div>
-            `).join('')}
+            `)).join('')}
           </div>
         </div>
       ` : ''}
@@ -1082,7 +1082,7 @@ const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              ${evidence.length > 0 ? evidence.map(item => html`
+              ${evidence.length > 0 ? evidence.map(item => raw(`
                 <tr class="hover:bg-gray-50">
                   <td class="px-6 py-4">
                     <div class="flex items-center">
@@ -1129,7 +1129,7 @@ const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[
                     </button>
                   </td>
                 </tr>
-              `).join('') : html`
+              `)).join('') : html`
                 <tr>
                   <td colspan="5" class="px-6 py-4 text-center text-gray-500">
                     No evidence uploaded yet. Click "Upload Evidence" to get started.
@@ -1250,7 +1250,7 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => html`
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              ${assessments.length > 0 ? assessments.map(assessment => html`
+              ${assessments.length > 0 ? assessments.map(assessment => raw(`
                 <tr class="hover:bg-gray-50">
                   <td class="px-6 py-4">
                     <div class="text-sm font-medium text-gray-900">${assessment.title}</div>
@@ -1301,7 +1301,7 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => html`
                     ` : ''}
                   </td>
                 </tr>
-              `).join('') : html`
+              `)).join('') : html`
                 <tr>
                   <td colspan="7" class="px-6 py-4 text-center text-gray-500">
                     No assessments found. Click "New Assessment" to create your first assessment.
