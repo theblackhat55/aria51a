@@ -13,9 +13,11 @@ class EnhancedARIAChatbot {
     this.responseCache = new Map();
     this.currentMessageId = null;
     
+    // Initialize immediately
     this.initializeElements();
     this.bindEvents();
     this.loadConversationHistory();
+    console.log('✅ Enhanced ARIA Chatbot initialized successfully');
   }
   
   getOrCreateSessionId() {
@@ -652,3 +654,15 @@ const styles = `
 `;
 
 document.head.insertAdjacentHTML('beforeend', styles);
+
+// Auto-initialize the chatbot when the script loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.ariaChatbot = new EnhancedARIAChatbot();
+    console.log('🤖 ARIA Chatbot auto-initialized on DOMContentLoaded');
+  });
+} else {
+  // DOM is already ready
+  window.ariaChatbot = new EnhancedARIAChatbot();
+  console.log('🤖 ARIA Chatbot auto-initialized immediately');
+}

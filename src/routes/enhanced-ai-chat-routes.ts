@@ -6,7 +6,7 @@
 import { Hono } from 'hono';
 import { html, raw } from 'hono/html';
 import { requireAuth } from './auth-routes';
-import { EnhancedChatbotService } from '../services/enhanced-chatbot-service';
+import { UnifiedAIChatbotService } from '../services/unified-ai-chatbot-service';
 import type { CloudflareBindings } from '../types';
 
 export function createEnhancedAIChatRoutes() {
@@ -15,13 +15,14 @@ export function createEnhancedAIChatRoutes() {
   // Apply authentication middleware
   app.use('*', requireAuth);
   
-  // Initialize chatbot service
-  let chatbotService: EnhancedChatbotService;
+  // Initialize chatbot service with unified AI providers
+  let chatbotService: UnifiedAIChatbotService;
   
   app.use('*', async (c, next) => {
     if (!chatbotService) {
-      chatbotService = new EnhancedChatbotService(c.env.DB);
-      await chatbotService.initializeAPIProviders();
+      chatbotService = new UnifiedAIChatbotService(c.env.DB, c.env);
+      await chatbotService.initialize();
+      console.log('✅ Unified AI Chatbot Service initialized');
     }
     await next();
   });
