@@ -1414,26 +1414,27 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       console.log('📱 Mobile menu initialized successfully');
     };
 
-    // Initialize Enhanced Chatbot (Testing: Always initialize)
+    // Initialize Enhanced Chatbot - Auto-initialize with correct class name
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('🔍 Checking for chatbot elements...');
-      const chatbotWidget = document.getElementById('chatbot-widget');
-      const chatbotToggle = document.getElementById('chatbot-toggle');
-      console.log('🤖 Chatbot widget:', chatbotWidget ? 'found' : 'not found');
-      console.log('🔘 Chatbot toggle:', chatbotToggle ? 'found' : 'not found');
+      console.log('🔍 Initializing Enhanced ARIA Chatbot...');
       
-      if (chatbotWidget && chatbotToggle) {
-        console.log('🎯 Initializing Enhanced Chatbot...');
-        window.ariaChatbot = new EnhancedChatbot();
-        console.log('🚀 Enhanced ARIA Chatbot ready (testing mode)');
+      // The EnhancedARIAChatbot class will create its own elements
+      if (typeof EnhancedARIAChatbot !== 'undefined') {
+        console.log('🎯 Creating Enhanced ARIA Chatbot instance...');
+        window.ariaChatbot = new EnhancedARIAChatbot();
+        console.log('🚀 Enhanced ARIA Chatbot ready!');
       } else {
-        console.warn('⚠️ Chatbot elements not found, skipping initialization');
-        console.log('🔍 Available elements:', {
-          widget: !!document.getElementById('chatbot-widget'),
-          toggle: !!document.getElementById('chatbot-toggle'),
-          panel: !!document.getElementById('chatbot-panel'),
-          input: !!document.getElementById('chatbot-input')
-        });
+        console.warn('⚠️ EnhancedARIAChatbot class not found. Checking for fallback elements...');
+        
+        // Fallback to existing elements if they exist
+        const chatbotWidget = document.getElementById('chatbot-widget');
+        const chatbotToggle = document.getElementById('chatbot-toggle');
+        
+        if (chatbotWidget && chatbotToggle) {
+          console.log('📌 Using existing chatbot elements');
+        } else {
+          console.log('🔍 No chatbot elements found');
+        }
       }
       
       // Initialize mobile menu
