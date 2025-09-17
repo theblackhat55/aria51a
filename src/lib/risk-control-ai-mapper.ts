@@ -23,9 +23,10 @@ export interface MappingPattern {
 
 export class AIRiskControlMapper {
   private patterns: Map<string, MappingPattern[]> = new Map();
+  private initialized: boolean = false;
 
   constructor(private db: D1Database) {
-    this.initializePatterns();
+    // Don't initialize patterns in constructor - do it lazily
   }
 
   /**
@@ -56,8 +57,19 @@ export class AIRiskControlMapper {
       });
 
       console.log('🤖 AI Risk-Control Mapper initialized with', patterns.results.length, 'patterns');
+      this.initialized = true;
     } catch (error) {
       console.error('❌ Failed to initialize AI patterns:', error);
+      this.initialized = true; // Mark as initialized even if failed to prevent retry loops
+    }
+  }
+
+  /**
+   * Ensure patterns are initialized before use
+   */
+  private async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initializePatterns();
     }
   }
 
@@ -65,6 +77,7 @@ export class AIRiskControlMapper {
    * Automatically map a risk to appropriate controls using AI analysis
    */
   async mapRiskToControls(riskId: number, riskTitle: string, riskDescription: string, riskCategory: string): Promise<RiskControlMapping[]> {
+    await this.ensureInitialized();
     const mappings: RiskControlMapping[] = [];
 
     try {
@@ -333,7 +346,8 @@ export class AIRiskControlMapper {
    * Get risk-control mappings for a specific risk
    */
   async getRiskControlMappings(riskId: number): Promise<any[]> {
-    return await this.db.prepare(`
+    await this.ensureInitialized();
+    const result = await this.db.prepare(`
       SELECT 
         rcm.*,
         cc.title as control_title,
@@ -346,12 +360,14 @@ export class AIRiskControlMapper {
       WHERE rcm.risk_id = ?
       ORDER BY rcm.mapping_confidence DESC
     `).bind(riskId).all();
+    return result.results;
   }
 
   /**
    * Bulk map all unmapped risks
    */
   async mapAllUnmappedRisks(): Promise<number> {
+    await this.ensureInitialized();
     try {
       // Get risks that don't have any control mappings  
       // Use comprehensive risks table for consistency

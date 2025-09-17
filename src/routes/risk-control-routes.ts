@@ -38,18 +38,17 @@ export function createRiskControlRoutes() {
         SELECT 
           r.id as risk_id,
           r.title as risk_title,
-          rc.name as risk_category,
+          r.category as risk_category,
           (r.probability * r.impact) as risk_score,
           COUNT(rcm.id) as control_count,
           AVG(rcm.effectiveness_rating) as avg_effectiveness,
           AVG(rcm.mapping_confidence) as avg_confidence,
           GROUP_CONCAT(cf.name, ', ') as frameworks
         FROM risks r
-        LEFT JOIN risk_categories rc ON r.category_id = rc.id
         LEFT JOIN risk_control_mappings rcm ON r.id = rcm.risk_id
         LEFT JOIN compliance_frameworks cf ON rcm.framework_id = cf.id
         WHERE r.status = 'active'
-        GROUP BY r.id, r.title, rc.name, r.probability, r.impact
+        GROUP BY r.id, r.title, r.category, r.probability, r.impact
         ORDER BY risk_score DESC
       `).all();
 
