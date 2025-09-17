@@ -180,11 +180,47 @@
         // Show typing indicator
         this.showTyping();
         
-        // Simulate AI response (replace with actual API call)
-        setTimeout(() => {
+        // Make actual API call to the AI service
+        this.makeAPICall(message);
+      }
+      
+      async makeAPICall(message) {
+        try {
+          const response = await fetch('/ai/chat-json', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache'
+            },
+            body: JSON.stringify({ 
+              message: message,
+              timestamp: Date.now()
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
           this.hideTyping();
-          this.addMessage('Thank you for your message! This is a test response from the ARIA chatbot. The regex fix appears to be working correctly.', 'assistant');
-        }, 1500);
+          
+          const aiResponse = data.response || 'Sorry, I could not process your request.';
+          this.addMessage(aiResponse, 'assistant');
+          
+        } catch (error) {
+          console.error('API Error:', error);
+          this.hideTyping();
+          
+          let errorMessage;
+          if (error.message.includes('401') || error.message.includes('403')) {
+            errorMessage = '🔐 Please log in to use the AI Assistant. Authentication is required for personalized responses.';
+          } else {
+            errorMessage = '🤖 **ARIA Assistant** (Test Mode)\n\nI\'m experiencing connection issues. Please:\n• Ensure you\'re logged in\n• Try the main AI Assistant page\n• Refresh and try again\n\nThis is the test chatbot widget - for full functionality, use the main application.';
+          }
+          
+          this.addMessage(errorMessage, 'assistant');
+        }
       }
       
       addMessage(content, type) {

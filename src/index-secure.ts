@@ -22,6 +22,7 @@ import conversationalAssistantRoutes from './routes/conversational-assistant';
 import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
 import { tiGrcRoutes } from './routes/api-ti-grc-integration';
 import complianceAutomationApi from './routes/compliance-automation-api';
+import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
 // TODO: Re-enable when Phase 4 multi-tenancy features are needed
 // import enterpriseMultiTenancyApi from './routes/enterprise-multitenancy-api';
@@ -101,6 +102,20 @@ app.use('/compliance/*/update', csrfMiddleware);
 app.use('/compliance/*/create', csrfMiddleware);
 app.use('/admin/*', csrfMiddleware);
 
+// Authentication middleware for protected routes
+app.use('/dashboard/*', authMiddleware);
+app.use('/risk/*', authMiddleware);
+app.use('/compliance/*', authMiddleware);
+app.use('/operations/*', authMiddleware);
+app.use('/ai/*', authMiddleware);
+app.use('/intelligence/*', authMiddleware);
+app.use('/risk-controls/*', authMiddleware);
+app.use('/api/*', authMiddleware);
+
+// Admin routes require both authentication and admin role
+app.use('/admin/*', authMiddleware);
+app.use('/admin/*', requireAdmin);
+
 // Serve static files with proper headers
 app.use('/static/*', serveStatic({ 
   root: './',
@@ -113,8 +128,8 @@ app.use('/static/*', serveStatic({
 app.get('/health', (c) => {
   return c.json({
     status: 'healthy',
-    version: '5.1.0-secure',
-    mode: 'Production Ready',
+    version: '5.1.0-enterprise',
+    mode: 'Enterprise Edition',
     security: 'Full',
     timestamp: new Date().toISOString()
   });
@@ -415,6 +430,9 @@ app.route('/operations', createOperationsRoutes());
 
 // Admin Management (requires admin role)
 app.route('/admin', createAdminRoutesARIA5());
+
+// SMTP Settings (requires admin role)
+app.route('/admin', createSMTPSettingsRoutes());
 
 // AI Assistant (requires authentication)
 app.route('/ai', createAIAssistantRoutes());

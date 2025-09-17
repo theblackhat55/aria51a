@@ -3,10 +3,10 @@
 module.exports = {
   apps: [
     {
-      name: 'aria51-enterprise',
+      name: 'aria52-enterprise',
       script: 'npx',
-      args: 'wrangler pages dev dist --d1=aria51-production --local --ip 0.0.0.0 --port 3000 --compatibility-flags nodejs_compat --compatibility-date 2025-01-01',
-      cwd: '/home/user/ARIA5-Ubuntu',
+      args: 'wrangler pages dev dist --d1=aria52-production --local --ip 0.0.0.0 --port 3000 --compatibility-flags nodejs_compat --compatibility-date 2025-01-01',
+      cwd: '/home/user/webapp',
       env: {
         NODE_ENV: 'development',
         PORT: 3000,
@@ -21,9 +21,9 @@ module.exports = {
       exec_mode: 'fork',
       autorestart: true,
       max_memory_restart: '2G', // Increased for AI operations
-      error_file: './logs/aria51-error.log',
-      out_file: './logs/aria51-out.log',
-      log_file: './logs/aria51-combined.log',
+      error_file: './logs/aria52-error.log',
+      out_file: './logs/aria52-out.log',
+      log_file: './logs/aria52-combined.log',
       time: true,
       // Health check configuration
       health_check_url: 'http://localhost:3000/health',
@@ -36,10 +36,10 @@ module.exports = {
     
     // Optional: Separate process for background tasks (if needed)
     {
-      name: 'aria51-workers',
+      name: 'aria52-workers',
       script: 'node',
       args: 'src/workers/background-tasks.js',
-      cwd: '/home/user/ARIA5-Ubuntu',
+      cwd: '/home/user/webapp',
       env: {
         NODE_ENV: 'development',
         WORKER_TYPE: 'background'

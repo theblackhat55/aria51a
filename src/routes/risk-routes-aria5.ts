@@ -136,10 +136,10 @@ export function createRiskRoutesARIA5() {
       const result = await c.env.DB.prepare(`
         SELECT 
           COUNT(*) as total,
-          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 20 THEN 1 ELSE 0 END) as critical,
-          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 12 AND COALESCE(risk_score, probability * impact) < 20 THEN 1 ELSE 0 END) as high,
-          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 6 AND COALESCE(risk_score, probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
-          SUM(CASE WHEN COALESCE(risk_score, probability * impact) < 6 THEN 1 ELSE 0 END) as low
+          SUM(CASE WHEN COALESCE(inherent_risk, probability * impact) >= 20 THEN 1 ELSE 0 END) as critical,
+          SUM(CASE WHEN COALESCE(inherent_risk, probability * impact) >= 12 AND COALESCE(inherent_risk, probability * impact) < 20 THEN 1 ELSE 0 END) as high,
+          SUM(CASE WHEN COALESCE(inherent_risk, probability * impact) >= 6 AND COALESCE(inherent_risk, probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
+          SUM(CASE WHEN COALESCE(inherent_risk, probability * impact) < 6 THEN 1 ELSE 0 END) as low
         FROM risks
       `).first();
       console.log('✅ Stats from comprehensive risks table');
@@ -189,23 +189,19 @@ export function createRiskRoutesARIA5() {
       }
       
       if (category) {
-        const categoryMap: {[key: string]: number} = {
-          'operational': 1, 'financial': 2, 'strategic': 3,
-          'compliance': 4, 'technology': 5, 'reputation': 6
-        };
-        whereConditions.push('r.category_id = ?');
-        params.push(categoryMap[category] || 1);
+        whereConditions.push('LOWER(r.category) = ?');
+        params.push(category.toLowerCase());
       }
       
       if (risk_level) {
         if (risk_level === 'critical') {
-          whereConditions.push('COALESCE(r.risk_score, r.probability * r.impact) >= 20');
+          whereConditions.push('COALESCE(r.inherent_risk, r.probability * r.impact) >= 20');
         } else if (risk_level === 'high') {
-          whereConditions.push('COALESCE(r.risk_score, r.probability * r.impact) >= 15 AND COALESCE(r.risk_score, r.probability * r.impact) < 20');
+          whereConditions.push('COALESCE(r.inherent_risk, r.probability * r.impact) >= 12 AND COALESCE(r.inherent_risk, r.probability * r.impact) < 20');
         } else if (risk_level === 'medium') {
-          whereConditions.push('COALESCE(r.risk_score, r.probability * r.impact) >= 10 AND COALESCE(r.risk_score, r.probability * r.impact) < 15');
+          whereConditions.push('COALESCE(r.inherent_risk, r.probability * r.impact) >= 6 AND COALESCE(r.inherent_risk, r.probability * r.impact) < 12');
         } else if (risk_level === 'low') {
-          whereConditions.push('COALESCE(r.risk_score, r.probability * r.impact) < 10');
+          whereConditions.push('COALESCE(r.inherent_risk, r.probability * r.impact) < 6');
         }
       }
       
@@ -215,33 +211,33 @@ export function createRiskRoutesARIA5() {
       const result = await c.env.DB.prepare(`
         SELECT 
           r.id,
-          r.risk_id,
           r.title,
           r.description,
-          r.category_id,
+          r.category,
+          r.subcategory,
           r.probability,
           r.impact,
-          COALESCE(r.risk_score, r.probability * r.impact) as risk_score,
+          COALESCE(r.inherent_risk, r.probability * r.impact) as risk_score,
           r.status,
           r.organization_id,
           r.owner_id,  
           r.created_by,
-          r.risk_type,
+          r.source,
+          r.affected_assets,
+          r.review_date,
           r.created_at,
           r.updated_at,
-          'Avi Security' as owner_name,
           CASE 
-            WHEN r.category_id = 1 THEN 'Operational'
-            WHEN r.category_id = 2 THEN 'Financial' 
-            WHEN r.category_id = 3 THEN 'Strategic'
-            WHEN r.category_id = 4 THEN 'Compliance'
-            WHEN r.category_id = 5 THEN 'Technology'
-            WHEN r.category_id = 6 THEN 'Reputation'
-            ELSE 'Operational'
-          END as category_name
+            WHEN r.owner_id = 1 THEN 'Admin User'
+            WHEN r.owner_id = 2 THEN 'Avi Adiyala' 
+            WHEN r.owner_id = 3 THEN 'Sarah Johnson'
+            WHEN r.owner_id = 4 THEN 'Michael Torres'
+            ELSE 'Unknown User'
+          END as owner_name,
+          r.category as category_name
         FROM risks r
         ${whereClause}
-        ORDER BY COALESCE(r.risk_score, r.probability * r.impact) DESC, r.created_at DESC
+        ORDER BY COALESCE(r.inherent_risk, r.probability * r.impact) DESC, r.created_at DESC
         LIMIT 50
       `).bind(...params).all();
       console.log('✅ Successfully fetched from comprehensive risks table');
