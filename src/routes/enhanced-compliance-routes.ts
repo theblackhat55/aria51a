@@ -667,9 +667,7 @@ const renderComplianceDashboard = (data: any) => html`
               <div class="flex items-start space-x-3 p-3 border-l-4 ${
                 activity.type === 'assessment' ? 'border-blue-400 bg-blue-50' : 'border-green-400 bg-green-50'
               } rounded-r">
-                <i class="fas ${activity.type === 'assessment' ? 'fa-clipboard-check' : 'fa-upload'} text-sm mt-1 ${
-                  activity.type === 'assessment' ? 'text-blue-600' : 'text-green-600'
-                }"></i>
+                <i class="fas ${activity.type === 'assessment' ? 'fa-clipboard-check text-blue-600' : 'fa-upload text-green-600'} text-sm mt-1"></i>
                 <div class="flex-1">
                   <p class="text-sm font-medium text-gray-900">${activity.description}</p>
                   <p class="text-xs text-gray-500">
@@ -746,7 +744,8 @@ const renderFrameworkManagement = (frameworks: any[]) => html`
                 </span>
               </div>
               <div class="flex space-x-2">
-                <button onclick="location.href='/compliance/frameworks/${framework.id}'"
+                <button data-framework-id="${framework.id}" 
+                        onclick="location.href='/compliance/frameworks/' + this.dataset.frameworkId"
                         class="text-blue-600 hover:text-blue-800 text-sm">
                   <i class="fas fa-eye"></i>
                 </button>
@@ -837,7 +836,8 @@ const renderFrameworkDetails = (framework: any, controls: any[]) => html`
                     <div class="text-xs text-gray-500 mt-1">${control.description}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <select onchange="updateControlStatus(${control.id}, this.value)" 
+                    <select data-control-id="${control.id}" 
+                            onchange="updateControlStatus(this.dataset.controlId, this.value)" 
                             class="text-sm rounded border-gray-300 ${
                               control.implementation_status === 'implemented' ? 'text-green-700 bg-green-50' :
                               control.implementation_status === 'in_progress' ? 'text-yellow-700 bg-yellow-50' :
@@ -856,7 +856,9 @@ const renderFrameworkDetails = (framework: any, controls: any[]) => html`
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="linkEvidence(${control.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                    <button data-control-id="${control.id}" 
+                            onclick="linkEvidence(this.dataset.controlId)" 
+                            class="text-blue-600 hover:text-blue-900 mr-3">
                       Link Evidence
                     </button>
                   </td>
@@ -875,7 +877,7 @@ const renderFrameworkDetails = (framework: any, controls: any[]) => html`
       formData.append('status', status);
       
       try {
-        const response = await fetch('/compliance/frameworks/${framework.id}/controls/' + controlId + '/status', {
+        const response = await fetch('/compliance/frameworks/' + ${framework.id} + '/controls/' + controlId + '/status', {
           method: 'POST',
           body: formData
         });
@@ -923,7 +925,8 @@ const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => html`
             <div class="border border-gray-200 rounded-lg p-4">
               <h3 class="font-medium text-gray-900">${framework.name}</h3>
               <p class="text-sm text-gray-600 mb-3">${framework.type}</p>
-              <button onclick="reviewFrameworkSoA(${framework.id})" 
+              <button data-framework-id="${framework.id}" 
+                      onclick="reviewFrameworkSoA(this.dataset.frameworkId)" 
                       class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium">
                 Review Controls
               </button>
@@ -972,7 +975,9 @@ const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => html`
                     <div class="text-sm text-gray-900 max-w-md truncate">${entry.justification || 'No justification provided'}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="editSoADecision(${entry.id})" class="text-blue-600 hover:text-blue-900">
+                    <button data-entry-id="${entry.id}" 
+                            onclick="editSoADecision(this.dataset.entryId)" 
+                            class="text-blue-600 hover:text-blue-900">
                       Edit
                     </button>
                   </td>
@@ -1040,7 +1045,8 @@ const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[
                     <p class="text-sm text-gray-600 mt-1">${control.title}</p>
                     <p class="text-xs text-gray-500 mt-2">${control.framework_name}</p>
                   </div>
-                  <button onclick="uploadForControl(${control.id})" 
+                  <button data-control-id="${control.id}" 
+                          onclick="uploadForControl(this.dataset.controlId)" 
                           class="text-blue-600 hover:text-blue-800 text-sm">
                     <i class="fas fa-upload"></i>
                   </button>
@@ -1104,10 +1110,14 @@ const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[
                     ${new Date(item.created_at).toLocaleDateString()}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="linkToControls(${item.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                    <button data-item-id="${item.id}" 
+                            onclick="linkToControls(this.dataset.itemId)" 
+                            class="text-blue-600 hover:text-blue-900 mr-3">
                       Link
                     </button>
-                    <button onclick="viewEvidence(${item.id})" class="text-green-600 hover:text-green-900">
+                    <button data-item-id="${item.id}" 
+                            onclick="viewEvidence(this.dataset.itemId)" 
+                            class="text-green-600 hover:text-green-900">
                       View
                     </button>
                   </td>
@@ -1267,14 +1277,18 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => html`
                     ` : html`<span class="text-gray-400">No findings</span>`}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${assessment.due_date ? new Date(assessment.due_date).toLocaleDateString() : 'No due date'}
+                    ${assessment.end_date ? new Date(assessment.end_date).toLocaleDateString() : 'No end date'}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="viewAssessment(${assessment.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                    <button data-assessment-id="${assessment.id}" 
+                            onclick="viewAssessment(this.dataset.assessmentId)" 
+                            class="text-blue-600 hover:text-blue-900 mr-3">
                       View
                     </button>
                     ${assessment.status !== 'completed' ? html`
-                      <button onclick="continueAssessment(${assessment.id})" class="text-green-600 hover:text-green-900">
+                      <button data-assessment-id="${assessment.id}" 
+                              onclick="continueAssessment(this.dataset.assessmentId)" 
+                              class="text-green-600 hover:text-green-900">
                         Continue
                       </button>
                     ` : ''}
