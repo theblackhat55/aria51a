@@ -85,17 +85,15 @@ export function createAIAssistantRoutes() {
 
                     <!-- Chat Input -->
                     <div class="px-6 py-4 border-t bg-gray-50">
-                      <form hx-post="/ai/chat" 
-                            hx-target="#chat-messages" 
-                            hx-swap="beforeend"
-                            hx-on::after-request="this.reset(); document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight"
-                            class="flex space-x-3">
+                      <form id="ai-chat-form" class="flex space-x-3">
                         <input type="text" 
+                               id="ai-chat-input"
                                name="message" 
                                placeholder="Ask ARIA about risks, compliance, or security..." 
                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                required>
                         <button type="submit" 
+                                id="ai-chat-submit"
                                 class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50">
                           <i class="fas fa-paper-plane mr-1"></i>
                           Send
@@ -224,9 +222,169 @@ export function createAIAssistantRoutes() {
           </div>
           
           <script>
+            // Enhanced AI Chat with Streaming Support
+            class AIAssistantChat {
+              constructor() {
+                this.chatMessages = document.getElementById('chat-messages');
+                this.chatForm = document.getElementById('ai-chat-form');
+                this.chatInput = document.getElementById('ai-chat-input');
+                this.chatSubmit = document.getElementById('ai-chat-submit');
+                this.isStreaming = false;
+                this.currentMessageDiv = null;
+                
+                this.initializeEventListeners();
+              }
+              
+              initializeEventListeners() {
+                if (this.chatForm) {
+                  this.chatForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.sendMessage();
+                  });
+                }
+              }
+              
+              async sendMessage() {
+                const message = this.chatInput.value.trim();
+                if (!message || this.isStreaming) return;
+                
+                // Add user message to chat
+                this.addMessage(message, 'user');
+                
+                // Clear input and disable during streaming
+                this.chatInput.value = '';
+                this.chatInput.disabled = true;
+                this.chatSubmit.disabled = true;
+                this.isStreaming = true;
+                
+                // Create AI message container
+                const aiMessageDiv = this.addMessage('', 'ai', true);
+                this.currentMessageDiv = aiMessageDiv.querySelector('.message-content');
+                
+                try {
+                  // Use the new streaming endpoint
+                  const response = await fetch('/ai/chat-stream', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                      message: message,
+                      sessionId: this.getSessionId(),
+                      context: {
+                        page: 'ai-assistant',
+                        userId: '${user.id}',
+                        role: '${user.role}'
+                      }
+                    })
+                  });
+                  
+                  if (!response.ok) throw new Error('Failed to get response');
+                  
+                  // Handle Server-Sent Events stream
+                  const reader = response.body.getReader();
+                  const decoder = new TextDecoder();
+                  let buffer = '';
+                  
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\\n');
+                    buffer = lines.pop() || '';
+                    
+                    for (const line of lines) {
+                      if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') {
+                          this.finishStreaming();
+                          return;
+                        }
+                        
+                        try {
+                          const chunk = JSON.parse(data);
+                          this.handleStreamChunk(chunk);
+                        } catch (e) {
+                          console.warn('Invalid chunk:', data);
+                        }
+                      }
+                    }
+                  }
+                } catch (error) {
+                  console.error('Chat error:', error);
+                  this.currentMessageDiv.innerHTML = '<span class="text-red-600">Failed to get response. Please try again.</span>';
+                  this.finishStreaming();
+                }
+              }
+              
+              handleStreamChunk(chunk) {
+                if (chunk.type === 'content' && this.currentMessageDiv) {
+                  this.currentMessageDiv.innerHTML += chunk.content;
+                  this.scrollToBottom();
+                } else if (chunk.type === 'metadata') {
+                  console.log('Metadata:', chunk.metadata);
+                } else if (chunk.type === 'error') {
+                  this.currentMessageDiv.innerHTML = '<span class="text-red-600">' + chunk.error + '</span>';
+                }
+              }
+              
+              addMessage(content, sender, isStreaming = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex items-start space-x-3';
+                
+                const isUser = sender === 'user';
+                const icon = isUser ? 'fa-user' : 'fa-robot';
+                const bgColor = isUser ? 'bg-gray-100' : 'bg-blue-100';
+                const iconColor = isUser ? 'text-gray-600' : 'text-blue-600';
+                const messageBg = isUser ? 'bg-gray-100' : 'bg-blue-50';
+                
+                messageDiv.innerHTML = \`
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 \${bgColor} rounded-full flex items-center justify-center">
+                      <i class="fas \${icon} \${iconColor} text-sm"></i>
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <div class="\${messageBg} rounded-lg px-4 py-3">
+                      <div class="message-content text-gray-800">
+                        \${isStreaming ? '<span class="text-gray-500">Thinking...</span>' : content}
+                      </div>
+                    </div>
+                  </div>
+                \`;
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+                return messageDiv;
+              }
+              
+              scrollToBottom() {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+              }
+              
+              finishStreaming() {
+                this.isStreaming = false;
+                this.chatInput.disabled = false;
+                this.chatSubmit.disabled = false;
+                this.chatInput.focus();
+                this.currentMessageDiv = null;
+              }
+              
+              getSessionId() {
+                let sessionId = localStorage.getItem('aria_session_id');
+                if (!sessionId) {
+                  sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(7);
+                  localStorage.setItem('aria_session_id', sessionId);
+                }
+                return sessionId;
+              }
+            }
             
             // Wait for DOM to load
             document.addEventListener('DOMContentLoaded', function() {
+              // Initialize streaming chat
+              window.aiAssistantChat = new AIAssistantChat();
               
               // Load proactive alerts
               htmx.ajax('GET', '/ai/proactive-alerts', {

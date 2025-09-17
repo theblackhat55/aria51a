@@ -21,6 +21,7 @@ import { createSystemHealthRoutes } from './routes/system-health-routes';
 import conversationalAssistantRoutes from './routes/conversational-assistant';
 import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
 import { tiGrcRoutes } from './routes/api-ti-grc-integration';
+import { createEnhancedAIChatRoutes } from './routes/enhanced-ai-chat-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
@@ -438,6 +439,10 @@ app.route('/admin', createSMTPSettingsRoutes());
 
 // AI Assistant (requires authentication)
 app.route('/ai', createAIAssistantRoutes());
+
+// Enhanced AI Chat with Streaming (requires authentication)
+// This provides unified streaming endpoints for both the AI page and chatbot widget
+app.route('/ai', createEnhancedAIChatRoutes());
 
 // Intelligence routes (requires authentication)
 app.route('/intelligence', createIntelligenceRoutes());

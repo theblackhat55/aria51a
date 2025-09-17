@@ -1440,6 +1440,10 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
       window.ARIA5.initMobileMenu();
     });
   </script>
+  
+  <!-- Enhanced Chatbot with Streaming Support -->
+  <script src="/static/enhanced-chatbot.js"></script>
+  
 </body>
 </html>
 `;
