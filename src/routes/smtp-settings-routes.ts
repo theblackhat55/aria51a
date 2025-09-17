@@ -17,28 +17,66 @@ export function createSMTPSettingsRoutes() {
       const config = await smtpService.loadConfig();
 
       const content = html`
-        <div class="space-y-6">
+        <div class="min-h-screen bg-gray-50">
           <!-- Header -->
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-              <button onclick="window.location.href='/admin/settings'" class="flex items-center text-gray-500 hover:text-gray-700">
-                <i class="fas fa-arrow-left mr-2"></i>
-                Back to Settings
-              </button>
-              <div>
-                <h1 class="text-3xl font-bold text-gray-900">SMTP Settings</h1>
-                <p class="mt-1 text-sm text-gray-600">Configure email notifications and messaging</p>
+          <div class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h1 class="text-3xl font-bold text-gray-900">System Settings</h1>
+                  <p class="mt-1 text-sm text-gray-600">Configure system-wide settings and preferences</p>
+                </div>
+                <div class="flex space-x-3">
+                  <button onclick="testSMTPConnection()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-paper-plane mr-2"></i>Test Connection
+                  </button>
+                </div>
               </div>
             </div>
-            <button onclick="testSMTPConnection()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-              <i class="fas fa-paper-plane mr-2"></i>
-              Test Connection
-            </button>
           </div>
 
-          <!-- SMTP Configuration Form -->
-          <div class="bg-white shadow rounded-lg">
-            <form hx-post="/admin/settings/smtp" hx-target="#smtp-result" class="divide-y divide-gray-200">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              
+              <!-- Settings Navigation -->
+              <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow p-6">
+                  <h3 class="text-lg font-medium text-gray-900 mb-4">Settings Categories</h3>
+                  <nav class="space-y-2">
+                    <button onclick="window.location.href='/admin/settings'" class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
+                      <i class="fas fa-cog mr-2"></i>General
+                    </button>
+                    <button onclick="window.location.href='/admin/settings'" class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
+                      <i class="fas fa-shield-alt mr-2"></i>Security
+                    </button>
+                    <button onclick="window.location.href='/admin/settings'" class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
+                      <i class="fas fa-bell mr-2"></i>Notifications
+                    </button>
+                    <button class="flex items-center w-full px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg">
+                      <i class="fas fa-envelope mr-2"></i>SMTP Settings
+                    </button>
+                    <button onclick="window.location.href='/admin/settings'" class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
+                      <i class="fas fa-history mr-2"></i>Audit Logs
+                    </button>
+                    <button onclick="window.location.href='/admin/settings'" class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
+                      <i class="fas fa-database mr-2"></i>Backup
+                    </button>
+                  </nav>
+                </div>
+              </div>
+
+              <!-- SMTP Settings Content -->
+              <div class="lg:col-span-3 space-y-6">
+
+                <!-- SMTP Configuration Form -->
+                <div class="bg-white shadow rounded-lg">
+                  <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                      <h3 class="text-lg font-medium text-gray-900">SMTP Settings</h3>
+                      <p class="text-sm text-gray-600">Configure email notifications and messaging</p>
+                    </div>
+                  </div>
+                  <form hx-post="/admin/settings/smtp" hx-target="#smtp-result" class="divide-y divide-gray-200">
               <!-- Server Configuration -->
               <div class="p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">
@@ -183,28 +221,31 @@ export function createSMTPSettingsRoutes() {
                 </button>
               </div>
               
-              <div id="smtp-result" class="px-6 pb-6"></div>
-            </form>
-          </div>
+                    <div id="smtp-result" class="px-6 pb-6"></div>
+                  </form>
+                </div>
 
-          <!-- Test Email Section -->
-          <div class="bg-white shadow rounded-lg p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">
-              <i class="fas fa-paper-plane mr-2"></i>Test Email
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Test Email Address</label>
-                <input type="email" id="test-email" placeholder="test@example.com"
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              </div>
-              <div class="flex items-end">
-                <button onclick="sendTestEmail()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium">
-                  <i class="fas fa-paper-plane mr-2"></i>Send Test Email
-                </button>
+                <!-- Test Email Section -->
+                <div class="bg-white shadow rounded-lg p-6">
+                  <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    <i class="fas fa-paper-plane mr-2"></i>Test Email
+                  </h3>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Test Email Address</label>
+                      <input type="email" id="test-email" placeholder="test@example.com"
+                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="flex items-end">
+                      <button onclick="sendTestEmail()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium">
+                        <i class="fas fa-paper-plane mr-2"></i>Send Test Email
+                      </button>
+                    </div>
+                  </div>
+                  <div id="test-result" class="mt-4"></div>
+                </div>
               </div>
             </div>
-            <div id="test-result" class="mt-4"></div>
           </div>
         </div>
 
