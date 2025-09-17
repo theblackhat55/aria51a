@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { html } from 'hono/html';
+import { html, raw } from 'hono/html';
 import { requireAuth, requireAdmin } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import type { CloudflareBindings } from '../types';
@@ -587,7 +587,7 @@ export function createAdminRoutesARIA5() {
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                  ${usersList?.results ? usersList.results.map((u: any) => {
+                  ${raw(usersList?.results ? usersList.results.map((u: any) => {
                     const roleColor = u.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                                      u.role === 'risk_manager' ? 'bg-blue-100 text-blue-800' :
                                      u.role === 'compliance_officer' ? 'bg-green-100 text-green-800' :
@@ -602,7 +602,7 @@ export function createAdminRoutesARIA5() {
                     const lastLogin = u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never';
                     const roleDisplay = u.role.replace('_', ' ').toUpperCase();
                     
-                    // Return raw string without template literal to avoid double-escaping
+                    // Use string concatenation but wrapped in raw() to prevent escaping
                     return '<tr class="hover:bg-gray-50">' +
                       '<td class="px-6 py-4 whitespace-nowrap">' +
                         '<div class="flex items-center">' +
@@ -637,7 +637,7 @@ export function createAdminRoutesARIA5() {
                         '</button>' +
                       '</td>' +
                     '</tr>';
-                  }).join('') : '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No users found</td></tr>'}
+                  }).join('') : '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No users found</td></tr>')}
                 </tbody>
               </table>
             </div>
