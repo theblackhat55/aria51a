@@ -1575,13 +1575,7 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Compliance Overview</div>
                   </div>
                 </a>
-                <a href="/compliance/automation" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 border-b border-gray-100">
-                  <i class="fas fa-robot w-5 text-blue-500 mr-3"></i>
-                  <div>
-                    <div class="font-medium">Automation Center</div>
-                    <div class="text-xs text-gray-500">Phase 3: Workflows & Monitoring</div>
-                  </div>
-                </a>
+
                 <a href="/compliance/frameworks" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
                   <i class="fas fa-layer-group w-5 text-blue-500 mr-3"></i>
                   <div>

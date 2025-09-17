@@ -21,7 +21,7 @@ import { createSystemHealthRoutes } from './routes/system-health-routes';
 import conversationalAssistantRoutes from './routes/conversational-assistant';
 import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
 import { tiGrcRoutes } from './routes/api-ti-grc-integration';
-import complianceAutomationApi from './routes/compliance-automation-api';
+
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
 // TODO: Re-enable when Phase 4 multi-tenancy features are needed
@@ -473,8 +473,7 @@ app.route('/api/ai-threat', aiThreatAnalysisRoutes);
 import apiRiskConsistencyRoutes from './routes/api-risk-consistency';
 app.route('/api/risk-consistency', apiRiskConsistencyRoutes);
 
-// Phase 3: Advanced Compliance Automation API (requires authentication)
-app.route('/api/compliance-automation', complianceAutomationApi);
+
 
 // Phase 4: Enterprise Multi-Tenancy API - TEMPORARILY DISABLED
 // TODO: Re-enable when Phase 4 multi-tenancy features are needed
