@@ -566,7 +566,7 @@ export function createEnhancedComplianceRoutes() {
 }
 
 // Render functions for each module
-const renderComplianceDashboard = (data: any) => html`
+const renderComplianceDashboard = (data: any) => raw(`
   <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
@@ -714,9 +714,9 @@ const renderComplianceDashboard = (data: any) => html`
       </div>
     </div>
   </div>
-`;
+`);
 
-const renderFrameworkManagement = (frameworks: any[]) => html`
+const renderFrameworkManagement = (frameworks: any[]) => raw(`
   <div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
@@ -794,9 +794,9 @@ const renderFrameworkManagement = (frameworks: any[]) => html`
       </div>
     </div>
   </div>
-`;
+`);
 
-const renderFrameworkDetails = (framework: any, controls: any[]) => html`
+const renderFrameworkDetails = (framework: any, controls: any[]) => raw(`
   <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
@@ -903,9 +903,9 @@ const renderFrameworkDetails = (framework: any, controls: any[]) => html`
       // Implement evidence linking modal
     }
   </script>
-`;
+`);
 
-const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => html`
+const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => raw(`
   <div class="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
@@ -1014,9 +1014,9 @@ const renderSoAManagement = (frameworks: any[], soaEntries: any[]) => html`
       // Implement SoA decision editing modal
     }
   </script>
-`;
+`);
 
-const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[]) => html`
+const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[]) => raw(`
   <div class="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
@@ -1164,9 +1164,9 @@ const renderEvidenceManagement = (evidence: any[], controlsNeedingEvidence: any[
       // Implement evidence viewer
     }
   </script>
-`;
+`);
 
-const renderAssessmentManagement = (assessments: any[], stats: any) => html`
+const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
   <div class="min-h-screen bg-gradient-to-br from-green-50 to-teal-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
@@ -1331,4 +1331,4 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => html`
       // Implement assessment continuation
     }
   </script>
-`;
+`);
