@@ -88,7 +88,7 @@ export function createEnhancedComplianceRoutes() {
       const recentActivities = await db.prepare(`
         SELECT 
           'assessment' as type,
-          title as description,
+          name as description,
           created_at,
           status
         FROM compliance_assessments
@@ -303,13 +303,13 @@ export function createEnhancedComplianceRoutes() {
           c.title,
           c.description,
           c.implementation_status,
-          c.applicability_decision,
+          c.applicability,
           c.justification,
           f.name as framework_name,
           f.type as framework_type
         FROM compliance_controls c
         JOIN compliance_frameworks f ON c.framework_id = f.id
-        WHERE c.applicability_decision IS NOT NULL
+        WHERE c.applicability IS NOT NULL
         ORDER BY f.name, c.control_id
       `).all();
 
@@ -508,7 +508,7 @@ export function createEnhancedComplianceRoutes() {
           COUNT(*) as total_assessments,
           COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_assessments,
           COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_assessments,
-          COUNT(CASE WHEN due_date < date('now') AND status != 'completed' THEN 1 END) as overdue_assessments
+          COUNT(CASE WHEN end_date < date('now') AND status != 'completed' THEN 1 END) as overdue_assessments
         FROM compliance_assessments
       `).first();
 

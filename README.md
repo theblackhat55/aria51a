@@ -162,10 +162,11 @@ Confidence Score = Weighted Average(Source Reliability, Validation Score, Contex
 ## 🌐 Deployment Information
 
 ### Live Deployment
-- **Production URL**: https://041e1af0.aria52.pages.dev
-- **Project Name**: aria52
+- **Production URL**: https://e5805409.aria52.pages.dev
+- **Project Name**: aria52  
 - **Platform**: Cloudflare Pages with D1 Database
-- **Status**: ✅ Active and operational with comprehensive enterprise features
+- **Status**: ✅ Active and operational with comprehensive compliance features (Automation Center removed as requested)
+- **Local Development**: https://3000-idmf47b821gs003xe0l0a-6532622b.e2b.dev
 
 ### Database Status
 - **Cloudflare D1**: ✅ Production database (aria52-production) with complete schema
@@ -274,7 +275,8 @@ function selectOptimalProvider(queryComplexity, availableProviders, userPreferen
 
 **Live Platform Access:**
 ```
-Production URL: https://041e1af0.aria52.pages.dev
+Production URL: https://e5805409.aria52.pages.dev
+Local Development: https://3000-idmf47b821gs003xe0l0a-6532622b.e2b.dev
 Demo Accounts: 
 - admin / demo123 (Administrator)
 - avi_security / demo123 (Risk Manager) 
@@ -395,10 +397,11 @@ Try asking ARIA these questions to verify knowledge base integration:
 ## 🎯 Next Steps
 
 ### Immediate Actions Available
-1. **Download PDF**: Use the HTML file to generate a comprehensive PDF guide
-2. **Test ARIA Knowledge**: Ask detailed questions about platform features
-3. **Access Live Platform**: Visit aria51.pages.dev to use the enhanced system
-4. **Review Documentation**: Explore the complete 46KB user guide
+1. **Access Updated Platform**: Visit https://e5805409.aria52.pages.dev to use the compliance system
+2. **Local Development**: Visit https://3000-idmf47b821gs003xe0l0a-6532622b.e2b.dev for development/testing
+3. **Test Compliance Features**: Complete compliance modules with real database integration
+4. **Review Fixed Issues**: All database schema errors have been resolved
+5. **Verify Database Integration**: All compliance data now comes from D1 database (no dummy data)
 
 ### Future Enhancements
 - Real-time knowledge base updates
