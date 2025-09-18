@@ -530,7 +530,66 @@ export function createEnhancedComplianceRoutes() {
   });
 
   /**
-   * CREATE NEW ASSESSMENT
+   * GET RISK OWNERS FOR ASSESSMENT ASSIGNMENT
+   */
+  app.get('/api/risk-owners', async (c) => {
+    const db = c.env.DB;
+    
+    if (!db) {
+      return c.json({ success: false, message: 'Database not available' }, 500);
+    }
+
+    try {
+      // Get risk owners from users and risks tables
+      const riskOwners = await db.prepare(`
+        SELECT DISTINCT 
+          u.id,
+          u.username,
+          u.full_name,
+          u.email,
+          u.role,
+          COUNT(r.id) as owned_risks
+        FROM users u
+        LEFT JOIN risks r ON u.id = r.owner_id
+        WHERE u.role IN ('admin', 'risk_manager', 'compliance_officer', 'security_analyst')
+        GROUP BY u.id, u.username, u.full_name, u.email, u.role
+        ORDER BY u.full_name
+      `).all();
+
+      return c.json({ success: true, data: riskOwners.results || [] });
+    } catch (error) {
+      console.error('Error fetching risk owners:', error);
+      return c.json({ success: false, message: 'Failed to fetch risk owners' }, 500);
+    }
+  });
+
+  /**
+   * GET FRAMEWORKS FOR ASSESSMENT CREATION
+   */
+  app.get('/api/frameworks', async (c) => {
+    const db = c.env.DB;
+    
+    if (!db) {
+      return c.json({ success: false, message: 'Database not available' }, 500);
+    }
+
+    try {
+      const frameworks = await db.prepare(`
+        SELECT id, name, type, version, status, description
+        FROM compliance_frameworks 
+        WHERE status = 'active'
+        ORDER BY name
+      `).all();
+
+      return c.json({ success: true, data: frameworks.results || [] });
+    } catch (error) {
+      console.error('Error fetching frameworks:', error);
+      return c.json({ success: false, message: 'Failed to fetch frameworks' }, 500);
+    }
+  });
+
+  /**
+   * CREATE NEW ASSESSMENT (Enhanced)
    */
   app.post('/assessments/create', async (c) => {
     const db = c.env.DB;
@@ -541,24 +600,117 @@ export function createEnhancedComplianceRoutes() {
     }
 
     try {
-      const formData = await c.req.formData();
-      const title = formData.get('title') as string;
-      const description = formData.get('description') as string;
-      const frameworkId = parseInt(formData.get('framework_id') as string);
-      const assessmentType = formData.get('assessment_type') as string;
-      const dueDate = formData.get('due_date') as string;
+      const body = await c.req.json();
+      const {
+        title,
+        description,
+        framework_id,
+        assessment_type,
+        due_date,
+        owner_id,
+        business_units,
+        critical_systems,
+        start_date,
+        template_type,
+        scope_description
+      } = body;
 
       const result = await db.prepare(`
         INSERT INTO compliance_assessments (
-          title, description, framework_id, assessment_type, due_date, 
-          status, created_by, created_at
-        ) VALUES (?, ?, ?, ?, ?, 'planned', ?, CURRENT_TIMESTAMP)
-      `).bind(title, description, frameworkId, assessmentType, dueDate, (user as any).id).run();
+          title, description, framework_id, assessment_type, due_date, start_date,
+          owner_id, business_units, critical_systems, scope_description,
+          status, created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planned', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).bind(
+        title, 
+        description, 
+        framework_id, 
+        assessment_type, 
+        due_date,
+        start_date,
+        owner_id,
+        JSON.stringify(business_units || []),
+        JSON.stringify(critical_systems || []),
+        scope_description || '',
+        (user as any).id
+      ).run();
 
-      return c.json({ success: true, message: 'Assessment created successfully', assessment_id: result.meta.last_row_id });
+      return c.json({ 
+        success: true, 
+        message: 'Assessment created successfully', 
+        assessment_id: result.meta.last_row_id,
+        data: {
+          id: result.meta.last_row_id,
+          title,
+          assessment_type,
+          status: 'planned'
+        }
+      });
     } catch (error) {
       console.error('Error creating assessment:', error);
-      return c.json({ success: false, message: 'Failed to create assessment' }, 500);
+      return c.json({ success: false, message: 'Failed to create assessment: ' + error.message }, 500);
+    }
+  });
+
+  /**
+   * CREATE ASSESSMENT FROM TEMPLATE
+   */
+  app.post('/assessments/create-from-template', async (c) => {
+    const db = c.env.DB;
+    const user = c.get('user');
+    
+    if (!db) {
+      return c.json({ success: false, message: 'Database not available' }, 500);
+    }
+
+    try {
+      const body = await c.req.json();
+      const { template_name, framework_name, owner_id, due_date } = body;
+
+      // Template configurations
+      const templates = {
+        'SOC 2 Type II': { framework_id: 1, controls: 114, type: 'external' },
+        'ISO 27001:2022': { framework_id: 2, controls: 93, type: 'internal' },
+        'NIST CSF 2.0': { framework_id: 3, controls: 164, type: 'self' }
+      };
+
+      const template = templates[template_name];
+      if (!template) {
+        return c.json({ success: false, message: 'Invalid template selected' }, 400);
+      }
+
+      const title = `${template_name} Assessment - ${new Date().toLocaleDateString()}`;
+      const description = `Assessment created from ${template_name} template with ${template.controls} controls`;
+
+      const result = await db.prepare(`
+        INSERT INTO compliance_assessments (
+          title, description, framework_id, assessment_type, due_date,
+          owner_id, status, created_by, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, 'planned', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `).bind(
+        title,
+        description,
+        template.framework_id,
+        template.type,
+        due_date,
+        owner_id,
+        (user as any).id
+      ).run();
+
+      return c.json({
+        success: true,
+        message: 'Assessment created successfully from template',
+        assessment_id: result.meta.last_row_id,
+        data: {
+          id: result.meta.last_row_id,
+          title,
+          template_name,
+          controls: template.controls
+        }
+      });
+    } catch (error) {
+      console.error('Error creating assessment from template:', error);
+      return c.json({ success: false, message: 'Failed to create assessment from template' }, 500);
     }
   });
 
@@ -1693,12 +1845,8 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
             </div>
             
             <label class="block text-sm font-medium text-gray-700 mb-2 mt-4">Assessment Owner</label>
-            <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full">
-              <option value="">Select Owner</option>
-              <option value="self">Myself</option>
-              <option value="team_lead">Team Lead</option>
-              <option value="compliance_manager">Compliance Manager</option>
-              <option value="external_auditor">External Auditor</option>
+            <select id="wizard-owner-select" class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full">
+              <option value="">Loading risk owners...</option>
             </select>
           </div>
         </div>
@@ -1911,37 +2059,93 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
 
   <!-- Templates Modal -->
   <div id="templatesModal" class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
-    <div class="relative top-20 mx-auto p-6 border max-w-4xl shadow-2xl rounded-xl bg-white">
+    <div class="relative top-20 mx-auto p-6 border max-w-5xl shadow-2xl rounded-xl bg-white">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-gray-900">Assessment Templates</h2>
         <button onclick="closeTemplatesModal()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="p-4 border border-gray-200 rounded-lg hover:shadow-md cursor-pointer">
-          <h3 class="font-semibold text-gray-900 mb-2">SOC 2 Type II</h3>
-          <p class="text-sm text-gray-600 mb-3">Complete SOC 2 assessment with all trust service criteria</p>
-          <div class="flex justify-between items-center">
-            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">114 controls</span>
-            <button class="text-blue-600 hover:text-blue-900 text-sm">Use Template</button>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+              <i class="fas fa-shield-alt text-blue-600"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-900">SOC 2 Type II</h3>
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">114 controls</span>
+            </div>
           </div>
+          <p class="text-sm text-gray-600 mb-4">Complete SOC 2 assessment with all trust service criteria covering security, availability, processing integrity, confidentiality, and privacy.</p>
+          <div class="space-y-2 mb-4">
+            <div class="text-xs text-gray-500">⏱️ Estimated Duration: 6-8 weeks</div>
+            <div class="text-xs text-gray-500">📊 Complexity: High</div>
+            <div class="text-xs text-gray-500">🎯 Best for: External Audits</div>
+          </div>
+          <button onclick="useTemplate('SOC 2 Type II')" 
+                  class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            Use Template
+          </button>
         </div>
         
-        <div class="p-4 border border-gray-200 rounded-lg hover:shadow-md cursor-pointer">
-          <h3 class="font-semibold text-gray-900 mb-2">ISO 27001:2022</h3>
-          <p class="text-sm text-gray-600 mb-3">Updated ISO 27001 controls with latest requirements</p>
-          <div class="flex justify-between items-center">
-            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">93 controls</span>
-            <button class="text-blue-600 hover:text-blue-900 text-sm">Use Template</button>
+        <div class="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+              <i class="fas fa-certificate text-green-600"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-900">ISO 27001:2022</h3>
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">93 controls</span>
+            </div>
           </div>
+          <p class="text-sm text-gray-600 mb-4">Updated ISO 27001 controls with latest requirements for information security management systems and risk-based approach.</p>
+          <div class="space-y-2 mb-4">
+            <div class="text-xs text-gray-500">⏱️ Estimated Duration: 4-6 weeks</div>
+            <div class="text-xs text-gray-500">📊 Complexity: Medium</div>
+            <div class="text-xs text-gray-500">🎯 Best for: Internal Audits</div>
+          </div>
+          <button onclick="useTemplate('ISO 27001:2022')" 
+                  class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            Use Template
+          </button>
         </div>
         
-        <div class="p-4 border border-gray-200 rounded-lg hover:shadow-md cursor-pointer">
-          <h3 class="font-semibold text-gray-900 mb-2">NIST CSF 2.0</h3>
-          <p class="text-sm text-gray-600 mb-3">Cybersecurity Framework with govern function</p>
-          <div class="flex justify-between items-center">
-            <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">164 controls</span>
-            <button class="text-blue-600 hover:text-blue-900 text-sm">Use Template</button>
+        <div class="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition-shadow">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+              <i class="fas fa-network-wired text-purple-600"></i>
+            </div>
+            <div>
+              <h3 class="font-semibold text-gray-900">NIST CSF 2.0</h3>
+              <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">164 controls</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-600 mb-4">Cybersecurity Framework with govern function, including identify, protect, detect, respond, and recover capabilities.</p>
+          <div class="space-y-2 mb-4">
+            <div class="text-xs text-gray-500">⏱️ Estimated Duration: 8-10 weeks</div>
+            <div class="text-xs text-gray-500">📊 Complexity: High</div>
+            <div class="text-xs text-gray-500">🎯 Best for: Self Assessment</div>
+          </div>
+          <button onclick="useTemplate('NIST CSF 2.0')" 
+                  class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            Use Template
+          </button>
+        </div>
+      </div>
+      
+      <!-- Quick Assignment Section -->
+      <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-semibold text-gray-900 mb-3">Quick Assignment</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Assessment Owner</label>
+            <select id="template-owner-select" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="">Loading risk owners...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+            <input type="date" id="template-due-date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
           </div>
         </div>
       </div>
@@ -1990,6 +2194,8 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
     let selectedAssessmentType = '';
     let selectedTemplate = '';
     let wizardData = {};
+    let riskOwners = [];
+    let frameworks = [];
     
     // View Toggle Functionality
     function toggleView(viewType) {
@@ -2012,6 +2218,46 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
         tableBtn.classList.remove('bg-gray-100', 'text-gray-700');
         cardBtn.classList.add('bg-gray-100', 'text-gray-700');
         cardBtn.classList.remove('bg-blue-100', 'text-blue-700');
+      }
+    }
+    
+    // Load initial data
+    async function loadInitialData() {
+      try {
+        // Load risk owners
+        const ownersResponse = await fetch('/compliance/api/risk-owners');
+        if (ownersResponse.ok) {
+          const ownersData = await ownersResponse.json();
+          riskOwners = ownersData.data || [];
+          populateOwnerDropdowns();
+        }
+        
+        // Load frameworks
+        const frameworksResponse = await fetch('/compliance/api/frameworks');
+        if (frameworksResponse.ok) {
+          const frameworksData = await frameworksResponse.json();
+          frameworks = frameworksData.data || [];
+        }
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    }
+    
+    // Populate owner dropdowns
+    function populateOwnerDropdowns() {
+      const wizardSelect = document.getElementById('wizard-owner-select');
+      const templateSelect = document.getElementById('template-owner-select');
+      
+      const ownerOptions = riskOwners.map(owner => 
+        \`<option value="\${owner.id}">\${owner.full_name || owner.username} (\${owner.role}) - \${owner.owned_risks} risks</option>\`
+      ).join('');
+      
+      if (wizardSelect) {
+        wizardSelect.innerHTML = '<option value="">Select Assessment Owner</option>' + ownerOptions;
+      }
+      
+      if (templateSelect) {
+        templateSelect.innerHTML = '<option value="">Select Assessment Owner</option>' + ownerOptions;
       }
     }
     
@@ -2170,43 +2416,136 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
       });
     });
     
-    function createSmartAssessment() {
-      // Collect wizard data
-      const businessUnits = Array.from(document.querySelectorAll('#wizard-step-2 input[type="checkbox"]:checked')).map(cb => cb.value);
-      const startDate = document.getElementById('start-date').value;
-      const endDate = document.getElementById('end-date').value;
-      
-      wizardData = {
-        assessmentType: selectedAssessmentType,
-        template: selectedTemplate,
-        businessUnits: businessUnits,
-        startDate: startDate,
-        endDate: endDate
-      };
-      
-      // Create assessment with wizard data
-      const templates = {
-        'soc2-quick': { name: 'Quick SOC 2 Assessment', framework: 'SOC 2', controls: 45 },
-        'iso27001-surveillance': { name: 'ISO 27001 Surveillance Audit', framework: 'ISO 27001', controls: 25 },
-        'gdpr-privacy': { name: 'GDPR Privacy Assessment', framework: 'GDPR', controls: 18 },
-        'custom': { name: 'Custom Assessment', framework: 'Custom', controls: 0 }
-      };
-      
-      const template = templates[selectedTemplate];
-      const assessmentName = \`\${template.name} - \${new Date().toLocaleDateString()}\`;
-      
-      // Show success message
-      alert(\`Smart Assessment Created Successfully!\\n\\nName: \${assessmentName}\\nFramework: \${template.framework}\\nControls: \${template.controls}\\nType: \${selectedAssessmentType}\\nBusiness Units: \${businessUnits.join(', ')}\`);
-      
-      closeSmartWizardModal();
-      
-      // In a real implementation, this would call the API
-      setTimeout(() => window.location.reload(), 1000);
+    async function createSmartAssessment() {
+      try {
+        // Collect wizard data
+        const businessUnits = Array.from(document.querySelectorAll('#wizard-step-2 input[type="checkbox"]:checked')).map(cb => cb.value);
+        const criticalSystems = Array.from(document.querySelectorAll('#wizard-step-2 input[type="checkbox"]:checked')).map(cb => cb.value);
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        const ownerId = document.getElementById('wizard-owner-select').value;
+        
+        if (!ownerId) {
+          alert('Please select an assessment owner.');
+          return;
+        }
+        
+        // Create assessment with wizard data
+        const templates = {
+          'soc2-quick': { name: 'Quick SOC 2 Assessment', framework_id: 1, controls: 45 },
+          'iso27001-surveillance': { name: 'ISO 27001 Surveillance Audit', framework_id: 2, controls: 25 },
+          'gdpr-privacy': { name: 'GDPR Privacy Assessment', framework_id: 4, controls: 18 },
+          'custom': { name: 'Custom Assessment', framework_id: null, controls: 0 }
+        };
+        
+        const template = templates[selectedTemplate];
+        const assessmentName = \`\${template.name} - \${new Date().toLocaleDateString()}\`;
+        
+        const assessmentData = {
+          title: assessmentName,
+          description: \`Assessment created using Smart Wizard for \${selectedAssessmentType} assessment type\`,
+          framework_id: template.framework_id,
+          assessment_type: selectedAssessmentType,
+          due_date: endDate,
+          start_date: startDate,
+          owner_id: parseInt(ownerId),
+          business_units: businessUnits,
+          critical_systems: criticalSystems,
+          template_type: selectedTemplate,
+          scope_description: \`Business Units: \${businessUnits.join(', ')}; Critical Systems: \${criticalSystems.join(', ')}\`
+        };
+        
+        // Call API to create assessment
+        const response = await fetch('/compliance/assessments/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(assessmentData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(\`Smart Assessment Created Successfully!\\n\\nName: \${assessmentName}\\nFramework: \${template.name}\\nControls: \${template.controls}\\nType: \${selectedAssessmentType}\\nBusiness Units: \${businessUnits.join(', ')}\`);
+          closeSmartWizardModal();
+          
+          // Refresh the page to show new assessment
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          alert('Error creating assessment: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error creating smart assessment:', error);
+        alert('Error creating assessment: ' + error.message);
+      }
+    }
+    
+    // Use Template function for Templates Modal
+    async function useTemplate(templateName) {
+      try {
+        const ownerId = document.getElementById('template-owner-select').value;
+        const dueDate = document.getElementById('template-due-date').value;
+        
+        if (!ownerId) {
+          alert('Please select an assessment owner.');
+          return;
+        }
+        
+        if (!dueDate) {
+          alert('Please select a due date.');
+          return;
+        }
+        
+        // Call API to create assessment from template
+        const response = await fetch('/compliance/assessments/create-from-template', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            template_name: templateName,
+            framework_name: templateName,
+            owner_id: parseInt(ownerId),
+            due_date: dueDate
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(\`Assessment created successfully from \${templateName} template!\\n\\nAssessment ID: \${result.assessment_id}\\nControls: \${result.data.controls}\\n\\nThe assessment will now appear in your assessments list.\`);
+          closeTemplatesModal();
+          
+          // Refresh the page to show new assessment
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          alert('Error creating assessment from template: ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error using template:', error);
+        alert('Error creating assessment from template: ' + error.message);
+      }
     }
     
     // Modal Functions
     function showTemplatesModal() {
       document.getElementById('templatesModal').classList.remove('hidden');
+      
+      // Populate risk owners if not already loaded
+      if (riskOwners.length === 0) {
+        loadInitialData();
+      } else {
+        populateOwnerDropdowns();
+      }
+      
+      // Set default due date
+      const defaultDueDate = new Date();
+      defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+      const templateDueDateInput = document.getElementById('template-due-date');
+      if (templateDueDateInput) {
+        templateDueDateInput.value = defaultDueDate.toISOString().split('T')[0];
+      }
     }
     
     function closeTemplatesModal() {
@@ -2345,6 +2684,17 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
       
       // Initialize wizard step
       updateWizardStep();
+      
+      // Load risk owners and frameworks
+      loadInitialData();
+      
+      // Set default due date to 30 days from now
+      const defaultDueDate = new Date();
+      defaultDueDate.setDate(defaultDueDate.getDate() + 30);
+      const templateDueDateInput = document.getElementById('template-due-date');
+      if (templateDueDateInput) {
+        templateDueDateInput.value = defaultDueDate.toISOString().split('T')[0];
+      }
     });
   </script>
 `);
