@@ -5,7 +5,7 @@
 
 import { Hono } from 'hono';
 import { html, raw } from 'hono/html';
-import { requireAuth } from './auth-routes';
+import { authMiddleware } from '../middleware/auth-middleware';
 import { UnifiedAIChatbotService } from '../services/unified-ai-chatbot-service';
 import type { CloudflareBindings } from '../types';
 
@@ -13,7 +13,7 @@ export function createEnhancedAIChatRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
   
   // Apply authentication middleware
-  app.use('*', requireAuth);
+  app.use('*', authMiddleware);
   
   // Initialize chatbot service with unified AI providers
   let chatbotService: UnifiedAIChatbotService;
@@ -146,11 +146,10 @@ export function createEnhancedAIChatRoutes() {
     
     return c.json({
       sessionId,
-      messages: context.recentMessages,
+      messages: context.messages,
       metadata: {
         userName: context.userName,
-        userRole: context.userRole,
-        lastActivity: context.lastActivity
+        userRole: context.userRole
       }
     });
   });
@@ -168,11 +167,46 @@ export function createEnhancedAIChatRoutes() {
     }
     
     const context = await chatbotService.getOrCreateContext(sessionId, user.id);
-    context.recentMessages = [];
-    context.semanticMemory?.clear();
-    context.activeIntents = [];
+    context.messages = [];
     
     return c.json({ success: true, message: 'Conversation cleared' });
+  });
+
+  /**
+   * JSON Chat endpoint for widget compatibility
+   */
+  app.post('/chat-json', async (c) => {
+    const user = c.get('user');
+    const { message, sessionId } = await c.req.json();
+    
+    if (!message) {
+      return c.json({ error: 'Message is required' }, 400);
+    }
+    
+    const session = sessionId || `session-${user.id}-${Date.now()}`;
+    const context = await chatbotService.getOrCreateContext(session, user.id);
+    context.userName = user.name || user.username;
+    context.userRole = user.role;
+    
+    // Collect full response
+    let fullResponse = '';
+    
+    try {
+      for await (const chunk of chatbotService.streamResponse(message, context)) {
+        if (chunk.type === 'content') {
+          fullResponse += chunk.content;
+        }
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      fullResponse = `I apologize, but I'm experiencing technical difficulties. Please try again later or contact support if the issue persists.`;
+    }
+    
+    return c.json({
+      response: fullResponse,
+      sessionId: session,
+      timestamp: new Date().toISOString()
+    });
   });
 
   /**
@@ -218,7 +252,7 @@ export function createEnhancedAIChatRoutes() {
  */
 async function handleQuickAction(
   c: any,
-  chatbotService: EnhancedChatbotService,
+  chatbotService: UnifiedAIChatbotService,
   user: any,
   sessionId: string,
   query: string

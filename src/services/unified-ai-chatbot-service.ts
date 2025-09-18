@@ -198,17 +198,33 @@ export class UnifiedAIChatbotService {
     const data: any = {};
     
     try {
-      // Load risk metrics
-      const risks = await this.db.prepare(`
+      // Load ALL risk metrics (not just active) to show complete picture
+      const allRisks = await this.db.prepare(`
         SELECT COUNT(*) as total,
           SUM(CASE WHEN risk_score >= 80 THEN 1 ELSE 0 END) as critical,
           SUM(CASE WHEN risk_score >= 60 AND risk_score < 80 THEN 1 ELSE 0 END) as high,
           SUM(CASE WHEN risk_score >= 40 AND risk_score < 60 THEN 1 ELSE 0 END) as medium,
           SUM(CASE WHEN risk_score < 40 THEN 1 ELSE 0 END) as low,
-          AVG(risk_score) as avg_score
-        FROM risks WHERE status = 'active'
+          AVG(risk_score) as avg_score,
+          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count,
+          SUM(CASE WHEN status = 'mitigated' THEN 1 ELSE 0 END) as mitigated_count,
+          SUM(CASE WHEN status = 'monitoring' THEN 1 ELSE 0 END) as monitoring_count
+        FROM risks
       `).first();
-      data.risks = risks;
+      
+      // Also get critical risks specifically for better context
+      const criticalRisks = await this.db.prepare(`
+        SELECT id, title, risk_score, status
+        FROM risks
+        WHERE risk_score >= 80
+        ORDER BY risk_score DESC
+        LIMIT 5
+      `).all();
+      
+      data.risks = {
+        ...allRisks,
+        critical_list: criticalRisks?.results || []
+      };
 
       // Load compliance status
       const compliance = await this.db.prepare(`
@@ -383,11 +399,14 @@ export class UnifiedAIChatbotService {
       const risks = platformData?.risks || {};
       response = `Based on current platform data:\n\n`;
       response += `📊 **Risk Overview:**\n`;
-      response += `• Total Active Risks: ${risks.total || 0}\n`;
-      response += `• Critical: ${risks.critical || 0} ⚠️\n`;
-      response += `• High: ${risks.high || 0}\n`;
-      response += `• Medium: ${risks.medium || 0}\n`;
-      response += `• Low: ${risks.low || 0}\n`;
+      response += `• Total Risks: ${risks.total || 0}\n`;
+      response += `• Active Risks: ${risks.active_count || 0}\n`;
+      response += `• Status Breakdown: Active (${risks.active_count || 0}), Monitoring (${risks.monitoring_count || 0}), Mitigated (${risks.mitigated_count || 0})\n`;
+      response += `• Risk Levels:\n`;
+      response += `  - Critical: ${risks.critical || 0} ⚠️\n`;
+      response += `  - High: ${risks.high || 0}\n`;
+      response += `  - Medium: ${risks.medium || 0}\n`;
+      response += `  - Low: ${risks.low || 0}\n`;
       response += `• Average Risk Score: ${Math.round(risks.avg_score || 0)}/100\n\n`;
       
       if ((risks.critical || 0) > 0) {
@@ -428,7 +447,7 @@ export class UnifiedAIChatbotService {
     } else if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('help')) {
       response = `👋 Hello ${context.userName || 'there'}! I'm ARIA, your AI security assistant.\n\n`;
       response += `I have access to your real-time platform data and can help you with:\n\n`;
-      response += `• **Risk Analysis** - View and manage ${platformData?.risks?.total || 0} active risks\n`;
+      response += `• **Risk Analysis** - Monitor ${platformData?.risks?.total || 0} total risks (${platformData?.risks?.active_count || 0} active)\n`;
       response += `• **Compliance Monitoring** - Track ${platformData?.compliance?.length || 0} framework requirements\n`;
       response += `• **Threat Intelligence** - Monitor ${platformData?.threats?.total || 0} recent threats\n`;
       response += `• **Incident Response** - Handle ${platformData?.incidents?.open || 0} open incidents\n`;
@@ -461,7 +480,8 @@ export class UnifiedAIChatbotService {
       response = `I understand you're asking about: "${message}"\n\n`;
       response += `Here's your current security status:\n\n`;
       response += `📊 **Security Overview:**\n`;
-      response += `• Active Risks: ${risks.total || 0} (${risks.critical || 0} critical)\n`;
+      response += `• Total Risks: ${risks.total || 0} (Active: ${risks.active_count || 0})\n`;
+      response += `• Risk Severity: Critical (${risks.critical || 0}), High (${risks.high || 0}), Medium (${risks.medium || 0}), Low (${risks.low || 0})\n`;
       response += `• Recent Threats: ${threats.total || 0} (${threats.critical || 0} critical)\n`;
       response += `• Open Incidents: ${incidents.open || 0}\n`;
       response += `• Compliance Frameworks: ${platformData?.compliance?.length || 0}\n\n`;
@@ -490,7 +510,8 @@ export class UnifiedAIChatbotService {
 You have access to real-time platform data and should provide specific, actionable advice.
 
 Current Platform Metrics:
-- Active Risks: ${platformData?.risks?.total || 0} (Critical: ${platformData?.risks?.critical || 0}, High: ${platformData?.risks?.high || 0})
+- Total Risks: ${platformData?.risks?.total || 0} (Active: ${platformData?.risks?.active_count || 0}, Monitoring: ${platformData?.risks?.monitoring_count || 0}, Mitigated: ${platformData?.risks?.mitigated_count || 0})
+- Risk Distribution: Critical: ${platformData?.risks?.critical || 0}, High: ${platformData?.risks?.high || 0}, Medium: ${platformData?.risks?.medium || 0}, Low: ${platformData?.risks?.low || 0}
 - Average Risk Score: ${Math.round(platformData?.risks?.avg_score || 0)}/100
 - Compliance Frameworks: ${platformData?.compliance?.length || 0} configured
 - Recent Threats: ${platformData?.threats?.total || 0} (Critical: ${platformData?.threats?.critical || 0})

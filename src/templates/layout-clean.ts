@@ -787,7 +787,9 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
   </style>
 
   <script>
-    // Enhanced Chatbot Widget with Modern Features
+    // Legacy chatbot implementation removed - using external enhanced-chatbot.js
+    // This prevents conflicts with the EnhancedARIAChatbot class
+    /*
     class EnhancedChatbot {
       constructor() {
         this.isOpen = false;
@@ -966,7 +968,7 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         
         try {
           // Enhanced API call with context and cache-busting
-          const response = await fetch('/ai/chat-json', {
+          const response = await fetch('/ai/chat-stream', {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
@@ -1338,6 +1340,7 @@ export const cleanLayout = ({ title, content, user }: LayoutProps) => html`
         }
       }
     }
+    */
 
     // Mobile Menu Functionality
     window.ARIA5.initMobileMenu = function() {
@@ -1546,13 +1549,7 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Register new threat</div>
                   </div>
                 </a>
-                <a href="/risk/assessments" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700">
-                  <i class="fas fa-clipboard-check w-5 text-yellow-500 mr-3"></i>
-                  <div>
-                    <div class="font-medium">Assessments</div>
-                    <div class="text-xs text-gray-500">Risk evaluations</div>
-                  </div>
-                </a>
+
                 <a href="/risk-controls" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700">
                   <i class="fas fa-link w-5 text-purple-500 mr-3"></i>
                   <div>
@@ -1662,7 +1659,8 @@ const renderCleanNavigation = (user: any) => html`
             </div>
           </div>
           
-          <!-- Advanced Analytics Dropdown -->
+          <!-- Advanced Analytics Dropdown - HIDDEN FOR FUTURE ENHANCEMENT -->
+          <!-- 
           <div class="relative" data-dropdown>
             <button data-dropdown-button class="flex items-center space-x-1 text-gray-700 hover:text-purple-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
               <i class="fas fa-brain mr-1"></i>
@@ -1702,6 +1700,7 @@ const renderCleanNavigation = (user: any) => html`
               </div>
             </div>
           </div>
+          -->
 
           
           <!-- Admin (if admin user) -->

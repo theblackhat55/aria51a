@@ -1093,6 +1093,74 @@ Please provide a comprehensive response based on the current platform data and y
     `);
   });
 
+  // Missing HTMX endpoints that are referenced in the UI
+  
+  // Risk Analysis endpoint
+  app.post('/analyze-risks', async (c) => {
+    const user = c.get('user');
+    const response = await generateEnhancedFallbackResponse('Analyze my current risk landscape and provide comprehensive risk assessment', user, c.env.DB);
+    
+    return c.html(html`
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-robot text-red-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg px-4 py-3">
+            <div class="text-gray-800 text-sm whitespace-pre-line">${response}</div>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">ARIA • Risk Analysis • Just now</p>
+        </div>
+      </div>
+    `);
+  });
+
+  // Compliance Check endpoint
+  app.post('/compliance-check', async (c) => {
+    const user = c.get('user');
+    const response = await generateEnhancedFallbackResponse('Review our compliance status across all frameworks and identify gaps', user, c.env.DB);
+    
+    return c.html(html`
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-robot text-green-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg px-4 py-3">
+            <div class="text-gray-800 text-sm whitespace-pre-line">${response}</div>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">ARIA • Compliance Analysis • Just now</p>
+        </div>
+      </div>
+    `);
+  });
+
+  // Recommendations endpoint
+  app.post('/recommendations', async (c) => {
+    const user = c.get('user');
+    const response = await generateEnhancedFallbackResponse('Provide security recommendations based on our current security posture and identified risks', user, c.env.DB);
+    
+    return c.html(html`
+      <div class="flex items-start space-x-3">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-robot text-yellow-600 text-sm"></i>
+          </div>
+        </div>
+        <div class="flex-1">
+          <div class="bg-gray-100 rounded-lg px-4 py-3">
+            <div class="text-gray-800 text-sm whitespace-pre-line">${response}</div>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">ARIA • Recommendations • Just now</p>
+        </div>
+      </div>
+    `);
+  });
+
   return app;
 }
 
