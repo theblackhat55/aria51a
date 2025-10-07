@@ -26,7 +26,8 @@ export function createBusinessUnitsRoutes() {
   // Apply authentication middleware to most routes
   app.use('*', async (c, next) => {
     // Bypass auth for the services list endpoint used by risk form HTMX
-    if (c.req.path === '/operations/api/services/list-for-risk') {
+    const path = c.req.path;
+    if (path.includes('/api/services/list-for-risk')) {
       return next();
     }
     return requireAuth(c, next);
