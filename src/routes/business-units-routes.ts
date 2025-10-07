@@ -21,77 +21,7 @@ type CloudflareBindings = {
 export function createBusinessUnitsRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
   
-  // IMPORTANT: Define public endpoints BEFORE auth middleware
-  // Get services list for risk form (returns HTML checkboxes) - PUBLIC endpoint
-  app.get('/api/services/list-for-risk', async (c) => {
-    const db = c.env.DB;
-    
-    if (!db) {
-      return c.html('<div class="text-sm text-red-600">Database not available</div>');
-    }
-
-    try {
-      const result = await db.prepare(`
-        SELECT 
-          s.id, s.name, s.service_category, s.business_department,
-          s.criticality_score
-        FROM services s
-        WHERE s.service_status = 'Active'
-        ORDER BY s.criticality_score DESC, s.name
-      `).all();
-
-      const services = result.results || [];
-      
-      if (services.length === 0) {
-        return c.html(`
-          <div class="text-sm text-gray-500 text-center py-4">
-            <i class="fas fa-info-circle mr-1"></i>
-            No active services available. Please create services first.
-          </div>
-        `);
-      }
-
-      return c.html(html`
-        ${services.map((service: any) => html`
-          <div class="flex items-center p-3 bg-white rounded border mb-2 hover:bg-gray-50">
-            <input type="checkbox" 
-                   name="affected_services[]" 
-                   value="${service.id}" 
-                   id="service_${service.id}"
-                   class="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-            <label for="service_${service.id}" class="flex-1 cursor-pointer">
-              <div class="font-medium text-gray-900">${service.name}</div>
-              <div class="text-sm text-gray-600">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                  service.criticality_score >= 4 ? 'bg-red-100 text-red-800' :
-                  service.criticality_score >= 3 ? 'bg-orange-100 text-orange-800' :
-                  service.criticality_score >= 2 ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-green-100 text-green-800'
-                }">
-                  ${service.criticality_score >= 4 ? 'Critical' :
-                    service.criticality_score >= 3 ? 'High' :
-                    service.criticality_score >= 2 ? 'Medium' : 'Low'}
-                </span>
-                <span class="ml-2">${service.service_category || 'N/A'}</span>
-                <span class="mx-1">•</span>
-                <span>${service.business_department || 'N/A'}</span>
-              </div>
-            </label>
-          </div>
-        `).join('')}
-      `);
-    } catch (error) {
-      console.error('Error fetching services for risk:', error);
-      return c.html(`
-        <div class="text-sm text-red-600">
-          <i class="fas fa-exclamation-triangle mr-1"></i>
-          Error loading services: ${error.message}
-        </div>
-      `);
-    }
-  });
-  
-  // Apply authentication middleware to all other routes
+  // Apply authentication middleware to all routes
   app.use('*', requireAuth);
 
   /**

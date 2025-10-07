@@ -9,75 +9,7 @@ import type { CloudflareBindings } from '../types';
 export function createOperationsRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
   
-  // IMPORTANT: Define public/HTMX endpoints BEFORE auth middleware
-  
-  // API endpoint to render services list for risk forms (HTML response) - NO AUTH REQUIRED
-  // This endpoint is called by HTMX from the risk creation form
-  app.get('/api/services/list-for-risk', async (c) => {
-    try {
-      const db = c.env.DB;
-      if (!db) {
-        return c.html('<div class="text-sm text-red-600">Database not available</div>');
-      }
-
-      // Query services directly here to avoid hoisting issues
-      const result = await db.prepare(`
-        SELECT 
-          s.*,
-          (SELECT COUNT(*) FROM service_asset_links sal WHERE sal.service_id = s.service_id) as dependency_count,
-          (SELECT COUNT(*) FROM service_risk_links srl WHERE srl.service_id = s.service_id) as risk_count
-        FROM services s 
-        WHERE s.service_status = 'Active'
-        ORDER BY s.criticality_score DESC, s.created_at DESC
-      `).all();
-      
-      const services = result.results || [];
-      console.log('📊 Found services:', services.length);
-      
-      if (services.length === 0) {
-        return c.html(`
-          <div class="text-sm text-gray-500 text-center py-4">
-            <i class="fas fa-info-circle mr-2"></i>
-            No services found. <a href="/operations/services" class="text-blue-600 hover:text-blue-700 underline">Add services first</a>.
-          </div>
-        `);
-      }
-      
-      const servicesHtml = services.map((service: any) => `
-        <label class="flex items-start gap-3 p-3 bg-white border border-green-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
-          <input type="checkbox" name="affected_services[]" value="${service.service_id}" 
-                 class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-          <div class="flex-1">
-            <div class="text-sm font-semibold text-gray-800">${service.name}</div>
-            <div class="text-xs text-gray-500">
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                service.criticality_score >= 4 ? 'bg-red-100 text-red-800' :
-                service.criticality_score >= 3 ? 'bg-orange-100 text-orange-800' :
-                service.criticality_score >= 2 ? 'bg-yellow-100 text-yellow-800' :
-                'bg-green-100 text-green-800'
-              }">
-                ${service.criticality || 'Medium'}
-              </span>
-              <span class="mx-1">•</span>
-              ${service.business_department || 'Unknown Dept'}
-            </div>
-          </div>
-        </label>
-      `).join('');
-      
-      return c.html(`<div class="space-y-2">${servicesHtml}</div>`);
-    } catch (error) {
-      console.error('❌ Error in service list API:', error);
-      return c.html(`
-        <div class="text-sm text-red-600 text-center py-4">
-          <i class="fas fa-exclamation-triangle mr-2"></i>
-          Error loading services: ${error.message}
-        </div>
-      `);
-    }
-  });
-  
-  // Apply authentication middleware to all OTHER routes
+  // Apply authentication middleware to all routes - NO BYPASS
   app.use('*', requireAuth);
   
   // Main operations dashboard
