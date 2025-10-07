@@ -136,10 +136,10 @@ export function createRiskRoutesARIA5() {
       const result = await c.env.DB.prepare(`
         SELECT 
           COUNT(*) as total,
-          SUM(CASE WHEN COALESCE(inherent_risk, probability * impact) >= 20 THEN 1 ELSE 0 END) as critical,
-          SUM(CASE WHEN COALESCE(inherent_risk, probability * impact) >= 12 AND COALESCE(inherent_risk, probability * impact) < 20 THEN 1 ELSE 0 END) as high,
-          SUM(CASE WHEN COALESCE(inherent_risk, probability * impact) >= 6 AND COALESCE(inherent_risk, probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
-          SUM(CASE WHEN COALESCE(inherent_risk, probability * impact) < 6 THEN 1 ELSE 0 END) as low
+          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 20 THEN 1 ELSE 0 END) as critical,
+          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 12 AND COALESCE(risk_score, probability * impact) < 20 THEN 1 ELSE 0 END) as high,
+          SUM(CASE WHEN COALESCE(risk_score, probability * impact) >= 6 AND COALESCE(risk_score, probability * impact) < 12 THEN 1 ELSE 0 END) as medium,
+          SUM(CASE WHEN COALESCE(risk_score, probability * impact) < 6 THEN 1 ELSE 0 END) as low
         FROM risks
       `).first();
       console.log('✅ Stats from comprehensive risks table');
@@ -166,102 +166,37 @@ export function createRiskRoutesARIA5() {
   // Risk table (HTMX endpoint) - EMERGENCY FIX: Use simple table
   app.get('/table', async (c) => {
     try {
-      console.log('📋 Fetching risks from comprehensive database...');
+      console.log('🚨 EMERGENCY FIX: Simple query for all risks');
       
-      // Get filter parameters
-      const search = c.req.query('search') || '';
-      const status = c.req.query('status') || '';
-      const category = c.req.query('category') || '';
-      const risk_level = c.req.query('risk_level') || '';
-      
-      // Build WHERE clause
-      let whereConditions: string[] = [];
-      let params: any[] = [];
-      
-      if (search) {
-        whereConditions.push('(r.title LIKE ? OR r.description LIKE ?)');
-        params.push(`%${search}%`, `%${search}%`);
-      }
-      
-      if (status) {
-        whereConditions.push('r.status = ?');
-        params.push(status);
-      }
-      
-      if (category) {
-        whereConditions.push('LOWER(r.category) = ?');
-        params.push(category.toLowerCase());
-      }
-      
-      if (risk_level) {
-        if (risk_level === 'critical') {
-          whereConditions.push('COALESCE(r.inherent_risk, r.probability * r.impact) >= 20');
-        } else if (risk_level === 'high') {
-          whereConditions.push('COALESCE(r.inherent_risk, r.probability * r.impact) >= 12 AND COALESCE(r.inherent_risk, r.probability * r.impact) < 20');
-        } else if (risk_level === 'medium') {
-          whereConditions.push('COALESCE(r.inherent_risk, r.probability * r.impact) >= 6 AND COALESCE(r.inherent_risk, r.probability * r.impact) < 12');
-        } else if (risk_level === 'low') {
-          whereConditions.push('COALESCE(r.inherent_risk, r.probability * r.impact) < 6');
-        }
-      }
-      
-      const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
-      
-      // Use comprehensive risks table directly for consistency
+      // EMERGENCY: Simple working query
       const result = await c.env.DB.prepare(`
         SELECT 
-          r.id,
-          r.title,
-          r.description,
-          r.category,
-          r.subcategory,
-          r.probability,
-          r.impact,
-          COALESCE(r.inherent_risk, r.probability * r.impact) as risk_score,
-          r.status,
-          r.organization_id,
-          r.owner_id,  
-          r.created_by,
-          r.source,
-          r.affected_assets,
-          r.review_date,
-          r.created_at,
-          r.updated_at,
+          id, title, description, category, status, 
+          probability, impact, risk_score,
+          owner_id, created_at,
+          category as category_name,
           CASE 
-            WHEN r.owner_id = 1 THEN 'Admin User'
-            WHEN r.owner_id = 2 THEN 'Avi Adiyala' 
-            WHEN r.owner_id = 3 THEN 'Sarah Johnson'
-            WHEN r.owner_id = 4 THEN 'Michael Torres'
+            WHEN owner_id = 1 THEN 'Admin User'
+            WHEN owner_id = 2 THEN 'Avi Adiyala'  
             ELSE 'Unknown User'
-          END as owner_name,
-          r.category as category_name
-        FROM risks r
-        ${whereClause}
-        ORDER BY COALESCE(r.inherent_risk, r.probability * r.impact) DESC, r.created_at DESC
-        LIMIT 50
-      `).bind(...params).all();
-      console.log('✅ Successfully fetched from comprehensive risks table');
-
+          END as owner_name
+        FROM risks 
+        ORDER BY risk_score DESC 
+        LIMIT 20
+      `).all();
+      
+      console.log('🚨 Raw DB result:', result);
       const risks = result.results || [];
-      console.log('📊 Found', risks.length, 'risks');
+      console.log('🚨 Risks found:', risks.length);
       
       if (risks.length === 0) {
-        console.log('🔍 No risks found, checking if we need to populate from seed data...');
-        
-        // Check if we have any risks at all (including from seed data)
-        const totalCount = await c.env.DB.prepare('SELECT COUNT(*) as count FROM risks').first();
-        console.log('📊 Total risks in database:', totalCount?.count || 0);
-        
-        if ((totalCount?.count || 0) === 0) {
-          console.log('💾 No risks found in database, they should be populated from seed data');
-          return c.html(renderEmptyRiskTable());
-        }
-        
-        // If we have risks but none are active, show empty table
-        return c.html(renderEmptyRiskTable());
+        console.log('🚨 No risks found - returning empty table');
+        return c.html(`<div>No risks found in database</div>`);
       }
       
+      console.log('🚨 Rendering table with', risks.length, 'risks');
       return c.html(renderRiskTable(risks));
+
     } catch (error) {
       console.error('Error fetching risk table data:', error);
       return c.html(renderRiskTable([]));
@@ -660,7 +595,7 @@ Be practical and actionable in your analysis.`;
       const risk = await c.env.DB.prepare(`
         SELECT 
           r.*,
-          COALESCE(r.probability * r.impact, r.inherent_risk) as risk_score,
+          COALESCE(r.risk_score, r.probability * r.impact) as risk_score,
           CASE 
             WHEN r.category = 'operational' THEN 'Operational'
             WHEN r.category = 'financial' THEN 'Financial' 
@@ -1172,16 +1107,22 @@ Be practical and actionable in your analysis.`;
   });
 
   // Edit risk modal
-  // INCIDENT MANAGEMENT ROUTES
+  // INCIDENT MANAGEMENT ROUTES - Enhanced with MS Defender Integration
   app.get('/incidents', async (c) => {
     const user = c.get('user');
     
     try {
+      // Fetch incident statistics from defender_incidents table
+      const statsData = await getIncidentStatistics(c.env.DB);
+      
+      // Fetch recent incidents from defender_incidents table
+      const recentIncidents = await getRecentIncidents(c.env.DB);
+      
       return c.html(
         cleanLayout({
           title: 'Security Incidents',
           user,
-          content: renderIncidentsPage()
+          content: renderIncidentsPage(statsData, recentIncidents)
         })
       );
     } catch (error) {
@@ -1216,32 +1157,41 @@ Be practical and actionable in your analysis.`;
       // Fetch KRIs from database
       const kris = await c.env.DB.prepare(`
         SELECT 
-          id,
-          name,
-          description,
-          threshold_value,
-          current_value,
-          measurement_unit,
-          frequency,
-          owner,
-          status,
-          category,
-          risk_appetite,
-          created_at,
-          updated_at,
+          k.id,
+          k.risk_id,
+          k.name,
+          k.description,
+          k.metric_type,
+          k.threshold_value,
+          k.current_value,
+          k.threshold_direction,
+          k.frequency,
+          k.owner_id,
+          k.status,
+          k.last_measured,
+          k.created_at,
+          k.updated_at,
+          r.title as risk_title,
+          u.first_name || ' ' || u.last_name as owner_name,
           CASE 
-            WHEN current_value > threshold_value THEN 'BREACHED'
-            WHEN current_value > (threshold_value * 0.8) THEN 'WARNING'
+            WHEN k.threshold_direction = 'above' AND k.current_value > k.threshold_value THEN 'BREACHED'
+            WHEN k.threshold_direction = 'below' AND k.current_value < k.threshold_value THEN 'BREACHED'
+            WHEN k.threshold_direction = 'above' AND k.current_value > (k.threshold_value * 0.8) THEN 'WARNING'
+            WHEN k.threshold_direction = 'below' AND k.current_value < (k.threshold_value * 1.2) THEN 'WARNING'
             ELSE 'NORMAL'
           END as alert_status
-        FROM kris
+        FROM kris k
+        LEFT JOIN risks r ON k.risk_id = r.id
+        LEFT JOIN users u ON k.owner_id = u.id
         ORDER BY 
           CASE 
-            WHEN current_value > threshold_value THEN 1
-            WHEN current_value > (threshold_value * 0.8) THEN 2
+            WHEN (k.threshold_direction = 'above' AND k.current_value > k.threshold_value) OR 
+                 (k.threshold_direction = 'below' AND k.current_value < k.threshold_value) THEN 1
+            WHEN (k.threshold_direction = 'above' AND k.current_value > (k.threshold_value * 0.8)) OR
+                 (k.threshold_direction = 'below' AND k.current_value < (k.threshold_value * 1.2)) THEN 2
             ELSE 3
           END,
-          name ASC
+          k.name ASC
       `).all();
       
       const kriList = kris.results || [];
@@ -1346,7 +1296,7 @@ Be practical and actionable in your analysis.`;
                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Value</th>
                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Threshold</th>
                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
                           <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -1375,12 +1325,12 @@ Be practical and actionable in your analysis.`;
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                               <div class="text-sm font-medium text-gray-900">
-                                ${kri.current_value || 0} ${kri.measurement_unit || ''}
+                                ${kri.current_value || 0} ${kri.metric_type || ''}
                               </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                               <div class="text-sm text-gray-900">
-                                ${kri.threshold_value || 0} ${kri.measurement_unit || ''}
+                                ${kri.threshold_value || 0} ${kri.metric_type || ''} (${kri.threshold_direction || 'above'})
                               </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -1398,10 +1348,10 @@ Be practical and actionable in your analysis.`;
                               </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              ${kri.category || 'General'}
+                              ${kri.risk_title || 'No Risk Linked'}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              ${kri.owner || 'Unassigned'}
+                              ${kri.owner_name || 'Unassigned'}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div class="flex space-x-2">
@@ -2935,7 +2885,7 @@ const renderRiskTable = (risks: any[]) => {
   }
 
   const riskRows = risks.map(risk => {
-    const riskScore = risk.inherent_risk || risk.risk_score || (risk.probability * risk.impact);
+    const riskScore = risk.risk_score || (risk.probability * risk.impact);
     const riskLevel = getRiskLevel(riskScore);
     const riskColor = getRiskColorClass(riskLevel);
     
@@ -3090,7 +3040,7 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
               class="p-6 space-y-6">
           
           <!-- CSRF Token -->
-          <input type="hidden" name="csrf_token" value="${csrfToken || ''}"
+          <input type="hidden" name="csrf_token" value="${csrfToken || ''}">
           
           <!-- 1. Risk Identification Section -->
           <div class="space-y-4">
@@ -3810,8 +3760,94 @@ function renderEditRiskModal(risk: any, csrfToken: string) {
   `;
 }
 
+// INCIDENT MANAGEMENT HELPER FUNCTIONS
+
+/**
+ * Get incident statistics from MS Defender incidents table
+ */
+async function getIncidentStatistics(db: any) {
+  try {
+    // Get counts by severity and status
+    const stats = await db.prepare(`
+      SELECT 
+        COUNT(*) as total_incidents,
+        SUM(CASE WHEN severity = 'Critical' THEN 1 ELSE 0 END) as critical_incidents,
+        SUM(CASE WHEN status IN ('Active', 'InProgress') THEN 1 ELSE 0 END) as open_incidents,
+        SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved_incidents
+      FROM defender_incidents
+    `).first();
+    
+    // Calculate average response time for resolved incidents
+    const avgResponseTime = await db.prepare(`
+      SELECT 
+        ROUND(
+          AVG(
+            (julianday(COALESCE(resolved_time, datetime('now'))) - julianday(created_time)) * 24
+          ), 1
+        ) as avg_hours
+      FROM defender_incidents 
+      WHERE resolved_time IS NOT NULL
+    `).first();
+    
+    return {
+      totalIncidents: stats?.total_incidents || 0,
+      criticalIncidents: stats?.critical_incidents || 0,
+      openIncidents: stats?.open_incidents || 0,
+      resolvedIncidents: stats?.resolved_incidents || 0,
+      avgResponseTime: avgResponseTime?.avg_hours || 0
+    };
+  } catch (error) {
+    console.error('Error fetching incident statistics:', error);
+    return {
+      totalIncidents: 0,
+      criticalIncidents: 0,
+      openIncidents: 0,
+      resolvedIncidents: 0,
+      avgResponseTime: 0
+    };
+  }
+}
+
+/**
+ * Get recent incidents from MS Defender incidents table
+ */
+async function getRecentIncidents(db: any) {
+  try {
+    const incidents = await db.prepare(`
+      SELECT 
+        incident_id,
+        incident_name,
+        severity,
+        status,
+        classification,
+        assigned_to,
+        alerts_count,
+        entities_count,
+        created_time,
+        last_update_time,
+        resolved_time,
+        description
+      FROM defender_incidents
+      ORDER BY created_time DESC
+      LIMIT 20
+    `).all();
+    
+    return incidents?.results || [];
+  } catch (error) {
+    console.error('Error fetching recent incidents:', error);
+    return [];
+  }
+}
+
 // INCIDENT MANAGEMENT RENDER FUNCTIONS
-const renderIncidentsPage = () => html`
+const renderIncidentsPage = (stats: any = {}, incidents: any[] = []) => {
+  const {
+    criticalIncidents = 0,
+    openIncidents = 0,
+    avgResponseTime = 0
+  } = stats;
+
+  return html`
   <div class="min-h-screen bg-gray-50 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="mb-8 flex items-center justify-between">
@@ -3822,10 +3858,16 @@ const renderIncidentsPage = () => html`
           </h1>
           <p class="mt-2 text-lg text-gray-600">Monitor and manage security incidents and breaches</p>
         </div>
-        <a href="/risk/incidents/new" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
-          <i class="fas fa-plus mr-2"></i>
-          Report Incident
-        </a>
+        <div class="flex space-x-3">
+          <button onclick="refreshIncidents()" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <i class="fas fa-sync-alt mr-2"></i>
+            Refresh
+          </button>
+          <a href="/risk/incidents/new" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+            <i class="fas fa-plus mr-2"></i>
+            Report Incident
+          </a>
+        </div>
       </div>
 
       <!-- Incidents Overview Cards -->
@@ -3839,7 +3881,7 @@ const renderIncidentsPage = () => html`
               <div class="ml-5 w-0 flex-1">
                 <dl>
                   <dt class="text-sm font-medium text-gray-500 truncate">Critical Incidents</dt>
-                  <dd class="text-lg font-medium text-gray-900">3</dd>
+                  <dd class="text-lg font-medium text-gray-900">${criticalIncidents}</dd>
                 </dl>
               </div>
             </div>
@@ -3855,7 +3897,7 @@ const renderIncidentsPage = () => html`
               <div class="ml-5 w-0 flex-1">
                 <dl>
                   <dt class="text-sm font-medium text-gray-500 truncate">Open Incidents</dt>
-                  <dd class="text-lg font-medium text-gray-900">12</dd>
+                  <dd class="text-lg font-medium text-gray-900">${openIncidents}</dd>
                 </dl>
               </div>
             </div>
@@ -3871,7 +3913,7 @@ const renderIncidentsPage = () => html`
               <div class="ml-5 w-0 flex-1">
                 <dl>
                   <dt class="text-sm font-medium text-gray-500 truncate">Avg Response Time</dt>
-                  <dd class="text-lg font-medium text-gray-900">4.2 hrs</dd>
+                  <dd class="text-lg font-medium text-gray-900">${avgResponseTime} hrs</dd>
                 </dl>
               </div>
             </div>
@@ -3881,8 +3923,9 @@ const renderIncidentsPage = () => html`
 
       <!-- Incidents Table -->
       <div class="bg-white shadow overflow-hidden rounded-lg">
-        <div class="px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">Recent Incidents</h2>
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 class="text-lg font-semibold text-gray-900">Recent Incidents from MS Defender</h2>
+          <span class="text-sm text-gray-500">${incidents.length} incidents loaded</span>
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
@@ -3892,24 +3935,138 @@ const renderIncidentsPage = () => html`
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alerts</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                  <i class="fas fa-shield-alt text-gray-300 text-3xl mb-2"></i>
-                  <div>No incidents reported. <a href="/risk/incidents/new" class="text-red-600 hover:text-red-800">Report the first incident</a>.</div>
-                </td>
-              </tr>
+              ${incidents.length === 0 ? html`
+                <tr>
+                  <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-shield-alt text-gray-300 text-3xl mb-2"></i>
+                    <div>No incidents imported from MS Defender. <a href="/risk/incidents/new" class="text-red-600 hover:text-red-800">Report the first incident</a>.</div>
+                  </td>
+                </tr>
+              ` : raw(incidents.map(incident => renderIncidentRow(incident)).join(''))}
             </tbody>
           </table>
         </div>
       </div>
     </div>
   </div>
-`;
+
+  <script>
+    function refreshIncidents() {
+      window.location.reload();
+    }
+    
+    function viewIncident(incidentId) {
+      window.open('/risk/incidents/' + incidentId, '_blank');
+    }
+    
+    function openIncidentDetails(incidentId) {
+      // Open incident details in a modal or new window
+      // For now, we'll just show an alert with the incident ID
+      alert('Opening incident details for: ' + incidentId);
+      // TODO: Implement proper incident details modal or page
+    }
+  </script>
+`;}
+
+/**
+ * Render individual incident row for the table
+ */
+function renderIncidentRow(incident: any) {
+  const severityClass = getSeverityClass(incident.severity);
+  const statusClass = getStatusClass(incident.status);
+  const createdDate = new Date(incident.created_time).toLocaleDateString();
+  const createdTime = new Date(incident.created_time).toLocaleTimeString();
+  
+  return `
+    <tr class="hover:bg-gray-50">
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        ${incident.incident_id}
+      </td>
+      <td class="px-6 py-4 text-sm text-gray-900">
+        <div class="max-w-xs truncate" title="${incident.incident_name}">
+          ${incident.incident_name}
+        </div>
+        ${incident.description ? `<div class="text-xs text-gray-500 mt-1 max-w-xs truncate" title="${incident.description}">${incident.description}</div>` : ''}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${severityClass}">
+          ${incident.severity}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap">
+        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">
+          ${incident.status}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+        <div class="flex items-center space-x-2">
+          <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+            <i class="fas fa-bell mr-1"></i>
+            ${incident.alerts_count || 0}
+          </span>
+          ${incident.entities_count ? `<span class="inline-flex items-center px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
+            <i class="fas fa-network-wired mr-1"></i>
+            ${incident.entities_count}
+          </span>` : ''}
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        <div>${createdDate}</div>
+        <div class="text-xs">${createdTime}</div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <button onclick="viewIncident('${incident.incident_id}')" class="text-blue-600 hover:text-blue-900 mr-3">
+          <i class="fas fa-eye"></i>
+        </button>
+        <button onclick="openIncidentDetails('${incident.incident_id}')" class="text-indigo-600 hover:text-indigo-900">
+          <i class="fas fa-external-link-alt"></i>
+        </button>
+      </td>
+    </tr>
+  `;
+}
+
+/**
+ * Get CSS class for severity badge
+ */
+function getSeverityClass(severity: string) {
+  switch (severity?.toLowerCase()) {
+    case 'critical':
+      return 'bg-red-100 text-red-800';
+    case 'high':
+      return 'bg-orange-100 text-orange-800';
+    case 'medium':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'low':
+      return 'bg-green-100 text-green-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+/**
+ * Get CSS class for status badge
+ */
+function getStatusClass(status: string) {
+  switch (status?.toLowerCase()) {
+    case 'active':
+      return 'bg-red-100 text-red-800';
+    case 'inprogress':
+      return 'bg-blue-100 text-blue-800';
+    case 'resolved':
+      return 'bg-green-100 text-green-800';
+    case 'closed':
+      return 'bg-gray-100 text-gray-800';
+    default:
+      return 'bg-yellow-100 text-yellow-800';
+  }
+}
 
 const renderNewIncidentPage = (error?: string) => html`
   <div class="min-h-screen bg-gray-50 py-8">

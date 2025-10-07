@@ -71,17 +71,9 @@ export function createOperationsRoutes() {
     );
   });
 
-  // Microsoft Defender Integration
+  // Microsoft Defender Integration - Redirect to enhanced routes
   app.get('/defender', async (c) => {
-    const user = c.get('user');
-    
-    return c.html(
-      cleanLayout({
-        title: 'Microsoft Defender Integration',
-        user,
-        content: renderDefenderIntegration()
-      })
-    );
+    return c.redirect('/ms-defender');
   });
 
   // Stats API endpoints for dashboard
@@ -677,14 +669,22 @@ export function createOperationsRoutes() {
       console.log('📊 Found services:', services.length);
       
       const servicesHtml = services.map(service => `
-        <label class="flex items-center">
-          <input type="checkbox" name="affected_services[]" value="${service.service_id}" class="mr-2">
-          <span class="text-sm">${service.name} (${service.criticality || 'Medium'})</span>
-          <span class="text-xs text-gray-500 ml-2">${service.business_department || 'Unknown Dept'}</span>
+        <label class="flex items-start gap-3 p-3 bg-white border border-green-200 rounded-lg shadow-sm">
+          <input type="checkbox" name="affected_services[]" value="${service.service_id}" class="mt-1">
+          <div class="flex-1">
+            <div class="text-sm font-semibold text-gray-800">${service.name}</div>
+            <div class="text-xs text-gray-500">
+              <span class="text-green-700 font-medium">${service.criticality || 'Medium'}</span>
+              <span class="mx-1">•</span>
+              ${service.business_department || 'Unknown Dept'}
+            </div>
+          </div>
         </label>
       `).join('');
       
-      const finalHtml = servicesHtml || `
+      const finalHtml = services.length > 0
+        ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${servicesHtml}</div>`
+        : `
         <div class="text-sm text-gray-500 text-center py-2">
           <i class="fas fa-info-circle mr-1"></i>
           No services found. <a href="/operations/services" class="text-green-600 hover:text-green-700">Add services first</a>.
@@ -1126,6 +1126,31 @@ export function createOperationsRoutes() {
     }
   });
 
+  // MS Defender Integration API Endpoints
+  app.get('/api/assets/:assetId/incidents', async (c) => {
+    try {
+      const assetId = c.req.param('assetId');
+      const incidents = await getAssetIncidents(c.env.DB, assetId);
+      
+      return c.html(renderIncidentsModal(incidents, assetId));
+    } catch (error) {
+      console.error('Error fetching asset incidents:', error);
+      return c.html('<div class="p-4 text-red-600">Failed to load incidents</div>');
+    }
+  });
+
+  app.get('/api/assets/:assetId/vulnerabilities', async (c) => {
+    try {
+      const assetId = c.req.param('assetId');
+      const vulnerabilities = await getAssetVulnerabilities(c.env.DB, assetId);
+      
+      return c.html(renderVulnerabilitiesModal(vulnerabilities, assetId));
+    } catch (error) {
+      console.error('Error fetching asset vulnerabilities:', error);
+      return c.html('<div class="p-4 text-red-600">Failed to load vulnerabilities</div>');
+    }
+  });
+
   app.put('/api/intelligence/feeds/:id', async (c) => {
     try {
       const feedId = c.req.param('id');
@@ -1331,11 +1356,12 @@ const renderOperationsDashboard = () => html`
               <i class="fas fa-shield-alt text-blue-500 mr-3"></i>
               <h2 class="text-lg font-semibold text-gray-900">Microsoft Defender Integration</h2>
             </div>
-            <a href="/operations/defender" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-              View Integration
+            <a href="/ms-defender" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+              <i class="fas fa-shield-alt mr-2"></i>
+              Launch MS Defender
             </a>
           </div>
-          <p class="text-gray-600 mb-4">Real-time security data and threat intelligence</p>
+          <p class="text-gray-600 mb-4">Advanced hunting, asset management, incidents & vulnerabilities tracking</p>
           
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-green-50 p-4 rounded-lg"
@@ -1383,6 +1409,52 @@ const renderOperationsDashboard = () => html`
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Microsoft Defender Quick Actions -->
+      <div class="mt-8">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Microsoft Defender Quick Actions</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <a href="/ms-defender/assets" class="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all">
+            <div class="flex items-center">
+              <i class="fas fa-server text-blue-500 mr-3"></i>
+              <div>
+                <h4 class="font-medium text-gray-900">Assets</h4>
+                <p class="text-sm text-gray-600">View & manage assets</p>
+              </div>
+            </div>
+          </a>
+          
+          <a href="/ms-defender/incidents" class="bg-white border border-gray-200 rounded-lg p-4 hover:border-red-300 hover:shadow-md transition-all">
+            <div class="flex items-center">
+              <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+              <div>
+                <h4 class="font-medium text-gray-900">Incidents</h4>
+                <p class="text-sm text-gray-600">Security incidents</p>
+              </div>
+            </div>
+          </a>
+          
+          <a href="/ms-defender/vulnerabilities" class="bg-white border border-gray-200 rounded-lg p-4 hover:border-orange-300 hover:shadow-md transition-all">
+            <div class="flex items-center">
+              <i class="fas fa-bug text-orange-500 mr-3"></i>
+              <div>
+                <h4 class="font-medium text-gray-900">Vulnerabilities</h4>
+                <p class="text-sm text-gray-600">Security vulnerabilities</p>
+              </div>
+            </div>
+          </a>
+          
+          <a href="/ms-defender/hunting" class="bg-white border border-gray-200 rounded-lg p-4 hover:border-purple-300 hover:shadow-md transition-all">
+            <div class="flex items-center">
+              <i class="fas fa-search text-purple-500 mr-3"></i>
+              <div>
+                <h4 class="font-medium text-gray-900">Advanced Hunting</h4>
+                <p class="text-sm text-gray-600">KQL queries & search</p>
+              </div>
+            </div>
+          </a>
         </div>
       </div>
     </div>
@@ -1484,6 +1556,38 @@ const renderAssetManagement = () => html`
   
   <!-- Link Modal Container -->  
   <div id="link-modal"></div>
+  
+  <!-- MS Defender Modals -->
+  <div id="incidents-modal"></div>
+  <div id="vulnerabilities-modal"></div>
+
+  <script>
+    async function showAssetIncidents(assetId) {
+      try {
+        const response = await fetch(\`/operations/api/assets/\${assetId}/incidents\`);
+        const html = await response.text();
+        document.getElementById('incidents-modal').innerHTML = html;
+      } catch (error) {
+        console.error('Error loading incidents:', error);
+        alert('Failed to load incidents');
+      }
+    }
+
+    async function showAssetVulnerabilities(assetId) {
+      try {
+        const response = await fetch(\`/operations/api/assets/\${assetId}/vulnerabilities\`);
+        const html = await response.text();
+        document.getElementById('vulnerabilities-modal').innerHTML = html;
+      } catch (error) {
+        console.error('Error loading vulnerabilities:', error);
+        alert('Failed to load vulnerabilities');
+      }
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).innerHTML = '';
+    }
+  </script>
 `;
 
 // Service Management Page  
@@ -2101,8 +2205,19 @@ function renderAssetRows(assets: any[]) {
         </span>
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-        <button class="text-red-600 hover:text-red-900">Delete</button>
+        <div class="flex space-x-2">
+          <button onclick="showAssetIncidents(${asset.id})" 
+                  class="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded hover:bg-red-200">
+            <i class="fas fa-exclamation-triangle mr-1"></i>
+            Incidents
+          </button>
+          <button onclick="showAssetVulnerabilities(${asset.id})" 
+                  class="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded hover:bg-orange-200">
+            <i class="fas fa-bug mr-1"></i>
+            Vulnerabilities
+          </button>
+          <button class="text-blue-600 hover:text-blue-900 text-xs">Edit</button>
+        </div>
       </td>
     </tr>
   `).join('');
@@ -3938,5 +4053,231 @@ const renderDocumentDeleteModal = (document: any) => html`
     </div>
   </div>
 `;
+
+// MS Defender Integration Helper Functions
+async function getAssetIncidents(db: any, assetId: number): Promise<any[]> {
+  try {
+    const result = await db.prepare(`
+      SELECT 
+        di.incident_id,
+        di.incident_name,
+        di.severity,
+        di.status,
+        di.classification,
+        di.created_time,
+        di.last_update_time,
+        di.assigned_to,
+        di.alerts_count,
+        di.description,
+        ai.involvement_type,
+        ai.alert_count as asset_alert_count
+      FROM asset_incidents ai
+      JOIN defender_incidents di ON di.id = ai.incident_id
+      WHERE ai.asset_id = ?
+      ORDER BY di.created_time DESC
+    `).bind(assetId).all();
+    
+    return result.results || [];
+  } catch (error) {
+    console.error('Failed to get asset incidents:', error);
+    return [];
+  }
+}
+
+async function getAssetVulnerabilities(db: any, assetId: number): Promise<any[]> {
+  try {
+    const result = await db.prepare(`
+      SELECT 
+        dv.vulnerability_id,
+        dv.cve_id,
+        dv.name,
+        dv.description,
+        dv.severity_level,
+        dv.cvss_v3_score,
+        dv.exploitability_level,
+        dv.public_exploit,
+        dv.threat_name,
+        av.remediation_status,
+        av.first_detected,
+        av.last_seen
+      FROM asset_vulnerabilities av
+      JOIN defender_vulnerabilities dv ON dv.id = av.vulnerability_id
+      WHERE av.asset_id = ?
+      ORDER BY dv.cvss_v3_score DESC, dv.severity_level DESC
+    `).bind(assetId).all();
+    
+    return result.results || [];
+  } catch (error) {
+    console.error('Failed to get asset vulnerabilities:', error);
+    return [];
+  }
+}
+
+function renderIncidentsModal(incidents: any[], assetId: string): string {
+  return `
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-medium text-gray-900 flex items-center">
+            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+            Security Incidents for Asset #${assetId}
+          </h3>
+          <button onclick="closeModal('incidents-modal')" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        ${incidents.length === 0 ? `
+          <div class="text-center py-8">
+            <i class="fas fa-shield-alt text-green-400 text-4xl mb-4"></i>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">No Security Incidents</h4>
+            <p class="text-gray-600">This asset has no recorded security incidents from Microsoft Defender.</p>
+          </div>
+        ` : `
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Incident</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Severity</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned To</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                ${incidents.map(incident => `
+                  <tr>
+                    <td class="px-4 py-4">
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">${incident.incident_name || 'Unknown Incident'}</div>
+                        <div class="text-xs text-gray-500">${incident.incident_id}</div>
+                        ${incident.description ? `<div class="text-xs text-gray-600 mt-1">${incident.description.substring(0, 100)}...</div>` : ''}
+                      </div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        incident.severity === 'Critical' ? 'bg-red-100 text-red-800' :
+                        incident.severity === 'High' ? 'bg-orange-100 text-orange-800' :
+                        incident.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }">
+                        ${incident.severity}
+                      </span>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        incident.status === 'Active' ? 'bg-red-100 text-red-800' :
+                        incident.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                        'bg-gray-100 text-gray-800'
+                      }">
+                        ${incident.status}
+                      </span>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      ${new Date(incident.created_time).toLocaleDateString()}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      ${incident.assigned_to || 'Unassigned'}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+        
+        <div class="flex justify-end mt-6">
+          <button onclick="closeModal('incidents-modal')" 
+                  class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderVulnerabilitiesModal(vulnerabilities: any[], assetId: string): string {
+  return `
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-medium text-gray-900 flex items-center">
+            <i class="fas fa-bug text-orange-500 mr-2"></i>
+            Security Vulnerabilities for Asset #${assetId}
+          </h3>
+          <button onclick="closeModal('vulnerabilities-modal')" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+        
+        ${vulnerabilities.length === 0 ? `
+          <div class="text-center py-8">
+            <i class="fas fa-shield-alt text-green-400 text-4xl mb-4"></i>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">No Security Vulnerabilities</h4>
+            <p class="text-gray-600">This asset has no recorded vulnerabilities from Microsoft Defender.</p>
+          </div>
+        ` : `
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vulnerability</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Severity</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CVSS Score</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Public Exploit</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                ${vulnerabilities.map(vuln => `
+                  <tr>
+                    <td class="px-4 py-4">
+                      <div>
+                        <div class="text-sm font-medium text-gray-900">${vuln.name || 'Unknown Vulnerability'}</div>
+                        <div class="text-xs text-gray-500">${vuln.cve_id || vuln.vulnerability_id}</div>
+                        ${vuln.description ? `<div class="text-xs text-gray-600 mt-1">${vuln.description.substring(0, 100)}...</div>` : ''}
+                      </div>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        vuln.severity_level === 'Critical' ? 'bg-red-100 text-red-800' :
+                        vuln.severity_level === 'High' ? 'bg-orange-100 text-orange-800' :
+                        vuln.severity_level === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }">
+                        ${vuln.severity_level}
+                      </span>
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      ${vuln.cvss_v3_score ? vuln.cvss_v3_score.toFixed(1) : 'N/A'}
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap">
+                      ${vuln.public_exploit ? 
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Yes</span>' :
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">No</span>'
+                      }
+                    </td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      ${vuln.remediation_status || 'Pending'}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `}
+        
+        <div class="flex justify-end mt-6">
+          <button onclick="closeModal('vulnerabilities-modal')" 
+                  class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 
