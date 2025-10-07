@@ -661,7 +661,53 @@ export function createOperationsRoutes() {
     return c.json({ success: true, services });
   });
 
-  // Duplicate removed - endpoint defined before auth middleware above
+  // API endpoint to render services list for risk forms (HTML response with AUTH)
+  app.get('/api/services/list-for-risk', async (c) => {
+    try {
+      const services = await getServices(c.env.DB);
+      
+      if (services.length === 0) {
+        return c.html(`
+          <div class="text-sm text-gray-500 text-center py-4">
+            <i class="fas fa-info-circle mr-2"></i>
+            No services found. <a href="/operations/services" class="text-blue-600 hover:text-blue-700 underline">Add services first</a>.
+          </div>
+        `);
+      }
+      
+      const servicesHtml = services.map(service => `
+        <label class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors cursor-pointer">
+          <input type="checkbox" name="affected_services[]" value="${service.service_id}" 
+                 class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+          <div class="flex-1">
+            <div class="text-sm font-semibold text-gray-800">${service.name}</div>
+            <div class="text-xs text-gray-500">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                service.criticality_score >= 80 ? 'bg-red-100 text-red-800' :
+                service.criticality_score >= 60 ? 'bg-orange-100 text-orange-800' :
+                service.criticality_score >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                'bg-green-100 text-green-800'
+              }">
+                ${service.criticality || 'Medium'}
+              </span>
+              <span class="mx-1">•</span>
+              <span>${service.business_department || 'Unknown Dept'}</span>
+            </div>
+          </div>
+        </label>
+      `).join('');
+      
+      return c.html(`<div class="space-y-2">${servicesHtml}</div>`);
+    } catch (error) {
+      console.error('❌ Error in service list API:', error);
+      return c.html(`
+        <div class="text-sm text-red-600 text-center py-4">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          Error loading services: ${error.message}
+        </div>
+      `);
+    }
+  });
 
   // API endpoint to get assets for risk management  
   app.get('/api/assets/for-risk', async (c) => {
