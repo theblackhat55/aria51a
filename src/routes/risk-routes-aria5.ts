@@ -3430,7 +3430,8 @@ const renderCreateRiskModal = async (db: D1Database, csrfToken?: string) => {
       });
     </script>
   </div>
-`;
+  `;
+};
 
 // Simple Add Risk Modal (compact version for quick actions)
 const renderSimpleAddRiskModal = (csrfToken?: string) => html`
