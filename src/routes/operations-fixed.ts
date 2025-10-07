@@ -15,11 +15,35 @@ export function createOperationsRoutes() {
   // This endpoint is called by HTMX from the risk creation form
   app.get('/api/services/list-for-risk', async (c) => {
     try {
-      console.log('📡 API call: /api/services/list-for-risk');
-      const services = await getServices(c.env.DB);
+      const db = c.env.DB;
+      if (!db) {
+        return c.html('<div class="text-sm text-red-600">Database not available</div>');
+      }
+
+      // Query services directly here to avoid hoisting issues
+      const result = await db.prepare(`
+        SELECT 
+          s.*,
+          (SELECT COUNT(*) FROM service_asset_links sal WHERE sal.service_id = s.service_id) as dependency_count,
+          (SELECT COUNT(*) FROM service_risk_links srl WHERE srl.service_id = s.service_id) as risk_count
+        FROM services s 
+        WHERE s.service_status = 'Active'
+        ORDER BY s.criticality_score DESC, s.created_at DESC
+      `).all();
+      
+      const services = result.results || [];
       console.log('📊 Found services:', services.length);
       
-      const servicesHtml = services.map(service => `
+      if (services.length === 0) {
+        return c.html(`
+          <div class="text-sm text-gray-500 text-center py-4">
+            <i class="fas fa-info-circle mr-2"></i>
+            No services found. <a href="/operations/services" class="text-blue-600 hover:text-blue-700 underline">Add services first</a>.
+          </div>
+        `);
+      }
+      
+      const servicesHtml = services.map((service: any) => `
         <label class="flex items-start gap-3 p-3 bg-white border border-green-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
           <input type="checkbox" name="affected_services[]" value="${service.service_id}" 
                  class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
@@ -41,17 +65,7 @@ export function createOperationsRoutes() {
         </label>
       `).join('');
       
-      const finalHtml = services.length > 0
-        ? `<div class="space-y-2">${servicesHtml}</div>`
-        : `
-        <div class="text-sm text-gray-500 text-center py-4">
-          <i class="fas fa-info-circle mr-2"></i>
-          No services found. <a href="/operations/services" class="text-blue-600 hover:text-blue-700 underline">Add services first</a>.
-        </div>
-      `;
-      
-      console.log('📤 Returning HTML response, length:', finalHtml.length);
-      return c.html(finalHtml);
+      return c.html(`<div class="space-y-2">${servicesHtml}</div>`);
     } catch (error) {
       console.error('❌ Error in service list API:', error);
       return c.html(`
