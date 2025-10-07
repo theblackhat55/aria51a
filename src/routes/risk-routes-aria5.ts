@@ -208,7 +208,8 @@ export function createRiskRoutesARIA5() {
   // Create risk modal (with CSRF protection)
   app.get('/create', authMiddleware, async (c) => {
     const csrfToken = setCSRFToken(c);
-    return c.html(renderCreateRiskModal(csrfToken));
+    const modalHtml = await renderCreateRiskModal(c.env.DB, csrfToken);
+    return c.html(modalHtml);
   });
 
   // Simple Add Risk modal for quick actions
@@ -3018,8 +3019,24 @@ const renderRiskTable = (risks: any[]) => {
   `;
 };
 
-// Enhanced Risk Assessment Modal - Matching ARIA5 Exactly (with CSRF)
-const renderCreateRiskModal = (csrfToken?: string) => html`
+// Enhanced Risk Assessment Modal - Rebuilt with Services Pre-loaded
+const renderCreateRiskModal = async (db: D1Database, csrfToken?: string) => {
+  // Pre-load services to avoid HTMX loading issues
+  let services: any[] = [];
+  try {
+    const result = await db.prepare(`
+      SELECT 
+        s.service_id, s.name, s.business_department, s.criticality, s.criticality_score
+      FROM services s 
+      WHERE s.service_status = 'Active'
+      ORDER BY s.criticality_score DESC, s.created_at DESC
+    `).all();
+    services = result.results || [];
+  } catch (error) {
+    console.error('Error pre-loading services:', error);
+  }
+
+  return html`
   <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" >
     <div class="relative top-5 mx-auto p-0 border w-full max-w-6xl shadow-xl rounded-lg bg-white">
       <!-- Modal Header -->
@@ -3105,15 +3122,33 @@ const renderCreateRiskModal = (csrfToken?: string) => html`
             
             <div class="ml-9">
               <label class="block text-sm font-medium text-gray-700 mb-2">Related Services</label>
-              <div class="space-y-2" 
-                   hx-get="/operations/api/services/list-for-risk" 
-                   hx-trigger="load, serviceCreated from:body, serviceUpdated from:body"
-                   hx-swap="innerHTML">
-                <!-- Services will be loaded dynamically -->
-                <div class="text-sm text-gray-500 text-center py-2">
-                  <i class="fas fa-spinner fa-spin mr-1"></i>
-                  Loading services...
-                </div>
+              <div class="space-y-2 max-h-60 overflow-y-auto">
+                ${services.length > 0 ? services.map(service => `
+                  <label class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors cursor-pointer">
+                    <input type="checkbox" name="affected_services[]" value="${service.service_id}" 
+                           class="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
+                    <div class="flex-1">
+                      <div class="text-sm font-semibold text-gray-800">${service.name}</div>
+                      <div class="text-xs text-gray-500">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          service.criticality_score >= 80 ? 'bg-red-100 text-red-800' :
+                          service.criticality_score >= 60 ? 'bg-orange-100 text-orange-800' :
+                          service.criticality_score >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }">
+                          ${service.criticality || 'Medium'}
+                        </span>
+                        <span class="mx-1">•</span>
+                        <span>${service.business_department || 'Unknown Dept'}</span>
+                      </div>
+                    </div>
+                  </label>
+                `).join('') : `
+                  <div class="text-sm text-gray-500 text-center py-4">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    No services found. <a href="/operations/services" class="text-green-600 hover:text-green-700 underline">Add services first</a>.
+                  </div>
+                `}
               </div>
             </div>
           </div>
