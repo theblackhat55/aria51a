@@ -9,7 +9,61 @@ import type { CloudflareBindings } from '../types';
 export function createOperationsRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
   
-  // Apply authentication middleware to all routes
+  // IMPORTANT: Define public/HTMX endpoints BEFORE auth middleware
+  
+  // API endpoint to render services list for risk forms (HTML response) - NO AUTH REQUIRED
+  // This endpoint is called by HTMX from the risk creation form
+  app.get('/api/services/list-for-risk', async (c) => {
+    try {
+      console.log('📡 API call: /api/services/list-for-risk');
+      const services = await getServices(c.env.DB);
+      console.log('📊 Found services:', services.length);
+      
+      const servicesHtml = services.map(service => `
+        <label class="flex items-start gap-3 p-3 bg-white border border-green-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors">
+          <input type="checkbox" name="affected_services[]" value="${service.service_id}" 
+                 class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+          <div class="flex-1">
+            <div class="text-sm font-semibold text-gray-800">${service.name}</div>
+            <div class="text-xs text-gray-500">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                service.criticality_score >= 4 ? 'bg-red-100 text-red-800' :
+                service.criticality_score >= 3 ? 'bg-orange-100 text-orange-800' :
+                service.criticality_score >= 2 ? 'bg-yellow-100 text-yellow-800' :
+                'bg-green-100 text-green-800'
+              }">
+                ${service.criticality || 'Medium'}
+              </span>
+              <span class="mx-1">•</span>
+              ${service.business_department || 'Unknown Dept'}
+            </div>
+          </div>
+        </label>
+      `).join('');
+      
+      const finalHtml = services.length > 0
+        ? `<div class="space-y-2">${servicesHtml}</div>`
+        : `
+        <div class="text-sm text-gray-500 text-center py-4">
+          <i class="fas fa-info-circle mr-2"></i>
+          No services found. <a href="/operations/services" class="text-blue-600 hover:text-blue-700 underline">Add services first</a>.
+        </div>
+      `;
+      
+      console.log('📤 Returning HTML response, length:', finalHtml.length);
+      return c.html(finalHtml);
+    } catch (error) {
+      console.error('❌ Error in service list API:', error);
+      return c.html(`
+        <div class="text-sm text-red-600 text-center py-4">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          Error loading services: ${error.message}
+        </div>
+      `);
+    }
+  });
+  
+  // Apply authentication middleware to all OTHER routes
   app.use('*', requireAuth);
   
   // Main operations dashboard
@@ -661,48 +715,7 @@ export function createOperationsRoutes() {
     return c.json({ success: true, services });
   });
 
-  // API endpoint to render services list for risk forms (HTML response)
-  app.get('/api/services/list-for-risk', async (c) => {
-    try {
-      console.log('📡 API call: /api/services/list-for-risk');
-      const services = await getServices(c.env.DB);
-      console.log('📊 Found services:', services.length);
-      
-      const servicesHtml = services.map(service => `
-        <label class="flex items-start gap-3 p-3 bg-white border border-green-200 rounded-lg shadow-sm">
-          <input type="checkbox" name="affected_services[]" value="${service.service_id}" class="mt-1">
-          <div class="flex-1">
-            <div class="text-sm font-semibold text-gray-800">${service.name}</div>
-            <div class="text-xs text-gray-500">
-              <span class="text-green-700 font-medium">${service.criticality || 'Medium'}</span>
-              <span class="mx-1">•</span>
-              ${service.business_department || 'Unknown Dept'}
-            </div>
-          </div>
-        </label>
-      `).join('');
-      
-      const finalHtml = services.length > 0
-        ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${servicesHtml}</div>`
-        : `
-        <div class="text-sm text-gray-500 text-center py-2">
-          <i class="fas fa-info-circle mr-1"></i>
-          No services found. <a href="/operations/services" class="text-green-600 hover:text-green-700">Add services first</a>.
-        </div>
-      `;
-      
-      console.log('📤 Returning HTML response, length:', finalHtml.length);
-      return c.html(finalHtml);
-    } catch (error) {
-      console.error('❌ Error in service list API:', error);
-      return c.html(`
-        <div class="text-sm text-red-500 text-center py-2">
-          <i class="fas fa-exclamation-triangle mr-1"></i>
-          Error loading services: ${error.message}
-        </div>
-      `);
-    }
-  });
+  // Duplicate removed - endpoint defined before auth middleware above
 
   // API endpoint to get assets for risk management  
   app.get('/api/assets/for-risk', async (c) => {
