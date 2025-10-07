@@ -1727,6 +1727,13 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Manage users and roles</div>
                   </div>
                 </a>
+                <a href="/admin/settings/business-units" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
+                  <i class="fas fa-building w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Business Units</div>
+                    <div class="text-xs text-gray-500">Manage organizational units</div>
+                  </div>
+                </a>
               </div>
             </div>
           </div>
@@ -1953,6 +1960,10 @@ const renderCleanNavigation = (user: any) => html`
                 <a href="/admin/users" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
                   <i class="fas fa-users text-purple-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-purple-800">Users</span>
+                </a>
+                <a href="/admin/settings/business-units" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-building text-purple-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-purple-800">Business Units</span>
                 </a>
               </div>
             </div>

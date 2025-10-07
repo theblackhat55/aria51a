@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "aria52",
+  "name": "aria51",
   "compatibility_date": "2025-01-01",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
@@ -11,8 +11,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "aria52-production",
-      "database_id": "36e6129d-7777-4f83-bebf-ab2ef1001518"
+      "database_name": "aria51-production",
+      "database_id": "8c465a3b-7e5a-4f39-9237-ff56b8e644d0"
     }
   ],
 
@@ -29,7 +29,7 @@
   "r2_buckets": [
     {
       "binding": "R2",
-      "bucket_name": "aria52-bucket"
+      "bucket_name": "aria51-bucket"
     }
   ],
   

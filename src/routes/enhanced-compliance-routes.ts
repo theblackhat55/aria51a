@@ -1817,13 +1817,8 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Business Units</label>
-            <div class="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3">
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="it"> IT Department</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="finance"> Finance</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="hr"> Human Resources</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="ops"> Operations</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="security"> Security</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="legal"> Legal & Compliance</label>
+            <div id="business-units-container" class="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3">
+              <div class="text-sm text-gray-500 text-center py-2">Loading business units...</div>
             </div>
             
             <label class="block text-sm font-medium text-gray-700 mb-2 mt-4">Time Period</label>
@@ -1834,14 +1829,9 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Critical Systems</label>
-            <div class="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3">
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="erp"> ERP System</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="crm"> CRM Platform</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="hrms"> HR Management System</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="financial"> Financial Systems</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="database"> Customer Databases</label>
-              <label class="flex items-center"><input type="checkbox" class="mr-2" value="payment"> Payment Processing</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Services</label>
+            <div id="services-container" class="space-y-2 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-3">
+              <div class="text-sm text-gray-500 text-center py-2">Loading services...</div>
             </div>
             
             <label class="block text-sm font-medium text-gray-700 mb-2 mt-4">Assessment Owner</label>
@@ -2266,6 +2256,8 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
       document.getElementById('smartWizardModal').classList.remove('hidden');
       currentWizardStep = 1;
       updateWizardStep();
+      // Load business units and services when wizard opens
+      loadBusinessUnitsAndServices();
     }
     
     function closeSmartWizardModal() {
@@ -2307,6 +2299,69 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
         currentWizardStep--;
         updateWizardStep();
       }
+    }
+    
+    // Load Business Units and Services from Native APIs
+    async function loadBusinessUnitsAndServices() {
+      try {
+        // Load business units
+        const businessUnitsResponse = await fetch('/api/business-units');
+        if (businessUnitsResponse.ok) {
+          const businessUnitsData = await businessUnitsResponse.json();
+          populateBusinessUnits(businessUnitsData.business_units || []);
+        } else {
+          console.error('Failed to load business units');
+          document.getElementById('business-units-container').innerHTML = '<div class="text-sm text-red-500 text-center py-2">Failed to load business units</div>';
+        }
+        
+        // Load services
+        const servicesResponse = await fetch('/api/services');
+        if (servicesResponse.ok) {
+          const servicesData = await servicesResponse.json();
+          populateServices(servicesData.services || []);
+        } else {
+          console.error('Failed to load services');
+          document.getElementById('services-container').innerHTML = '<div class="text-sm text-red-500 text-center py-2">Failed to load services</div>';
+        }
+      } catch (error) {
+        console.error('Error loading wizard data:', error);
+        document.getElementById('business-units-container').innerHTML = '<div class="text-sm text-red-500 text-center py-2">Error loading business units</div>';
+        document.getElementById('services-container').innerHTML = '<div class="text-sm text-red-500 text-center py-2">Error loading services</div>';
+      }
+    }
+    
+    function populateBusinessUnits(businessUnits) {
+      const container = document.getElementById('business-units-container');
+      if (businessUnits.length === 0) {
+        container.innerHTML = '<div class="text-sm text-gray-500 text-center py-2">No business units found</div>';
+        return;
+      }
+      
+      const html = businessUnits.map(unit => \`
+        <label class="flex items-center">
+          <input type="checkbox" class="mr-2" value="\${unit.id}" data-name="\${unit.name}"> 
+          \${unit.name}
+          \${unit.description ? \`<span class="text-xs text-gray-500 ml-2">(\${unit.description})</span>\` : ''}
+        </label>
+      \`).join('');
+      container.innerHTML = html;
+    }
+    
+    function populateServices(services) {
+      const container = document.getElementById('services-container');
+      if (services.length === 0) {
+        container.innerHTML = '<div class="text-sm text-gray-500 text-center py-2">No services found</div>';
+        return;
+      }
+      
+      const html = services.map(service => \`
+        <label class="flex items-center">
+          <input type="checkbox" class="mr-2" value="\${service.id}" data-name="\${service.name}"> 
+          \${service.name}
+          <span class="text-xs text-gray-500 ml-2">(\${service.criticality})</span>
+        </label>
+      \`).join('');
+      container.innerHTML = html;
     }
     
     function updateWizardStep() {
@@ -2418,9 +2473,19 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
     
     async function createSmartAssessment() {
       try {
-        // Collect wizard data
-        const businessUnits = Array.from(document.querySelectorAll('#wizard-step-2 input[type="checkbox"]:checked')).map(cb => cb.value);
-        const criticalSystems = Array.from(document.querySelectorAll('#wizard-step-2 input[type="checkbox"]:checked')).map(cb => cb.value);
+        // Collect wizard data - separate business units and services
+        const businessUnitCheckboxes = Array.from(document.querySelectorAll('#business-units-container input[type="checkbox"]:checked'));
+        const serviceCheckboxes = Array.from(document.querySelectorAll('#services-container input[type="checkbox"]:checked'));
+        
+        const businessUnits = businessUnitCheckboxes.map(cb => ({
+          id: parseInt(cb.value),
+          name: cb.getAttribute('data-name')
+        }));
+        
+        const services = serviceCheckboxes.map(cb => ({
+          id: parseInt(cb.value),
+          name: cb.getAttribute('data-name')
+        }));
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
         const ownerId = document.getElementById('wizard-owner-select').value;
@@ -2449,10 +2514,10 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
           due_date: endDate,
           start_date: startDate,
           owner_id: parseInt(ownerId),
-          business_units: businessUnits,
-          critical_systems: criticalSystems,
+          business_units: businessUnits.map(bu => bu.id),
+          services: services.map(s => s.id),
           template_type: selectedTemplate,
-          scope_description: \`Business Units: \${businessUnits.join(', ')}; Critical Systems: \${criticalSystems.join(', ')}\`
+          scope_description: \`Business Units: \${businessUnits.map(bu => bu.name).join(', ')}; Services: \${services.map(s => s.name).join(', ')}\`
         };
         
         // Call API to create assessment
@@ -2467,7 +2532,7 @@ const renderAssessmentManagement = (assessments: any[], stats: any) => raw(`
         const result = await response.json();
         
         if (result.success) {
-          alert(\`Smart Assessment Created Successfully!\\n\\nName: \${assessmentName}\\nFramework: \${template.name}\\nControls: \${template.controls}\\nType: \${selectedAssessmentType}\\nBusiness Units: \${businessUnits.join(', ')}\`);
+          alert(\`Smart Assessment Created Successfully!\\n\\nName: \${assessmentName}\\nFramework: \${template.name}\\nControls: \${template.controls}\\nType: \${selectedAssessmentType}\\nBusiness Units: \${businessUnits.map(bu => bu.name).join(', ')}\\nServices: \${services.map(s => s.name).join(', ')}\`);
           closeSmartWizardModal();
           
           // Refresh the page to show new assessment

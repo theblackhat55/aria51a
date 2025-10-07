@@ -22,6 +22,9 @@ import conversationalAssistantRoutes from './routes/conversational-assistant';
 import { apiThreatIntelRoutes } from './routes/api-threat-intelligence';
 import { tiGrcRoutes } from './routes/api-ti-grc-integration';
 import { createEnhancedAIChatRoutes } from './routes/enhanced-ai-chat-routes';
+import { createBusinessUnitsRoutes } from './routes/business-units-routes';
+import { createMSDefenderRoutes } from './routes/ms-defender-routes';
+import { createEnhancedDynamicRiskRoutes } from './routes/enhanced-dynamic-risk-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
@@ -102,6 +105,7 @@ app.use('/risk/delete/*', csrfMiddleware);
 app.use('/compliance/*/update', csrfMiddleware);
 app.use('/compliance/*/create', csrfMiddleware);
 app.use('/admin/*', csrfMiddleware);
+app.use('/operations/services/*', csrfMiddleware);
 
 // Authentication middleware for protected routes
 app.use('/dashboard/*', authMiddleware);
@@ -111,6 +115,7 @@ app.use('/operations/*', authMiddleware);
 app.use('/ai/*', authMiddleware);
 app.use('/intelligence/*', authMiddleware);
 app.use('/risk-controls/*', authMiddleware);
+app.use('/ms-defender/*', authMiddleware);
 app.use('/api/*', authMiddleware);
 
 // Admin routes require both authentication and admin role
@@ -425,17 +430,26 @@ app.route('/dashboard', createCleanDashboardRoutes());
 // Risk Management (requires authentication, works with database fix)
 app.route('/risk', createRiskRoutesARIA5());
 
+// Enhanced Dynamic Risk Assessment (requires authentication)
+app.route('/risk/enhanced', createEnhancedDynamicRiskRoutes());
+
 // Enhanced Compliance Management with AI (requires authentication)
 app.route('/compliance', createEnhancedComplianceRoutes());
 
 // Operations Management (requires authentication)
 app.route('/operations', createOperationsRoutes());
 
+// Microsoft Defender Integration (requires authentication)
+app.route('/ms-defender', createMSDefenderRoutes());
+
 // Admin Management (requires admin role)
 app.route('/admin', createAdminRoutesARIA5());
 
 // SMTP Settings (requires admin role)
 app.route('/admin', createSMTPSettingsRoutes());
+
+// Business Units and Services Management (includes both admin and operations routes)
+app.route('/', createBusinessUnitsRoutes());
 
 // AI Assistant (requires authentication)
 app.route('/ai', createAIAssistantRoutes());
