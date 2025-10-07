@@ -25,6 +25,7 @@ import { createEnhancedAIChatRoutes } from './routes/enhanced-ai-chat-routes';
 import { createBusinessUnitsRoutes } from './routes/business-units-routes';
 import { createMSDefenderRoutes } from './routes/ms-defender-routes';
 import { createEnhancedDynamicRiskRoutes } from './routes/enhanced-dynamic-risk-routes';
+import { createAPIManagementRoutes } from './routes/api-management-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
@@ -444,6 +445,9 @@ app.route('/ms-defender', createMSDefenderRoutes());
 
 // Admin Management (requires admin role)
 app.route('/admin', createAdminRoutesARIA5());
+
+// API Management (requires admin role)
+app.route('/admin/api-management', createAPIManagementRoutes());
 
 // SMTP Settings (requires admin role)
 app.route('/admin', createSMTPSettingsRoutes());

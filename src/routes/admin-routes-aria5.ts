@@ -2283,6 +2283,20 @@ const renderAdminDashboard = () => html`
             <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
           </div>
         </a>
+
+        <!-- API Management Card -->
+        <a href="/admin/api-management" class="group bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl shadow-lg p-6 text-white hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1">
+          <div class="flex items-center justify-between mb-4">
+            <i class="fas fa-plug text-3xl opacity-80"></i>
+            <span class="bg-white bg-opacity-20 px-2 py-1 rounded-full text-xs font-medium">Backend</span>
+          </div>
+          <h3 class="text-xl font-bold mb-2">API Management</h3>
+          <p class="text-cyan-100 text-sm">Manage all backend API endpoints, monitoring, and documentation</p>
+          <div class="mt-4 flex items-center text-sm">
+            <span>Manage APIs</span>
+            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+          </div>
+        </a>
       </div>
 
       <!-- Quick Actions -->
