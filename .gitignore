@@ -126,3 +126,6 @@ Icon?
 *.bak
 *.backup
 *.orig
+
+# Archived unused files (historical reference only)
+Archived/

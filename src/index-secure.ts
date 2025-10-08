@@ -349,9 +349,12 @@ app.route('/auth', createAuthRoutes());
 // Debug endpoint for threat feeds API (bypasses auth for testing)
 app.get('/debug/threat-feeds', async (c) => {
   try {
-    // Import the getThreatFeeds function
-    const { getThreatFeeds } = await import('./routes/intelligence-settings');
-    const feeds = await getThreatFeeds(c.env.DB);
+    // Fetch threat feeds directly
+    const result = await c.env.DB.prepare(`
+      SELECT * FROM threat_feeds 
+      ORDER BY created_at DESC
+    `).all();
+    const feeds = result.results || [];
     return c.json({ success: true, feeds, count: feeds.length });
   } catch (error) {
     console.error('Debug threat feeds error:', error);
@@ -406,9 +409,12 @@ app.get('/debug/risks-test', async (c) => {
 // Debug endpoint for testing operations API without auth
 app.get('/debug/operations-feeds', async (c) => {
   try {
-    // Import the getThreatFeeds function directly  
-    const { getThreatFeeds } = await import('./routes/intelligence-settings');
-    const feeds = await getThreatFeeds(c.env.DB);
+    // Fetch threat feeds directly
+    const result = await c.env.DB.prepare(`
+      SELECT * FROM threat_feeds 
+      ORDER BY created_at DESC
+    `).all();
+    const feeds = result.results || [];
     return c.json({ 
       success: true, 
       message: 'Operations API simulation (bypassing auth)', 
