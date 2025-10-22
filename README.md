@@ -8,11 +8,14 @@
 - **Platform**: Fully deployed and operational at **aria51.pages.dev**
 - **Production URLs**: 
   - **Primary**: https://aria51.pages.dev
-  - **Direct**: https://b743dea0.aria51.pages.dev
+  - **Latest**: https://2509173a.aria51.pages.dev
 - **Database**: Complete production schema with 8 risks and all enterprise data
 - **Authentication**: Working demo accounts with proper authentication (admin/demo123, avi_security/demo123, sjohnson/demo123)
 - **Features**: Dynamic risk scoring, MS Defender incidents dashboard, compliance management
-- **Latest Enhancement**: ✨ **Production Deployment & Database Migration** ✨
+- **Latest Enhancement**: ✨ **Fixed HTML Rendering in Risk Assessment** ✨
+  - **Bug Fix**: Service selection now properly displays as checkboxes instead of HTML code
+  - **Issue**: HTML escaping in Create Enhanced Risk Assessment modal
+  - **Solution**: Wrapped dynamic service list with raw() to prevent double-escaping
   - **Risk Management**: 8 risks properly stored and accessible in production
   - **Asset Management**: Enhanced asset tables with Incidents and Vulnerabilities action buttons
   - **KRI Dashboard**: Key Risk Indicators monitoring with real-time data
@@ -24,7 +27,7 @@
 - **MS Defender Features**: ✅ Fully functional with production database
 - **Cloudflare Deployment**: ✅ Live and active on aria51.pages.dev
 - **Health Check**: https://aria51.pages.dev/health
-- **Last Updated**: September 19, 2025 - Production Deployment
+- **Last Updated**: October 22, 2025 - HTML Rendering Fix
 
 ---
 
