@@ -45,3 +45,35 @@ export {
 } from './infrastructure/database/DatabaseConnection';
 export { ConsoleLogger } from './infrastructure/logging/ConsoleLogger';
 export { DependencyContainer } from './infrastructure/DependencyContainer';
+
+// Presentation Middleware
+export { 
+  authMiddleware, 
+  getCurrentUser, 
+  hasRole, 
+  hasPermission,
+  AuthConfig,
+  AuthUser 
+} from './presentation/middleware/AuthMiddleware';
+export { 
+  errorHandler, 
+  asyncHandler, 
+  createCustomErrorHandler,
+  ErrorHandlerConfig 
+} from './presentation/middleware/ErrorHandlerMiddleware';
+export { 
+  validate, 
+  getValidatedData,
+  ValidationSchema,
+  ValidationRule,
+  ValidationConfig 
+} from './presentation/middleware/ValidationMiddleware';
+export { 
+  rateLimit, 
+  userIdKeyGenerator, 
+  apiKeyGenerator,
+  createD1RateLimitStore,
+  RateLimitPresets,
+  RateLimitConfig,
+  RateLimitStore 
+} from './presentation/middleware/RateLimitMiddleware';
