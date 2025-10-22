@@ -1,9 +1,6 @@
 #!/bin/bash
-
-################################################################################
 # ARIA51 Production Deployment Script
-# Automates complete deployment with database structure
-################################################################################
+# Automates the complete deployment process including database migrations
 
 set -e  # Exit on error
 
@@ -14,200 +11,130 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Configuration
+# Project configuration
 PROJECT_NAME="aria51"
 DATABASE_NAME="aria51-production"
 DATABASE_ID="8c465a3b-7e5a-4f39-9237-ff56b8e644d0"
-PRODUCTION_URL="https://aria51.pages.dev"
 
-# Print header
-echo -e "${BLUE}"
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║        ARIA51 Production Deployment Script                  ║"
-echo "║        Enterprise Security Intelligence Platform            ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
-echo -e "${NC}"
+echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║   ARIA51 Production Deployment Script                 ║${NC}"
+echo -e "${BLUE}║   Enterprise Security Intelligence Platform            ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}"
+echo ""
 
-# Function to print status messages
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Check if CLOUDFLARE_API_TOKEN is set
-if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-    print_warning "CLOUDFLARE_API_TOKEN not set"
+# Step 1: Check authentication
+echo -e "${YELLOW}[1/6] Checking Cloudflare authentication...${NC}"
+if wrangler whoami > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Already authenticated with Cloudflare${NC}"
+    wrangler whoami
+else
+    echo -e "${RED}✗ Not authenticated with Cloudflare${NC}"
+    echo -e "${YELLOW}Please authenticate using one of these methods:${NC}"
     echo ""
-    echo "Please authenticate with Cloudflare:"
-    echo "  Option 1: Set API token: export CLOUDFLARE_API_TOKEN='your-token'"
-    echo "  Option 2: Interactive login: wrangler login"
+    echo "  Option 1 - OAuth (Interactive):"
+    echo "    wrangler login"
     echo ""
-    read -p "Continue with interactive authentication? (y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
-    
-    print_status "Starting interactive authentication..."
-    wrangler login
-fi
-
-# Verify authentication
-print_status "Verifying Cloudflare authentication..."
-if ! wrangler whoami > /dev/null 2>&1; then
-    print_error "Authentication failed. Please run: wrangler login"
+    echo "  Option 2 - API Token:"
+    echo "    export CLOUDFLARE_API_TOKEN='your-token'"
+    echo ""
+    echo "  Option 3 - Config file:"
+    echo "    Create ~/.wrangler/config/default.toml with api_token"
+    echo ""
     exit 1
 fi
-print_success "Authentication verified"
-
-# Step 1: Install dependencies
-print_status "Checking dependencies..."
-if [ ! -d "node_modules" ]; then
-    print_status "Installing npm dependencies..."
-    npm install
-    print_success "Dependencies installed"
-else
-    print_success "Dependencies already installed"
-fi
-
-# Step 2: Database migrations
-print_status "Applying database migrations..."
 echo ""
-echo "This will apply all migrations to: $DATABASE_NAME"
-read -p "Continue with database migration? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    print_status "Applying migrations to production database..."
-    wrangler d1 migrations apply $DATABASE_NAME --remote || {
-        print_warning "Migration may have already been applied or failed"
-    }
-    print_success "Database migrations processed"
-    
-    # Verify database
-    print_status "Verifying database structure..."
-    TABLE_COUNT=$(wrangler d1 execute $DATABASE_NAME --remote --command="SELECT COUNT(*) as count FROM sqlite_master WHERE type='table';" 2>/dev/null | grep -oP '\d+' || echo "0")
-    print_success "Database contains $TABLE_COUNT tables"
+
+# Step 2: Install dependencies
+echo -e "${YELLOW}[2/6] Installing dependencies...${NC}"
+if [ -d "node_modules" ]; then
+    echo -e "${GREEN}✓ Dependencies already installed${NC}"
 else
-    print_warning "Skipping database migrations"
+    npm install
+    echo -e "${GREEN}✓ Dependencies installed${NC}"
 fi
+echo ""
 
 # Step 3: Build application
-print_status "Building production application..."
-rm -rf dist/
+echo -e "${YELLOW}[3/6] Building application for production...${NC}"
 npm run build
-
-if [ ! -f "dist/_worker.js" ]; then
-    print_error "Build failed - dist/_worker.js not found"
+if [ -f "dist/_worker.js" ]; then
+    BUILD_SIZE=$(ls -lh dist/_worker.js | awk '{print $5}')
+    echo -e "${GREEN}✓ Build successful (Worker size: ${BUILD_SIZE})${NC}"
+else
+    echo -e "${RED}✗ Build failed - _worker.js not found${NC}"
     exit 1
 fi
-
-BUILD_SIZE=$(du -h dist/_worker.js | cut -f1)
-print_success "Build completed (Size: $BUILD_SIZE)"
-
-# Step 4: Deploy to Cloudflare Pages
-print_status "Deploying to Cloudflare Pages..."
 echo ""
-echo "Project: $PROJECT_NAME"
-echo "Database: $DATABASE_NAME"
-echo "Target: $PRODUCTION_URL"
-echo ""
-read -p "Proceed with deployment? (y/n) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    print_warning "Deployment cancelled by user"
-    exit 0
+
+# Step 4: Apply database migrations
+echo -e "${YELLOW}[4/6] Applying database migrations to production...${NC}"
+echo -e "${BLUE}Database: ${DATABASE_NAME}${NC}"
+echo -e "${BLUE}Database ID: ${DATABASE_ID}${NC}"
+
+# Check if database exists
+echo -e "${BLUE}Verifying database exists...${NC}"
+if wrangler d1 list | grep -q "${DATABASE_NAME}"; then
+    echo -e "${GREEN}✓ Database ${DATABASE_NAME} found${NC}"
+else
+    echo -e "${YELLOW}⚠ Database ${DATABASE_NAME} not found. Creating it...${NC}"
+    wrangler d1 create "${DATABASE_NAME}"
+    echo -e "${GREEN}✓ Database created${NC}"
+    echo -e "${YELLOW}⚠ Please update wrangler.jsonc with the new database_id${NC}"
 fi
 
-print_status "Deploying application..."
-DEPLOY_OUTPUT=$(wrangler pages deploy dist --project-name $PROJECT_NAME 2>&1)
-echo "$DEPLOY_OUTPUT"
-
-if echo "$DEPLOY_OUTPUT" | grep -q "Success"; then
-    print_success "Deployment successful!"
-    
-    # Extract deployment URL
-    DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -oP 'https://[a-z0-9]+\.aria51\.pages\.dev' | head -1)
-    if [ ! -z "$DEPLOY_URL" ]; then
-        echo ""
-        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-        echo -e "${GREEN}Deployment URL: $DEPLOY_URL${NC}"
-        echo -e "${GREEN}Production URL: $PRODUCTION_URL${NC}"
-        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    fi
+# Apply migrations
+echo -e "${BLUE}Applying migrations...${NC}"
+if wrangler d1 migrations apply "${DATABASE_NAME}" --remote; then
+    echo -e "${GREEN}✓ Database migrations applied successfully${NC}"
 else
-    print_error "Deployment may have failed - check output above"
+    echo -e "${YELLOW}⚠ Migration may have already been applied or failed${NC}"
+    echo -e "${BLUE}Continuing with deployment...${NC}"
+fi
+echo ""
+
+# Step 5: Verify database structure
+echo -e "${YELLOW}[5/6] Verifying database structure...${NC}"
+TABLE_COUNT=$(wrangler d1 execute "${DATABASE_NAME}" --remote --command="SELECT COUNT(*) as count FROM sqlite_master WHERE type='table';" --json | grep -o '"count":[0-9]*' | grep -o '[0-9]*')
+echo -e "${GREEN}✓ Database has ${TABLE_COUNT} tables${NC}"
+
+# Check for sample data
+RISK_COUNT=$(wrangler d1 execute "${DATABASE_NAME}" --remote --command="SELECT COUNT(*) as count FROM risks;" --json 2>/dev/null | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "0")
+USER_COUNT=$(wrangler d1 execute "${DATABASE_NAME}" --remote --command="SELECT COUNT(*) as count FROM users;" --json 2>/dev/null | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "0")
+echo -e "${GREEN}✓ Database has ${RISK_COUNT} risks and ${USER_COUNT} users${NC}"
+echo ""
+
+# Step 6: Deploy to Cloudflare Pages
+echo -e "${YELLOW}[6/6] Deploying to Cloudflare Pages...${NC}"
+echo -e "${BLUE}Project: ${PROJECT_NAME}${NC}"
+echo -e "${BLUE}Deploying from: ./dist${NC}"
+
+if wrangler pages deploy dist --project-name="${PROJECT_NAME}"; then
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║   🎉 DEPLOYMENT SUCCESSFUL! 🎉                        ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${GREEN}Production URL: ${NC}${BLUE}https://${PROJECT_NAME}.pages.dev${NC}"
+    echo ""
+    echo -e "${YELLOW}Next Steps:${NC}"
+    echo "  1. Test health endpoint: https://${PROJECT_NAME}.pages.dev/health"
+    echo "  2. Test login: https://${PROJECT_NAME}.pages.dev/login"
+    echo "  3. Verify risk data: https://${PROJECT_NAME}.pages.dev/risk"
+    echo ""
+    echo -e "${YELLOW}Demo Accounts:${NC}"
+    echo "  Admin: admin / demo123"
+    echo "  Risk Manager: avi_security / demo123"
+    echo "  Compliance Officer: sarah_compliance / demo123"
+    echo ""
+    echo -e "${YELLOW}Configure Production Secrets (if needed):${NC}"
+    echo "  wrangler pages secret put JWT_SECRET --project-name=${PROJECT_NAME}"
+    echo "  wrangler pages secret put OPENAI_API_KEY --project-name=${PROJECT_NAME}"
+    echo ""
+else
+    echo -e "${RED}✗ Deployment failed${NC}"
+    echo -e "${YELLOW}Troubleshooting:${NC}"
+    echo "  - Check authentication: wrangler whoami"
+    echo "  - Verify project exists: wrangler pages project list"
+    echo "  - Check logs: wrangler pages deployment tail --project-name=${PROJECT_NAME}"
     exit 1
 fi
-
-# Step 5: Post-deployment verification
-print_status "Running post-deployment checks..."
-sleep 5  # Wait for deployment to propagate
-
-# Check health endpoint
-print_status "Testing health endpoint..."
-HEALTH_RESPONSE=$(curl -s "$PRODUCTION_URL/health" || echo "")
-if echo "$HEALTH_RESPONSE" | grep -q "ok"; then
-    print_success "Health check passed"
-else
-    print_warning "Health check did not return expected response"
-    echo "Response: $HEALTH_RESPONSE"
-fi
-
-# Database connectivity check
-print_status "Testing database connectivity..."
-DB_TEST=$(wrangler d1 execute $DATABASE_NAME --remote --command="SELECT COUNT(*) FROM users;" 2>/dev/null || echo "0")
-if [ ! -z "$DB_TEST" ]; then
-    print_success "Database connectivity confirmed"
-else
-    print_warning "Database connectivity test inconclusive"
-fi
-
-# Final summary
-echo ""
-echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║                 Deployment Summary                           ║${NC}"
-echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-echo -e "${GREEN}✅ Build completed successfully${NC}"
-echo -e "${GREEN}✅ Database migrations applied${NC}"
-echo -e "${GREEN}✅ Application deployed to Cloudflare Pages${NC}"
-echo -e "${GREEN}✅ Health checks passed${NC}"
-echo ""
-echo "Production URLs:"
-echo "  • Main: $PRODUCTION_URL"
-echo "  • Health: $PRODUCTION_URL/health"
-echo "  • Dashboard: $PRODUCTION_URL/dashboard"
-echo "  • Risk Management: $PRODUCTION_URL/risk"
-echo "  • Operations: $PRODUCTION_URL/operations"
-echo "  • MS Defender: $PRODUCTION_URL/ms-defender"
-echo "  • AI Assistant: $PRODUCTION_URL/ai"
-echo ""
-echo "Demo Accounts:"
-echo "  • Admin: admin / demo123"
-echo "  • Risk Manager: avi_security / demo123"
-echo "  • Compliance: sarah_compliance / demo123"
-echo ""
-echo "Database Status:"
-echo "  • Name: $DATABASE_NAME"
-echo "  • Tables: 80+ (including all schema)"
-echo "  • Status: Connected and operational"
-echo ""
-echo -e "${YELLOW}Monitor deployment:${NC}"
-echo "  wrangler pages deployment tail $PROJECT_NAME"
-echo ""
-echo -e "${YELLOW}View logs:${NC}"
-echo "  https://dash.cloudflare.com/pages"
-echo ""
-echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
-echo ""
