@@ -3123,7 +3123,7 @@ const renderCreateRiskModal = async (db: D1Database, csrfToken?: string) => {
             <div class="ml-9">
               <label class="block text-sm font-medium text-gray-700 mb-2">Related Services</label>
               <div class="space-y-2 max-h-60 overflow-y-auto">
-                ${services.length > 0 ? services.map(service => `
+                ${raw(services.length > 0 ? services.map(service => `
                   <label class="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors cursor-pointer">
                     <input type="checkbox" name="affected_services[]" value="${service.service_id}" 
                            class="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded">
@@ -3148,7 +3148,7 @@ const renderCreateRiskModal = async (db: D1Database, csrfToken?: string) => {
                     <i class="fas fa-info-circle mr-2"></i>
                     No services found. <a href="/operations/services" class="text-green-600 hover:text-green-700 underline">Add services first</a>.
                   </div>
-                `}
+                `)}
               </div>
             </div>
           </div>

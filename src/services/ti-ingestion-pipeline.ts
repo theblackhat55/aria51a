@@ -316,7 +316,7 @@ export class TIIngestionPipeline {
       // Check custom conditions (e.g., EPSS score, CVSS score)
       if (conditions.customConditions) {
         for (const [field, condition] of Object.entries(conditions.customConditions)) {
-          if (condition['>='] && (!tiData.data[field] || tiData.data[field] < condition['>=']; )) {
+          if (condition['>='] && (!tiData.data[field] || tiData.data[field] < condition['>='])) {
             matches = false;
           }
           if (condition['=='] && tiData.data[field] !== condition['==']) {
