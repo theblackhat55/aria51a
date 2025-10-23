@@ -6,6 +6,7 @@ import type { CloudflareBindings } from '../types';
 import { setCSRFToken } from '../middleware/auth-middleware';
 import EnhancedRBACService, { requirePermission } from '../services/enhanced-rbac-service';
 import EnhancedSAMLService from '../services/enhanced-saml-service';
+import { renderMCPSettingsPage } from '../templates/mcp-settings-page';
 
 export function createAdminRoutesARIA5() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -392,6 +393,19 @@ export function createAdminRoutesARIA5() {
         title: 'System Settings',
         user,
         content: renderSystemSettingsPage()
+      })
+    );
+  });
+
+  // MCP Intelligence Settings
+  app.get('/mcp-settings', async (c) => {
+    const user = c.get('user');
+    
+    return c.html(
+      cleanLayout({
+        title: 'MCP Intelligence Settings',
+        user,
+        content: renderMCPSettingsPage()
       })
     );
   });
@@ -3342,6 +3356,10 @@ const renderSystemSettingsPage = () => html`
               <button onclick="showTab('backup')" id="backup-tab"
                       class="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg">
                 <i class="fas fa-database mr-2"></i>Backup
+              </button>
+              <button onclick="window.location.href='/admin/mcp-settings'" id="mcp-tab"
+                      class="flex items-center w-full px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 rounded-lg border-t border-gray-200 mt-2 pt-4">
+                <i class="fas fa-brain mr-2"></i>MCP Intelligence
               </button>
             </nav>
           </div>

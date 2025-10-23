@@ -20,9 +20,13 @@ export function createEnhancedAIChatRoutes() {
   
   app.use('*', async (c, next) => {
     if (!chatbotService) {
-      chatbotService = new UnifiedAIChatbotService(c.env.DB, c.env);
+      // Extract origin from request URL
+      const url = new URL(c.req.url);
+      const origin = `${url.protocol}//${url.host}`;
+      
+      chatbotService = new UnifiedAIChatbotService(c.env.DB, c.env, origin);
       await chatbotService.initialize();
-      console.log('✅ Unified AI Chatbot Service initialized');
+      console.log('✅ Unified AI Chatbot Service initialized with origin:', origin);
     }
     await next();
   });

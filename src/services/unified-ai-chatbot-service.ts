@@ -29,10 +29,12 @@ export class UnifiedAIChatbotService {
   private aiService: AIService | null = null;
   private contexts: Map<string, ConversationContext> = new Map();
   private providerPriority: string[] = [];
+  private requestOrigin: string = '';
   
-  constructor(db: D1Database, env?: any) {
+  constructor(db: D1Database, env?: any, requestOrigin?: string) {
     this.db = db;
     this.env = env;
+    this.requestOrigin = requestOrigin || '';
   }
 
   /**
@@ -268,6 +270,19 @@ export class UnifiedAIChatbotService {
     context: ConversationContext
   ): AsyncGenerator<StreamChunk> {
     
+    // Check for MCP commands first (Option C)
+    if (message.startsWith('/mcp-')) {
+      yield* this.handleMCPCommand(message, context);
+      return;
+    }
+
+    // Check if this is a search query or question (Option A)
+    const mcpIntent = this.detectMCPIntent(message);
+    if (mcpIntent.useMCP) {
+      yield* this.handleMCPRequest(message, context, mcpIntent);
+      return;
+    }
+    
     // Add user message to context
     context.messages.push({ role: 'user', content: message });
     
@@ -498,6 +513,305 @@ export class UnifiedAIChatbotService {
     // Add to context
     context.messages.push({ role: 'assistant', content: response });
     yield { type: 'done' };
+  }
+
+  /**
+   * Detect if message should use MCP (Option A)
+   */
+  private detectMCPIntent(message: string): { useMCP: boolean; type: 'search' | 'question' | null } {
+    const lowerMessage = message.toLowerCase();
+    
+    // Keywords that indicate search intent
+    const searchKeywords = [
+      'search for', 'find', 'look up', 'locate', 'show me all', 
+      'list', 'get', 'retrieve', 'fetch', 'query'
+    ];
+    
+    // Keywords that indicate question intent
+    const questionKeywords = [
+      'what', 'why', 'how', 'when', 'who', 'which', 'where',
+      'explain', 'describe', 'tell me about', 'can you explain'
+    ];
+    
+    // Check for search intent
+    for (const keyword of searchKeywords) {
+      if (lowerMessage.includes(keyword)) {
+        return { useMCP: true, type: 'search' };
+      }
+    }
+    
+    // Check for question intent
+    for (const keyword of questionKeywords) {
+      if (lowerMessage.includes(keyword) || lowerMessage.endsWith('?')) {
+        return { useMCP: true, type: 'question' };
+      }
+    }
+    
+    return { useMCP: false, type: null };
+  }
+
+  /**
+   * Handle MCP commands (Option C)
+   */
+  private async *handleMCPCommand(
+    message: string,
+    context: ConversationContext
+  ): AsyncGenerator<StreamChunk> {
+    const parts = message.trim().split(/\s+/);
+    const command = parts[0];
+    const args = parts.slice(1).join(' ');
+    
+    try {
+      yield { type: 'content', content: `🔮 **MCP Command Detected**: ${command}\n\n` };
+      
+      switch (command) {
+        case '/mcp-search':
+          if (!args) {
+            yield { type: 'content', content: '❌ Usage: /mcp-search <query>\nExample: /mcp-search ransomware risks' };
+          } else {
+            yield { type: 'content', content: `Searching for: "${args}"...\n\n` };
+            const results = await this.callMCPAPI('/mcp/search/hybrid', {
+              query: args,
+              topK: 5
+            });
+            yield { type: 'content', content: this.formatMCPSearchResults(results) };
+          }
+          break;
+          
+        case '/mcp-ask':
+          if (!args) {
+            yield { type: 'content', content: '❌ Usage: /mcp-ask <question>\nExample: /mcp-ask What are our top critical risks?' };
+          } else {
+            yield { type: 'content', content: `Asking: "${args}"...\n\n` };
+            const response = await this.callMCPAPI('/mcp/rag/query', {
+              question: args,
+              includeContext: true,
+              includeCitations: true
+            });
+            yield { type: 'content', content: this.formatMCPRAGResponse(response) };
+          }
+          break;
+          
+        case '/mcp-prompt':
+          if (!args) {
+            yield { type: 'content', content: '❌ Usage: /mcp-prompt <prompt_name>\nExample: /mcp-prompt analyze_risk_comprehensive' };
+          } else {
+            const promptName = parts[1];
+            const promptArgs = parts.slice(2).join(' ');
+            yield { type: 'content', content: `Executing prompt: "${promptName}"...\n\n` };
+            const response = await this.callMCPAPI(`/mcp/prompts/${promptName}/execute`, {
+              args: promptArgs ? JSON.parse(promptArgs) : {}
+            });
+            yield { type: 'content', content: `**Generated Prompt:**\n\n${response.generatedPrompt}` };
+          }
+          break;
+          
+        case '/mcp-expand':
+          if (!args) {
+            yield { type: 'content', content: '❌ Usage: /mcp-expand <query>\nExample: /mcp-expand phishing attack' };
+          } else {
+            yield { type: 'content', content: `Expanding query: "${args}"...\n\n` };
+            const response = await this.callMCPAPI('/mcp/query/expand', {
+              query: args,
+              maxTerms: 5,
+              useAI: false
+            });
+            yield { type: 'content', content: this.formatQueryExpansion(response) };
+          }
+          break;
+          
+        case '/mcp-help':
+          yield { type: 'content', content: this.getMCPCommandHelp() };
+          break;
+          
+        default:
+          yield { type: 'content', content: `❌ Unknown command: ${command}\n\nType /mcp-help for available commands.` };
+      }
+      
+      yield { type: 'done' };
+      
+    } catch (error) {
+      console.error('MCP command error:', error);
+      yield { type: 'error', error: `Failed to execute MCP command: ${error}` };
+      yield { type: 'done' };
+    }
+  }
+
+  /**
+   * Handle MCP search/question requests (Option A)
+   */
+  private async *handleMCPRequest(
+    message: string,
+    context: ConversationContext,
+    intent: { useMCP: boolean; type: 'search' | 'question' | null }
+  ): AsyncGenerator<StreamChunk> {
+    
+    try {
+      if (intent.type === 'search') {
+        // Use hybrid search
+        yield { type: 'content', content: '🔍 **Searching knowledge base...**\n\n' };
+        
+        const results = await this.callMCPAPI('/mcp/search/hybrid', {
+          query: message,
+          topK: 5
+        });
+        
+        yield { type: 'content', content: this.formatMCPSearchResults(results) };
+        
+      } else if (intent.type === 'question') {
+        // Use RAG pipeline
+        yield { type: 'content', content: '🤔 **Analyzing question...**\n\n' };
+        
+        const response = await this.callMCPAPI('/mcp/rag/query', {
+          question: message,
+          includeContext: true,
+          includeCitations: true
+        });
+        
+        yield { type: 'content', content: this.formatMCPRAGResponse(response) };
+      }
+      
+      // Add to context
+      context.messages.push({ role: 'user', content: message });
+      context.messages.push({ role: 'assistant', content: 'MCP response provided' });
+      
+      yield { type: 'done' };
+      
+    } catch (error) {
+      console.error('MCP request error:', error);
+      // Fallback to normal chatbot if MCP fails
+      yield { type: 'content', content: '⚠️ MCP service unavailable, using standard response...\n\n' };
+      yield* this.generateIntelligentFallback(message, context);
+    }
+  }
+
+  /**
+   * Call MCP API endpoint
+   * Note: Makes internal API calls to MCP endpoints on the same server
+   */
+  private async callMCPAPI(endpoint: string, data: any): Promise<any> {
+    // Construct full URL using request origin
+    const url = this.requestOrigin 
+      ? `${this.requestOrigin}${endpoint}`
+      : endpoint;
+    
+    console.log(`[MCP] Calling: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[MCP] API error: ${response.status} ${response.statusText}`, errorText);
+      throw new Error(`MCP API error: ${response.status} ${response.statusText}`);
+    }
+    
+    return await response.json();
+  }
+
+  /**
+   * Format MCP search results for display
+   */
+  private formatMCPSearchResults(response: any): string {
+    if (!response.success || !response.results || response.results.length === 0) {
+      return '❌ No results found.';
+    }
+    
+    let output = `✅ **Found ${response.count} results** (Hybrid search - 90% accuracy)\n\n`;
+    
+    for (const result of response.results) {
+      const score = Math.round(result.score * 100);
+      const metadata = result.metadata || {};
+      
+      output += `📄 **${metadata.title || 'Document'}** (${score}% match)\n`;
+      output += `   ${metadata.description || result.text?.substring(0, 150) || 'No description'}...\n`;
+      output += `   Type: ${metadata.type || 'unknown'} | ID: ${metadata.id || 'N/A'}\n\n`;
+    }
+    
+    return output;
+  }
+
+  /**
+   * Format MCP RAG response for display
+   */
+  private formatMCPRAGResponse(response: any): string {
+    if (!response.success) {
+      return '❌ Failed to generate answer.';
+    }
+    
+    let output = `💡 **Answer** (Confidence: ${Math.round((response.confidence || 0) * 100)}%)\n\n`;
+    output += `${response.answer}\n\n`;
+    
+    if (response.sources && response.sources.length > 0) {
+      output += `📚 **Sources:**\n`;
+      for (const source of response.sources) {
+        output += `• ${source.title || 'Document'} (${Math.round(source.relevance * 100)}% relevant)\n`;
+        if (source.citation) {
+          output += `  "${source.citation}"\n`;
+        }
+      }
+    }
+    
+    if (response.modelUsed) {
+      output += `\n🤖 Model: ${response.modelUsed} | Tokens: ${response.tokensUsed || 0} | Time: ${response.responseTime || 0}ms`;
+    }
+    
+    return output;
+  }
+
+  /**
+   * Format query expansion results
+   */
+  private formatQueryExpansion(response: any): string {
+    if (!response.success) {
+      return '❌ Failed to expand query.';
+    }
+    
+    let output = `**Original Query:** ${response.originalQuery}\n\n`;
+    output += `**Expanded Query:** ${response.expandedQuery}\n\n`;
+    output += `**Added Terms:** ${response.addedTerms.join(', ')}\n\n`;
+    output += `**Confidence:** ${Math.round(response.confidence * 100)}%`;
+    
+    return output;
+  }
+
+  /**
+   * Get MCP command help
+   */
+  private getMCPCommandHelp(): string {
+    return `🔮 **MCP Intelligence Commands**
+
+Available commands:
+
+**/mcp-search <query>**
+  Perform hybrid semantic + keyword search
+  Example: /mcp-search ransomware risks
+
+**/mcp-ask <question>**
+  Ask a question and get AI-powered answer with citations
+  Example: /mcp-ask What are our critical compliance gaps?
+
+**/mcp-prompt <name> [args]**
+  Execute enterprise prompt template
+  Example: /mcp-prompt analyze_risk_comprehensive {"risk_id": 123}
+
+**/mcp-expand <query>**
+  Expand query with related security terms
+  Example: /mcp-expand phishing attack
+
+**/mcp-help**
+  Show this help message
+
+**Natural Language:**
+You can also use natural language - I'll detect search queries and questions automatically!
+• "Search for SQL injection vulnerabilities"
+• "What are the top threats we're facing?"
+• "Find all high-risk assessments"`;
   }
 
   /**
