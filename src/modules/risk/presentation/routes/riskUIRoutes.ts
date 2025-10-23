@@ -7,7 +7,6 @@
 
 import { Hono } from 'hono';
 import { D1Database } from '@cloudflare/workers-types';
-import { getCookie } from 'hono/cookie';
 
 // Layout
 import { cleanLayout } from '../../../../templates/layout-clean';
@@ -83,17 +82,8 @@ export function createRiskUIRoutes() {
    * Main risk management page
    */
   app.get('/', async (c) => {
-    // Get user from aria_user cookie (stored by login)
-    const userCookie = getCookie(c, 'aria_user');
-    let user = null;
-    
-    if (userCookie) {
-      try {
-        user = JSON.parse(decodeURIComponent(userCookie));
-      } catch (e) {
-        console.error('Failed to parse user cookie:', e);
-      }
-    }
+    // Get user from auth middleware (set by authMiddleware in index-secure.ts)
+    const user = c.get('user');
     
     // Wrap the risk management page in the cleanLayout
     return c.html(
