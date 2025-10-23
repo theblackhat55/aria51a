@@ -1549,7 +1549,15 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Register new threat</div>
                   </div>
                 </a>
-
+                <div class="border-t border-gray-100 my-2"></div>
+                <a href="/risk-v2/ui/" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                  <i class="fas fa-layer-group w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Risk Module v2</div>
+                    <div class="text-xs text-gray-500">Clean Architecture (Beta)</div>
+                  </div>
+                </a>
+                <div class="border-t border-gray-100 my-2"></div>
                 <a href="/risk-controls" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700">
                   <i class="fas fa-link w-5 text-purple-500 mr-3"></i>
                   <div>
@@ -1842,6 +1850,10 @@ const renderCleanNavigation = (user: any) => html`
                 <a href="/risk" class="flex items-center p-3 hover:bg-red-100 rounded-lg transition-colors active:scale-98">
                   <i class="fas fa-shield-alt text-red-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-red-800">Risk Register</span>
+                </a>
+                <a href="/risk-v2/ui/" class="flex items-center p-3 hover:bg-blue-100 rounded-lg transition-colors active:scale-98 bg-gradient-to-r from-blue-50 to-blue-100">
+                  <i class="fas fa-layer-group text-blue-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-blue-800">Risk Module v2 <span class="text-xs">(Beta)</span></span>
                 </a>
                 <a href="/risk/assessments" class="flex items-center p-3 hover:bg-red-100 rounded-lg transition-colors active:scale-98">
                   <i class="fas fa-clipboard-check text-red-600 w-6 mr-3"></i>
