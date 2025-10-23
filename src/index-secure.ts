@@ -523,7 +523,13 @@ app.route('/api/ai-threat', aiThreatAnalysisRoutes);
 import apiRiskConsistencyRoutes from './routes/api-risk-consistency';
 app.route('/api/risk-consistency', apiRiskConsistencyRoutes);
 
+// MCP Server API - Semantic Search & RAG (Phase 1 & 2)
+import { createMCPRoutes } from './routes/mcp-routes';
+app.route('/mcp', createMCPRoutes());
 
+// Webhook Routes - Real-Time Auto-Indexing (Phase 3)
+import { createWebhookRoutes } from './routes/webhook-routes';
+app.route('/webhooks', createWebhookRoutes());
 
 // Phase 4: Enterprise Multi-Tenancy API - TEMPORARILY DISABLED
 // TODO: Re-enable when Phase 4 multi-tenancy features are needed

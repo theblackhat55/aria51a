@@ -54,6 +54,7 @@
     "ENCRYPTION_KEY_ROTATION_DAYS": "90",
     "WEBSOCKET_TIMEOUT": "300000",
     "AI_REQUEST_TIMEOUT": "30000",
-    "COMPLIANCE_REPORT_TTL": "604800"
+    "COMPLIANCE_REPORT_TTL": "604800",
+    "WEBHOOK_SECRET": ""  // Set via: wrangler secret put WEBHOOK_SECRET (for production)
   }
 }
