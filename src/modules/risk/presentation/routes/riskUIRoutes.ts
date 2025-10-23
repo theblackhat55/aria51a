@@ -95,6 +95,51 @@ export function createRiskUIRoutes() {
     );
   });
 
+  // ===== Debug Endpoint =====
+  
+  /**
+   * GET /risk-v2/ui/debug
+   * Debug endpoint to check database connection and query
+   */
+  app.get('/debug', async (c) => {
+    try {
+      // Test 1: Count risks
+      const countResult = await c.env.DB
+        .prepare('SELECT COUNT(*) as count FROM risks')
+        .first<{ count: number }>();
+      
+      // Test 2: Get sample risks
+      const risksResult = await c.env.DB
+        .prepare('SELECT id, title, category, status, probability, impact FROM risks LIMIT 3')
+        .all();
+      
+      // Test 3: Test repository
+      const repository = new D1RiskRepositoryProduction(c.env.DB);
+      let repoTest = null;
+      try {
+        const stats = await repository.getStatistics();
+        repoTest = { success: true, total: stats.total };
+      } catch (repoError: any) {
+        repoTest = { success: false, error: repoError.message };
+      }
+      
+      return c.json({
+        success: true,
+        tests: {
+          count: countResult?.count || 0,
+          sampleRisks: risksResult.results || [],
+          repositoryTest: repoTest
+        }
+      });
+    } catch (error: any) {
+      return c.json({
+        success: false,
+        error: error.message,
+        stack: error.stack
+      }, 500);
+    }
+  });
+
   // ===== HTMX Endpoints =====
 
   /**
@@ -133,6 +178,8 @@ export function createRiskUIRoutes() {
    */
   app.get('/table', async (c) => {
     try {
+      console.log('🔍 Risk table endpoint called');
+      
       const repository = new D1RiskRepositoryProduction(c.env.DB);
       const handler = new ListRisksHandler(repository);
       
@@ -145,6 +192,8 @@ export function createRiskUIRoutes() {
       const sortOrder = c.req.query('sortOrder') || 'desc';
       const page = parseInt(c.req.query('page') || '1');
       const limit = parseInt(c.req.query('limit') || '20');
+      
+      console.log('📋 Query params:', { search, status, category, riskLevel, sortBy, sortOrder, page, limit });
       
       // Build query
       const queryParams: any = {
@@ -160,7 +209,9 @@ export function createRiskUIRoutes() {
       if (riskLevel) queryParams.riskLevel = riskLevel;
       
       const query = new ListRisksQuery(queryParams);
+      console.log('🎯 Executing query...');
       const result = await handler.execute(query);
+      console.log(`✅ Query returned ${result.items.length} risks out of ${result.total} total`);
       
       // Fetch owner names from users table
       const ownerIds = [...new Set(result.items.map(item => item.ownerId).filter(id => id !== null))];
@@ -201,7 +252,8 @@ export function createRiskUIRoutes() {
       
       return c.html(renderRiskTable(risks));
     } catch (error: any) {
-      console.error('Error fetching risks:', error);
+      console.error('❌ Error fetching risks:', error);
+      console.error('Stack trace:', error.stack);
       return c.html(renderRiskTable([]));
     }
   });
