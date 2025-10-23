@@ -43,6 +43,7 @@ import { D1RiskRepositoryProduction } from '../../infrastructure/repositories/D1
 // Types
 interface CloudflareBindings {
   DB: D1Database;
+  AI: any; // Cloudflare AI binding
 }
 
 /**
@@ -958,6 +959,232 @@ RISK-SAMPLE-002,Sample Risk 2,Another sample risk entry,operational,insider_thre
         success: false, 
         message: `Export failed: ${error.message}` 
       }, 500);
+    }
+  });
+
+  // ===== Enhanced Form API Endpoints =====
+
+  /**
+   * GET /risk-v2/ui/create-enhanced
+   * Show enhanced risk creation modal with AI and service/asset linking
+   */
+  app.get('/create-enhanced', async (c) => {
+    return c.html(renderEnhancedCreateRiskModal());
+  });
+
+  /**
+   * POST /risk-v2/ui/analyze-ai
+   * Analyze risk using Cloudflare AI and return structured recommendations
+   */
+  app.post('/analyze-ai', async (c) => {
+    const { env } = c;
+    const formData = await c.req.parseBody();
+    
+    try {
+      // Extract risk information from form
+      const riskTitle = formData.title_preview as string || 'Untitled Risk';
+      const riskDescription = formData.description_preview as string || 'No description provided';
+      const riskCategory = formData.category_preview as string || 'General';
+      
+      // Create AI prompt for risk analysis with structured data
+      const prompt = `You are an expert risk analyst. Analyze this business risk and provide both a detailed analysis AND structured data for risk management forms.
+
+Risk Title: ${riskTitle}
+Description: ${riskDescription}
+Category: ${riskCategory}
+
+Provide your response in TWO parts:
+
+PART 1 - DETAILED ANALYSIS:
+1. Risk Assessment Summary
+2. Key Risk Factors (3-4 bullet points)
+3. Potential Business Impact
+4. Recommended Mitigation Actions (3-4 specific steps)  
+5. Monitoring Indicators
+
+PART 2 - STRUCTURED DATA (use this exact format):
+PROBABILITY_SCORE: [1-5, where 1=Very Low, 5=Very High]
+IMPACT_SCORE: [1-5, where 1=Minimal, 5=Severe]
+RISK_OWNER: [suggest appropriate role/department]
+TREATMENT_STRATEGY: [Accept/Mitigate/Transfer/Avoid]
+MITIGATION_ACTIONS: [2-3 specific actionable steps, separated by semicolons]
+REVIEW_DATE: [suggest date 3-6 months from now in YYYY-MM-DD format]
+TARGET_DATE: [suggest completion date 1-3 months from now in YYYY-MM-DD format]
+
+Be practical and actionable in your analysis.`;
+
+      // Use Cloudflare AI Workers AI
+      const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        messages: [
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 1024
+      });
+
+      const analysis = response.response || 'Analysis could not be generated.';
+
+      // Import render function
+      const { renderAIAnalysisResult } = await import('../templates/riskFormsEnhanced');
+      return c.html(renderAIAnalysisResult(analysis, riskTitle, riskDescription, riskCategory));
+
+    } catch (error: any) {
+      console.error('AI analysis error:', error);
+      return c.html(`
+        <div class="mt-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-times-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">AI analysis failed</span>
+          </div>
+          <p class="text-red-600 text-sm mt-1">${error.message}</p>
+        </div>
+      `);
+    }
+  });
+
+  /**
+   * GET /risk-v2/ui/services
+   * Get list of active services for selection
+   */
+  app.get('/services', async (c) => {
+    try {
+      const result = await c.env.DB
+        .prepare(`
+          SELECT id, name, criticality_score, type, category
+          FROM services
+          WHERE status = 'active'
+          ORDER BY criticality_score DESC, name ASC
+        `)
+        .all();
+
+      const services = result.results || [];
+      
+      // Import render function
+      const { renderServicesOptions } = await import('../templates/riskFormsEnhanced');
+      return c.html(renderServicesOptions(services as any));
+
+    } catch (error: any) {
+      console.error('Services fetch error:', error);
+      return c.html('<option value="">Error loading services</option>');
+    }
+  });
+
+  /**
+   * GET /risk-v2/ui/assets-by-services
+   * Get assets filtered by selected services
+   */
+  app.get('/assets-by-services', async (c) => {
+    try {
+      const serviceIds = c.req.query('services') || '';
+      
+      if (!serviceIds) {
+        const { renderAssetsOptions } = await import('../templates/riskFormsEnhanced');
+        return c.html(renderAssetsOptions([]));
+      }
+
+      // Parse service IDs (can be comma-separated)
+      const serviceIdArray = serviceIds.split(',').filter(id => id.trim());
+      
+      if (serviceIdArray.length === 0) {
+        const { renderAssetsOptions } = await import('../templates/riskFormsEnhanced');
+        return c.html(renderAssetsOptions([]));
+      }
+
+      // Build SQL query with IN clause
+      const placeholders = serviceIdArray.map(() => '?').join(',');
+      const query = `
+        SELECT DISTINCT a.id, a.name, a.criticality, a.type
+        FROM assets a
+        INNER JOIN service_assets sa ON a.id = sa.asset_id
+        WHERE sa.service_id IN (${placeholders})
+          AND a.status = 'active'
+        ORDER BY 
+          CASE a.criticality 
+            WHEN 'critical' THEN 1
+            WHEN 'high' THEN 2
+            WHEN 'medium' THEN 3
+            WHEN 'low' THEN 4
+            ELSE 5
+          END,
+          a.name ASC
+      `;
+
+      const result = await c.env.DB
+        .prepare(query)
+        .bind(...serviceIdArray)
+        .all();
+
+      const assets = result.results || [];
+      
+      // Import render function
+      const { renderAssetsOptions } = await import('../templates/riskFormsEnhanced');
+      return c.html(renderAssetsOptions(assets as any));
+
+    } catch (error: any) {
+      console.error('Assets fetch error:', error);
+      return c.html('<option value="">Error loading assets</option>');
+    }
+  });
+
+  /**
+   * POST /risk-v2/ui/calculate-dynamic-score
+   * Calculate risk score with service/asset criticality adjustments
+   */
+  app.post('/calculate-dynamic-score', async (c) => {
+    try {
+      const formData = await c.req.parseBody();
+      
+      const probability = parseInt(formData.probability as string) || 3;
+      const impact = parseInt(formData.impact as string) || 3;
+      const baseScore = probability * impact;
+      
+      // Get selected services
+      const services = formData.services as string | string[] | undefined;
+      const serviceIds = Array.isArray(services) ? services : (services ? [services] : []);
+      
+      let adjustmentFactor = 1.0;
+      
+      if (serviceIds.length > 0) {
+        // Fetch criticality scores for selected services
+        const placeholders = serviceIds.map(() => '?').join(',');
+        const query = `
+          SELECT AVG(criticality_score) as avg_criticality
+          FROM services
+          WHERE id IN (${placeholders})
+        `;
+        
+        const result = await c.env.DB
+          .prepare(query)
+          .bind(...serviceIds)
+          .first();
+
+        if (result && result.avg_criticality) {
+          const avgCriticality = result.avg_criticality as number;
+          // Adjustment formula: 1.0 + (avg_criticality - 3) * 0.15
+          // Critical services (5): 1.30x
+          // High services (4): 1.15x
+          // Medium services (3): 1.00x (no adjustment)
+          // Low services (2): 0.85x
+          // Minimal services (1): 0.70x
+          adjustmentFactor = 1.0 + (avgCriticality - 3) * 0.15;
+        }
+      }
+      
+      const adjustedScore = Math.round(baseScore * adjustmentFactor);
+      const level = adjustedScore >= 20 ? 'Critical' : adjustedScore >= 12 ? 'High' : adjustedScore >= 6 ? 'Medium' : 'Low';
+      
+      // Import render function
+      const { renderDynamicRiskScoreDisplay } = await import('../templates/riskFormsEnhanced');
+      return c.html(renderDynamicRiskScoreDisplay(baseScore, adjustedScore, adjustmentFactor, level));
+
+    } catch (error: any) {
+      console.error('Risk calculation error:', error);
+      return c.html(`
+        <input type="text" 
+               value="Error" 
+               readonly
+               class="w-full px-3 py-2 border border-red-300 rounded-md bg-red-50 text-red-700">
+        <p class="text-xs text-red-600 mt-1">${error.message}</p>
+      `);
     }
   });
 

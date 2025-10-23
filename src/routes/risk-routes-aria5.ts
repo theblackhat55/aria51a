@@ -6,6 +6,7 @@ import { createAIService } from '../services/ai-providers';
 import { setCSRFToken, authMiddleware } from '../middleware/auth-middleware';
 import { DynamicRiskManager, DynamicRiskState, ThreatIntelligenceData } from '../services/dynamic-risk-manager';
 import type { CloudflareBindings } from '../types';
+import { renderEnhancedRiskModal } from '../components/enhanced-risk-modal';
 
 export function createRiskRoutesARIA5() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -205,10 +206,11 @@ export function createRiskRoutesARIA5() {
 
 
 
-  // Create risk modal (with CSRF protection)
+  // Create risk modal (with CSRF protection) - Enhanced Version with Dynamic Service Rating
   app.get('/create', authMiddleware, async (c) => {
     const csrfToken = setCSRFToken(c);
-    const modalHtml = await renderCreateRiskModal(c.env.DB, csrfToken);
+    // Use enhanced modal with AI capabilities and dynamic service-based risk rating
+    const modalHtml = await renderEnhancedRiskModal(c.env.DB, csrfToken);
     return c.html(modalHtml);
   });
 
