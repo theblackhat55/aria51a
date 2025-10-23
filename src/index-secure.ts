@@ -449,12 +449,18 @@ app.route('/risk', createRiskRoutesARIA5());
 // UI Routes: /risk-v2/ui/* (HTMX/HTML responses)
 import { createRiskRoutesV2, createRiskUIRoutes } from './modules/risk/presentation/routes';
 
-// Redirect /risk-v2/ to /risk-v2/ui/
+// Redirect /risk-v2 and /risk-v2/ to /risk-v2/ui (without trailing slash)
 app.get('/risk-v2', (c) => c.redirect('/risk-v2/ui'));
-app.get('/risk-v2/', (c) => c.redirect('/risk-v2/ui/'));
+app.get('/risk-v2/', (c) => c.redirect('/risk-v2/ui'));
 
+// Mount the API routes
 app.route('/risk-v2/api', createRiskRoutesV2());
-app.route('/risk-v2/ui', createRiskUIRoutes());
+
+// Mount the UI routes at both /risk-v2/ui and /risk-v2/ui/
+// Hono's app.route() doesn't handle trailing slashes automatically
+const riskUIRoutes = createRiskUIRoutes();
+app.route('/risk-v2/ui/', riskUIRoutes); // With trailing slash
+app.route('/risk-v2/ui', riskUIRoutes);  // Without trailing slash
 
 // Enhanced Dynamic Risk Assessment (requires authentication)
 app.route('/risk/enhanced', createEnhancedDynamicRiskRoutes());

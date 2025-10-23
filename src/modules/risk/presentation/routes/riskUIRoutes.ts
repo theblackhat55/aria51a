@@ -75,7 +75,7 @@ export function createRiskUIRoutes() {
   // ===== Main Page =====
 
   /**
-   * GET /risk-v2/ui
+   * GET /risk-v2/ui and /risk-v2/ui/
    * Main risk management page
    */
   app.get('/', async (c) => {
