@@ -143,6 +143,110 @@ export function createMCPRoutes() {
   });
 
   /**
+   * Hybrid search endpoint (combines semantic + keyword)
+   */
+  app.post('/search/hybrid', async (c) => {
+    try {
+      const { query, namespace, filters, topK, config } = await c.req.json();
+      
+      // Import HybridSearchService
+      const { HybridSearchService } = await import('../mcp-server/services/hybrid-search-service');
+      const hybridSearch = new HybridSearchService(c.env as any, config);
+      
+      const results = await hybridSearch.search({
+        query,
+        namespace: namespace || 'risks',
+        filters,
+        topK: topK || 10,
+        config
+      });
+      
+      return c.json({
+        success: true,
+        results,
+        count: results.length,
+        method: 'hybrid',
+        config: hybridSearch.getConfig()
+      });
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
+   * List all available MCP prompts
+   */
+  app.get('/prompts', async (c) => {
+    try {
+      const mcpServer = createMCPServer(c.env as any);
+      const prompts = mcpServer.listPrompts();
+      
+      return c.json({
+        prompts,
+        count: prompts.length
+      });
+    } catch (error) {
+      return c.json({
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
+   * Get prompt template by name
+   */
+  app.get('/prompts/:promptName', async (c) => {
+    try {
+      const promptName = c.req.param('promptName');
+      const mcpServer = createMCPServer(c.env as any);
+      
+      // Get prompt details
+      const prompts = mcpServer.listPrompts();
+      const prompt = prompts.find(p => p.name === promptName);
+      
+      if (!prompt) {
+        return c.json({
+          error: `Prompt not found: ${promptName}`
+        }, 404);
+      }
+      
+      return c.json(prompt);
+    } catch (error) {
+      return c.json({
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
+   * Execute prompt with arguments
+   */
+  app.post('/prompts/:promptName/execute', async (c) => {
+    try {
+      const promptName = c.req.param('promptName');
+      const args = await c.req.json();
+      
+      const mcpServer = createMCPServer(c.env as any);
+      const promptText = mcpServer.getPrompt(promptName, args);
+      
+      return c.json({
+        success: true,
+        prompt: promptName,
+        generatedPrompt: promptText,
+        arguments: args
+      });
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
    * Vectorize statistics
    */
   app.get('/stats', async (c) => {

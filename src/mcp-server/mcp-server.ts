@@ -21,6 +21,9 @@ import { riskRegisterResource, complianceFrameworkResource } from './resources/p
 import { nistCsfResource } from './resources/nist-csf-resource';
 import { iso27001Resource } from './resources/iso27001-resource';
 
+// Import prompts
+import { allEnterprisePrompts, getPromptByName, promptStats } from './prompts/enterprise-prompts';
+
 export class MCPServer {
   private env: MCPEnvironment;
   private vectorize: VectorizeService;
@@ -85,17 +88,18 @@ export class MCPServer {
    * Register all MCP prompts
    */
   private registerPrompts(): void {
-    // Risk analysis prompts
-    this.prompts.set('analyze_risk_with_context', {
-      name: 'analyze_risk_with_context',
-      description: 'Analyze risk with full platform context',
-      arguments: [
-        { name: 'risk_id', description: 'Risk ID to analyze', required: true, type: 'number' }
-      ],
-      template: (args) => `Analyze risk ID ${args.risk_id} with current platform context including related threats, controls, and incidents. Provide comprehensive risk assessment with recommendations.`
+    // Register all enterprise prompts
+    allEnterprisePrompts.forEach(prompt => {
+      this.prompts.set(prompt.name, prompt);
     });
     
-    console.log(`✅ Registered ${this.prompts.size} MCP prompts`);
+    console.log(`✅ Registered ${this.prompts.size} MCP prompts (${promptStats.total} total)`);
+    console.log(`   - Risk Analysis: ${promptStats.byCategory.riskAnalysis}`);
+    console.log(`   - Compliance & Audit: ${promptStats.byCategory.compliance}`);
+    console.log(`   - Threat Intelligence: ${promptStats.byCategory.threat}`);
+    console.log(`   - Incident Response: ${promptStats.byCategory.incidentResponse}`);
+    console.log(`   - Asset & Vulnerability: ${promptStats.byCategory.asset}`);
+    console.log(`   - Metrics & Reporting: ${promptStats.byCategory.metrics}`);
   }
 
   /**
