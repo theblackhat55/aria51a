@@ -17,6 +17,7 @@ import {
   renderViewRiskModal,
   renderEditRiskModal,
   renderStatusChangeModal,
+  renderImportRisksModal,
   renderRiskScoreDisplay,
   type RiskStatistics,
   type RiskRow
@@ -43,6 +44,31 @@ interface CloudflareBindings {
  * 
  * @returns Hono app with all /risk-v2/ui/* routes
  */
+/**
+ * Helper function to fetch owner name from users table
+ */
+async function getOwnerName(db: D1Database, ownerId: number | null): Promise<string | undefined> {
+  if (!ownerId) return undefined;
+  
+  try {
+    const result = await db
+      .prepare('SELECT first_name, last_name FROM users WHERE id = ?')
+      .bind(ownerId)
+      .first();
+    
+    if (result) {
+      const firstName = (result as any).first_name || '';
+      const lastName = (result as any).last_name || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      return fullName || 'Unknown User';
+    }
+  } catch (error) {
+    console.error(`Error fetching owner name for ID ${ownerId}:`, error);
+  }
+  
+  return undefined;
+}
+
 export function createRiskUIRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -123,6 +149,23 @@ export function createRiskUIRoutes() {
       const query = new ListRisksQuery(queryParams);
       const result = await handler.execute(query);
       
+      // Fetch owner names from users table
+      const ownerIds = [...new Set(result.items.map(item => item.ownerId).filter(id => id !== null))];
+      const ownerMap = new Map<number, string>();
+      
+      if (ownerIds.length > 0) {
+        const placeholders = ownerIds.map(() => '?').join(',');
+        const ownerQuery = `SELECT id, first_name, last_name FROM users WHERE id IN (${placeholders})`;
+        const ownersResult = await c.env.DB.prepare(ownerQuery).bind(...ownerIds).all();
+        
+        if (ownersResult.success && ownersResult.results) {
+          ownersResult.results.forEach((owner: any) => {
+            const fullName = `${owner.first_name || ''} ${owner.last_name || ''}`.trim();
+            ownerMap.set(owner.id, fullName || 'Unknown User');
+          });
+        }
+      }
+      
       // Convert to RiskRow format
       const risks: RiskRow[] = result.items.map(item => ({
         id: item.id,
@@ -137,7 +180,7 @@ export function createRiskUIRoutes() {
         riskLevel: item.riskLevel,
         organizationId: item.organizationId,
         ownerId: item.ownerId,
-        ownerName: undefined, // TODO: Load from users table
+        ownerName: item.ownerId ? ownerMap.get(item.ownerId) : undefined,
         reviewDate: item.reviewDate,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
@@ -175,6 +218,9 @@ export function createRiskUIRoutes() {
         return c.html('<div class="p-6 text-center text-red-600">Risk not found</div>');
       }
       
+      // Fetch owner name
+      const ownerName = await getOwnerName(c.env.DB, risk.ownerId);
+      
       // Convert to RiskRow format
       const riskRow: RiskRow = {
         id: risk.id,
@@ -189,6 +235,7 @@ export function createRiskUIRoutes() {
         riskLevel: risk.riskLevel,
         organizationId: risk.organizationId,
         ownerId: risk.ownerId,
+        ownerName: ownerName,
         reviewDate: risk.reviewDate,
         createdAt: risk.createdAt,
         updatedAt: risk.updatedAt
@@ -218,6 +265,9 @@ export function createRiskUIRoutes() {
         return c.html('<div class="p-6 text-center text-red-600">Risk not found</div>');
       }
       
+      // Fetch owner name
+      const ownerName = await getOwnerName(c.env.DB, risk.ownerId);
+      
       // Convert to RiskRow format
       const riskRow: RiskRow = {
         id: risk.id,
@@ -232,6 +282,7 @@ export function createRiskUIRoutes() {
         riskLevel: risk.riskLevel,
         organizationId: risk.organizationId,
         ownerId: risk.ownerId,
+        ownerName: ownerName,
         reviewDate: risk.reviewDate,
         createdAt: risk.createdAt,
         updatedAt: risk.updatedAt
@@ -261,6 +312,9 @@ export function createRiskUIRoutes() {
         return c.html('<div class="p-6 text-center text-red-600">Risk not found</div>');
       }
       
+      // Fetch owner name
+      const ownerName = await getOwnerName(c.env.DB, risk.ownerId);
+      
       // Convert to RiskRow format
       const riskRow: RiskRow = {
         id: risk.id,
@@ -275,6 +329,7 @@ export function createRiskUIRoutes() {
         riskLevel: risk.riskLevel,
         organizationId: risk.organizationId,
         ownerId: risk.ownerId,
+        ownerName: ownerName,
         reviewDate: risk.reviewDate,
         createdAt: risk.createdAt,
         updatedAt: risk.updatedAt
@@ -320,18 +375,298 @@ export function createRiskUIRoutes() {
 
   /**
    * GET /risk-v2/ui/import
-   * Import modal (placeholder)
+   * Import modal
    */
   app.get('/import', async (c) => {
-    return c.html('<div class="p-6 text-center">Import modal - Coming soon</div>');
+    return c.html(renderImportRisksModal());
+  });
+
+  /**
+   * GET /risk-v2/ui/import/template
+   * Download CSV template
+   */
+  app.get('/import/template', async (c) => {
+    const template = `risk_id,title,description,category,subcategory,probability,impact,status,owner_id,organization_id,review_date,source,tags,mitigation_plan
+RISK-SAMPLE-001,Sample Risk 1,This is a sample risk for testing import,cybersecurity,data_breach,4,5,active,1,1,2025-02-28,Import Template,"security,high-priority","Implement MFA and encryption"
+RISK-SAMPLE-002,Sample Risk 2,Another sample risk entry,operational,insider_threat,3,4,monitoring,2,1,2025-03-15,Import Template,"internal,monitoring","Regular audits and access reviews"`;
+    
+    return c.body(template, 200, {
+      'Content-Type': 'text/csv',
+      'Content-Disposition': 'attachment; filename="risk_import_template.csv"'
+    });
+  });
+
+  /**
+   * POST /risk-v2/ui/import
+   * Handle CSV import
+   */
+  app.post('/import', async (c) => {
+    try {
+      const formData = await c.req.formData();
+      const file = formData.get('file') as File;
+      const skipDuplicates = formData.get('skipDuplicates') === 'true';
+      const validateOnly = formData.get('validateOnly') === 'true';
+
+      if (!file) {
+        return c.html(`
+          <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+            <p class="text-red-800"><i class="fas fa-exclamation-circle mr-2"></i>No file uploaded</p>
+          </div>
+        `);
+      }
+
+      // Read CSV content
+      const text = await file.text();
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+      
+      if (lines.length < 2) {
+        return c.html(`
+          <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+            <p class="text-red-800"><i class="fas fa-exclamation-circle mr-2"></i>CSV file is empty or invalid</p>
+          </div>
+        `);
+      }
+
+      // Parse CSV
+      const headers = lines[0].split(',').map(h => h.trim());
+      const requiredColumns = ['risk_id', 'title', 'description', 'category', 'probability', 'impact', 'status'];
+      const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+
+      if (missingColumns.length > 0) {
+        return c.html(`
+          <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+            <p class="text-red-800"><i class="fas fa-exclamation-circle mr-2"></i>Missing required columns: ${missingColumns.join(', ')}</p>
+          </div>
+        `);
+      }
+
+      // Parse rows
+      const risks = [];
+      const errors = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const row: any = {};
+        
+        headers.forEach((header, index) => {
+          row[header] = values[index] || null;
+        });
+
+        // Validate required fields
+        if (!row.risk_id || !row.title || !row.description) {
+          errors.push(`Row ${i + 1}: Missing required fields`);
+          continue;
+        }
+
+        // Validate probability and impact
+        const probability = parseInt(row.probability);
+        const impact = parseInt(row.impact);
+        
+        if (isNaN(probability) || probability < 1 || probability > 5) {
+          errors.push(`Row ${i + 1}: Invalid probability (must be 1-5)`);
+          continue;
+        }
+        
+        if (isNaN(impact) || impact < 1 || impact > 5) {
+          errors.push(`Row ${i + 1}: Invalid impact (must be 1-5)`);
+          continue;
+        }
+
+        risks.push({
+          risk_id: row.risk_id,
+          title: row.title,
+          description: row.description,
+          category: row.category,
+          subcategory: row.subcategory || null,
+          probability,
+          impact,
+          status: row.status || 'active',
+          owner_id: row.owner_id ? parseInt(row.owner_id) : null,
+          organization_id: row.organization_id ? parseInt(row.organization_id) : 1,
+          review_date: row.review_date || null,
+          source: row.source || 'CSV Import',
+          tags: row.tags || null,
+          mitigation_plan: row.mitigation_plan || null
+        });
+      }
+
+      // Return validation results
+      if (validateOnly) {
+        return c.html(`
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <h4 class="font-medium text-blue-900 mb-2">Validation Results</h4>
+            <p class="text-blue-800">✓ ${risks.length} valid risks found</p>
+            ${errors.length > 0 ? `<p class="text-red-600 mt-2">✗ ${errors.length} errors found:</p><ul class="list-disc ml-6 text-sm text-red-600">${errors.map(e => `<li>${e}</li>`).join('')}</ul>` : ''}
+          </div>
+        `);
+      }
+
+      // Insert risks into database
+      let inserted = 0;
+      let skipped = 0;
+      const insertErrors = [];
+
+      for (const risk of risks) {
+        try {
+          // Check for duplicates
+          if (skipDuplicates) {
+            const existing = await c.env.DB
+              .prepare('SELECT id FROM risks WHERE risk_id = ?')
+              .bind(risk.risk_id)
+              .first();
+            
+            if (existing) {
+              skipped++;
+              continue;
+            }
+          }
+
+          // Insert risk
+          await c.env.DB
+            .prepare(`
+              INSERT INTO risks (
+                risk_id, title, description, category, subcategory,
+                probability, impact, status, owner_id, organization_id,
+                review_date, source, tags, mitigation_plan, created_by
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `)
+            .bind(
+              risk.risk_id, risk.title, risk.description, risk.category, risk.subcategory,
+              risk.probability, risk.impact, risk.status, risk.owner_id, risk.organization_id,
+              risk.review_date, risk.source, risk.tags, risk.mitigation_plan, 1
+            )
+            .run();
+          
+          inserted++;
+        } catch (error: any) {
+          insertErrors.push(`${risk.risk_id}: ${error.message}`);
+        }
+      }
+
+      // Return results
+      return c.html(`
+        <div class="space-y-3">
+          <div class="p-4 bg-green-50 border border-green-200 rounded-md">
+            <h4 class="font-medium text-green-900 mb-2">
+              <i class="fas fa-check-circle mr-2"></i>Import Completed
+            </h4>
+            <p class="text-green-800">✓ ${inserted} risks imported successfully</p>
+            ${skipped > 0 ? `<p class="text-yellow-600">⊘ ${skipped} duplicates skipped</p>` : ''}
+            ${errors.length > 0 ? `<p class="text-red-600">✗ ${errors.length} validation errors</p>` : ''}
+            ${insertErrors.length > 0 ? `<p class="text-red-600">✗ ${insertErrors.length} import errors</p>` : ''}
+          </div>
+          <button onclick="document.getElementById('modal-container').innerHTML = ''; window.location.reload();"
+                  class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">
+            <i class="fas fa-sync mr-2"></i>Refresh Page
+          </button>
+        </div>
+      `);
+
+    } catch (error: any) {
+      console.error('Import error:', error);
+      return c.html(`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-md">
+          <p class="text-red-800"><i class="fas fa-exclamation-circle mr-2"></i>Import failed: ${error.message}</p>
+        </div>
+      `);
+    }
   });
 
   /**
    * POST /risk-v2/ui/export
-   * Export risks (placeholder)
+   * Export risks to CSV
    */
   app.post('/export', async (c) => {
-    return c.json({ success: true, message: 'Export functionality coming soon' });
+    try {
+      const formData = await c.req.formData();
+      const format = formData.get('format') || 'csv';
+      const status = formData.get('status') as string | null;
+      const category = formData.get('category') as string | null;
+      const riskLevel = formData.get('riskLevel') as string | null;
+
+      // Build query
+      let query = 'SELECT * FROM risks WHERE 1=1';
+      const params: any[] = [];
+
+      if (status) {
+        query += ' AND status = ?';
+        params.push(status);
+      }
+      if (category) {
+        query += ' AND category = ?';
+        params.push(category);
+      }
+      
+      query += ' ORDER BY created_at DESC';
+
+      // Fetch risks
+      const result = await c.env.DB.prepare(query).bind(...params).all();
+      const risks = result.results || [];
+
+      // Filter by risk level if specified
+      let filteredRisks = risks;
+      if (riskLevel) {
+        filteredRisks = risks.filter((risk: any) => {
+          const score = risk.probability * risk.impact;
+          const level = score >= 20 ? 'Critical' : score >= 12 ? 'High' : score >= 6 ? 'Medium' : 'Low';
+          return level === riskLevel;
+        });
+      }
+
+      // Generate CSV
+      const headers = [
+        'risk_id', 'title', 'description', 'category', 'subcategory',
+        'probability', 'impact', 'risk_score', 'risk_level', 'status',
+        'owner_id', 'organization_id', 'review_date', 'source', 'tags',
+        'mitigation_plan', 'created_at', 'updated_at'
+      ];
+
+      const csvRows = [headers.join(',')];
+
+      for (const risk of filteredRisks) {
+        const row: any = risk;
+        const score = row.probability * row.impact;
+        const level = score >= 20 ? 'Critical' : score >= 12 ? 'High' : score >= 6 ? 'Medium' : 'Low';
+
+        const values = [
+          row.risk_id || '',
+          `"${(row.title || '').replace(/"/g, '""')}"`,
+          `"${(row.description || '').replace(/"/g, '""')}"`,
+          row.category || '',
+          row.subcategory || '',
+          row.probability || '',
+          row.impact || '',
+          score,
+          level,
+          row.status || '',
+          row.owner_id || '',
+          row.organization_id || '',
+          row.review_date || '',
+          row.source || '',
+          `"${(row.tags || '').replace(/"/g, '""')}"`,
+          `"${(row.mitigation_plan || '').replace(/"/g, '""')}"`,
+          row.created_at || '',
+          row.updated_at || ''
+        ];
+
+        csvRows.push(values.join(','));
+      }
+
+      const csv = csvRows.join('\n');
+      const filename = `risks_export_${new Date().toISOString().split('T')[0]}.csv`;
+
+      return c.body(csv, 200, {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="${filename}"`
+      });
+
+    } catch (error: any) {
+      console.error('Export error:', error);
+      return c.json({ 
+        success: false, 
+        message: `Export failed: ${error.message}` 
+      }, 500);
+    }
   });
 
   return app;

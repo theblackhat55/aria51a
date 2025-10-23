@@ -789,3 +789,147 @@ export function renderStatusChangeModal(risk: RiskRow) {
     </div>
   `;
 }
+
+/**
+ * Render import risks modal
+ */
+export function renderImportRisksModal() {
+  return html`
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-0 border w-full max-w-3xl shadow-xl rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center px-6 py-4 border-b bg-gray-50 rounded-t-md">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Import Risks from CSV</h3>
+            <p class="text-sm text-gray-500 mt-1">Upload a CSV file to bulk import risks</p>
+          </div>
+          <button onclick="document.getElementById('modal-container').innerHTML = ''" 
+                  class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <!-- Form Container -->
+        <div class="p-6">
+          <form id="import-form"
+                hx-post="/risk-v2/ui/import"
+                hx-encoding="multipart/form-data"
+                hx-swap="none"
+                class="space-y-6">
+            
+            <!-- Instructions -->
+            <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <h4 class="text-sm font-medium text-blue-900 mb-2">
+                <i class="fas fa-info-circle mr-2"></i>CSV Format Requirements
+              </h4>
+              <ul class="text-sm text-blue-800 space-y-1 ml-6 list-disc">
+                <li>First row must contain column headers</li>
+                <li>Required columns: <code class="bg-blue-100 px-1 rounded">risk_id, title, description, category, probability, impact, status</code></li>
+                <li>Optional columns: <code class="bg-blue-100 px-1 rounded">subcategory, owner_id, organization_id, review_date, source, tags, mitigation_plan</code></li>
+                <li>Probability and Impact must be numbers between 1-5</li>
+                <li>Status must be one of: active, monitoring, mitigated, accepted, transferred, closed, pending</li>
+              </ul>
+            </div>
+
+            <!-- Download Template -->
+            <div class="flex items-center justify-between p-4 border border-gray-300 rounded-md bg-gray-50">
+              <div>
+                <h5 class="text-sm font-medium text-gray-900">Need a template?</h5>
+                <p class="text-sm text-gray-500">Download our CSV template with sample data</p>
+              </div>
+              <a href="/risk-v2/ui/import/template" 
+                 download="risk_import_template.csv"
+                 class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                <i class="fas fa-download mr-2"></i>Download Template
+              </a>
+            </div>
+
+            <!-- File Upload -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Upload CSV File <span class="text-red-500">*</span>
+              </label>
+              <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors">
+                <div class="space-y-1 text-center">
+                  <i class="fas fa-file-csv text-4xl text-gray-400 mb-3"></i>
+                  <div class="flex text-sm text-gray-600">
+                    <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                      <span>Upload a file</span>
+                      <input id="file-upload" 
+                             name="file" 
+                             type="file" 
+                             accept=".csv"
+                             required
+                             class="sr-only">
+                    </label>
+                    <p class="pl-1">or drag and drop</p>
+                  </div>
+                  <p class="text-xs text-gray-500">CSV files only, up to 10MB</p>
+                </div>
+              </div>
+              <div id="file-preview" class="mt-2 text-sm text-gray-600"></div>
+            </div>
+
+            <!-- Import Options -->
+            <div class="space-y-3">
+              <h4 class="text-sm font-medium text-gray-900">Import Options</h4>
+              
+              <div class="flex items-center">
+                <input id="skip-duplicates" 
+                       name="skipDuplicates" 
+                       type="checkbox" 
+                       value="true"
+                       checked
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="skip-duplicates" class="ml-2 block text-sm text-gray-700">
+                  Skip duplicate risk_id entries
+                </label>
+              </div>
+
+              <div class="flex items-center">
+                <input id="validate-only" 
+                       name="validateOnly" 
+                       type="checkbox" 
+                       value="true"
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="validate-only" class="ml-2 block text-sm text-gray-700">
+                  Validate only (don't import, just check for errors)
+                </label>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+              <button type="button"
+                      onclick="document.getElementById('modal-container').innerHTML = ''"
+                      class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">
+                <i class="fas fa-file-import mr-2"></i>
+                Import Risks
+              </button>
+            </div>
+
+            <!-- Form Result -->
+            <div id="import-result" class="mt-4"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- File preview script -->
+    <script>
+      document.getElementById('file-upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('file-preview');
+        if (file) {
+          preview.innerHTML = '<i class="fas fa-check-circle text-green-600 mr-2"></i>Selected: ' + file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)';
+        } else {
+          preview.innerHTML = '';
+        }
+      });
+    </script>
+  `;
+}

@@ -33,13 +33,14 @@ INSERT INTO users (id, username, email, password_hash, first_name, last_name, ro
 -- ========================================
 
 INSERT INTO risks (
-  title, description, category, subcategory,
+  risk_id, title, description, category, subcategory,
   probability, impact, status,
   owner_id, organization_id, created_by,
   review_date, source
 ) VALUES
 -- Critical Risks (Score 20-25)
 (
+  'RISK-00001',
   'Data Breach Through Third-Party Vendor',
   'Potential unauthorized access to customer data through compromised third-party vendor systems. The vendor processes sensitive customer information and has shown security weaknesses in recent assessments.',
   'cybersecurity', 'data_breach',
@@ -48,6 +49,7 @@ INSERT INTO risks (
   date('now', '+30 days'), 'Risk Assessment 2025-Q1'
 ),
 (
+  'RISK-00002',
   'Ransomware Attack on Critical Infrastructure',
   'Risk of ransomware deployment targeting production systems and backup infrastructure. Recent intelligence indicates increased targeting of our industry sector.',
   'cybersecurity', 'malware',
@@ -56,6 +58,7 @@ INSERT INTO risks (
   date('now', '+14 days'), 'Threat Intelligence Feed'
 ),
 (
+  'RISK-00003',
   'Regulatory Non-Compliance - GDPR',
   'Current data handling processes may not fully comply with GDPR requirements, particularly around data subject access requests and right to be forgotten implementation.',
   'compliance', 'regulatory',
@@ -66,6 +69,7 @@ INSERT INTO risks (
 
 -- High Risks (Score 12-19)
 (
+  'RISK-00004',
   'Insider Threat - Privileged Access Abuse',
   'Risk of data exfiltration or system sabotage by employees or contractors with elevated access privileges. Insufficient monitoring of privileged account activities.',
   'operational', 'insider_threat',
@@ -74,6 +78,7 @@ INSERT INTO risks (
   date('now', '+45 days'), 'Internal Audit'
 ),
 (
+  'RISK-00005',
   'Cloud Infrastructure Misconfiguration',
   'Improperly configured cloud services exposing sensitive data or creating security vulnerabilities. Recent scans identified multiple S3 buckets with overly permissive access controls.',
   'technology', 'cloud_security',
@@ -82,6 +87,7 @@ INSERT INTO risks (
   date('now', '+30 days'), 'Security Assessment'
 ),
 (
+  'RISK-00006',
   'Supply Chain Disruption',
   'Potential disruption to critical business operations due to single-source dependencies in supply chain. No backup suppliers identified for key components.',
   'operational', 'supply_chain',
@@ -90,6 +96,7 @@ INSERT INTO risks (
   date('now', '+60 days'), 'Business Continuity Planning'
 ),
 (
+  'RISK-00007',
   'DDoS Attack on Customer-Facing Services',
   'Distributed Denial of Service attacks targeting public-facing web applications and APIs, potentially causing service outages and revenue loss.',
   'cybersecurity', 'availability',
@@ -100,6 +107,7 @@ INSERT INTO risks (
 
 -- Medium Risks (Score 6-11)
 (
+  'RISK-00008',
   'Phishing Campaign Targeting Employees',
   'Ongoing sophisticated phishing campaigns targeting employees with access to financial systems. Recent employee training completion rate below target.',
   'cybersecurity', 'social_engineering',
@@ -108,6 +116,7 @@ INSERT INTO risks (
   date('now', '+30 days'), 'Security Awareness Program'
 ),
 (
+  'RISK-00009',
   'Legacy System End-of-Life',
   'Critical business application running on unsupported operating system with no vendor patches available. Migration project delayed by 6 months.',
   'technology', 'technical_debt',
@@ -116,6 +125,7 @@ INSERT INTO risks (
   date('now', '+180 days'), 'IT Infrastructure Review'
 ),
 (
+  'RISK-00010',
   'Key Personnel Departure Risk',
   'Loss of critical institutional knowledge due to retirement of senior technical staff. No comprehensive knowledge transfer plan in place.',
   'operational', 'human_resources',
@@ -124,6 +134,7 @@ INSERT INTO risks (
   date('now', '+90 days'), 'HR Risk Assessment'
 ),
 (
+  'RISK-00011',
   'API Security Vulnerabilities',
   'Multiple RESTful APIs lack proper authentication, rate limiting, and input validation. Penetration testing identified several exploitable endpoints.',
   'technology', 'application_security',
@@ -132,6 +143,7 @@ INSERT INTO risks (
   date('now', '+45 days'), 'Penetration Test Report'
 ),
 (
+  'RISK-00012',
   'Third-Party Software Supply Chain Attack',
   'Open source dependencies with known vulnerabilities in production applications. Supply chain attacks targeting software libraries.',
   'technology', 'supply_chain',
@@ -142,6 +154,7 @@ INSERT INTO risks (
 
 -- Low Risks (Score 1-5)
 (
+  'RISK-00013',
   'Physical Security - Badge System Aging',
   'Physical access control system nearing end-of-life with occasional badge reader failures. Replacement scheduled for next fiscal year.',
   'operational', 'physical_security',
@@ -150,6 +163,7 @@ INSERT INTO risks (
   date('now', '+120 days'), 'Facilities Management'
 ),
 (
+  'RISK-00014',
   'Software License Compliance',
   'Potential over-deployment of licensed software without proper tracking. Annual audit approaching with incomplete software inventory.',
   'compliance', 'licensing',
@@ -158,6 +172,7 @@ INSERT INTO risks (
   date('now', '+60 days'), 'Software Asset Management'
 ),
 (
+  'RISK-00015',
   'Mobile Device Management Gaps',
   'BYOD policy allows personal devices to access corporate email without full MDM enrollment. Limited visibility into device security posture.',
   'technology', 'mobile_security',
@@ -166,6 +181,7 @@ INSERT INTO risks (
   date('now', '+90 days'), 'Mobile Security Review'
 ),
 (
+  'RISK-00016',
   'Vendor Contract Renewal Delays',
   'Critical security services contracts expiring within 60 days without renewal process initiated. May result in service gaps.',
   'operational', 'vendor_management',
@@ -174,6 +190,7 @@ INSERT INTO risks (
   date('now', '+30 days'), 'Procurement Review'
 ),
 (
+  'RISK-00017',
   'Outdated Security Documentation',
   'Security policies and procedures documentation last updated 18 months ago. Does not reflect current practices and controls.',
   'operational', 'documentation',
