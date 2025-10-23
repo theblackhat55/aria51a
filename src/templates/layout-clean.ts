@@ -1742,6 +1742,21 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Manage organizational units</div>
                   </div>
                 </a>
+                <div class="border-t border-gray-100 my-2"></div>
+                <a href="/admin/ai-providers" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
+                  <i class="fas fa-brain w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">AI Providers</div>
+                    <div class="text-xs text-gray-500">Configure AI provider API keys</div>
+                  </div>
+                </a>
+                <a href="/admin/api-management" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
+                  <i class="fas fa-key w-5 text-yellow-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">API Management</div>
+                    <div class="text-xs text-gray-500">Manage API keys & access</div>
+                  </div>
+                </a>
               </div>
             </div>
           </div>
@@ -1976,6 +1991,14 @@ const renderCleanNavigation = (user: any) => html`
                 <a href="/admin/settings/business-units" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
                   <i class="fas fa-building text-purple-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-purple-800">Business Units</span>
+                </a>
+                <a href="/admin/ai-providers" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-brain text-purple-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-purple-800">AI Providers</span>
+                </a>
+                <a href="/admin/api-management" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-key text-purple-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-purple-800">API Management</span>
                 </a>
               </div>
             </div>

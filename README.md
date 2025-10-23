@@ -132,6 +132,38 @@ The ARIA AI chatbot is now a unified, context-aware assistant accessible from:
 4. **Multi-Provider AI Support**: OpenAI GPT models, Anthropic Claude, Google Gemini, Cloudflare Workers AI
 5. **Intelligent Features**: Intent detection, semantic memory, response caching
 
+### 🔄 Multi-Provider AI Fallback System
+
+**Comprehensive 6-Layer Fallback Chain** for guaranteed availability:
+
+```
+Priority 1: Cloudflare Workers AI (Free, always available, no API key)
+    ↓ If fails
+Priority 2: OpenAI (GPT-4/GPT-3.5 from database or environment)
+    ↓ If fails
+Priority 3: Anthropic (Claude 3.x from database or environment)
+    ↓ If fails
+Priority 4: Google Gemini (Gemini Pro from database or environment)
+    ↓ If fails
+Priority 5: Azure OpenAI (Azure AI Foundry deployment)
+    ↓ If all fail
+Priority 6: Intelligent Fallback (Rule-based with live platform data)
+```
+
+**Key Benefits**:
+- ✅ **Zero Downtime**: System never fails due to multi-layer fallback
+- ✅ **Cost Optimization**: Free Cloudflare AI as primary, premium providers optional
+- ✅ **Automatic Detection**: Smart provider selection based on configuration
+- ✅ **Data-Driven Fallback**: Even without AI, responses use real platform metrics
+- ✅ **Flexible Configuration**: Providers configurable via database or environment variables
+
+**Configuration Sources**:
+1. **Database**: `api_providers` table with encrypted API keys
+2. **Environment**: `.dev.vars` file for development, secrets for production
+3. **Auto-Detection**: System automatically skips unconfigured/invalid providers
+
+**For Details**: See [AI_PROVIDER_FALLBACK_ANALYSIS.md](AI_PROVIDER_FALLBACK_ANALYSIS.md) for complete technical analysis
+
 ---
 
 ## 🧠 MCP (Model Context Protocol) Implementation - NEW! ✨
