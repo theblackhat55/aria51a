@@ -36,7 +36,7 @@ import { GetRiskStatisticsQuery } from '../../application/queries/GetRiskStatist
 import { GetRiskByIdQuery } from '../../application/queries/GetRiskByIdQuery';
 
 // Infrastructure
-import { D1RiskRepository } from '../../infrastructure/repositories/D1RiskRepository';
+import { D1RiskRepositoryProduction } from '../../infrastructure/repositories/D1RiskRepositoryProduction';
 
 // Types
 interface CloudflareBindings {
@@ -113,7 +113,7 @@ export function createRiskUIRoutes() {
    */
   app.get('/stats', async (c) => {
     try {
-      const repository = new D1RiskRepository(c.env.DB);
+      const repository = new D1RiskRepositoryProduction(c.env.DB);
       const handler = new GetRiskStatisticsHandler(repository);
       const query = new GetRiskStatisticsQuery();
       
@@ -143,7 +143,7 @@ export function createRiskUIRoutes() {
    */
   app.get('/table', async (c) => {
     try {
-      const repository = new D1RiskRepository(c.env.DB);
+      const repository = new D1RiskRepositoryProduction(c.env.DB);
       const handler = new ListRisksHandler(repository);
       
       // Parse query parameters
@@ -231,7 +231,7 @@ export function createRiskUIRoutes() {
   app.get('/view/:id', async (c) => {
     try {
       const id = parseInt(c.req.param('id'));
-      const repository = new D1RiskRepository(c.env.DB);
+      const repository = new D1RiskRepositoryProduction(c.env.DB);
       const handler = new GetRiskByIdHandler(repository);
       const query = new GetRiskByIdQuery(id);
       
@@ -278,7 +278,7 @@ export function createRiskUIRoutes() {
   app.get('/edit/:id', async (c) => {
     try {
       const id = parseInt(c.req.param('id'));
-      const repository = new D1RiskRepository(c.env.DB);
+      const repository = new D1RiskRepositoryProduction(c.env.DB);
       const handler = new GetRiskByIdHandler(repository);
       const query = new GetRiskByIdQuery(id);
       
@@ -325,7 +325,7 @@ export function createRiskUIRoutes() {
   app.get('/status/:id', async (c) => {
     try {
       const id = parseInt(c.req.param('id'));
-      const repository = new D1RiskRepository(c.env.DB);
+      const repository = new D1RiskRepositoryProduction(c.env.DB);
       const handler = new GetRiskByIdHandler(repository);
       const query = new GetRiskByIdQuery(id);
       
