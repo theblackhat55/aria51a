@@ -103,6 +103,12 @@ app.use('/auth/logout', csrfMiddleware);
 app.use('/risk/create', csrfMiddleware);
 app.use('/risk/update/*', csrfMiddleware);
 app.use('/risk/delete/*', csrfMiddleware);
+app.use('/risk-v2/api/create', csrfMiddleware); // Risk v2 API
+app.use('/risk-v2/api/update/*', csrfMiddleware);
+app.use('/risk-v2/api/delete/*', csrfMiddleware);
+app.use('/risk-v2/ui/create', csrfMiddleware); // Risk v2 UI forms
+app.use('/risk-v2/ui/edit/*', csrfMiddleware);
+app.use('/risk-v2/ui/status/*', csrfMiddleware);
 app.use('/compliance/*/update', csrfMiddleware);
 app.use('/compliance/*/create', csrfMiddleware);
 app.use('/admin/*', csrfMiddleware);
@@ -111,6 +117,7 @@ app.use('/operations/services/*', csrfMiddleware);
 // Authentication middleware for protected routes
 app.use('/dashboard/*', authMiddleware);
 app.use('/risk/*', authMiddleware);
+app.use('/risk-v2/*', authMiddleware); // Risk v2 Clean Architecture routes
 app.use('/compliance/*', authMiddleware);
 app.use('/operations/*', authMiddleware);
 app.use('/ai/*', authMiddleware);
@@ -436,6 +443,13 @@ app.route('/dashboard', createCleanDashboardRoutes());
 
 // Risk Management (requires authentication, works with database fix)
 app.route('/risk', createRiskRoutesARIA5());
+
+// Risk Management v2 - Clean Architecture Implementation
+// API Routes: /risk-v2/api/* (JSON responses)
+// UI Routes: /risk-v2/ui/* (HTMX/HTML responses)
+import { createRiskRoutesV2, createRiskUIRoutes } from './modules/risk/presentation/routes';
+app.route('/risk-v2/api', createRiskRoutesV2());
+app.route('/risk-v2/ui', createRiskUIRoutes());
 
 // Enhanced Dynamic Risk Assessment (requires authentication)
 app.route('/risk/enhanced', createEnhancedDynamicRiskRoutes());
