@@ -26,6 +26,9 @@ import {
   type RiskRow
 } from '../templates';
 
+// Enhanced templates
+import { renderEnhancedCreateRiskModal, parseAIAnalysis } from '../templates/riskFormsEnhanced';
+
 // Application handlers
 import { ListRisksHandler } from '../../application/handlers/ListRisksHandler';
 import { GetRiskStatisticsHandler } from '../../application/handlers/GetRiskStatisticsHandler';
@@ -296,10 +299,198 @@ export function createRiskUIRoutes() {
 
   /**
    * GET /risk-v2/ui/create
-   * Create risk modal (HTMX endpoint)
+   * Create risk modal (HTMX endpoint) - Standard form
    */
   app.get('/create', async (c) => {
     return c.html(renderCreateRiskModal());
+  });
+
+  /**
+   * GET /risk-v2/ui/create-enhanced
+   * Enhanced create risk modal with AI and asset linking (HTMX endpoint)
+   */
+  app.get('/create-enhanced', async (c) => {
+    return c.html(renderEnhancedCreateRiskModal());
+  });
+
+  /**
+   * POST /risk-v2/ui/analyze-ai
+   * AI risk analysis endpoint using Cloudflare Workers AI
+   */
+  app.post('/analyze-ai', async (c) => {
+    try {
+      const formData = await c.req.parseBody();
+      
+      const title = (formData.title as string) || '';
+      const description = (formData.description as string) || '';
+      const category = (formData.category as string) || '';
+
+      if (!title || !description) {
+        return c.html(`
+          <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div class="flex items-center">
+              <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+              <span class="text-yellow-700 font-medium">Please provide both title and description</span>
+            </div>
+          </div>
+        `);
+      }
+
+      // Create AI prompt for structured risk analysis
+      const prompt = `You are an expert risk analyst. Analyze this business risk and provide both a detailed analysis AND structured data for risk management forms.
+
+Risk Title: ${title}
+Description: ${description}
+Category: ${category || 'General'}
+
+Provide your response in TWO parts:
+
+PART 1 - DETAILED ANALYSIS:
+1. Risk Assessment Summary
+2. Key Risk Factors (3-4 bullet points)
+3. Potential Business Impact
+4. Recommended Mitigation Actions (3-4 specific steps)  
+5. Monitoring Indicators
+
+PART 2 - STRUCTURED DATA (use this exact format):
+PROBABILITY_SCORE: [1-5, where 1=Very Low, 5=Very High]
+IMPACT_SCORE: [1-5, where 1=Minimal, 5=Severe]
+RISK_OWNER: [suggest appropriate role/department]
+TREATMENT_STRATEGY: [Accept/Mitigate/Transfer/Avoid]
+MITIGATION_ACTIONS: [2-3 specific actionable steps, separated by semicolons]
+REVIEW_DATE: [suggest date 3-6 months from now in YYYY-MM-DD format]
+TARGET_DATE: [suggest completion date 1-3 months from now in YYYY-MM-DD format]
+
+Be practical and actionable in your analysis.`;
+
+      // Use Cloudflare Workers AI
+      const response = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        messages: [
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 1024
+      });
+
+      const analysis = response.response || 'Analysis could not be generated.';
+      
+      // Parse structured data
+      const aiData = parseAIAnalysis(analysis);
+
+      return c.html(`
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center">
+              <i class="fas fa-robot text-green-500 mr-2"></i>
+              <span class="text-green-800 font-medium">AI Risk Analysis Complete</span>
+              <span class="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded">Powered by Cloudflare AI</span>
+            </div>
+            <button 
+              type="button"
+              onclick="applyAIRecommendations(${JSON.stringify(aiData).replace(/"/g, '&quot;')})"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
+              <i class="fas fa-magic mr-1"></i>
+              Apply Recommendations
+            </button>
+          </div>
+          <div class="text-gray-800 whitespace-pre-line text-sm leading-relaxed max-h-96 overflow-y-auto">
+            ${analysis}
+          </div>
+          <div class="mt-3 pt-3 border-t border-green-200">
+            <p class="text-green-600 text-xs">
+              <i class="fas fa-info-circle mr-1"></i>
+              Analysis generated using Cloudflare Workers AI (Llama 3.1 8B) • Click "Apply Recommendations" to auto-fill fields
+            </p>
+          </div>
+        </div>
+
+        <script>
+          function applyAIRecommendations(data) {
+            console.log('🤖 Applying AI recommendations:', data);
+            
+            // Fill probability
+            const probInput = document.getElementById('probability-input');
+            if (probInput && data.probability) {
+              probInput.value = data.probability;
+              probInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            
+            // Fill impact
+            const impactInput = document.getElementById('impact-input');
+            if (impactInput && data.impact) {
+              impactInput.value = data.impact;
+              impactInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            
+            // Fill mitigation plan
+            const mitigationInput = document.getElementById('mitigation-plan-input');
+            if (mitigationInput && data.mitigationActions) {
+              mitigationInput.value = data.mitigationActions;
+            }
+            
+            // Fill review date
+            const reviewDateInput = document.getElementById('review-date-input');
+            if (reviewDateInput && data.reviewDate) {
+              reviewDateInput.value = data.reviewDate;
+            }
+            
+            // Show success message
+            const resultDiv = document.getElementById('form-result');
+            if (resultDiv) {
+              resultDiv.innerHTML = \`
+                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-blue-500 mr-2"></i>
+                    <span class="text-blue-700 font-medium">AI recommendations applied!</span>
+                  </div>
+                  <p class="text-blue-600 text-sm mt-1">Review and adjust the values as needed.</p>
+                </div>
+              \`;
+            }
+            
+            console.log('✅ AI recommendations applied successfully');
+          }
+        </script>
+      `);
+
+    } catch (error: any) {
+      console.error('AI analysis error:', error);
+      return c.html(`
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-times-circle text-red-500 mr-2"></i>
+            <span class="text-red-700 font-medium">AI analysis failed</span>
+          </div>
+          <p class="text-red-600 text-sm mt-1">${error.message}</p>
+        </div>
+      `);
+    }
+  });
+
+  /**
+   * GET /risk-v2/ui/assets/list
+   * Get list of assets for linking (HTMX endpoint)
+   */
+  app.get('/assets/list', async (c) => {
+    try {
+      const result = await c.env.DB
+        .prepare('SELECT id, name, type, criticality, status FROM assets WHERE status = ? ORDER BY name ASC LIMIT 100')
+        .bind('active')
+        .all();
+
+      if (!result.success || !result.results || result.results.length === 0) {
+        return c.html('<option value="">No active assets available</option>');
+      }
+
+      const options = result.results.map((asset: any) => {
+        return `<option value="${asset.id}" data-criticality="${asset.criticality || 'medium'}">${asset.name} (${asset.type || 'Unknown'}) - ${asset.criticality || 'Medium'} criticality</option>`;
+      }).join('');
+
+      return c.html(options);
+
+    } catch (error: any) {
+      console.error('Error fetching assets:', error);
+      return c.html('<option value="">Error loading assets</option>');
+    }
   });
 
   /**

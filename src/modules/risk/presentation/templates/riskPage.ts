@@ -36,11 +36,12 @@ export function renderRiskManagementPage() {
                       class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
                 <i class="fas fa-download mr-2"></i>Export  
               </button>
-              <button hx-get="/risk-v2/ui/create"
+              <button hx-get="/risk-v2/ui/create-enhanced"
                       hx-target="#modal-container"
                       hx-swap="innerHTML"
-                      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                      class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg flex items-center">
                 <i class="fas fa-plus mr-2"></i>Add Risk
+                <span class="ml-2 text-xs bg-white/20 px-2 py-1 rounded">AI Enhanced</span>
               </button>
             </div>
           </div>

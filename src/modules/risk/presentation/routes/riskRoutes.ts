@@ -707,6 +707,135 @@ export function createRiskRoutesV2() {
     }
   });
 
+  // ===== Risk Reclassification (Dynamic Risk Rating) =====
+
+  /**
+   * POST /risk-v2/reclassify/:id
+   * Manually trigger reclassification for a specific risk
+   */
+  app.post('/reclassify/:id', async (c) => {
+    try {
+      const id = parseInt(c.req.param('id'));
+      
+      // Import here to avoid circular dependencies
+      const { RiskReclassificationService } = await import('../../application/services/RiskReclassificationService');
+      const service = new RiskReclassificationService(c.env.DB);
+      
+      const result = await service.reclassifyRisk(id);
+      
+      if (!result) {
+        return c.json({
+          success: true,
+          message: 'No reclassification needed - risk has no linked assets or scores unchanged',
+          data: null
+        });
+      }
+
+      return c.json({
+        success: true,
+        message: 'Risk reclassified successfully',
+        data: result
+      });
+    } catch (error: any) {
+      console.error('Error reclassifying risk:', error);
+      return c.json({
+        success: false,
+        error: error.message || 'Failed to reclassify risk'
+      }, 500);
+    }
+  });
+
+  /**
+   * POST /risk-v2/reclassify-by-asset/:assetId
+   * Reclassify all risks linked to a specific asset
+   * Useful when asset criticality changes
+   */
+  app.post('/reclassify-by-asset/:assetId', async (c) => {
+    try {
+      const assetId = parseInt(c.req.param('assetId'));
+      
+      const { RiskReclassificationService } = await import('../../application/services/RiskReclassificationService');
+      const service = new RiskReclassificationService(c.env.DB);
+      
+      const results = await service.reclassifyRisksByAsset(assetId);
+      
+      return c.json({
+        success: true,
+        message: `Reclassified ${results.length} risk(s) affected by asset ${assetId}`,
+        data: results,
+        count: results.length
+      });
+    } catch (error: any) {
+      console.error('Error reclassifying risks by asset:', error);
+      return c.json({
+        success: false,
+        error: error.message || 'Failed to reclassify risks'
+      }, 500);
+    }
+  });
+
+  /**
+   * POST /risk-v2/reclassify-all
+   * Bulk reclassification of all risks with linked assets
+   * Use for periodic recalculation
+   */
+  app.post('/reclassify-all', async (c) => {
+    try {
+      const { RiskReclassificationService } = await import('../../application/services/RiskReclassificationService');
+      const service = new RiskReclassificationService(c.env.DB);
+      
+      const results = await service.reclassifyAllRisks();
+      
+      return c.json({
+        success: true,
+        message: `Bulk reclassification complete: ${results.length} risk(s) updated`,
+        data: results,
+        count: results.length
+      });
+    } catch (error: any) {
+      console.error('Error in bulk reclassification:', error);
+      return c.json({
+        success: false,
+        error: error.message || 'Failed to reclassify risks'
+      }, 500);
+    }
+  });
+
+  /**
+   * GET /risk-v2/preview-reclassify/:id
+   * Preview reclassification without applying changes
+   */
+  app.get('/preview-reclassify/:id', async (c) => {
+    try {
+      const id = parseInt(c.req.param('id'));
+      
+      const { RiskReclassificationService } = await import('../../application/services/RiskReclassificationService');
+      const service = new RiskReclassificationService(c.env.DB);
+      
+      const preview = await service.previewReclassification(id);
+      
+      if (!preview) {
+        return c.json({
+          success: true,
+          message: 'No reclassification preview available - risk has no linked assets',
+          data: null
+        });
+      }
+
+      return c.json({
+        success: true,
+        message: 'Reclassification preview generated',
+        data: preview
+      });
+    } catch (error: any) {
+      console.error('Error previewing reclassification:', error);
+      return c.json({
+        success: false,
+        error: error.message || 'Failed to preview reclassification'
+      }, 500);
+    }
+  });
+
   // ===== Health & Debug =====
 
   /**
