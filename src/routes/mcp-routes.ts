@@ -177,6 +177,160 @@ export function createMCPRoutes() {
   });
 
   /**
+   * RAG query endpoint (question-answering with AI)
+   */
+  app.post('/rag/query', async (c) => {
+    try {
+      const queryData = await c.req.json();
+      
+      // Import RAGPipelineService
+      const { RAGPipelineService } = await import('../mcp-server/services/rag-pipeline-service');
+      const ragPipeline = new RAGPipelineService(c.env as any);
+      
+      const response = await ragPipeline.query(queryData);
+      
+      return c.json({
+        success: true,
+        ...response
+      });
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
+   * RAG batch query endpoint
+   */
+  app.post('/rag/batch', async (c) => {
+    try {
+      const { queries } = await c.req.json();
+      
+      if (!Array.isArray(queries)) {
+        return c.json({
+          success: false,
+          error: 'queries must be an array'
+        }, 400);
+      }
+      
+      // Import RAGPipelineService
+      const { RAGPipelineService } = await import('../mcp-server/services/rag-pipeline-service');
+      const ragPipeline = new RAGPipelineService(c.env as any);
+      
+      const responses = await ragPipeline.batchQuery(queries);
+      
+      return c.json({
+        success: true,
+        responses,
+        count: responses.length
+      });
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
+   * Query expansion endpoint
+   */
+  app.post('/query/expand', async (c) => {
+    try {
+      const { query, namespace, maxTerms, useAI } = await c.req.json();
+      
+      // Import AdvancedQueryService
+      const { AdvancedQueryService } = await import('../mcp-server/services/advanced-query-service');
+      const advancedQuery = new AdvancedQueryService(c.env as any);
+      
+      const expansion = await advancedQuery.expandQuery(query, {
+        namespace,
+        maxTerms,
+        useAI
+      });
+      
+      return c.json({
+        success: true,
+        ...expansion
+      });
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
+   * Semantic clustering endpoint
+   */
+  app.post('/query/cluster', async (c) => {
+    try {
+      const { results, minClusterSize, maxClusters, method } = await c.req.json();
+      
+      if (!Array.isArray(results)) {
+        return c.json({
+          success: false,
+          error: 'results must be an array'
+        }, 400);
+      }
+      
+      // Import AdvancedQueryService
+      const { AdvancedQueryService } = await import('../mcp-server/services/advanced-query-service');
+      const advancedQuery = new AdvancedQueryService(c.env as any);
+      
+      const clusters = await advancedQuery.clusterResults(results, {
+        minClusterSize,
+        maxClusters,
+        method
+      });
+      
+      return c.json({
+        success: true,
+        clusters,
+        count: clusters.length
+      });
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
+   * Relevance feedback endpoint
+   */
+  app.post('/query/feedback', async (c) => {
+    try {
+      const feedback = await c.req.json();
+      
+      // Import AdvancedQueryService
+      const { AdvancedQueryService } = await import('../mcp-server/services/advanced-query-service');
+      const advancedQuery = new AdvancedQueryService(c.env as any);
+      
+      await advancedQuery.recordFeedback({
+        queryId: feedback.queryId || '',
+        relevantItems: feedback.relevantItems || [],
+        irrelevantItems: feedback.irrelevantItems || [],
+        timestamp: Date.now()
+      });
+      
+      return c.json({
+        success: true,
+        message: 'Feedback recorded successfully'
+      });
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, 500);
+    }
+  });
+
+  /**
    * List all available MCP prompts
    */
   app.get('/prompts', async (c) => {
