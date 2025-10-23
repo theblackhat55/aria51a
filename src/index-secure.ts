@@ -448,6 +448,11 @@ app.route('/risk', createRiskRoutesARIA5());
 // API Routes: /risk-v2/api/* (JSON responses)
 // UI Routes: /risk-v2/ui/* (HTMX/HTML responses)
 import { createRiskRoutesV2, createRiskUIRoutes } from './modules/risk/presentation/routes';
+
+// Redirect /risk-v2/ to /risk-v2/ui/
+app.get('/risk-v2', (c) => c.redirect('/risk-v2/ui'));
+app.get('/risk-v2/', (c) => c.redirect('/risk-v2/ui/'));
+
 app.route('/risk-v2/api', createRiskRoutesV2());
 app.route('/risk-v2/ui', createRiskUIRoutes());
 
