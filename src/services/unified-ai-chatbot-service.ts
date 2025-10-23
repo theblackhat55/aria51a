@@ -414,9 +414,12 @@ export class UnifiedAIChatbotService {
       const risks = platformData?.risks || {};
       response = `Based on current platform data:\n\n`;
       response += `📊 **Risk Overview:**\n`;
-      response += `• Total Risks: ${risks.total || 0}\n`;
-      response += `• Active Risks: ${risks.active_count || 0}\n`;
-      response += `• Status Breakdown: Active (${risks.active_count || 0}), Monitoring (${risks.monitoring_count || 0}), Mitigated (${risks.mitigated_count || 0})\n`;
+      response += `• Active Risks: ${risks.active_count || 0} (requiring attention)\n`;
+      response += `• Total Risks: ${risks.total || 0} (including all statuses)\n`;
+      response += `• Status Breakdown:\n`;
+      response += `  - Active: ${risks.active_count || 0} (shown on dashboard)\n`;
+      response += `  - Monitoring: ${risks.monitoring_count || 0}\n`;
+      response += `  - Mitigated: ${risks.mitigated_count || 0}\n`;
       response += `• Risk Levels:\n`;
       response += `  - Critical: ${risks.critical || 0} ⚠️\n`;
       response += `  - High: ${risks.high || 0}\n`;
@@ -495,11 +498,12 @@ export class UnifiedAIChatbotService {
       response = `I understand you're asking about: "${message}"\n\n`;
       response += `Here's your current security status:\n\n`;
       response += `📊 **Security Overview:**\n`;
-      response += `• Total Risks: ${risks.total || 0} (Active: ${risks.active_count || 0})\n`;
+      response += `• Active Risks: ${risks.active_count || 0} (Total: ${risks.total || 0})\n`;
       response += `• Risk Severity: Critical (${risks.critical || 0}), High (${risks.high || 0}), Medium (${risks.medium || 0}), Low (${risks.low || 0})\n`;
       response += `• Recent Threats: ${threats.total || 0} (${threats.critical || 0} critical)\n`;
       response += `• Open Incidents: ${incidents.open || 0}\n`;
       response += `• Compliance Frameworks: ${platformData?.compliance?.length || 0}\n\n`;
+      response += `Note: Dashboard shows ${risks.active_count || 0} active risks requiring attention.\n\n`;
       response += `How can I assist you with your specific security concern?\n`;
     }
 
@@ -824,7 +828,7 @@ You can also use natural language - I'll detect search queries and questions aut
 You have access to real-time platform data and should provide specific, actionable advice.
 
 Current Platform Metrics:
-- Total Risks: ${platformData?.risks?.total || 0} (Active: ${platformData?.risks?.active_count || 0}, Monitoring: ${platformData?.risks?.monitoring_count || 0}, Mitigated: ${platformData?.risks?.mitigated_count || 0})
+- Active Risks: ${platformData?.risks?.active_count || 0} (Total: ${platformData?.risks?.total || 0} including ${platformData?.risks?.monitoring_count || 0} monitoring, ${platformData?.risks?.mitigated_count || 0} mitigated)
 - Risk Distribution: Critical: ${platformData?.risks?.critical || 0}, High: ${platformData?.risks?.high || 0}, Medium: ${platformData?.risks?.medium || 0}, Low: ${platformData?.risks?.low || 0}
 - Average Risk Score: ${Math.round(platformData?.risks?.avg_score || 0)}/100
 - Compliance Frameworks: ${platformData?.compliance?.length || 0} configured
@@ -833,16 +837,16 @@ Current Platform Metrics:
 
 User Context:
 - Name: ${context.userName || 'User'}
-- Role: ${context.userRole || 'Security Professional'}
-- Session: ${context.sessionId}
+- Role: ${context.userRole || 'Security Professional'}\n- Session: ${context.sessionId}
 
 Instructions:
-1. Provide specific, actionable responses using the real platform data above
-2. Reference actual metrics and numbers when relevant
-3. Use markdown formatting for better readability
-4. Include concrete recommendations based on current security posture
-5. Be professional but conversational
-6. Prioritize critical issues when they exist
-7. Keep responses concise but comprehensive`;
+1. When asked about risk count, ALWAYS mention ACTIVE risks first (${platformData?.risks?.active_count || 0}) as this matches the dashboard
+2. Provide specific, actionable responses using the real platform data above
+3. Reference actual metrics and numbers when relevant
+4. Use markdown formatting for better readability
+5. Include concrete recommendations based on current security posture
+6. Be professional but conversational
+7. Prioritize critical issues when they exist
+8. Keep responses concise but comprehensive`;
   }
 }
