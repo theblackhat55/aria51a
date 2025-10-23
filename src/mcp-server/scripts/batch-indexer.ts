@@ -124,10 +124,12 @@ export class BatchIndexer {
         // Insert batch into Vectorize
         if (vectors.length > 0) {
           try {
-            await this.env.VECTORIZE.insert(vectors);
-            console.log(`✅ Indexed ${vectors.length} risks`);
+            console.log(`📤 Inserting ${vectors.length} vectors into Vectorize...`);
+            const result = await this.env.VECTORIZE.insert(vectors);
+            console.log(`✅ Indexed ${vectors.length} risks - insert result:`, JSON.stringify(result));
           } catch (error: any) {
-            console.error(`❌ Failed to insert batch into Vectorize:`, error.message);
+            console.error(`❌ Failed to insert batch into Vectorize:`, error.message, error.stack);
+            throw error; // Don't swallow the error
           }
         }
       }

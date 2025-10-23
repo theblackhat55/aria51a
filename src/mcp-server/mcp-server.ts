@@ -18,6 +18,8 @@ import { correlationTools } from './tools/correlation-tools';
 
 // Import resources
 import { riskRegisterResource, complianceFrameworkResource } from './resources/platform-resources';
+import { nistCsfResource } from './resources/nist-csf-resource';
+import { iso27001Resource } from './resources/iso27001-resource';
 
 export class MCPServer {
   private env: MCPEnvironment;
@@ -73,6 +75,8 @@ export class MCPServer {
   private registerResources(): void {
     this.resources.set('risk_register://current', riskRegisterResource);
     this.resources.set('compliance://frameworks', complianceFrameworkResource);
+    this.resources.set('compliance://nist-csf', nistCsfResource);
+    this.resources.set('compliance://iso-27001', iso27001Resource);
     
     console.log(`✅ Registered ${this.resources.size} MCP resources`);
   }

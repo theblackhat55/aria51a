@@ -116,7 +116,17 @@ export class VectorizeService {
    */
   async semanticSearch(options: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
     try {
+      // Debug logging
+      console.log('🔍 semanticSearch called with options:', JSON.stringify(options || 'undefined'));
+      
+      // Validate options
+      if (!options || !options.query) {
+        console.error('❌ Invalid options:', options);
+        throw new Error('Invalid search options: query is required');
+      }
+      
       // Generate query embedding
+      console.log('📝 Generating embedding for query:', options.query);
       const embeddingResponse = await this.generateEmbedding({ text: options.query });
 
       // Build Vectorize query options
@@ -131,8 +141,18 @@ export class VectorizeService {
         queryOptions.filter = this.buildVectorizeFilter(options.filters);
       }
 
+      // Add namespace filter if specified
+      if (options.namespace) {
+        queryOptions.namespace = options.namespace;
+      }
+      
       // Execute vector search
-      const matches = await this.env.VECTORIZE.query(embeddingResponse.embedding, queryOptions);
+      console.log('🔍 Calling VECTORIZE.query with embedding length:', embeddingResponse.embedding.length, 'options:', JSON.stringify(queryOptions));
+      const matches = await this.env.VECTORIZE.query(embeddingResponse.embedding, queryOptions).catch((err: any) => {
+        console.error('❌ VECTORIZE.query failed:', err);
+        throw err;
+      });
+      console.log('✅ VECTORIZE.query returned', matches.matches?.length || 0, 'matches');
 
       // Transform matches to search results
       const results: SemanticSearchResult[] = matches.matches.map(match => ({
