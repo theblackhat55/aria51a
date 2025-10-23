@@ -1,2 +1,0 @@
-// Temporary auth debug - replace line 203 in auth-routes.ts with:
-<p class="text-sm text-red-700">Auth error: ${error.message || error.toString()}</p>
