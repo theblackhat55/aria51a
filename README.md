@@ -27,7 +27,7 @@
 - **MS Defender Features**: ✅ Fully functional with production database
 - **Cloudflare Deployment**: ✅ Live and active on aria51.pages.dev
 - **Health Check**: https://aria51.pages.dev/health
-- **Last Updated**: October 22, 2025 - HTML Rendering Fix
+- **Last Updated**: October 23, 2025 - MCP UI Integration (Admin + Chatbot)
 
 ---
 
@@ -306,12 +306,50 @@ GET /mcp/resources/compliance://nist-csf
 Response: Complete NIST CSF 2.0 framework data
 ```
 
+### MCP UI Integration - **NEW** ✨
+
+#### Admin Settings Page
+**Access**: Admin Settings → MCP Intelligence
+- ✅ **7 Comprehensive Tabs**: Overview, Search Config, Prompt Library, RAG, Tools, Resources, Admin
+- ✅ **Real-Time Statistics**: Vectors indexed, tools count, prompts count, accuracy metrics
+- ✅ **Configuration Management**: Hybrid search settings, RAG pipeline, AI provider selection
+- ✅ **Prompt Library Browser**: View and explore all 18 enterprise prompts by category
+- ✅ **MCP Tools Dashboard**: Monitor all 13 MCP tools with status indicators
+- ✅ **Batch Indexing Controls**: Index risks, incidents, compliance, documents by namespace
+
+#### AI Chatbot Integration (Options A + C)
+
+**Option A: Natural Language Detection**
+- ✅ **Automatic Search Routing**: "Search for SQL injection" → `/mcp/search/hybrid`
+- ✅ **Question Detection**: "What are our critical risks?" → `/mcp/rag/query`
+- ✅ **Intent Keywords**: Detects search/question intent from 20+ keyword patterns
+- ✅ **Formatted Responses**: Citations, confidence scores, source attribution
+
+**Option C: MCP Commands**
+- ✅ `/mcp-search <query>` - Hybrid semantic + keyword search (90% accuracy)
+- ✅ `/mcp-ask <question>` - RAG Q&A with AI-powered answers and citations
+- ✅ `/mcp-prompt <name> [args]` - Execute enterprise prompt templates
+- ✅ `/mcp-expand <query>` - Query expansion with security term synonyms
+- ✅ `/mcp-help` - Display all available MCP commands
+
+**Example Usage**:
+```
+User: "Search for ransomware risks"
+→ Auto-detects search intent → Hybrid search → Results with 90% accuracy
+
+User: "/mcp-ask What compliance gaps do we have?"
+→ RAG pipeline → AI answer with citations → Source attribution
+
+User: "/mcp-expand phishing"
+→ Query expansion → "phishing social-engineering credential-theft email-attack..."
+```
+
 ### Technical Implementation
 - **Embedding Model**: BGE-base-en-v1.5 (768 dimensions)
 - **Vector Database**: Cloudflare Vectorize with cosine similarity
 - **AI Runtime**: Cloudflare Workers AI
 - **Cache Layer**: Cloudflare KV with namespace-specific TTLs
-- **Code**: ~5,900 lines of production TypeScript
+- **Code**: ~6,800 lines of production TypeScript (includes UI integration)
 
 ### Documentation
 - **[MCP_PHASE4_COMPLETE.md](MCP_PHASE4_COMPLETE.md)** - **Phase 4 Advanced Features** (18 prompts, hybrid search, RAG pipeline)
