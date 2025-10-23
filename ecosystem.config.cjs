@@ -1,11 +1,11 @@
-// PM2 Ecosystem Configuration for ARIA5.1 Enterprise Security Intelligence Platform
-// Optimized for Cloudflare Pages with D1, KV, and R2 integration
+// PM2 Ecosystem Configuration for ARIA51A - Risk Module v2 Testing Instance
+// Optimized for Cloudflare Pages with D1 database integration
 module.exports = {
   apps: [
     {
-      name: 'aria52-enterprise',
+      name: 'aria51a',
       script: 'npx',
-      args: 'wrangler pages dev dist --d1=aria52-production --local --ip 0.0.0.0 --port 3000 --compatibility-flags nodejs_compat --compatibility-date 2025-01-01',
+      args: 'wrangler pages dev dist --d1=aria51a-production --local --ip 0.0.0.0 --port 3000 --compatibility-flags nodejs_compat --compatibility-date 2025-01-01',
       cwd: '/home/user/webapp',
       env: {
         NODE_ENV: 'development',
@@ -21,9 +21,9 @@ module.exports = {
       exec_mode: 'fork',
       autorestart: true,
       max_memory_restart: '2G', // Increased for AI operations
-      error_file: './logs/aria52-error.log',
-      out_file: './logs/aria52-out.log',
-      log_file: './logs/aria52-combined.log',
+      error_file: './logs/aria51a-error.log',
+      out_file: './logs/aria51a-out.log',
+      log_file: './logs/aria51a-combined.log',
       time: true,
       // Health check configuration
       health_check_url: 'http://localhost:3000/health',
@@ -34,30 +34,7 @@ module.exports = {
       listen_timeout: 10000
     },
     
-    // Optional: Separate process for background tasks (if needed)
-    {
-      name: 'aria52-workers',
-      script: 'node',
-      args: 'src/workers/background-tasks.js',
-      cwd: '/home/user/webapp',
-      env: {
-        NODE_ENV: 'development',
-        WORKER_TYPE: 'background'
-      },
-      watch: false,
-      instances: 1,
-      exec_mode: 'fork',
-      autorestart: true,
-      max_memory_restart: '1G',
-      error_file: './logs/workers-error.log',
-      out_file: './logs/workers-out.log',
-      log_file: './logs/workers-combined.log',
-      time: true,
-      // Start after main app
-      wait_ready: false,
-      // Disable by default (uncomment to enable)
-      disabled: true
-    }
+
   ]
 };
 
@@ -66,4 +43,4 @@ module.exports = {
 // 2. --local flag ensures D1 uses local SQLite for development
 // 3. Hot reload is handled by wrangler, not PM2
 // 4. Health checks ensure proper startup
-// 5. Background workers can be enabled for additional processing if needed
+// 5. This is aria51a instance - separate from aria51 production
