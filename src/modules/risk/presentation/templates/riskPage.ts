@@ -225,6 +225,13 @@ export function renderRiskManagementPage() {
             <div class="p-8 text-center">
               <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
               <p class="text-gray-600 mt-2">Loading risks...</p>
+              <button onclick="document.getElementById('risk-table').innerHTML='<p>HTMX test</p>'" 
+                      class="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
+                Test Click
+              </button>
+              <div class="mt-4">
+                <a href="/risk-v2/ui/table-test" class="text-blue-600">Direct Table Test Link</a>
+              </div>
             </div>
           </div>
         </div>
@@ -233,5 +240,25 @@ export function renderRiskManagementPage() {
 
     <!-- Modal Container -->
     <div id="modal-container"></div>
+    
+    <!-- Debug Script -->
+    <script>
+      console.log('🔍 Risk page loaded');
+      console.log('HTMX available:', typeof htmx !== 'undefined');
+      console.log('Risk table element:', document.getElementById('risk-table'));
+      
+      // Manual trigger test
+      setTimeout(() => {
+        const table = document.getElementById('risk-table');
+        if (table) {
+          console.log('📋 Manually triggering HTMX load...');
+          if (typeof htmx !== 'undefined') {
+            htmx.trigger(table, 'load');
+          } else {
+            console.error('❌ HTMX not loaded!');
+          }
+        }
+      }, 2000);
+    </script>
   `;
 }

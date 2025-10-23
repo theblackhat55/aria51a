@@ -173,6 +173,42 @@ export function createRiskUIRoutes() {
   });
 
   /**
+   * GET /risk-v2/ui/table-test
+   * Direct test endpoint that returns simple HTML
+   */
+  app.get('/table-test', async (c) => {
+    try {
+      // Direct database query bypassing all domain logic
+      const result = await c.env.DB
+        .prepare('SELECT id, title, category, status, probability, impact FROM risks LIMIT 5')
+        .all();
+      
+      const risks = result.results || [];
+      
+      return c.html(`
+        <div class="p-4">
+          <h3 class="font-bold mb-4">Direct DB Query Test (${risks.length} risks)</h3>
+          <table class="w-full">
+            <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Status</th></tr></thead>
+            <tbody>
+              ${risks.map((r: any) => `
+                <tr class="border-b">
+                  <td>${r.id}</td>
+                  <td>${r.title}</td>
+                  <td>${r.category}</td>
+                  <td>${r.status}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `);
+    } catch (error: any) {
+      return c.html(`<div class="p-4 text-red-600">Error: ${error.message}</div>`);
+    }
+  });
+
+  /**
    * GET /risk-v2/ui/table
    * Risk table with filters (HTMX endpoint)
    */
