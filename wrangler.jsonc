@@ -16,14 +16,14 @@
     }
   ],
 
-  // KV Namespace for Session Management and Caching (disabled for initial deployment)
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "KV",
-  //     "id": "placeholder-kv-id",
-  //     "preview_id": "placeholder-preview-kv-id"
-  //   }
-  // ],
+  // KV Namespace for Session Management and MCP Query Caching
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "fc0d95b57d8e4e36a3d2cfa26f981955",
+      "preview_id": "cd2b9e97e1244f11b6937a18b750fcac"
+    }
+  ],
 
   // R2 Storage for Evidence Files and Reports (ENABLED)
   "r2_buckets": [

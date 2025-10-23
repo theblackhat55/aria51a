@@ -159,5 +159,51 @@ export function createMCPRoutes() {
     }
   });
 
+  /**
+   * Batch indexing endpoint (Admin only)
+   * Triggers indexing of existing data into Vectorize
+   */
+  app.post('/admin/batch-index', async (c) => {
+    try {
+      const { namespace, batchSize, dryRun } = await c.req.json();
+      
+      // Import BatchIndexer
+      const { BatchIndexer } = await import('../mcp-server/scripts/batch-indexer');
+      const indexer = new BatchIndexer(c.env as any);
+      
+      let result;
+      switch (namespace) {
+        case 'risks':
+          result = await indexer.indexRisks({ batchSize, dryRun });
+          break;
+        case 'incidents':
+          result = await indexer.indexIncidents({ batchSize, dryRun });
+          break;
+        case 'compliance':
+          result = await indexer.indexComplianceControls({ batchSize, dryRun });
+          break;
+        case 'documents':
+          result = await indexer.indexDocuments({ batchSize, dryRun });
+          break;
+        case 'all':
+        default:
+          result = await indexer.indexAll({ batchSize, dryRun });
+          break;
+      }
+      
+      return c.json({
+        success: true,
+        namespace: namespace || 'all',
+        result
+      });
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      }, 500);
+    }
+  });
+
   return app;
 }

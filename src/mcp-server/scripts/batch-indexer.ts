@@ -51,7 +51,8 @@ export class BatchIndexer {
     try {
       // Fetch all risks
       const risksResult = await this.env.DB.prepare(`
-        SELECT id, title, description, category, risk_level, likelihood, impact, status, mitigation_strategy
+        SELECT id, title, description, category, subcategory, probability, impact, 
+               inherent_risk, residual_risk, status, source, affected_assets
         FROM risks
         ORDER BY id ASC
       `).all();
@@ -76,13 +77,19 @@ export class BatchIndexer {
           
           try {
             // Build content for embedding
+            const riskLevel = risk.inherent_risk >= 15 ? 'Critical' : 
+                             risk.inherent_risk >= 10 ? 'High' : 
+                             risk.inherent_risk >= 5 ? 'Medium' : 'Low';
             const content = [
               `Risk: ${risk.title}`,
               risk.description || '',
               `Category: ${risk.category || 'Unknown'}`,
-              `Risk Level: ${risk.risk_level || 'Unknown'}`,
+              risk.subcategory ? `Subcategory: ${risk.subcategory}` : '',
+              `Risk Level: ${riskLevel}`,
+              `Probability: ${risk.probability || 0}`,
+              `Impact: ${risk.impact || 0}`,
               `Status: ${risk.status || 'Unknown'}`,
-              risk.mitigation_strategy || ''
+              risk.affected_assets ? `Affected Assets: ${risk.affected_assets}` : ''
             ].filter(Boolean).join('\n');
             
             // Generate embedding
@@ -97,7 +104,10 @@ export class BatchIndexer {
                 recordId: risk.id.toString(),
                 title: risk.title,
                 category: risk.category || '',
-                risk_level: risk.risk_level || '',
+                subcategory: risk.subcategory || '',
+                risk_level: riskLevel,
+                probability: risk.probability?.toString() || '0',
+                impact: risk.impact?.toString() || '0',
                 status: risk.status || '',
                 indexed_at: new Date().toISOString()
               }
