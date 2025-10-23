@@ -1164,83 +1164,8 @@ Please provide a comprehensive response based on the current platform data and y
   return app;
 }
 
-// Enhanced AI response generation with ML integration
-async function generateRAGResponse(message: string, env: any): Promise<string> {
-  try {
-    // Use Enhanced AI Chat Service for advanced capabilities
-    const { EnhancedAIChatService } = await import('../services/enhanced-ai-chat-service');
-    const chatService = new EnhancedAIChatService(env.DB, env);
-    
-    const chatQuery = {
-      message,
-      sessionId: `web_${Date.now()}`,
-      userId: 'web_user',
-      context: 'general' as const
-    };
-    
-    const response = await chatService.processChatQuery(chatQuery);
-    
-    // Return the AI response with enhanced formatting
-    let formattedResponse = response.response;
-    
-    // Add action buttons if available
-    if (response.actions && response.actions.length > 0) {
-      formattedResponse += '\n\n**Available Actions:**\n';
-      response.actions.forEach(action => {
-        formattedResponse += `• ${action.label}\n`;
-      });
-    }
-    
-    // Add confidence indicator
-    if (response.confidence < 0.5) {
-      formattedResponse += '\n\n*Note: This response has lower confidence. Please verify with additional sources.*';
-    }
-    
-    return formattedResponse;
-    
-  } catch (error) {
-    console.error('Enhanced chat service error:', error);
-    // Fallback to original RAG implementation
-    return await generateContextualRAGResponse(message, env);
-  }
-}
-
-async function generateContextualRAGResponse(message: string, env: any): Promise<string> {
-  // Simple keyword-based context retrieval (in production, use vector embeddings)
-  const searchQuery = `%${message.toLowerCase()}%`;
-  
-  const contextResults = await env.DB.prepare(`
-    SELECT title, content, document_type, metadata FROM rag_documents 
-    WHERE (LOWER(title) LIKE ? OR LOWER(content) LIKE ?)
-    LIMIT 3
-  `).bind(searchQuery, searchQuery).all();
-  
-  const context = (contextResults.results || []).map(row => 
-    `Source: ${row.title} (${row.document_type})\n${row.content.substring(0, 500)}...`
-  ).join('\n\n---\n\n');
-  
-  if (context) {
-    return `Based on your platform data:\n\n${generateContextualAnswer(message, context)}`;
-  } else {
-    return generateFallbackResponse(message);
-  }
-}
-
-function generateContextualAnswer(message: string, context: string): string {
-  const lowerMessage = message.toLowerCase();
-  
-  if (lowerMessage.includes('risk')) {
-    return `I found relevant risk information in your platform:\n\n${context.substring(0, 300)}...\n\nRecommendation: Focus on the highest-scored risks first and ensure proper mitigation controls are in place.`;
-  } else if (lowerMessage.includes('asset')) {
-    return `Here's what I found about your assets:\n\n${context.substring(0, 300)}...\n\nSuggestion: Ensure all critical assets have proper security controls and are regularly reviewed.`;
-  } else if (lowerMessage.includes('service')) {
-    return `Your service catalog shows:\n\n${context.substring(0, 300)}...\n\nAdvice: Monitor CIA ratings and ensure high-value services have appropriate protection measures.`;
-  } else if (lowerMessage.includes('threat')) {
-    return `Current threat intelligence indicates:\n\n${context.substring(0, 300)}...\n\nAction: Review IOCs and update security controls based on emerging threats.`;
-  } else {
-    return `I found relevant information:\n\n${context.substring(0, 400)}...\n\nLet me know if you need more specific analysis or recommendations.`;
-  }
-}
+// REMOVED: Pseudo-RAG functions replaced by MCP Server implementation
+// See src/mcp-server/ for true semantic search and RAG capabilities
 
 // Helper function to get real risk data from database
 async function getRealRiskScoreData(db: any) {

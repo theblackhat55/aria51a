@@ -38,6 +38,14 @@
     "binding": "AI"
   },
 
+  // Vectorize for MCP Server - Semantic Search & RAG
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "aria51-mcp-vectors"
+    }
+  ],
+
   // Environment Variables
   "vars": {
     "API_RATE_LIMIT": "1000",
