@@ -251,9 +251,27 @@ app.get('/debug/dashboard-stats', async (c) => {
 app.get('/', async (c) => {
   const token = getCookie(c, 'aria_token');
   
-  // If authenticated, redirect to dashboard
+  // If token exists, verify it before redirecting
   if (token) {
-    return c.redirect('/dashboard');
+    try {
+      const { verifyJWT, getJWTSecret } = await import('./auth');
+      const decoded = await verifyJWT(token, getJWTSecret(c.env));
+      
+      // Check if token is expired
+      if (decoded.exp && decoded.exp * 1000 >= Date.now()) {
+        // Token is valid, redirect to dashboard
+        return c.redirect('/dashboard');
+      } else {
+        // Token expired, clear cookie and show landing page
+        const { deleteCookie } = await import('hono/cookie');
+        deleteCookie(c, 'aria_token', { path: '/' });
+      }
+    } catch (error) {
+      // Token invalid, clear cookie and show landing page
+      console.error('Invalid token on root path:', error);
+      const { deleteCookie } = await import('hono/cookie');
+      deleteCookie(c, 'aria_token', { path: '/' });
+    }
   }
   
   // Show landing page for unauthenticated users
@@ -261,12 +279,30 @@ app.get('/', async (c) => {
 });
 
 // Login page
-app.get('/login', (c) => {
+app.get('/login', async (c) => {
   const token = getCookie(c, 'aria_token');
   
-  // If already authenticated, redirect to dashboard
+  // If token exists, verify it before redirecting
   if (token) {
-    return c.redirect('/dashboard');
+    try {
+      const { verifyJWT, getJWTSecret } = await import('./auth');
+      const decoded = await verifyJWT(token, getJWTSecret(c.env));
+      
+      // Check if token is expired
+      if (decoded.exp && decoded.exp * 1000 >= Date.now()) {
+        // Token is valid, redirect to dashboard
+        return c.redirect('/dashboard');
+      } else {
+        // Token expired, clear cookie and show login page
+        const { deleteCookie } = await import('hono/cookie');
+        deleteCookie(c, 'aria_token', { path: '/' });
+      }
+    } catch (error) {
+      // Token invalid, clear cookie and show login page
+      console.error('Invalid token on login page:', error);
+      const { deleteCookie } = await import('hono/cookie');
+      deleteCookie(c, 'aria_token', { path: '/' });
+    }
   }
   
   return c.html(loginPage());
@@ -574,6 +610,9 @@ app.notFound((c) => {
 // Global error handler
 app.onError((err, c) => {
   console.error('Application error:', err);
+  console.error('Error stack:', err.stack);
+  console.error('Request URL:', c.req.url);
+  console.error('Request method:', c.req.method);
   
   const errorHtml = cleanLayout({
     title: 'Error - ARIA5',
@@ -586,6 +625,11 @@ app.onError((err, c) => {
           </div>
           <h1 class="text-4xl font-bold text-gray-900 mb-4">Error</h1>
           <p class="text-xl text-gray-600 mb-8">Something went wrong</p>
+          ${process.env.NODE_ENV !== 'production' ? html`
+            <div class="text-left bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p class="text-sm font-mono text-red-800 break-all">${err.message}</p>
+            </div>
+          ` : ''}
           <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
             Return Home
           </a>
