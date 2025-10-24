@@ -26,21 +26,51 @@ export function createIntegrationMarketplaceRoutes() {
    * Integration Marketplace Homepage
    */
   app.get('/', async (c) => {
-    const user = c.get('user');
-    
-    // Get available integrations from catalog
-    const catalog = await getIntegrationCatalog(c.env.DB);
-    
-    // Get user's installed integrations
-    const installations = await getUserInstallations(c.env.DB, user.organization_id);
-    
-    return c.html(
-      cleanLayout({
-        title: 'Integration Marketplace',
-        user,
-        content: renderMarketplaceHomepage(catalog, installations)
-      })
-    );
+    try {
+      const user = c.get('user');
+      
+      console.log('[Integration Marketplace] User:', user?.username, 'OrgId:', user?.organization_id);
+      console.log('[Integration Marketplace] DB binding available:', !!c.env?.DB);
+      
+      if (!c.env?.DB) {
+        console.error('[Integration Marketplace] ERROR: DB binding not available');
+        return c.html(`
+          <div class="p-8">
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <strong>Database Error:</strong> Database binding not configured. Please configure DB binding in Cloudflare Dashboard.
+            </div>
+          </div>
+        `, 500);
+      }
+      
+      // Get available integrations from catalog
+      console.log('[Integration Marketplace] Fetching catalog...');
+      const catalog = await getIntegrationCatalog(c.env.DB);
+      console.log('[Integration Marketplace] Catalog items:', catalog.length);
+      
+      // Get user's installed integrations
+      console.log('[Integration Marketplace] Fetching installations...');
+      const installations = await getUserInstallations(c.env.DB, user.organizationId);
+      console.log('[Integration Marketplace] Installations:', installations.length);
+      
+      return c.html(
+        cleanLayout({
+          title: 'Integration Marketplace',
+          user,
+          content: renderMarketplaceHomepage(catalog, installations)
+        })
+      );
+    } catch (error) {
+      console.error('[Integration Marketplace] ERROR:', error);
+      console.error('[Integration Marketplace] Error stack:', error instanceof Error ? error.stack : 'No stack');
+      return c.html(`
+        <div class="p-8">
+          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <strong>Error:</strong> ${error instanceof Error ? error.message : 'Unknown error'}
+          </div>
+        </div>
+      `, 500);
+    }
   });
 
   /**
@@ -58,7 +88,7 @@ export function createIntegrationMarketplaceRoutes() {
     }
     
     // Check if user has this integration installed
-    const installation = await getInstallation(c.env.DB, integrationKey, user.organization_id);
+    const installation = await getInstallation(c.env.DB, integrationKey, user.organizationId);
     
     return c.html(
       cleanLayout({
@@ -75,7 +105,7 @@ export function createIntegrationMarketplaceRoutes() {
   app.get('/ms-defender/configure', async (c) => {
     const user = c.get('user');
     
-    const installation = await getInstallation(c.env.DB, 'ms-defender', user.organization_id);
+    const installation = await getInstallation(c.env.DB, 'ms-defender', user.organizationId);
     
     return c.html(
       cleanLayout({
@@ -137,7 +167,7 @@ export function createIntegrationMarketplaceRoutes() {
   app.get('/servicenow/configure', async (c) => {
     const user = c.get('user');
     
-    const installation = await getInstallation(c.env.DB, 'servicenow', user.organization_id);
+    const installation = await getInstallation(c.env.DB, 'servicenow', user.organizationId);
     
     return c.html(
       cleanLayout({
@@ -184,7 +214,7 @@ export function createIntegrationMarketplaceRoutes() {
   app.get('/tenable/configure', async (c) => {
     const user = c.get('user');
     
-    const installation = await getInstallation(c.env.DB, 'tenable', user.organization_id);
+    const installation = await getInstallation(c.env.DB, 'tenable', user.organizationId);
     
     return c.html(
       cleanLayout({
@@ -260,13 +290,13 @@ export function createIntegrationMarketplaceRoutes() {
       }
       
       // Store encrypted config in KV
-      const configKvKey = `integration:${integrationKey}:${user.organization_id}`;
+      const configKvKey = `integration:${integrationKey}:${user.organizationId}`;
       await c.env.KV?.put(configKvKey, JSON.stringify(config));
       
       // Create installation record
       const installationId = await createInstallation(c.env.DB, {
         integration_key: integrationKey,
-        organization_id: user.organization_id,
+        organization_id: user.organizationId,
         config_kv_key: configKvKey,
         installed_by: user.id
       });
@@ -330,7 +360,7 @@ export function createIntegrationMarketplaceRoutes() {
     
     try {
       // Get installation
-      const installation = await getInstallation(c.env.DB, integrationKey, user.organization_id);
+      const installation = await getInstallation(c.env.DB, integrationKey, user.organizationId);
       
       if (!installation) {
         return c.json({ success: false, error: 'Integration not installed' }, 404);
@@ -400,7 +430,7 @@ export function createIntegrationMarketplaceRoutes() {
       )
       ORDER BY last_seen DESC
       LIMIT 100
-    `).bind(user.organization_id).all();
+    `).bind(user.organizationId).all();
     
     return c.json({ success: true, assets: assets.results || [] });
   });
@@ -419,7 +449,7 @@ export function createIntegrationMarketplaceRoutes() {
       )
       ORDER BY created_time DESC
       LIMIT 100
-    `).bind(user.organization_id).all();
+    `).bind(user.organizationId).all();
     
     return c.json({ success: true, incidents: incidents.results || [] });
   });
@@ -438,7 +468,7 @@ export function createIntegrationMarketplaceRoutes() {
       )
       ORDER BY cvss_v3 DESC
       LIMIT 100
-    `).bind(user.organization_id).all();
+    `).bind(user.organizationId).all();
     
     return c.json({ success: true, vulnerabilities: vulnerabilities.results || [] });
   });
