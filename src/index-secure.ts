@@ -26,6 +26,7 @@ import { createBusinessUnitsRoutes } from './routes/business-units-routes';
 import { createMSDefenderRoutes } from './routes/ms-defender-routes';
 import { createEnhancedDynamicRiskRoutes } from './routes/enhanced-dynamic-risk-routes';
 import { createAPIManagementRoutes } from './routes/api-management-routes';
+import { createIntegrationMarketplaceRoutes } from './routes/integration-marketplace-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
@@ -471,8 +472,13 @@ app.route('/compliance', createEnhancedComplianceRoutes());
 // Operations Management (requires authentication)
 app.route('/operations', createOperationsRoutes());
 
-// Microsoft Defender Integration (requires authentication)
-app.route('/ms-defender', createMSDefenderRoutes());
+// Integration Marketplace (requires authentication)
+// Centralized integration management for MS Defender, ServiceNow, Tenable, etc.
+app.route('/integrations', createIntegrationMarketplaceRoutes());
+
+// Microsoft Defender Integration (legacy route - redirects to marketplace)
+app.get('/ms-defender', (c) => c.redirect('/integrations/ms-defender'));
+app.get('/ms-defender/*', (c) => c.redirect('/integrations/ms-defender'));
 
 // Admin Management (requires admin role)
 app.route('/admin', createAdminRoutesARIA5());
