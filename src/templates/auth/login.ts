@@ -8,14 +8,14 @@ export const loginPage = () => html`
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - ARIA5.1</title>
   
-  <!-- HTMX -->
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <!-- HTMX (Local) -->
+  <script src="/static/js/htmx.min.js"></script>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Font Awesome -->
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Font Awesome (Local) -->
+  <link href="/static/css/fontawesome.min.css" rel="stylesheet">
   
   <style>
     .htmx-indicator {
@@ -117,14 +117,14 @@ export const loginPage = () => html`
       
       <!-- Demo Accounts -->
       <div class="mt-8 pt-6 border-t border-gray-200">
-        <p class="text-xs text-gray-500 text-center mb-4">Demo Accounts Available</p>
+        <p class="text-xs text-gray-500 text-center mb-4">Quick Login (Demo)</p>
         <div class="space-y-2">
           <button onclick="fillCredentials('admin', 'demo123')"
                   class="w-full text-left px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
             <div class="flex items-center justify-between">
               <div>
                 <span class="text-sm font-medium text-gray-900">Administrator</span>
-                <span class="text-xs text-gray-500 ml-2">admin / demo123</span>
+                <span class="text-xs text-gray-400 ml-2"><i class="fas fa-user-shield"></i></span>
               </div>
               <i class="fas fa-arrow-right text-gray-400"></i>
             </div>
@@ -134,7 +134,7 @@ export const loginPage = () => html`
             <div class="flex items-center justify-between">
               <div>
                 <span class="text-sm font-medium text-gray-900">Risk Manager</span>
-                <span class="text-xs text-gray-500 ml-2">avi_security / demo123</span>
+                <span class="text-xs text-gray-400 ml-2"><i class="fas fa-user-tie"></i></span>
               </div>
               <i class="fas fa-arrow-right text-gray-400"></i>
             </div>
@@ -144,7 +144,7 @@ export const loginPage = () => html`
             <div class="flex items-center justify-between">
               <div>
                 <span class="text-sm font-medium text-gray-900">Compliance Officer</span>
-                <span class="text-xs text-gray-500 ml-2">sjohnson / demo123</span>
+                <span class="text-xs text-gray-400 ml-2"><i class="fas fa-user-check"></i></span>
               </div>
               <i class="fas fa-arrow-right text-gray-400"></i>
             </div>
