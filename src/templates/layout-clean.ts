@@ -1656,6 +1656,13 @@ const renderCleanNavigation = (user: any) => html`
                   </div>
                 </a>
                 <div class="border-t border-gray-100 my-2"></div>
+                <a href="/integrations" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-puzzle-piece w-5 text-indigo-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Integration Marketplace</div>
+                    <div class="text-xs text-gray-500">MS Defender, ServiceNow, Tenable & more</div>
+                  </div>
+                </a>
                 <a href="/intelligence/feeds" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
                   <i class="fas fa-rss w-5 text-purple-500 mr-3"></i>
                   <div>
@@ -1931,6 +1938,10 @@ const renderCleanNavigation = (user: any) => html`
                   <span class="text-sm font-medium text-blue-800">Documents</span>
                 </a>
                 <div class="border-t border-blue-200 my-2 mx-2"></div>
+                <a href="/integrations" class="flex items-center p-3 hover:bg-indigo-100 rounded-lg transition-colors active:scale-98 bg-gradient-to-r from-indigo-50 to-indigo-100">
+                  <i class="fas fa-puzzle-piece text-indigo-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-indigo-800">Integrations</span>
+                </a>
                 <a href="/intelligence/feeds" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98 bg-gradient-to-r from-purple-50 to-purple-100">
                   <i class="fas fa-rss text-purple-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-purple-800">TI Feeds</span>
