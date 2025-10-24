@@ -21,6 +21,9 @@ export function createIntegrationMarketplaceRoutes() {
   
   // Apply authentication middleware
   app.use('*', requireAuth);
+  
+  // Helper function to safely get organizationId
+  const getOrgId = (user: any): number => user?.organizationId || 1;
 
   /**
    * Integration Marketplace Homepage
@@ -29,7 +32,9 @@ export function createIntegrationMarketplaceRoutes() {
     try {
       const user = c.get('user');
       
-      console.log('[Integration Marketplace] User:', user?.username, 'OrgId:', user?.organization_id);
+      const orgId = getOrgId(user);
+      
+      console.log('[Integration Marketplace] User:', user?.username, 'OrgId:', orgId);
       console.log('[Integration Marketplace] DB binding available:', !!c.env?.DB);
       
       if (!c.env?.DB) {
@@ -50,7 +55,7 @@ export function createIntegrationMarketplaceRoutes() {
       
       // Get user's installed integrations
       console.log('[Integration Marketplace] Fetching installations...');
-      const installations = await getUserInstallations(c.env.DB, user.organizationId);
+      const installations = await getUserInstallations(c.env.DB, orgId);
       console.log('[Integration Marketplace] Installations:', installations.length);
       
       return c.html(
@@ -88,7 +93,7 @@ export function createIntegrationMarketplaceRoutes() {
     }
     
     // Check if user has this integration installed
-    const installation = await getInstallation(c.env.DB, integrationKey, user.organizationId);
+    const installation = await getInstallation(c.env.DB, integrationKey, getOrgId(user));
     
     return c.html(
       cleanLayout({
@@ -105,7 +110,7 @@ export function createIntegrationMarketplaceRoutes() {
   app.get('/ms-defender/configure', async (c) => {
     const user = c.get('user');
     
-    const installation = await getInstallation(c.env.DB, 'ms-defender', user.organizationId);
+    const installation = await getInstallation(c.env.DB, 'ms-defender', getOrgId(user));
     
     return c.html(
       cleanLayout({
@@ -167,7 +172,7 @@ export function createIntegrationMarketplaceRoutes() {
   app.get('/servicenow/configure', async (c) => {
     const user = c.get('user');
     
-    const installation = await getInstallation(c.env.DB, 'servicenow', user.organizationId);
+    const installation = await getInstallation(c.env.DB, 'servicenow', getOrgId(user));
     
     return c.html(
       cleanLayout({
@@ -214,7 +219,7 @@ export function createIntegrationMarketplaceRoutes() {
   app.get('/tenable/configure', async (c) => {
     const user = c.get('user');
     
-    const installation = await getInstallation(c.env.DB, 'tenable', user.organizationId);
+    const installation = await getInstallation(c.env.DB, 'tenable', getOrgId(user));
     
     return c.html(
       cleanLayout({
@@ -290,13 +295,13 @@ export function createIntegrationMarketplaceRoutes() {
       }
       
       // Store encrypted config in KV
-      const configKvKey = `integration:${integrationKey}:${user.organizationId}`;
+      const configKvKey = `integration:${integrationKey}:${getOrgId(user)}`;
       await c.env.KV?.put(configKvKey, JSON.stringify(config));
       
       // Create installation record
       const installationId = await createInstallation(c.env.DB, {
         integration_key: integrationKey,
-        organization_id: user.organizationId,
+        organization_id: getOrgId(user),
         config_kv_key: configKvKey,
         installed_by: user.id
       });
@@ -360,7 +365,7 @@ export function createIntegrationMarketplaceRoutes() {
     
     try {
       // Get installation
-      const installation = await getInstallation(c.env.DB, integrationKey, user.organizationId);
+      const installation = await getInstallation(c.env.DB, integrationKey, getOrgId(user));
       
       if (!installation) {
         return c.json({ success: false, error: 'Integration not installed' }, 404);
@@ -430,7 +435,7 @@ export function createIntegrationMarketplaceRoutes() {
       )
       ORDER BY last_seen DESC
       LIMIT 100
-    `).bind(user.organizationId).all();
+    `).bind(getOrgId(user)).all();
     
     return c.json({ success: true, assets: assets.results || [] });
   });
@@ -449,7 +454,7 @@ export function createIntegrationMarketplaceRoutes() {
       )
       ORDER BY created_time DESC
       LIMIT 100
-    `).bind(user.organizationId).all();
+    `).bind(getOrgId(user)).all();
     
     return c.json({ success: true, incidents: incidents.results || [] });
   });
@@ -468,7 +473,7 @@ export function createIntegrationMarketplaceRoutes() {
       )
       ORDER BY cvss_v3 DESC
       LIMIT 100
-    `).bind(user.organizationId).all();
+    `).bind(getOrgId(user)).all();
     
     return c.json({ success: true, vulnerabilities: vulnerabilities.results || [] });
   });
