@@ -38,7 +38,8 @@ import riskDDDRoutes from './domains/risks/presentation/routes/risk-ddd.routes';
 import complianceDDDRoutes from './domains/compliance/presentation/routes/compliance-ddd.routes';
 
 // Import DDD Incident Response Routes (Domain-Driven Design implementation)
-// TEMPORARILY COMMENTED OUT - Value objects need refactoring
+// TEMPORARILY DISABLED - Missing Entity base class dependency
+// TODO: Create src/shared/core/Entity.ts then enable
 // import incidentDDDRoutes from './domains/incidents/presentation/routes/incident-ddd.routes';
 
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
@@ -531,7 +532,7 @@ app.route('/api/v2/compliance', complianceDDDRoutes);
 // Full DDD incident response domain: Incident, ResponseAction, SecurityEvent entities
 // Implements NIST SP 800-61 incident handling framework with CQRS pattern
 // Routes: /api/v2/incidents/* (protected by authMiddleware on line 128)
-// TEMPORARILY COMMENTED OUT - Value objects need refactoring
+// TEMPORARILY DISABLED - Missing Entity base class dependency
 // app.route('/api/v2/incidents', incidentDDDRoutes);
 
 // Enhanced Compliance Management with AI (requires authentication)
