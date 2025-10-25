@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS incidents (
   description TEXT NOT NULL,
   
   -- Classification
-  severity TEXT NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low', 'informational')),
-  status TEXT NOT NULL CHECK (status IN ('detected', 'triaged', 'investigating', 'contained', 'eradicating', 'recovering', 'resolved', 'closed')),
-  category TEXT NOT NULL CHECK (category IN ('malware', 'phishing', 'data_breach', 'denial_of_service', 'unauthorized_access', 'insider_threat', 'system_failure', 'policy_violation', 'physical_security', 'other')),
-  impact TEXT NOT NULL CHECK (impact IN ('catastrophic', 'major', 'moderate', 'minor', 'negligible')),
+  severity TEXT NOT NULL,
+  status TEXT NOT NULL,
+  category TEXT NOT NULL,
+  impact TEXT NOT NULL,
   
   -- Assignment and timeline
   assigned_to INTEGER, -- User ID
@@ -81,13 +81,13 @@ CREATE TABLE IF NOT EXISTS response_actions (
   incident_id INTEGER NOT NULL,
   
   -- Action details
-  action_type TEXT NOT NULL CHECK (action_type IN ('isolate', 'contain', 'eradicate', 'recover', 'investigate', 'analyze', 'document', 'notify', 'monitor', 'remediate')),
+  action_type TEXT NOT NULL,
   description TEXT NOT NULL,
   
   -- Execution tracking
   performed_by INTEGER NOT NULL, -- User ID
   performed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  status TEXT NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed', 'failed', 'cancelled')) DEFAULT 'pending',
+  status TEXT NOT NULL DEFAULT 'pending',
   
   -- Results and evidence
   outcome TEXT,
@@ -137,8 +137,8 @@ CREATE TABLE IF NOT EXISTS security_events (
   
   -- Event classification
   event_type TEXT NOT NULL, -- e.g., 'failed_login', 'malware_detected', 'port_scan'
-  severity TEXT NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low', 'informational')),
-  source TEXT NOT NULL CHECK (source IN ('siem', 'ids', 'ips', 'firewall', 'antivirus', 'edr', 'dlp', 'waf', 'cloud_security', 'user_report', 'manual', 'other')),
+  severity TEXT NOT NULL,
+  source TEXT NOT NULL,
   source_system TEXT, -- Specific system/tool name
   
   -- Network details
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS security_events (
   raw_log TEXT, -- Raw log entry
   detected_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   signature TEXT, -- Detection signature/rule ID
-  confidence INTEGER CHECK (confidence BETWEEN 0 AND 100), -- Confidence score
+  confidence INTEGER, -- Confidence score (0-100)
   
   -- Analysis
   false_positive INTEGER DEFAULT 0, -- Boolean: 0 or 1

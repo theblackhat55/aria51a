@@ -9,7 +9,7 @@ export enum IncidentCategory {
   Phishing = 'phishing',                   // Phishing attack
   DataBreach = 'data_breach',              // Data breach/exfiltration
   DenialOfService = 'denial_of_service',   // DoS/DDoS attack
-  Unauthorized Access = 'unauthorized_access', // Unauthorized system access
+  UnauthorizedAccess = 'unauthorized_access', // Unauthorized system access
   InsiderThreat = 'insider_threat',        // Malicious insider
   SystemFailure = 'system_failure',        // Technical failure
   PolicyViolation = 'policy_violation',    // Security policy violation
