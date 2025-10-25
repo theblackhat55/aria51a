@@ -146,6 +146,10 @@ export async function authMiddleware(c: Context, next: Next) {
 
     // Set user context
     c.set('user', user);
+    // Set organizationId for easy access in DDD routes
+    c.set('organizationId', user.organization_id);
+    // Set userId for easy access in DDD routes  
+    c.set('userId', user.id);
     
     await next();
   } catch (error) {

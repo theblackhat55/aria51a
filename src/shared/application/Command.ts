@@ -7,13 +7,15 @@
  * @abstract
  */
 
-export abstract class Command {
+export abstract class Command<TPayload = any> {
   public readonly commandId: string;
   public readonly timestamp: Date;
+  public readonly payload: TPayload;
 
-  constructor() {
+  constructor(payload: TPayload) {
     this.commandId = this.generateCommandId();
     this.timestamp = new Date();
+    this.payload = payload;
   }
 
   /**

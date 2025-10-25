@@ -7,13 +7,15 @@
  * @abstract
  */
 
-export abstract class Query<TResult = any> {
+export abstract class Query<TPayload = any> {
   public readonly queryId: string;
   public readonly timestamp: Date;
+  public readonly payload: TPayload;
 
-  constructor() {
+  constructor(payload: TPayload) {
     this.queryId = this.generateQueryId();
     this.timestamp = new Date();
+    this.payload = payload;
   }
 
   /**

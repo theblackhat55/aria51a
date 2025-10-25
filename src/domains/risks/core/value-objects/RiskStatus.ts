@@ -4,12 +4,14 @@
 
 export enum RiskStatus {
   Active = 'active',
+  Pending = 'pending',
   Mitigated = 'mitigated',
   Accepted = 'accepted',
   Transferred = 'transferred',
   Avoided = 'avoided',
   Closed = 'closed',
-  UnderReview = 'under_review'
+  UnderReview = 'under_review',
+  Monitoring = 'monitoring'
 }
 
 export class RiskStatusVO {

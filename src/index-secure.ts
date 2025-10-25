@@ -29,6 +29,9 @@ import { createAPIManagementRoutes } from './routes/api-management-routes';
 import { createIntegrationMarketplaceRoutes } from './routes/integration-marketplace-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
+
+// Import DDD Risk Routes (Domain-Driven Design implementation)
+import riskDDDRoutes from './domains/risks/presentation/routes/risk-ddd.routes';
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
 // TODO: Re-enable when Phase 4 multi-tenancy features are needed
 // import enterpriseMultiTenancyApi from './routes/enterprise-multitenancy-api';
@@ -501,6 +504,12 @@ app.route('/risk-v2/ui', riskUIRoutes);  // Without trailing slash
 
 // Enhanced Dynamic Risk Assessment (requires authentication)
 app.route('/risk/enhanced', createEnhancedDynamicRiskRoutes());
+
+// DDD Risk Management API v2 (Domain-Driven Design with CQRS)
+// New architecture with full DDD patterns: Entities, Value Objects, Aggregates, Repositories
+// Implements CQRS with separate Command and Query handlers
+// Routes: /api/v2/risks/* (protected by authMiddleware on line 128)
+app.route('/api/v2/risks', riskDDDRoutes);
 
 // Enhanced Compliance Management with AI (requires authentication)
 app.route('/compliance', createEnhancedComplianceRoutes());

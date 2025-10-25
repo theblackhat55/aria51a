@@ -92,10 +92,32 @@ app.post(
  */
 app.get(
   '/',
-  zValidator('query', ListRisksSchema),
   async (c) => {
     try {
-      const params = c.req.valid('query');
+      // Parse query parameters
+      const queryParams = c.req.query();
+      
+      // Validate query parameters
+      const validation = ListRisksSchema.safeParse({
+        limit: queryParams.limit ? parseInt(queryParams.limit) : undefined,
+        offset: queryParams.offset ? parseInt(queryParams.offset) : undefined,
+        status: queryParams.status,
+        category: queryParams.category,
+        ownerId: queryParams.ownerId ? parseInt(queryParams.ownerId) : undefined,
+        searchQuery: queryParams.searchQuery,
+        sortBy: queryParams.sortBy,
+        sortOrder: queryParams.sortOrder
+      });
+      
+      if (!validation.success) {
+        return c.json({
+          success: false,
+          error: 'Validation failed',
+          details: validation.error.errors
+        }, 400);
+      }
+      
+      const params = validation.data;
       const organizationId = c.get('organizationId') as number || 1;
 
       // Create repository
@@ -123,10 +145,12 @@ app.get(
         }
       });
     } catch (error) {
+      console.error('Error in GET /api/v2/risks:', error);
       return c.json({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to list risks'
-      }, 400);
+        error: error instanceof Error ? error.message : 'Failed to list risks',
+        stack: error instanceof Error ? error.stack : undefined
+      }, 500);
     }
   }
 );
@@ -308,10 +332,8 @@ app.delete(
       const handler = new DeleteRiskHandler(repository);
       await handler.handle(command);
 
-      return c.json({
-        success: true,
-        message: 'Risk deleted successfully'
-      }, 204);
+      // 204 No Content - no body allowed
+      return new Response(null, { status: 204 });
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {
         return c.json({
