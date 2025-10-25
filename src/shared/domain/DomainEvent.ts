@@ -12,10 +12,10 @@ export abstract class DomainEvent {
   public readonly eventId: string;
   public readonly eventType: string;
 
-  constructor(eventType: string) {
+  constructor(eventType?: string) {
     this.occurredOn = new Date();
     this.eventId = this.generateEventId();
-    this.eventType = eventType;
+    this.eventType = eventType || this.constructor.name;
   }
 
   /**
