@@ -28,6 +28,7 @@ import { createEnhancedDynamicRiskRoutes } from './routes/enhanced-dynamic-risk-
 import { createAPIManagementRoutes } from './routes/api-management-routes';
 import { createIntegrationMarketplaceRoutes } from './routes/integration-marketplace-routes';
 import { createIncidentsRoutes } from './routes/incidents-routes';
+import { createWorkflowManagementRoutes } from './routes/workflow-management-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 
@@ -543,6 +544,9 @@ app.route('/operations', createOperationsRoutes());
 
 // Incidents Management (requires authentication)
 app.route('/incidents', createIncidentsRoutes());
+
+// Workflow Management (requires authentication) - Week 6
+app.route('/workflows', createWorkflowManagementRoutes());
 
 // Integration Marketplace (requires authentication)
 // Centralized integration management for MS Defender, ServiceNow, Tenable, etc.
