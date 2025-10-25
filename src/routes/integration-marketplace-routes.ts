@@ -422,6 +422,245 @@ export function createIntegrationMarketplaceRoutes() {
   });
 
   /**
+   * Sync MS Defender Incidents to ARIA5 Incidents
+   * Week 6 Enhancement
+   */
+  app.post('/api/ms-defender/sync-incidents', async (c) => {
+    const user = c.get('user');
+    
+    try {
+      // Get installation
+      const installation = await getInstallation(c.env.DB, 'ms-defender', getOrgId(user));
+      
+      if (!installation) {
+        return c.json({ success: false, error: 'MS Defender integration not installed' }, 404);
+      }
+      
+      // Get config from KV
+      const configData = await c.env.KV?.get(installation.config_kv_key);
+      if (!configData) {
+        return c.json({ success: false, error: 'Configuration not found' }, 404);
+      }
+      
+      const config = JSON.parse(configData);
+      const defenderService = new MicrosoftDefenderService(config);
+      
+      // Create or update sync job
+      const syncJob = await c.env.DB.prepare(`
+        INSERT INTO incident_sync_jobs 
+          (integration_key, organization_id, status, next_sync_at, sync_interval_minutes)
+        VALUES (?, ?, 'running', datetime('now', '+15 minutes'), 15)
+        RETURNING id
+      `).bind('ms-defender', getOrgId(user)).first();
+      
+      // Fetch incidents from MS Defender
+      const defenderIncidents = await defenderService.getIncidents({
+        status: 'Active',
+        top: 50 // Limit to most recent
+      });
+      
+      let syncedCount = 0;
+      let errors = [];
+      
+      // Sync each incident
+      for (const incident of defenderIncidents) {
+        try {
+          // Check if incident already exists
+          const existing = await c.env.DB.prepare(`
+            SELECT id FROM incidents WHERE external_id = ? AND external_source = 'ms-defender'
+          `).bind(incident.id).first();
+          
+          if (!existing) {
+            // Create new incident
+            await c.env.DB.prepare(`
+              INSERT INTO incidents (
+                title, description, severity, status, category,
+                external_id, external_source, external_data,
+                organization_id, reported_by, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, 'ms-defender', ?, ?, ?, CURRENT_TIMESTAMP)
+            `).bind(
+              incident.title || `MS Defender Incident ${incident.id}`,
+              incident.description || 'Incident synced from Microsoft Defender',
+              mapDefenderSeverity(incident.severity),
+              mapDefenderStatus(incident.status),
+              'security',
+              incident.id,
+              JSON.stringify(incident),
+              getOrgId(user),
+              user.id
+            ).run();
+            
+            syncedCount++;
+          } else {
+            // Update existing incident
+            await c.env.DB.prepare(`
+              UPDATE incidents
+              SET title = ?, description = ?, severity = ?, status = ?,
+                  external_data = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE external_id = ? AND external_source = 'ms-defender'
+            `).bind(
+              incident.title || `MS Defender Incident ${incident.id}`,
+              incident.description || 'Incident synced from Microsoft Defender',
+              mapDefenderSeverity(incident.severity),
+              mapDefenderStatus(incident.status),
+              JSON.stringify(incident),
+              incident.id
+            ).run();
+          }
+        } catch (error) {
+          errors.push(`Failed to sync incident ${incident.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+      
+      // Update sync job
+      await c.env.DB.prepare(`
+        UPDATE incident_sync_jobs
+        SET status = ?, incidents_synced = ?, last_sync_at = CURRENT_TIMESTAMP,
+            error_message = ?, next_sync_at = datetime('now', '+15 minutes')
+        WHERE id = ?
+      `).bind(
+        errors.length > 0 ? 'completed_with_errors' : 'completed',
+        syncedCount,
+        errors.length > 0 ? JSON.stringify(errors) : null,
+        syncJob.id
+      ).run();
+      
+      return c.json({
+        success: true,
+        message: `Synced ${syncedCount} incidents from MS Defender`,
+        incidents_synced: syncedCount,
+        errors: errors.length > 0 ? errors : undefined
+      });
+      
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Sync failed'
+      }, 500);
+    }
+  });
+
+  /**
+   * Sync ServiceNow Incidents to ARIA5 Incidents
+   * Week 6 Enhancement
+   */
+  app.post('/api/servicenow/sync-incidents', async (c) => {
+    const user = c.get('user');
+    
+    try {
+      // Get installation
+      const installation = await getInstallation(c.env.DB, 'servicenow', getOrgId(user));
+      
+      if (!installation) {
+        return c.json({ success: false, error: 'ServiceNow integration not installed' }, 404);
+      }
+      
+      // Get config from KV
+      const configData = await c.env.KV?.get(installation.config_kv_key);
+      if (!configData) {
+        return c.json({ success: false, error: 'Configuration not found' }, 404);
+      }
+      
+      const config = JSON.parse(configData);
+      const snowService = new ServiceNowIntegrationService(config);
+      
+      // Create or update sync job
+      const syncJob = await c.env.DB.prepare(`
+        INSERT INTO incident_sync_jobs 
+          (integration_key, organization_id, status, next_sync_at, sync_interval_minutes)
+        VALUES (?, ?, 'running', datetime('now', '+15 minutes'), 15)
+        RETURNING id
+      `).bind('servicenow', getOrgId(user)).first();
+      
+      // Fetch incidents from ServiceNow
+      const snowIncidents = await snowService.getIncidents({
+        state: 'Active',
+        category: 'security',
+        limit: 50
+      });
+      
+      let syncedCount = 0;
+      let errors = [];
+      
+      // Sync each incident
+      for (const incident of snowIncidents) {
+        try {
+          // Check if incident already exists
+          const existing = await c.env.DB.prepare(`
+            SELECT id FROM incidents WHERE external_id = ? AND external_source = 'servicenow'
+          `).bind(incident.sys_id).first();
+          
+          if (!existing) {
+            // Create new incident
+            await c.env.DB.prepare(`
+              INSERT INTO incidents (
+                title, description, severity, status, category,
+                external_id, external_source, external_data,
+                organization_id, reported_by, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, 'servicenow', ?, ?, ?, CURRENT_TIMESTAMP)
+            `).bind(
+              incident.short_description || `ServiceNow Incident ${incident.number}`,
+              incident.description || 'Incident synced from ServiceNow',
+              mapServiceNowPriority(incident.priority),
+              mapServiceNowState(incident.state),
+              'security',
+              incident.sys_id,
+              JSON.stringify(incident),
+              getOrgId(user),
+              user.id
+            ).run();
+            
+            syncedCount++;
+          } else {
+            // Update existing incident
+            await c.env.DB.prepare(`
+              UPDATE incidents
+              SET title = ?, description = ?, severity = ?, status = ?,
+                  external_data = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE external_id = ? AND external_source = 'servicenow'
+            `).bind(
+              incident.short_description || `ServiceNow Incident ${incident.number}`,
+              incident.description || 'Incident synced from ServiceNow',
+              mapServiceNowPriority(incident.priority),
+              mapServiceNowState(incident.state),
+              JSON.stringify(incident),
+              incident.sys_id
+            ).run();
+          }
+        } catch (error) {
+          errors.push(`Failed to sync incident ${incident.number}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+      
+      // Update sync job
+      await c.env.DB.prepare(`
+        UPDATE incident_sync_jobs
+        SET status = ?, incidents_synced = ?, last_sync_at = CURRENT_TIMESTAMP,
+            error_message = ?, next_sync_at = datetime('now', '+15 minutes')
+        WHERE id = ?
+      `).bind(
+        errors.length > 0 ? 'completed_with_errors' : 'completed',
+        syncedCount,
+        errors.length > 0 ? JSON.stringify(errors) : null,
+        syncJob.id
+      ).run();
+      
+      return c.json({
+        success: true,
+        message: `Synced ${syncedCount} incidents from ServiceNow`,
+        incidents_synced: syncedCount,
+        errors: errors.length > 0 ? errors : undefined
+      });
+      
+    } catch (error) {
+      return c.json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Sync failed'
+      }, 500);
+    }
+  });
+
+  /**
    * Get MS Defender Assets API
    */
   app.get('/api/ms-defender/assets', async (c) => {
@@ -941,4 +1180,62 @@ function renderTenableAssets() {
       </div>
     </div>
   `;
+}
+
+// ========== HELPER FUNCTIONS - Week 6 ==========
+
+/**
+ * Map MS Defender severity to ARIA5 severity
+ */
+function mapDefenderSeverity(defenderSeverity: string): string {
+  const mapping: Record<string, string> = {
+    'Informational': 'info',
+    'Low': 'low',
+    'Medium': 'medium',
+    'High': 'high',
+    'Critical': 'critical'
+  };
+  return mapping[defenderSeverity] || 'medium';
+}
+
+/**
+ * Map MS Defender status to ARIA5 incident status
+ */
+function mapDefenderStatus(defenderStatus: string): string {
+  const mapping: Record<string, string> = {
+    'Active': 'open',
+    'InProgress': 'investigating',
+    'Resolved': 'resolved',
+    'Redirected': 'closed'
+  };
+  return mapping[defenderStatus] || 'open';
+}
+
+/**
+ * Map ServiceNow priority to ARIA5 severity
+ */
+function mapServiceNowPriority(priority: string): string {
+  const mapping: Record<string, string> = {
+    '1': 'critical', // P1 - Critical
+    '2': 'high',     // P2 - High
+    '3': 'medium',   // P3 - Medium
+    '4': 'low',      // P4 - Low
+    '5': 'info'      // P5 - Planning
+  };
+  return mapping[priority] || 'medium';
+}
+
+/**
+ * Map ServiceNow state to ARIA5 incident status
+ */
+function mapServiceNowState(state: string): string {
+  const mapping: Record<string, string> = {
+    '1': 'open',         // New
+    '2': 'investigating', // In Progress
+    '3': 'investigating', // On Hold
+    '6': 'resolved',     // Resolved
+    '7': 'closed',       // Closed
+    '8': 'closed'        // Canceled
+  };
+  return mapping[state] || 'open';
 }

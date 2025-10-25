@@ -140,6 +140,10 @@ CREATE INDEX IF NOT EXISTS idx_notifications_incident
 CREATE INDEX IF NOT EXISTS idx_notifications_status 
   ON incident_notifications(status, created_at);
 
+-- First, ensure default system user exists for foreign key constraints
+INSERT OR IGNORE INTO users (id, username, email, password_hash, first_name, last_name, role, organization_id, is_active)
+VALUES (1, 'system', 'system@aria5.local', '$2a$10$dummy.hash.for.system.user', 'System', 'User', 'admin', 1, 1);
+
 -- Insert default workflows
 INSERT INTO incident_workflows (name, description, trigger_conditions, workflow_steps, organization_id, created_by)
 VALUES 

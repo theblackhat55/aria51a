@@ -415,6 +415,10 @@ ORDER BY threat_count DESC, critical_threats DESC;
 -- SEED DATA - Sample TI Sources and Items
 -- =============================================================================
 
+-- First, ensure default organization exists for foreign key constraints
+INSERT OR IGNORE INTO organizations (id, name, type, industry, is_active, created_at) 
+VALUES (1, 'Default Organization', 'enterprise', 'technology', 1, CURRENT_TIMESTAMP);
+
 -- Sample TI Feed (CISA Known Exploited Vulnerabilities)
 INSERT OR IGNORE INTO threat_intelligence_feeds (
   id, feed_name, feed_url, feed_type, description, 
