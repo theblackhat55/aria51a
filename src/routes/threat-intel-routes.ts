@@ -8,6 +8,8 @@ import { html } from 'hono/html';
 import { requireAuth } from './auth-routes';
 import { cleanLayout } from '../templates/layout-clean';
 import type { CloudflareBindings } from '../types';
+import { TAXIIClientService } from '../lib/taxii-client-service';
+import { STIXParserService } from '../lib/stix-parser-service';
 
 export function createThreatIntelRoutes() {
   const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -113,6 +115,91 @@ export function createThreatIntelRoutes() {
       return c.json({ success: true, message: 'IOC marked as false positive' });
     } catch (error) {
       return c.json({ success: false, error: 'Failed to mark IOC' }, 500);
+    }
+  });
+  
+  // API: Test TAXII server connection
+  app.post('/api/taxii-servers/test-connection', async (c) => {
+    try {
+      const serverData = await c.req.json();
+      const taxiiClient = new TAXIIClientService(c.env.DB);
+      
+      const result = await taxiiClient.testConnection(serverData as any);
+      
+      return c.json({ success: result.success, ...result });
+    } catch (error: any) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+  });
+  
+  // API: Discover collections from a TAXII server
+  app.post('/api/taxii-servers/:id/discover', async (c) => {
+    try {
+      const serverId = parseInt(c.req.param('id'));
+      const taxiiClient = new TAXIIClientService(c.env.DB);
+      
+      const count = await taxiiClient.discoverCollections(serverId);
+      
+      return c.json({ 
+        success: true, 
+        message: `Discovered ${count} collections`,
+        collectionsCount: count
+      });
+    } catch (error: any) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+  });
+  
+  // API: Poll a specific collection
+  app.post('/api/taxii-collections/:id/poll', async (c) => {
+    try {
+      const collectionId = parseInt(c.req.param('id'));
+      const taxiiClient = new TAXIIClientService(c.env.DB);
+      
+      const result = await taxiiClient.pollCollection(collectionId);
+      
+      return c.json({ success: true, ...result });
+    } catch (error: any) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+  });
+  
+  // API: Poll all due collections
+  app.post('/api/taxii-collections/poll-all', async (c) => {
+    try {
+      const taxiiClient = new TAXIIClientService(c.env.DB);
+      
+      const result = await taxiiClient.pollDueCollections();
+      
+      return c.json({ success: true, ...result });
+    } catch (error: any) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+  });
+  
+  // API: Get polling statistics
+  app.get('/api/taxii/polling-stats', async (c) => {
+    try {
+      const taxiiClient = new TAXIIClientService(c.env.DB);
+      
+      const stats = await taxiiClient.getPollingStatistics();
+      
+      return c.json({ success: true, ...stats });
+    } catch (error: any) {
+      return c.json({ success: false, error: error.message }, 500);
+    }
+  });
+  
+  // API: Get STIX statistics
+  app.get('/api/stix/statistics', async (c) => {
+    try {
+      const stixParser = new STIXParserService(c.env.DB);
+      
+      const stats = await stixParser.getStatistics();
+      
+      return c.json({ success: true, ...stats });
+    } catch (error: any) {
+      return c.json({ success: false, error: error.message }, 500);
     }
   });
   
