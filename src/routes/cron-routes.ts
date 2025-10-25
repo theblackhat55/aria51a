@@ -2,10 +2,8 @@
  * Cron Routes for Background Jobs
  * Scheduled tasks using Cloudflare Cron Triggers
  * 
- * Configure in wrangler.jsonc:
- * "triggers": {
- *   "crons": ["*/15 * * * *"]  // Every 15 minutes
- * }
+ * Configure in wrangler.jsonc triggers.crons array
+ * Run every 15 minutes for TAXII polling and maintenance
  */
 
 import { Hono } from 'hono';

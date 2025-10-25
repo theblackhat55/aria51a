@@ -46,12 +46,9 @@
     }
   ],
 
-  // Cron Triggers for Background Jobs (Option B)
-  "triggers": {
-    "crons": [
-      "*/15 * * * *"  // Every 15 minutes - TAXII polling, cleanup, stats
-    ]
-  },
+  // NOTE: Cron triggers configured separately in Cloudflare Dashboard
+  // Schedule: Every 15 minutes for TAXII polling, cleanup, and stats
+  // Endpoint: /cron/scheduled
 
   // Environment Variables
   "vars": {
