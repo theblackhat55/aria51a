@@ -7,8 +7,9 @@
 **ARIA51a Enterprise Security Intelligence Platform**
 - **Platform**: Fully deployed and operational at **aria51a.pages.dev**
 - **Production URLs**: 
-  - **Latest**: https://4965713b.aria51a.pages.dev (Week 6-7 Fully Functional)
-  - **Previous**: https://75afbd18.aria51a.pages.dev (UI Complete)
+  - **Latest**: https://00aae180.aria51a.pages.dev (Week 6-7 COMPLETE with Sample Data)
+  - **Previous**: https://7caa9961.aria51a.pages.dev (Option B - Real-time Features)
+  - **Previous**: https://4965713b.aria51a.pages.dev (Option A - Backend Services)
   - **Project Name**: aria51a
 - **Phase 0 Week 1**: ✅ **COMPLETE - Full DDD Architecture with Risk Domain** (52 files: 22 shared kernel + 30 risk domain)
 - **Phase 0 Week 5-6**: ✅ **COMPLETE - Incident Response Domain with NIST SP 800-61** (52 files: 3 tables, 36 indexes, 8-state lifecycle)
@@ -16,13 +17,13 @@
 - **Database**: Complete production schema with 90+ tables and comprehensive security data
 - **Authentication**: Working demo accounts with proper authentication (admin/demo123, avi_security/demo123, sjohnson/demo123)
 - **Features**: Dynamic risk scoring, automated incident workflows, STIX/TAXII intelligence, compliance management
-- **Latest Enhancement**: ✨ **Week 6-7: Incident Workflow Automation + STIX/TAXII Support** ✨
-  - **Navigation Update**: Incident Management now properly integrated under Operations menu (desktop + mobile)
-  - **DDD Implementation**: Complete Week 5-6 Incident Response Domain with NIST SP 800-61 compliance
-  - **Database**: 3 tables (incidents, response_actions, security_events) with 36 indexes
-  - **Features**: SLA tracking, automatic severity escalation, event correlation, evidence collection
-  - **Integration Ready**: Architecture supports MS Defender + ServiceNow + SIEM/EDR integration
-  - **Documentation**: Complete integration guide in INCIDENT_RESPONSE_STATUS.md
+- **Latest Enhancement**: ✨ **Week 6-7: COMPLETE with Sample Data** ✨
+  - **Option A (Backend)**: ✅ Full STIX/TAXII services with 6 API endpoints
+  - **Option B (Real-time)**: ✅ Auto-refresh (30-60s), loading states, cron scheduler
+  - **Option C (Sample Data)**: ✅ 3 TAXII servers, 6 STIX objects, 6 IOCs, 3 workflows, 3 incidents
+  - **Deployment**: https://00aae180.aria51a.pages.dev (Latest production)
+  - **Database**: All sample data in production D1 database
+  - **Features**: Complete workflow automation + threat intelligence ready for demos
   - **Risk Management**: 8 risks properly stored and accessible in production
   - **Asset Management**: Enhanced asset tables with Incidents and Vulnerabilities action buttons
   - **KRI Dashboard**: Key Risk Indicators monitoring with real-time data
@@ -32,7 +33,7 @@
 - **MS Defender Features**: ✅ Fully functional with production database
 - **Cloudflare Deployment**: ✅ Live and active on aria51.pages.dev
 - **Health Check**: https://aria51a.pages.dev/health
-- **Last Updated**: October 25, 2025 - Phase 0 Week 6-7: Workflow Automation + STIX/TAXII Complete
+- **Last Updated**: October 25, 2025 - Phase 0 Week 6-7: COMPLETE (Options A+B+C) with Comprehensive Sample Data
 
 ---
 
@@ -239,12 +240,51 @@ ARIA 5.1 now supports **industry-standard threat intelligence** formats with com
 - `v_active_high_confidence_iocs` - High-confidence active IOCs
 - `v_stix_objects_summary` - STIX object type summary
 
-#### Sample Data
+#### Sample Data - **NEW** ✨
 
-**Included Sample:**
-- MISP Public TAXII Server configured
-- Demo STIX indicator (C2 server IP)
-- Extracted IOC (192.0.2.1) with high confidence
+**Week 6-7 Complete Sample Dataset** (Migration 0150):
+
+**TAXII Servers (3)**:
+- 🌐 **MISP Public TAXII Server** - Community threat intelligence
+- 🌐 **CIRCL.LU Threat Feeds** - European threat sharing
+- 🌐 **AlienVault OTX** - Open Threat Exchange (demo)
+
+**TAXII Collections (3)**:
+- 📦 **Threat Indicators** - Malware IOCs from MISP community
+- 📦 **Malware Information** - Malware families and variants
+- 📦 **APT Reports** - Advanced Persistent Threat intelligence
+
+**STIX Objects (6)**:
+- 🚨 **C2 Server Indicator** - Conti ransomware infrastructure (Critical)
+- 🎣 **Phishing Domain** - Banking trojan campaign (High)
+- 💀 **Emotet Malware** - Banking trojan and loader (High)
+- 🕵️ **APT29/Cozy Bear** - Russian state-sponsored threat actor (Critical)
+- 🎯 **SolarWinds Campaign** - Supply chain attack (Critical)
+- 🔗 **2 STIX Relationships** - Indicator-to-malware and campaign-to-threat-actor
+
+**IOCs (6)**:
+- 🌐 **192.0.2.100** - Conti ransomware C2 server IP (Critical, 85% confidence)
+- 🌐 **secure-bank-login.example.com** - Phishing domain (High, 75% confidence)
+- 📄 **File Hash** - Emotet malware sample SHA256 (Critical, 90% confidence)
+- 🔗 **Malicious URL** - Malware dropper endpoint (High, 80% confidence)
+- 📧 **Phishing Email** - Known sender address (Medium, 70% confidence)
+
+**Incident Workflows (3)**:
+- ⚡ **Ransomware Incident Response** - 6-step automated workflow (isolate, investigate, block IOCs, restore, document)
+- 🎣 **Phishing Campaign Response** - 6-step email security workflow (block sender, analyze, alert users, reset credentials)
+- 💥 **DDoS Attack Mitigation** - 6-step availability protection workflow (enable protection, analyze traffic, block sources)
+
+**Sample Incidents (3)**:
+- 🔒 **Suspected Ransomware on File Server** - Critical, 500GB affected
+- 📧 **Phishing Campaign - Finance Dept** - High, 15 employees targeted
+- 🌐 **C2 Server Traffic** - High, potential data exfiltration
+
+**Access Sample Data:**
+- **TAXII Servers**: `/threat-intel/taxii-servers`
+- **STIX Objects**: `/threat-intel/stix-objects`
+- **IOCs**: `/threat-intel/iocs`
+- **Workflows**: `/workflows`
+- **Incidents**: `/incidents`
 
 ### Technical Implementation
 
