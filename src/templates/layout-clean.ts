@@ -1618,6 +1618,61 @@ const renderCleanNavigation = (user: any) => html`
             </div>
           </div>
           
+          <!-- Incident Response Dropdown -->
+          <div class="relative" data-dropdown>
+            <button data-dropdown-button class="flex items-center space-x-1 text-gray-700 hover:text-orange-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <i class="fas fa-bell mr-1"></i>
+              <span>Incidents</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div data-dropdown-menu class="dropdown-menu absolute left-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              <div class="py-2">
+                <a href="/incidents" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 border-b border-gray-100">
+                  <i class="fas fa-exclamation-circle w-5 text-orange-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Active Incidents</div>
+                    <div class="text-xs text-gray-500">Manage ongoing incidents</div>
+                  </div>
+                </a>
+                <a href="/incidents/create" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                  <i class="fas fa-plus-circle w-5 text-red-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Report Incident</div>
+                    <div class="text-xs text-gray-500">Create new incident</div>
+                  </div>
+                </a>
+                <a href="/incidents/response-actions" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                  <i class="fas fa-tasks w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Response Actions</div>
+                    <div class="text-xs text-gray-500">Track remediation steps</div>
+                  </div>
+                </a>
+                <a href="/incidents/security-events" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                  <i class="fas fa-shield-alt w-5 text-purple-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Security Events</div>
+                    <div class="text-xs text-gray-500">Event correlation & analysis</div>
+                  </div>
+                </a>
+                <a href="/incidents/timeline" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                  <i class="fas fa-stream w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Timeline View</div>
+                    <div class="text-xs text-gray-500">Incident timeline & history</div>
+                  </div>
+                </a>
+                <a href="/incidents/statistics" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700">
+                  <i class="fas fa-chart-line w-5 text-teal-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Statistics</div>
+                    <div class="text-xs text-gray-500">Metrics & dashboard</div>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+          
           <!-- Operations Dropdown -->
           <div class="relative" data-dropdown>
             <button data-dropdown-button class="nav-item flex items-center space-x-1 text-gray-700 hover:text-green-600 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">
@@ -1908,6 +1963,38 @@ const renderCleanNavigation = (user: any) => html`
                 <a href="/compliance/assessments" class="flex items-center p-3 hover:bg-green-100 rounded-lg transition-colors active:scale-98">
                   <i class="fas fa-tasks text-green-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-green-800">Assessments</span>
+                </a>
+              </div>
+            </div>
+            
+            <!-- Incident Response -->
+            <div class="bg-orange-50 rounded-xl p-1 border border-orange-100">
+              <div class="px-3 py-2 bg-orange-100 rounded-lg mb-2">
+                <h3 class="text-sm font-bold text-orange-800 flex items-center">
+                  <i class="fas fa-bell mr-2"></i>
+                  Incident Response
+                </h3>
+              </div>
+              <div class="px-2 space-y-1">
+                <a href="/incidents" class="flex items-center p-3 hover:bg-orange-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-exclamation-circle text-orange-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-orange-800">Active Incidents</span>
+                </a>
+                <a href="/incidents/create" class="flex items-center p-3 hover:bg-orange-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-plus-circle text-orange-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-orange-800">Report Incident</span>
+                </a>
+                <a href="/incidents/response-actions" class="flex items-center p-3 hover:bg-orange-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-tasks text-orange-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-orange-800">Response Actions</span>
+                </a>
+                <a href="/incidents/security-events" class="flex items-center p-3 hover:bg-orange-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-shield-alt text-orange-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-orange-800">Security Events</span>
+                </a>
+                <a href="/incidents/timeline" class="flex items-center p-3 hover:bg-orange-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-stream text-orange-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-orange-800">Timeline View</span>
                 </a>
               </div>
             </div>
