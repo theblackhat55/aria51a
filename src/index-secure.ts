@@ -27,6 +27,7 @@ import { createMSDefenderRoutes } from './routes/ms-defender-routes';
 import { createEnhancedDynamicRiskRoutes } from './routes/enhanced-dynamic-risk-routes';
 import { createAPIManagementRoutes } from './routes/api-management-routes';
 import { createIntegrationMarketplaceRoutes } from './routes/integration-marketplace-routes';
+import { createIncidentsRoutes } from './routes/incidents-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 
@@ -136,6 +137,7 @@ app.use('/ai/*', authMiddleware);
 app.use('/intelligence/*', authMiddleware);
 app.use('/risk-controls/*', authMiddleware);
 app.use('/ms-defender/*', authMiddleware);
+app.use('/incidents/*', authMiddleware);
 app.use('/api/*', authMiddleware);
 
 // Admin routes require both authentication and admin role
@@ -537,6 +539,9 @@ app.route('/compliance', createEnhancedComplianceRoutes());
 
 // Operations Management (requires authentication)
 app.route('/operations', createOperationsRoutes());
+
+// Incidents Management (requires authentication)
+app.route('/incidents', createIncidentsRoutes());
 
 // Integration Marketplace (requires authentication)
 // Centralized integration management for MS Defender, ServiceNow, Tenable, etc.
