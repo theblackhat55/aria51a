@@ -46,6 +46,13 @@
     }
   ],
 
+  // Cron Triggers for Background Jobs (Option B)
+  "triggers": {
+    "crons": [
+      "*/15 * * * *"  // Every 15 minutes - TAXII polling, cleanup, stats
+    ]
+  },
+
   // Environment Variables
   "vars": {
     "API_RATE_LIMIT": "1000",

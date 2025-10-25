@@ -255,6 +255,9 @@ function renderWorkflowList() {
       }
 
       document.addEventListener('DOMContentLoaded', loadWorkflows);
+      
+      // Auto-refresh every 30 seconds
+      setInterval(loadWorkflows, 30000);
     </script>
   `;
 }

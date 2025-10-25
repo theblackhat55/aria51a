@@ -309,6 +309,9 @@ function renderTAXIIServers() {
       }
       
       document.addEventListener('DOMContentLoaded', loadServers);
+      
+      // Auto-refresh every 60 seconds
+      setInterval(loadServers, 60000);
     </script>
   `;
 }
@@ -421,6 +424,9 @@ function renderSTIXObjects() {
       }
       
       document.addEventListener('DOMContentLoaded', loadObjects);
+      
+      // Auto-refresh every 60 seconds
+      setInterval(loadObjects, 60000);
     </script>
   `;
 }
@@ -564,6 +570,9 @@ function renderIOCManagement() {
       }
       
       document.addEventListener('DOMContentLoaded', loadIOCs);
+      
+      // Auto-refresh every 60 seconds
+      setInterval(loadIOCs, 60000);
     </script>
   `;
 }

@@ -31,6 +31,7 @@ import { createIncidentsRoutes } from './routes/incidents-routes';
 import { createWorkflowManagementRoutes } from './routes/workflow-management-routes';
 import { createSyncDashboardRoutes } from './routes/sync-dashboard-routes';
 import { createThreatIntelRoutes } from './routes/threat-intel-routes';
+import { createCronRoutes } from './routes/cron-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 
@@ -558,6 +559,9 @@ app.route('/sync-dashboard', createSyncDashboardRoutes());
 
 // Threat Intelligence Management (requires authentication) - Week 7
 app.route('/threat-intel', createThreatIntelRoutes());
+
+// Cron Jobs (background tasks) - Option B
+app.route('/cron', createCronRoutes());
 
 // Integration Marketplace (requires authentication)
 // Centralized integration management for MS Defender, ServiceNow, Tenable, etc.
