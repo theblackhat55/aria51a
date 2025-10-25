@@ -148,6 +148,139 @@ export function createIncidentsRoutes() {
     }
   });
   
+  // ========== Week 6: Workflow Automation API Endpoints ==========
+  
+  /**
+   * Trigger workflow automation for an incident
+   */
+  app.post('/api/incidents/:id/trigger-workflow', async (c) => {
+    try {
+      const incidentId = parseInt(c.req.param('id'));
+      const user = c.get('user');
+      
+      // Import workflow engine
+      const { IncidentWorkflowEngine } = await import('../lib/incident-workflow-engine');
+      const engine = new IncidentWorkflowEngine(c.env.DB);
+      
+      // Get incident details
+      const incident = await c.env.DB.prepare(`
+        SELECT * FROM incidents WHERE id = ?
+      `).bind(incidentId).first();
+      
+      if (!incident) {
+        return c.json({ success: false, error: 'Incident not found' }, 404);
+      }
+      
+      // Find matching workflows
+      const workflows = await engine.findMatchingWorkflows(incident, user.organizationId || 1);
+      
+      if (workflows.length === 0) {
+        return c.json({ 
+          success: false, 
+          message: 'No matching workflows found for this incident' 
+        });
+      }
+      
+      // Execute the first matching workflow
+      const execution = await engine.executeWorkflow(incidentId, workflows[0], user.id);
+      
+      return c.json({
+        success: true,
+        message: `Workflow "${workflows[0].name}" triggered successfully`,
+        execution
+      });
+      
+    } catch (error) {
+      console.error('Error triggering workflow:', error);
+      return c.json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to trigger workflow' 
+      }, 500);
+    }
+  });
+  
+  /**
+   * Get workflow executions for an incident
+   */
+  app.get('/api/incidents/:id/workflows', async (c) => {
+    try {
+      const incidentId = parseInt(c.req.param('id'));
+      
+      const { IncidentWorkflowEngine } = await import('../lib/incident-workflow-engine');
+      const engine = new IncidentWorkflowEngine(c.env.DB);
+      
+      const executions = await engine.getIncidentWorkflows(incidentId);
+      
+      return c.json({ success: true, executions });
+      
+    } catch (error) {
+      console.error('Error fetching workflows:', error);
+      return c.json({ success: false, error: 'Failed to fetch workflows' }, 500);
+    }
+  });
+  
+  /**
+   * Get response actions for an incident
+   */
+  app.get('/api/incidents/:id/actions', async (c) => {
+    try {
+      const incidentId = parseInt(c.req.param('id'));
+      
+      const { IncidentWorkflowEngine } = await import('../lib/incident-workflow-engine');
+      const engine = new IncidentWorkflowEngine(c.env.DB);
+      
+      const actions = await engine.getIncidentActions(incidentId);
+      
+      return c.json({ success: true, actions });
+      
+    } catch (error) {
+      console.error('Error fetching actions:', error);
+      return c.json({ success: false, error: 'Failed to fetch actions' }, 500);
+    }
+  });
+  
+  /**
+   * Update response action status
+   */
+  app.put('/api/actions/:id/status', async (c) => {
+    try {
+      const actionId = parseInt(c.req.param('id'));
+      const { status, notes } = await c.req.json();
+      
+      const { IncidentWorkflowEngine } = await import('../lib/incident-workflow-engine');
+      const engine = new IncidentWorkflowEngine(c.env.DB);
+      
+      await engine.updateActionStatus(actionId, status, notes);
+      
+      return c.json({ success: true, message: 'Action status updated' });
+      
+    } catch (error) {
+      console.error('Error updating action:', error);
+      return c.json({ success: false, error: 'Failed to update action' }, 500);
+    }
+  });
+  
+  /**
+   * Get all workflows (for management)
+   */
+  app.get('/api/workflows', async (c) => {
+    try {
+      const user = c.get('user');
+      
+      const result = await c.env.DB.prepare(`
+        SELECT * FROM incident_workflows
+        WHERE organization_id = ?
+        ORDER BY is_active DESC, name ASC
+      `).bind(user.organizationId || 1).all();
+      
+      return c.json({ success: true, workflows: result.results || [] });
+      
+    } catch (error) {
+      console.error('Error fetching workflows:', error);
+      return c.json({ success: false, error: 'Failed to fetch workflows' }, 500);
+    }
+  });
+  
   return app;
 }
 
