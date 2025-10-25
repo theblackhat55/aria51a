@@ -36,6 +36,9 @@ import riskDDDRoutes from './domains/risks/presentation/routes/risk-ddd.routes';
 // Import DDD Compliance Routes (Domain-Driven Design implementation)
 import complianceDDDRoutes from './domains/compliance/presentation/routes/compliance-ddd.routes';
 
+// Import DDD Incident Response Routes (Domain-Driven Design implementation)
+import incidentDDDRoutes from './domains/incidents/presentation/routes/incident-ddd.routes';
+
 // MULTI-TENANCY FEATURE - TEMPORARILY DISABLED
 // TODO: Re-enable when Phase 4 multi-tenancy features are needed
 // import enterpriseMultiTenancyApi from './routes/enterprise-multitenancy-api';
@@ -520,6 +523,12 @@ app.route('/api/v2/risks', riskDDDRoutes);
 // Implements CQRS pattern with separate handlers for commands and queries
 // Routes: /api/v2/compliance/* (protected by authMiddleware on line 128)
 app.route('/api/v2/compliance', complianceDDDRoutes);
+
+// DDD Incident Response Management API v2 (Domain-Driven Design with CQRS)
+// Full DDD incident response domain: Incident, ResponseAction, SecurityEvent entities
+// Implements NIST SP 800-61 incident handling framework with CQRS pattern
+// Routes: /api/v2/incidents/* (protected by authMiddleware on line 128)
+app.route('/api/v2/incidents', incidentDDDRoutes);
 
 // Enhanced Compliance Management with AI (requires authentication)
 app.route('/compliance', createEnhancedComplianceRoutes());
