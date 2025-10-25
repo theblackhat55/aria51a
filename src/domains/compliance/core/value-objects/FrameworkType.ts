@@ -10,7 +10,7 @@ export enum FrameworkType {
   SOC2 = 'soc_2',                 // SOC 2
   GDPR = 'gdpr',                  // General Data Protection Regulation
   HIPAA = 'hipaa',                // Health Insurance Portability and Accountability Act
-  PCI DSS = 'pci_dss',            // Payment Card Industry Data Security Standard
+  PCIDSS = 'pci_dss',             // Payment Card Industry Data Security Standard
   NIST800_53 = 'nist_800_53',     // NIST SP 800-53
   CIS = 'cis',                    // CIS Controls
   COBIT = 'cobit',                // Control Objectives for Information Technologies
@@ -31,7 +31,7 @@ export class FrameworkTypeVO {
       'soc_2': FrameworkType.SOC2,
       'gdpr': FrameworkType.GDPR,
       'hipaa': FrameworkType.HIPAA,
-      'pci_dss': FrameworkType.PCI DSS,
+      'pci_dss': FrameworkType.PCIDSS,
       'nist_800_53': FrameworkType.NIST800_53,
       'cis': FrameworkType.CIS,
       'cobit': FrameworkType.COBIT,
@@ -60,7 +60,7 @@ export class FrameworkTypeVO {
       [FrameworkType.SOC2]: 'SOC 2',
       [FrameworkType.GDPR]: 'GDPR',
       [FrameworkType.HIPAA]: 'HIPAA',
-      [FrameworkType.PCI DSS]: 'PCI DSS',
+      [FrameworkType.PCIDSS]: 'PCI DSS',
       [FrameworkType.NIST800_53]: 'NIST SP 800-53',
       [FrameworkType.CIS]: 'CIS Controls',
       [FrameworkType.COBIT]: 'COBIT',
@@ -78,7 +78,7 @@ export class FrameworkTypeVO {
       [FrameworkType.SOC2]: 'SOC 2',
       [FrameworkType.GDPR]: 'GDPR',
       [FrameworkType.HIPAA]: 'HIPAA',
-      [FrameworkType.PCI DSS]: 'PCI DSS',
+      [FrameworkType.PCIDSS]: 'PCI DSS',
       [FrameworkType.NIST800_53]: 'NIST 800-53',
       [FrameworkType.CIS]: 'CIS',
       [FrameworkType.COBIT]: 'COBIT',
@@ -97,7 +97,7 @@ export class FrameworkTypeVO {
     return [
       FrameworkType.GDPR,
       FrameworkType.HIPAA,
-      FrameworkType.PCI DSS,
+      FrameworkType.PCIDSS,
       FrameworkType.FISMA
     ].includes(this._value);
   }
