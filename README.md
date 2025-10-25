@@ -7,8 +7,8 @@
 **ARIA51a Enterprise Security Intelligence Platform**
 - **Platform**: Fully deployed and operational at **aria51a.pages.dev**
 - **Production URLs**: 
-  - **Latest**: https://75afbd18.aria51a.pages.dev (Week 6-7 UI Complete)
-  - **Previous**: https://f4fb0955.aria51a.pages.dev
+  - **Latest**: https://4965713b.aria51a.pages.dev (Week 6-7 Fully Functional)
+  - **Previous**: https://75afbd18.aria51a.pages.dev (UI Complete)
   - **Project Name**: aria51a
 - **Phase 0 Week 1**: ✅ **COMPLETE - Full DDD Architecture with Risk Domain** (52 files: 22 shared kernel + 30 risk domain)
 - **Phase 0 Week 5-6**: ✅ **COMPLETE - Incident Response Domain with NIST SP 800-61** (52 files: 3 tables, 36 indexes, 8-state lifecycle)
