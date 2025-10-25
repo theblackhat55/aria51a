@@ -29,6 +29,8 @@ import { createAPIManagementRoutes } from './routes/api-management-routes';
 import { createIntegrationMarketplaceRoutes } from './routes/integration-marketplace-routes';
 import { createIncidentsRoutes } from './routes/incidents-routes';
 import { createWorkflowManagementRoutes } from './routes/workflow-management-routes';
+import { createSyncDashboardRoutes } from './routes/sync-dashboard-routes';
+import { createThreatIntelRoutes } from './routes/threat-intel-routes';
 
 import createSMTPSettingsRoutes from './routes/smtp-settings-routes';
 
@@ -140,6 +142,9 @@ app.use('/intelligence/*', authMiddleware);
 app.use('/risk-controls/*', authMiddleware);
 app.use('/ms-defender/*', authMiddleware);
 app.use('/incidents/*', authMiddleware);
+app.use('/workflows/*', authMiddleware);
+app.use('/sync-dashboard/*', authMiddleware);
+app.use('/threat-intel/*', authMiddleware);
 app.use('/api/*', authMiddleware);
 
 // Admin routes require both authentication and admin role
@@ -547,6 +552,12 @@ app.route('/incidents', createIncidentsRoutes());
 
 // Workflow Management (requires authentication) - Week 6
 app.route('/workflows', createWorkflowManagementRoutes());
+
+// Integration Sync Dashboard (requires authentication) - Week 6
+app.route('/sync-dashboard', createSyncDashboardRoutes());
+
+// Threat Intelligence Management (requires authentication) - Week 7
+app.route('/threat-intel', createThreatIntelRoutes());
 
 // Integration Marketplace (requires authentication)
 // Centralized integration management for MS Defender, ServiceNow, Tenable, etc.

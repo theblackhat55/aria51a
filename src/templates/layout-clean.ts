@@ -1683,6 +1683,13 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">Track remediation & playbooks</div>
                   </div>
                 </a>
+                <a href="/workflows" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors">
+                  <i class="fas fa-project-diagram w-5 text-indigo-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Workflow Automation</div>
+                    <div class="text-xs text-gray-500">NIST SP 800-61 workflows & automation</div>
+                  </div>
+                </a>
                 
                 <div class="border-t border-gray-100 my-2"></div>
                 <a href="/integrations" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
@@ -1692,11 +1699,25 @@ const renderCleanNavigation = (user: any) => html`
                     <div class="text-xs text-gray-500">MS Defender, ServiceNow, Tenable & more</div>
                   </div>
                 </a>
+                <a href="/sync-dashboard" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-sync w-5 text-green-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Integration Sync</div>
+                    <div class="text-xs text-gray-500">Monitor & trigger sync jobs</div>
+                  </div>
+                </a>
                 <a href="/intelligence/feeds" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
                   <i class="fas fa-rss w-5 text-purple-500 mr-3"></i>
                   <div>
                     <div class="font-medium">Threat Intelligence Feeds</div>
                     <div class="text-xs text-gray-500">Multi-source feeds & STIX/TAXII configuration</div>
+                  </div>
+                </a>
+                <a href="/threat-intel/taxii-servers" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                  <i class="fas fa-database w-5 text-blue-500 mr-3"></i>
+                  <div>
+                    <div class="font-medium">STIX/TAXII Management</div>
+                    <div class="text-xs text-gray-500">TAXII servers, STIX objects & IOCs</div>
                   </div>
                 </a>
               </div>
@@ -1986,14 +2007,29 @@ const renderCleanNavigation = (user: any) => html`
                   <span class="text-sm font-medium text-blue-800">Response Actions</span>
                   <span class="ml-auto text-xs text-gray-500">Remediation</span>
                 </a>
+                <a href="/workflows" class="flex items-center p-3 hover:bg-orange-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-project-diagram text-indigo-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-indigo-800">Workflow Automation</span>
+                  <span class="ml-auto text-xs text-gray-500">NIST 800-61</span>
+                </a>
                 <div class="border-t border-blue-200 my-2 mx-2"></div>
                 <a href="/integrations" class="flex items-center p-3 hover:bg-indigo-100 rounded-lg transition-colors active:scale-98 bg-gradient-to-r from-indigo-50 to-indigo-100">
                   <i class="fas fa-puzzle-piece text-indigo-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-indigo-800">Integrations</span>
                 </a>
+                <a href="/sync-dashboard" class="flex items-center p-3 hover:bg-green-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-sync text-green-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-green-800">Integration Sync</span>
+                  <span class="ml-auto text-xs text-gray-500">Monitor Jobs</span>
+                </a>
                 <a href="/intelligence/feeds" class="flex items-center p-3 hover:bg-purple-100 rounded-lg transition-colors active:scale-98 bg-gradient-to-r from-purple-50 to-purple-100">
                   <i class="fas fa-rss text-purple-600 w-6 mr-3"></i>
                   <span class="text-sm font-medium text-purple-800">TI Feeds</span>
+                </a>
+                <a href="/threat-intel/taxii-servers" class="flex items-center p-3 hover:bg-blue-100 rounded-lg transition-colors active:scale-98">
+                  <i class="fas fa-database text-blue-600 w-6 mr-3"></i>
+                  <span class="text-sm font-medium text-blue-800">STIX/TAXII</span>
+                  <span class="ml-auto text-xs text-gray-500">Threat Intel</span>
                 </a>
               </div>
             </div>
